@@ -1,0 +1,72 @@
+# ---------- .NET ----------
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vs/
+.vscode/*.code-workspace
+
+# EF Core / local DB
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+
+# Test / coverage
+[Tt]est[Rr]esult*/
+coverage/
+coverage.*.xml
+*.coverage
+*.coveragexml
+
+# ---------- Node / Angular ----------
+node_modules/
+dist/
+.angular/
+.vite/
+.nx/cache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- Flutter ----------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# ---------- Electron ----------
+release/
+out/
+
+# ---------- IDE ----------
+.idea/
+*.swp
+*.swo
+*~
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---------- Secrets / env ----------
+.env
+.env.*
+!.env.example
+appsettings.*.Local.json
+secrets.json
+
+# ---------- Claude Code ----------
+.claude/settings.local.json
