@@ -27,6 +27,7 @@
     <Using Include="Gomoku.Domain.Entities" />
     <Using Include="Gomoku.Domain.ValueObjects" />
     <Using Include="Gomoku.Domain.Exceptions" />
+    <Using Include="Gomoku.Domain.Users" />
   </ItemGroup>
 
 </Project>

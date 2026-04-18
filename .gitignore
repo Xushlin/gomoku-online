@@ -12,7 +12,7 @@
 .vs/
 .vscode/*.code-workspace
 
-# EF Core / local DB
+# EF Core / local DB (schema goes through migrations, not committed data)
 *.db
 *.db-shm
 *.db-wal
