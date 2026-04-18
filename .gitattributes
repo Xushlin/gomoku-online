@@ -1,0 +1,71 @@
+# Default: auto-detect text, normalize to LF in repo, checkout native on Windows.
+* text=auto eol=lf
+
+# ---------- Source code (force LF) ----------
+*.cs        text eol=lf diff=csharp
+*.csproj    text eol=lf
+*.slnx      text eol=lf
+*.sln       text eol=lf
+*.props     text eol=lf
+*.targets   text eol=lf
+
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.scss      text eol=lf
+
+*.dart      text eol=lf
+
+# ---------- Config / docs ----------
+*.json      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.md        text eol=lf
+*.toml      text eol=lf
+*.xml       text eol=lf
+*.http      text eol=lf
+.editorconfig text eol=lf
+.gitignore    text eol=lf
+.gitattributes text eol=lf
+
+# ---------- Windows-only files (keep CRLF) ----------
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# ---------- Shell scripts (keep LF, always) ----------
+*.sh        text eol=lf
+
+# ---------- Binary (never diff / merge) ----------
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.webp      binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.7z        binary
+*.dll       binary
+*.exe       binary
+*.pdb       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.otf       binary
+*.eot       binary
+
+# ---------- Generated / merge-friendly ----------
+package-lock.json  -diff
+pnpm-lock.yaml     -diff
+yarn.lock          -diff
+
+# GitHub language stats: don't count vendored / generated
+backend/**/bin/**   linguist-generated=true
+backend/**/obj/**   linguist-generated=true
