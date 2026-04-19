@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Gomoku.Application.Common.DTOs;
+using Gomoku.Application.Features.Rooms.CreateAiRoom;
 using Gomoku.Application.Features.Rooms.CreateRoom;
 using Gomoku.Application.Features.Rooms.GetRoomList;
 using Gomoku.Application.Features.Rooms.GetRoomState;
@@ -7,6 +8,7 @@ using Gomoku.Application.Features.Rooms.JoinAsSpectator;
 using Gomoku.Application.Features.Rooms.JoinRoom;
 using Gomoku.Application.Features.Rooms.LeaveAsSpectator;
 using Gomoku.Application.Features.Rooms.LeaveRoom;
+using Gomoku.Domain.Ai;
 using Gomoku.Domain.Rooms;
 using Gomoku.Domain.Users;
 using MediatR;
@@ -39,6 +41,21 @@ public sealed class RoomsController : ControllerBase
             new CreateRoomCommand(GetUserId(), body.Name),
             cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = summary.Id }, summary);
+    }
+
+    /// <summary>
+    /// 创建一个 AI 对局房间。调用方成为 Host + 黑方;seeded 机器人按 <c>difficulty</c>
+    /// 立即加入为白方。返回的 <see cref="RoomStateDto"/> 状态已是 Playing。
+    /// </summary>
+    [HttpPost("ai")]
+    public async Task<ActionResult<RoomStateDto>> CreateAi(
+        [FromBody] CreateAiRoomRequest body,
+        CancellationToken cancellationToken)
+    {
+        var state = await _mediator.Send(
+            new CreateAiRoomCommand(GetUserId(), body.Name, body.Difficulty),
+            cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = state.Id }, state);
     }
 
     /// <summary>列出所有活跃(Waiting / Playing)房间。</summary>
@@ -100,3 +117,6 @@ public sealed class RoomsController : ControllerBase
 
 /// <summary>POST /api/rooms 的请求体。</summary>
 public sealed record CreateRoomRequest(string Name);
+
+/// <summary>POST /api/rooms/ai 的请求体。<c>Difficulty</c> 以字符串形式(JsonStringEnumConverter)。</summary>
+public sealed record CreateAiRoomRequest(string Name, BotDifficulty Difficulty);

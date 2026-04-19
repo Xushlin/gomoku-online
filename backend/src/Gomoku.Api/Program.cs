@@ -18,7 +18,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ---------- 服务注册 ----------
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // 让 BotDifficulty 等枚举以 "Easy" / "Medium" 字符串形式在请求 / 响应体中出现,
+        // 而不是整数;前端友好,也方便 OpenAPI 规范看。
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddApplication();
@@ -28,6 +35,12 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+}).AddJsonProtocol(options =>
+{
+    // 与 Controllers 的 JsonOptions 对齐:枚举以字符串出现(Stone/GameResult 等),
+    // 方便客户端(包括 Flutter / Angular)按字符串解析,不必跟 C# 枚举底值耦合。
+    options.PayloadSerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
 builder.Services.AddSingleton<IConnectionTracker, ConnectionTracker>();
 builder.Services.AddScoped<IRoomNotifier, SignalRRoomNotifier>();
