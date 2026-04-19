@@ -23,6 +23,7 @@ public class UserRegisterTests
         user.Losses.Should().Be(0);
         user.Draws.Should().Be(0);
         user.IsActive.Should().BeTrue();
+        user.IsBot.Should().BeFalse();
         user.CreatedAt.Should().Be(FixedNow);
         user.RefreshTokens.Should().BeEmpty();
     }

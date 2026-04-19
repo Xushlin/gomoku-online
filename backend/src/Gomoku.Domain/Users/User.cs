@@ -8,6 +8,13 @@ namespace Gomoku.Domain.Users;
 /// </summary>
 public sealed class User
 {
+    /// <summary>
+    /// 机器人账号的 <see cref="PasswordHash"/> 占位常量。
+    /// 该值不是任何合法 Identity PasswordHasher V3 输出,<c>PasswordHasher.Verify</c> 对其永远返回 <c>Failed</c>,
+    /// 因此即便被人误当作密码去比对也无法通过;迁移 seed 与"登录拒绝 bot"的防御检查都以此常量为锚。
+    /// </summary>
+    public const string BotPasswordHashMarker = "__BOT_NO_LOGIN__";
+
     private readonly List<RefreshToken> _refreshTokens = new();
 
     /// <summary>主键。</summary>
@@ -39,6 +46,13 @@ public sealed class User
 
     /// <summary>是否启用;<c>false</c> 时即使凭据正确也拒绝登录。</summary>
     public bool IsActive { get; private set; }
+
+    /// <summary>
+    /// 是否为系统机器人账号。真人通过 <see cref="Register"/> 创建时恒为 <c>false</c>;
+    /// 机器人通过 <see cref="RegisterBot"/> 创建(并由 migration seed 写入)时为 <c>true</c>。
+    /// Bot 账号 MUST NOT 登录(由 Login / Refresh handler 显式拒绝),MUST NOT 出现在排行榜。
+    /// </summary>
+    public bool IsBot { get; private set; }
 
     /// <summary>注册时间(UTC)。</summary>
     public DateTime CreatedAt { get; private set; }
@@ -75,6 +89,33 @@ public sealed class User
             Losses = 0,
             Draws = 0,
             IsActive = true,
+            IsBot = false,
+            CreatedAt = createdAt,
+        };
+    }
+
+    /// <summary>
+    /// 创建一个机器人账号(ai-opponent 能力)。字段:<c>PasswordHash=</c><see cref="BotPasswordHashMarker"/>、
+    /// <c>Rating=1200</c>、战绩计数器均为 0、<c>IsActive=true</c>、<c>IsBot=true</c>、
+    /// <c>CreatedAt=</c><paramref name="createdAt"/>。
+    /// 不接受 <c>passwordHash</c> 参数 —— bot 永远不可登录。
+    /// 调用方 MUST NOT 在 bot 账号上调用 <see cref="IssueRefreshToken"/>。
+    /// </summary>
+    public static User RegisterBot(UserId id, Email email, Username username, DateTime createdAt)
+    {
+        return new User
+        {
+            Id = id,
+            Email = email,
+            Username = username,
+            PasswordHash = BotPasswordHashMarker,
+            Rating = 1200,
+            GamesPlayed = 0,
+            Wins = 0,
+            Losses = 0,
+            Draws = 0,
+            IsActive = true,
+            IsBot = true,
             CreatedAt = createdAt,
         };
     }

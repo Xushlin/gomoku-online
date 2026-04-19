@@ -29,6 +29,7 @@
     <Using Include="Gomoku.Domain.Exceptions" />
     <Using Include="Gomoku.Domain.Users" />
     <Using Include="Gomoku.Domain.Rooms" />
+    <Using Include="Gomoku.Domain.Ai" />
   </ItemGroup>
 
 </Project>
