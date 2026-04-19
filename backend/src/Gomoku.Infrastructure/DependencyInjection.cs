@@ -1,5 +1,7 @@
 using Gomoku.Application.Abstractions;
+using Gomoku.Infrastructure.Ai;
 using Gomoku.Infrastructure.Authentication;
+using Gomoku.Infrastructure.BackgroundServices;
 using Gomoku.Infrastructure.Common;
 using Gomoku.Infrastructure.Persistence;
 using Gomoku.Infrastructure.Persistence.Repositories;
@@ -31,10 +33,17 @@ public static class DependencyInjection
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+        services.AddSingleton<IAiRandomProvider, AiRandomProvider>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         services.Configure<RoomsOptions>(configuration.GetSection("Rooms"));
+        services.AddOptions<AiOptions>()
+            .Bind(configuration.GetSection("Ai"))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHostedService<AiMoveWorker>();
 
         return services;
     }

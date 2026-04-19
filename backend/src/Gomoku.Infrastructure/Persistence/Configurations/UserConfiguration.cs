@@ -58,6 +58,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Losses).IsRequired();
         builder.Property(u => u.Draws).IsRequired();
         builder.Property(u => u.IsActive).IsRequired();
+        builder.Property(u => u.IsBot)
+            .IsRequired()
+            .HasDefaultValue(false);
         builder.Property(u => u.CreatedAt).IsRequired();
 
         builder.HasMany(u => u.RefreshTokens)

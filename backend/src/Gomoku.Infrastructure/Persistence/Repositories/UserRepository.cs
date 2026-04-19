@@ -1,4 +1,7 @@
 using Gomoku.Application.Abstractions;
+using Gomoku.Domain.Ai;
+using Gomoku.Domain.Enums;
+using Gomoku.Domain.Rooms;
 using Gomoku.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -85,10 +88,41 @@ public sealed class UserRepository : IUserRepository
     public async Task<IReadOnlyList<User>> GetTopByRatingAsync(int limit, CancellationToken cancellationToken)
     {
         return await _db.Users
+            .Where(u => !u.IsBot) // 机器人不进排行榜(见 elo-rating spec)
             .OrderByDescending(u => u.Rating)
             .ThenByDescending(u => u.Wins)
             .ThenBy(u => u.GamesPlayed)
             .Take(limit)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<User?> FindBotByDifficultyAsync(BotDifficulty difficulty, CancellationToken cancellationToken)
+    {
+        var id = new UserId(BotAccountIds.For(difficulty));
+        var user = await _db.Users
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+        // 若记录存在但不是 bot(异常 seed),视为未配置。
+        return user is { IsBot: true } ? user : null;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RoomId>> GetRoomsNeedingBotMoveAsync(CancellationToken cancellationToken)
+    {
+        // "Playing 且当前回合玩家是 bot"。CurrentTurn == Black → BlackPlayerId 是 bot;
+        // CurrentTurn == White → WhitePlayerId 是 bot。
+        // 为让 EF 能翻译,避免 navigation 到 User 的 subquery,先 JOIN User 两次:
+        var query =
+            from r in _db.Rooms
+            where r.Status == RoomStatus.Playing
+            join g in _db.Games on r.Id equals g.RoomId
+            join blackUser in _db.Users on r.BlackPlayerId equals blackUser.Id
+            join whiteUser in _db.Users on r.WhitePlayerId!.Value equals whiteUser.Id
+            where (g.CurrentTurn == Stone.Black && blackUser.IsBot)
+               || (g.CurrentTurn == Stone.White && whiteUser.IsBot)
+            select r.Id;
+
+        var ids = await query.ToListAsync(cancellationToken);
+        return ids;
     }
 }
