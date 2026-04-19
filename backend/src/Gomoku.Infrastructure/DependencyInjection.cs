@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddDbContext<GomokuDbContext>(options => options.UseSqlite(connectionString));
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+        services.Configure<RoomsOptions>(configuration.GetSection("Rooms"));
 
         return services;
     }

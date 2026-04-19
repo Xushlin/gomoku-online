@@ -25,6 +25,7 @@
     <Using Include="FluentAssertions" />
     <Using Include="Moq" />
     <Using Include="Gomoku.Domain.Users" />
+    <Using Include="Gomoku.Domain.Rooms" />
     <Using Include="Gomoku.Application.Abstractions" />
     <Using Include="Gomoku.Application.Common.DTOs" />
     <Using Include="Gomoku.Application.Common.Exceptions" />

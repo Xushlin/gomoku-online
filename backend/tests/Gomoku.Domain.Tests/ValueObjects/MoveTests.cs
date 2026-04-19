@@ -1,3 +1,5 @@
+using Move = Gomoku.Domain.ValueObjects.Move;
+
 namespace Gomoku.Domain.Tests.ValueObjects;
 
 public class MoveTests

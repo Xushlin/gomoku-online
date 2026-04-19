@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Gomoku.Api.Hubs;
 using Gomoku.Api.Middleware;
 using Gomoku.Application;
 using Gomoku.Application.Abstractions;
@@ -22,6 +23,14 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// SignalR + Hub 支持服务
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+});
+builder.Services.AddSingleton<IConnectionTracker, ConnectionTracker>();
+builder.Services.AddScoped<IRoomNotifier, SignalRRoomNotifier>();
 
 // JWT Bearer 认证
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -52,6 +61,22 @@ if (!string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(signingKeyBytes),
                 ClockSkew = TimeSpan.FromSeconds(30),
+                // sub claim 作为 UserIdentifier,便于 Hub 用 Clients.User(userId) 定向推送
+                NameClaimType = JwtRegisteredClaimNames.Sub,
+            };
+            // SignalR 握手无法带 Authorization 头,允许从 ?access_token=... query 取
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = ctx =>
+                {
+                    var accessToken = ctx.Request.Query["access_token"].ToString();
+                    if (!string.IsNullOrEmpty(accessToken)
+                        && ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    {
+                        ctx.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                },
             };
         });
     builder.Services.AddAuthorization();
@@ -71,6 +96,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<GomokuHub>("/hubs/gomoku");
 
 // 开发环境自动 migrate,避免"克隆后先 ef update"的摩擦。
 if (app.Environment.IsDevelopment())

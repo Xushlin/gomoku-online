@@ -17,6 +17,165 @@ namespace Gomoku.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
 
+            modelBuilder.Entity("Gomoku.Domain.Rooms.ChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SenderUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SenderUsername")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId", "SentAt");
+
+                    b.ToTable("ChatMessages", (string)null);
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.Game", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentTurn")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("Result")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("WinnerUserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId")
+                        .IsUnique();
+
+                    b.ToTable("Games", (string)null);
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.Move", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Col")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("PlayedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ply")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Row")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Stone")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "Ply")
+                        .IsUnique();
+
+                    b.ToTable("Moves", (string)null);
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.Room", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("BlackPlayerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("HostUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastUrgeAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("LastUrgeByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("WhitePlayerId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Rooms", (string)null);
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.RoomSpectator", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("RoomSpectators", (string)null);
+                });
+
             modelBuilder.Entity("Gomoku.Domain.Users.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -85,6 +244,42 @@ namespace Gomoku.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("Gomoku.Domain.Rooms.ChatMessage", b =>
+                {
+                    b.HasOne("Gomoku.Domain.Rooms.Room", null)
+                        .WithMany("_chatMessages")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.Game", b =>
+                {
+                    b.HasOne("Gomoku.Domain.Rooms.Room", null)
+                        .WithOne("Game")
+                        .HasForeignKey("Gomoku.Domain.Rooms.Game", "RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.Move", b =>
+                {
+                    b.HasOne("Gomoku.Domain.Rooms.Game", null)
+                        .WithMany("Moves")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.RoomSpectator", b =>
+                {
+                    b.HasOne("Gomoku.Domain.Rooms.Room", null)
+                        .WithMany("_spectators")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Gomoku.Domain.Users.RefreshToken", b =>
                 {
                     b.HasOne("Gomoku.Domain.Users.User", null)
@@ -148,6 +343,20 @@ namespace Gomoku.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Username")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.Game", b =>
+                {
+                    b.Navigation("Moves");
+                });
+
+            modelBuilder.Entity("Gomoku.Domain.Rooms.Room", b =>
+                {
+                    b.Navigation("Game");
+
+                    b.Navigation("_chatMessages");
+
+                    b.Navigation("_spectators");
                 });
 
             modelBuilder.Entity("Gomoku.Domain.Users.User", b =>

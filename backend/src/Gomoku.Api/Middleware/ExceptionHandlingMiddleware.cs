@@ -3,6 +3,7 @@ using System.Text.Json;
 using Gomoku.Application.Common.Exceptions;
 using Gomoku.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ValidationException = Gomoku.Application.Common.Exceptions.ValidationException;
 
 namespace Gomoku.Api.Middleware;
@@ -90,7 +91,10 @@ public sealed class ExceptionHandlingMiddleware
 
         InvalidEmailException or
         InvalidUsernameException or
-        InvalidMoveException => (
+        InvalidMoveException or
+        InvalidRoomNameException or
+        InvalidRoomStatusTransitionException or
+        InvalidChatContentException => (
             (int)HttpStatusCode.BadRequest,
             "Bad request.",
             ex.Message),
@@ -101,21 +105,44 @@ public sealed class ExceptionHandlingMiddleware
             "Unauthorized.",
             ex.Message),
 
-        UserNotActiveException => (
+        UserNotActiveException or
+        NotAPlayerException or
+        PlayerCannotPostSpectatorChannelException => (
             (int)HttpStatusCode.Forbidden,
             "Forbidden.",
             ex.Message),
 
-        UserNotFoundException => (
+        UserNotFoundException or
+        RoomNotFoundException or
+        NotInRoomException or
+        NotSpectatingException => (
             (int)HttpStatusCode.NotFound,
             "Not found.",
             ex.Message),
 
         EmailAlreadyExistsException or
-        UsernameAlreadyExistsException => (
+        UsernameAlreadyExistsException or
+        RoomNotWaitingException or
+        RoomNotInPlayException or
+        RoomFullException or
+        AlreadyInRoomException or
+        HostCannotLeaveWaitingRoomException or
+        PlayerCannotSpectateException or
+        NotYourTurnException or
+        NotOpponentsTurnException => (
             (int)HttpStatusCode.Conflict,
             "Conflict.",
             ex.Message),
+
+        UrgeTooFrequentException => (
+            (int)HttpStatusCode.TooManyRequests,
+            "Too many requests.",
+            ex.Message),
+
+        DbUpdateConcurrencyException => (
+            (int)HttpStatusCode.Conflict,
+            "Concurrent modification.",
+            "The room state changed concurrently; reload and retry."),
 
         _ => (
             (int)HttpStatusCode.InternalServerError,

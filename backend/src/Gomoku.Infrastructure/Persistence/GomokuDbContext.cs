@@ -1,5 +1,7 @@
+using Gomoku.Domain.Rooms;
 using Gomoku.Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Move = Gomoku.Domain.Rooms.Move;
 
 namespace Gomoku.Infrastructure.Persistence;
 
@@ -14,6 +16,21 @@ public sealed class GomokuDbContext : DbContext
 
     /// <summary>刷新令牌子实体。</summary>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    /// <summary>房间聚合根。</summary>
+    public DbSet<Room> Rooms => Set<Room>();
+
+    /// <summary>对局子实体。</summary>
+    public DbSet<Game> Games => Set<Game>();
+
+    /// <summary>落子记录子实体。</summary>
+    public DbSet<Move> Moves => Set<Move>();
+
+    /// <summary>房间聊天消息。</summary>
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
+    /// <summary>房间围观者联结记录。</summary>
+    public DbSet<RoomSpectator> RoomSpectators => Set<RoomSpectator>();
 
     /// <inheritdoc />
     public GomokuDbContext(DbContextOptions<GomokuDbContext> options) : base(options)
