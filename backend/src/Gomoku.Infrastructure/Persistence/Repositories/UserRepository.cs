@@ -80,4 +80,15 @@ public sealed class UserRepository : IUserRepository
     {
         await _db.Users.AddAsync(user, cancellationToken);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<User>> GetTopByRatingAsync(int limit, CancellationToken cancellationToken)
+    {
+        return await _db.Users
+            .OrderByDescending(u => u.Rating)
+            .ThenByDescending(u => u.Wins)
+            .ThenBy(u => u.GamesPlayed)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
 }
