@@ -124,4 +124,42 @@ public sealed class User
             }
         }
     }
+
+    /// <summary>
+    /// 记录一局对局的结果,原子完成三件事:<c>GamesPlayed++</c>、按 <paramref name="outcome"/>
+    /// 递增对应计数器(<see cref="Wins"/> / <see cref="Losses"/> / <see cref="Draws"/>)、
+    /// 将 <see cref="Rating"/> 设置为 <paramref name="newRating"/>。
+    /// <para>
+    /// 这是 elo-rating 能力对 User 聚合的唯一写入口;调用方(handler)MUST 先用
+    /// <see cref="EloRating.EloRating.Calculate"/> 算出新积分再调用本方法 —— 本方法不做 ELO 计算,
+    /// 也不校验 <paramref name="newRating"/> 的合理性。
+    /// </para>
+    /// <para>
+    /// 不变量:调用后 <c>Wins + Losses + Draws == GamesPlayed</c>。
+    /// </para>
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="outcome"/> 不是 <see cref="GameOutcome"/> 定义值(Loss / Win / Draw)。
+    /// 抛出时 User 状态保持不变。
+    /// </exception>
+    public void RecordGameResult(GameOutcome outcome, int newRating)
+    {
+        switch (outcome)
+        {
+            case GameOutcome.Win:
+                Wins++;
+                break;
+            case GameOutcome.Loss:
+                Losses++;
+                break;
+            case GameOutcome.Draw:
+                Draws++;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Unknown GameOutcome value.");
+        }
+
+        GamesPlayed++;
+        Rating = newRating;
+    }
 }
