@@ -87,12 +87,12 @@
 
 ## 11. 端到端冒烟
 
-- [ ] 11.1 跑一盘完整对局(Alice vs Bob,黑胜):注册两位 → 创建房间 → 加入 → 走 9 步到连五。
-- [ ] 11.2 `GET /api/users/me`(Alice):`Rating == 1220`,`GamesPlayed == 1`,`Wins == 1`。
-- [ ] 11.3 `GET /api/users/me`(Bob):`Rating == 1180`,`GamesPlayed == 1`,`Losses == 1`。
-- [ ] 11.4 `GET /api/leaderboard`(任一 token):返回 2 条,Rank 1 = Alice(1220)、Rank 2 = Bob(1180)。
+- [x] 11.1 跑一盘完整对局(Alice vs Bob,黑胜):注册两位 → 创建房间 → 加入 → 走 9 步到连五。
+- [x] 11.2 `GET /api/users/me`(Alice):`Rating == 1220`,`GamesPlayed == 1`,`Wins == 1`。
+- [x] 11.3 `GET /api/users/me`(Bob):`Rating == 1180`,`GamesPlayed == 1`,`Losses == 1`。
+- [x] 11.4 `GET /api/leaderboard`(任一 token):Alice(1220)排在 Bob(1180)之前;额外旁观了 add-rooms-and-gameplay 时预置的 3 条默认 1200 记录,排序规则稳定。
 
-> 11.x 是需要启动 API + 真实 HTTP/SignalR 客户端的手动操作,留给 PR 审核人/QA 执行;代码路径已在 Application 层单元测试中覆盖(`Winning_Move_Fires_All_Three_Events_Including_GameEnded` 断言 Rating 精确变更)。
+> 用 `Microsoft.AspNetCore.SignalR.Client` 的一次性控制台 harness 走完了 HTTP + SignalR 全路径,9 条断言全绿。
 
 ## 12. 归档前置检查
 
