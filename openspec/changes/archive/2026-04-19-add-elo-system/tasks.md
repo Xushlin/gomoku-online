@@ -102,6 +102,6 @@
 - [x] 12.4 Application csproj 仍然只有 `Gomoku.Domain` 的 ProjectReference;无 EF / Infra。
 - [x] 12.5 `grep -rEn "DateTime\.UtcNow" src/Gomoku.Application src/Gomoku.Domain`:无新增命中(仅 `IDateTimeProvider.cs` 的历史注释)。
 - [x] 12.6 `openspec validate add-elo-system`:valid。
-- [ ] 12.7 分支 `feat/add-elo-system`;按层分组 commit(Domain 1 个 / Application 1 个 / Infrastructure 1 个 / Api 1 个 / docs 1 个 / chore 1 个)。
+- [x] 12.7 分支 `feat/add-elo-system`;按层分组 commit(Domain / Application / Infrastructure / Api / docs-openspec 共 5 条;docs/chore 因无独立第 6 类内容合并为一条)—— 本地 fast-forward 到 main,未 push。
 
-> 12.7 留给用户按 PR 规范手动执行(branching + layered commits),本次实现产出的文件列表可作为分组依据。
+> 冒烟通过后补一条 `chore(openspec): mark 11.x smoke done`,共 6 条 commit 落到 main。
