@@ -32,4 +32,11 @@ public interface IUserRepository
 
     /// <summary>新增一个用户(未提交,需配合 <see cref="IUnitOfWork.SaveChangesAsync"/>)。</summary>
     Task AddAsync(User user, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 返回按 <c>Rating DESC, Wins DESC, GamesPlayed ASC</c> 排序的前 <paramref name="limit"/> 位用户。
+    /// 排序规则由**实现**保证;调用方 MUST NOT 依赖返回值之外的稳定性(例如主键作为最终 tiebreaker
+    /// 视实现而定)。返回类型是领域类型,不泄漏 <c>IQueryable</c> 等 EF 细节。
+    /// </summary>
+    Task<IReadOnlyList<User>> GetTopByRatingAsync(int limit, CancellationToken cancellationToken);
 }

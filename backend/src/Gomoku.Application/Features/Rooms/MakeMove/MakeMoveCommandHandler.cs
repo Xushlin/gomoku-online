@@ -3,6 +3,8 @@ using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Common.Exceptions;
 using Gomoku.Application.Common.Mapping;
 using Gomoku.Domain.Enums;
+using Gomoku.Domain.Rooms;
+using Gomoku.Domain.Users;
 using Gomoku.Domain.ValueObjects;
 using MediatR;
 
@@ -43,6 +45,12 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             ?? throw new RoomNotFoundException($"Room '{request.RoomId.Value}' was not found.");
 
         var outcome = room.PlayMove(request.UserId, new Position(request.Row, request.Col), _clock.UtcNow);
+
+        if (outcome.Result != GameResult.Ongoing)
+        {
+            await ApplyEloAsync(room, outcome.Result, cancellationToken);
+        }
+
         await _uow.SaveChangesAsync(cancellationToken);
 
         var moveDto = new MoveDto(
@@ -68,5 +76,36 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
         }
 
         return moveDto;
+    }
+
+    private async Task ApplyEloAsync(Room room, GameResult result, CancellationToken cancellationToken)
+    {
+        var black = await _users.FindByIdAsync(room.BlackPlayerId, cancellationToken)
+            ?? throw new UserNotFoundException($"User '{room.BlackPlayerId.Value}' was not found.");
+        var whiteId = room.WhitePlayerId!.Value;
+        var white = await _users.FindByIdAsync(whiteId, cancellationToken)
+            ?? throw new UserNotFoundException($"User '{whiteId.Value}' was not found.");
+
+        var outcomeForBlack = result switch
+        {
+            GameResult.BlackWin => GameOutcome.Win,
+            GameResult.WhiteWin => GameOutcome.Loss,
+            GameResult.Draw => GameOutcome.Draw,
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Unexpected GameResult for ELO."),
+        };
+        var outcomeForWhite = outcomeForBlack switch
+        {
+            GameOutcome.Win => GameOutcome.Loss,
+            GameOutcome.Loss => GameOutcome.Win,
+            _ => GameOutcome.Draw,
+        };
+
+        var (newBlackRating, newWhiteRating) = Gomoku.Domain.EloRating.EloRating.Calculate(
+            black.Rating, black.GamesPlayed,
+            white.Rating, white.GamesPlayed,
+            outcomeForBlack);
+
+        black.RecordGameResult(outcomeForBlack, newBlackRating);
+        white.RecordGameResult(outcomeForWhite, newWhiteRating);
     }
 }

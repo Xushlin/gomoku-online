@@ -32,6 +32,12 @@ public class MakeMoveCommandHandlerTests
         _notifier.Verify(n => n.RoomStateChangedAsync(room.Id, It.IsAny<RoomStateDto>(), It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.MoveMadeAsync(room.Id, It.IsAny<MoveDto>(), It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.GameEndedAsync(It.IsAny<RoomId>(), It.IsAny<GameEndedDto>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        // 未结束局 MUST NOT 触发 ELO 计算 —— 双方 Rating / 战绩保持初始态
+        host.Rating.Should().Be(1200);
+        host.GamesPlayed.Should().Be(0);
+        bob.Rating.Should().Be(1200);
+        bob.GamesPlayed.Should().Be(0);
     }
 
     [Fact]
@@ -66,6 +72,16 @@ public class MakeMoveCommandHandlerTests
                 p.Result == GameResult.BlackWin
                 && p.WinnerUserId == host.Id.Value),
             It.IsAny<CancellationToken>()), Times.Once);
+
+        // ELO 在同事务落地:两位玩家初始均为 (1200, 0),BlackWin 后
+        // EloRating.Calculate(1200,0,1200,0,Win) = (1220, 1180)
+        host.Rating.Should().Be(1220);
+        host.GamesPlayed.Should().Be(1);
+        host.Wins.Should().Be(1);
+        bob.Rating.Should().Be(1180);
+        bob.GamesPlayed.Should().Be(1);
+        bob.Losses.Should().Be(1);
+        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
