@@ -114,4 +114,26 @@ public class LoginCommandHandlerTests
 
         await act.Should().ThrowAsync<UserNotActiveException>();
     }
+
+    [Fact]
+    public async Task Bot_Account_Throws_InvalidCredentials_Even_When_Hash_Matches()
+    {
+        // 深度防御:即使 mock 让 PasswordHasher.Verify 返回 true,bot 账号也应拒登
+        var bot = User.RegisterBot(
+            new UserId(BotAccountIds.Easy),
+            new Email("easy@bot.gomoku.local"),
+            new Username("AI_Easy"),
+            Now);
+        _users.Setup(r => r.FindByEmailAsync(It.IsAny<Email>(), It.IsAny<CancellationToken>())).ReturnsAsync(bot);
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), bot.PasswordHash)).Returns(true);
+
+        var sut = BuildSut();
+        var act = () => sut.Handle(new LoginCommand("easy@bot.gomoku.local", "whatever"), default);
+
+        var ex = await act.Should().ThrowAsync<InvalidCredentialsException>();
+        ex.Which.Message.Should().Be("Email or password is incorrect.");
+        // 没有新 refresh token 被发放,没有事务提交
+        bot.RefreshTokens.Should().BeEmpty();
+        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

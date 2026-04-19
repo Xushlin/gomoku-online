@@ -13,6 +13,20 @@ internal static class RoomsFixtures
             "HASHED",
             Now);
 
+    /// <summary>
+    /// 构造一个 bot User,使用 <see cref="BotAccountIds"/> 的固定 Guid,字段与 seed 迁移产物一致。
+    /// </summary>
+    public static User NewBot(BotDifficulty difficulty)
+    {
+        var id = new UserId(BotAccountIds.For(difficulty));
+        var suffix = difficulty.ToString().ToLowerInvariant();
+        return User.RegisterBot(
+            id,
+            new Email($"{suffix}@bot.gomoku.local"),
+            new Username($"AI_{difficulty}"),
+            Now);
+    }
+
     public static Room WaitingRoom(User host, string name = "Test Room") =>
         Room.Create(RoomId.NewId(), name, host.Id, Now);
 

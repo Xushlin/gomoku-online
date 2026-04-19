@@ -46,6 +46,13 @@ public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCom
             throw new InvalidRefreshTokenException();
         }
 
+        // Bot 账号不会通过 IssueRefreshToken 持有 token,此分支不会被触达;
+        // 防御性兜底,防止未来回归把 refresh token 错误地发给 bot。
+        if (user.IsBot)
+        {
+            throw new InvalidRefreshTokenException();
+        }
+
         var now = _clock.UtcNow;
         var existing = user.RefreshTokens.FirstOrDefault(t => t.TokenHash == incomingHash);
         if (existing is null || !existing.IsActive(now))

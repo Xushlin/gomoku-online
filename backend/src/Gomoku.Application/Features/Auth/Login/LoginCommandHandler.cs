@@ -65,6 +65,14 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
             throw new InvalidCredentialsException();
         }
 
+        // Bot 账号永远不可登录。理论上由于 PasswordHash 是 __BOT_NO_LOGIN__ marker,
+        // Verify 永远返回 false,流程不会到这里;此处是深度防御,避免任何未来对 Hash
+        // 逻辑的改动意外让 bot 可登录。响应形式与"密码错"完全一致,防止侧信道枚举 bot。
+        if (user.IsBot)
+        {
+            throw new InvalidCredentialsException();
+        }
+
         if (!user.IsActive)
         {
             throw new UserNotActiveException($"User '{user.Username.Value}' is not active.");

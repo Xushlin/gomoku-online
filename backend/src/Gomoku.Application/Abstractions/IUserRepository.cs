@@ -1,3 +1,5 @@
+using Gomoku.Domain.Ai;
+using Gomoku.Domain.Rooms;
 using Gomoku.Domain.Users;
 
 namespace Gomoku.Application.Abstractions;
@@ -34,9 +36,22 @@ public interface IUserRepository
     Task AddAsync(User user, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 返回按 <c>Rating DESC, Wins DESC, GamesPlayed ASC</c> 排序的前 <paramref name="limit"/> 位用户。
-    /// 排序规则由**实现**保证;调用方 MUST NOT 依赖返回值之外的稳定性(例如主键作为最终 tiebreaker
-    /// 视实现而定)。返回类型是领域类型,不泄漏 <c>IQueryable</c> 等 EF 细节。
+    /// 返回按 <c>Rating DESC, Wins DESC, GamesPlayed ASC</c> 排序的前 <paramref name="limit"/> 位
+    /// **真人**用户(<c>IsBot == false</c>)。bot 账号跟随 ELO 正常更新,但 MUST NOT 出现在排行榜。
+    /// 排序规则由**实现**保证;返回类型是领域类型,不泄漏 <c>IQueryable</c> 等 EF 细节。
     /// </summary>
     Task<IReadOnlyList<User>> GetTopByRatingAsync(int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按难度查找系统 seed 的机器人账号;若对应记录不存在或 <c>IsBot == false</c>,返回 <c>null</c>。
+    /// 实现按 <see cref="BotAccountIds.For"/> 的固定主键检索。
+    /// </summary>
+    Task<User?> FindBotByDifficultyAsync(BotDifficulty difficulty, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 返回所有满足"<c>Status == Playing</c> 且当前回合的玩家 <c>IsBot == true</c>"的房间 Id。
+    /// 由 <c>AiMoveWorker</c> 轮询后台使用 —— worker 再按 Id 加载完整聚合。**只返回 Id**,不物化房间
+    /// 聚合,以降低轮询开销。
+    /// </summary>
+    Task<IReadOnlyList<RoomId>> GetRoomsNeedingBotMoveAsync(CancellationToken cancellationToken);
 }

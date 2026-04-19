@@ -100,4 +100,25 @@ public class RefreshTokenCommandHandlerTests
 
         await act.Should().ThrowAsync<InvalidRefreshTokenException>();
     }
+
+    [Fact]
+    public async Task Bot_User_Behind_Token_Throws_Invalid()
+    {
+        // 防御兜底:某个 hash 意外查到了 bot 聚合。正常路径不该发生(bot 没 refresh token),
+        // 但 handler 应主动拒绝,不进入轮换流程。
+        var bot = User.RegisterBot(
+            new UserId(BotAccountIds.Easy),
+            new Email("easy@bot.gomoku.local"),
+            new Username("AI_Easy"),
+            Now);
+        bot.IssueRefreshToken("h", Now.AddDays(7), Now.AddMinutes(-1)); // 人工塞入方便演示
+
+        _tokens.Setup(t => t.HashRefreshToken("raw")).Returns("h");
+        _users.Setup(r => r.FindByRefreshTokenHashAsync("h", It.IsAny<CancellationToken>())).ReturnsAsync(bot);
+
+        var sut = BuildSut();
+        var act = () => sut.Handle(new RefreshTokenCommand("raw"), default);
+
+        await act.Should().ThrowAsync<InvalidRefreshTokenException>();
+    }
 }
