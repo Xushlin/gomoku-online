@@ -117,3 +117,14 @@ public sealed class PlayerCannotPostSpectatorChannelException : Exception
     /// <inheritdoc />
     public PlayerCannotPostSpectatorChannelException(string message) : base(message) { }
 }
+
+/// <summary>
+/// 操作要求调用方是 Host 但不是(例如非 Host 用户尝试 <c>DELETE /api/rooms/{id}</c> 解散)。
+/// 与 <see cref="NotAPlayerException"/> 区分:后者是"甚至都不是玩家",本异常是"是玩家 / 围观者但不是 Host"。
+/// Api 层映射 HTTP 403。
+/// </summary>
+public sealed class NotRoomHostException : Exception
+{
+    /// <inheritdoc />
+    public NotRoomHostException(string message) : base(message) { }
+}

@@ -159,6 +159,31 @@ public sealed class Room
         // 玩家关系保留(Game.WinnerUserId 等仍需要引用到)。认输 / 超时由后续变更覆盖。
     }
 
+    /// <summary>
+    /// 由 Host 解散一个 <see cref="RoomStatus.Waiting"/> 状态的房间。本方法**只做校验**:
+    /// 身份(是否 Host)与状态(是否 Waiting);通过则返回,不修改 <c>Room</c> 任何字段。
+    /// 物理删除发生在仓储层(<c>IRoomRepository.DeleteAsync</c>),聚合自身不持有"Dissolved"状态
+    /// —— Waiting 房的全部状态(名字 + 围观者 + 可能的聊天)随房间一并 Cascade 删除,不保留审计痕迹。
+    /// </summary>
+    /// <exception cref="NotRoomHostException"><paramref name="senderId"/> 不是 <see cref="HostUserId"/>。</exception>
+    /// <exception cref="RoomNotWaitingException"><see cref="Status"/> 不是 <see cref="RoomStatus.Waiting"/>。</exception>
+    public void Dissolve(UserId senderId)
+    {
+        if (senderId != HostUserId)
+        {
+            throw new NotRoomHostException(
+                $"User {senderId.Value} is not the host of room {Id.Value}; only the host may dissolve.");
+        }
+
+        if (Status != RoomStatus.Waiting)
+        {
+            throw new RoomNotWaitingException(
+                $"Cannot dissolve room when status is {Status}; dissolve is only for Waiting rooms.");
+        }
+
+        // 两项校验通过 —— 方法到此结束,聚合状态保持不变。
+    }
+
     /// <summary>加入围观者集合。玩家不可围观自己的对局。重复加入幂等。</summary>
     public void JoinAsSpectator(UserId userId)
     {
