@@ -40,4 +40,10 @@ public interface IRoomNotifier
 
     /// <summary>对手被催了(仅推给 <paramref name="urgedUser"/> 本人)。</summary>
     Task OpponentUrgedAsync(RoomId roomId, UserId urgedUser, UrgeDto payload, CancellationToken ct);
+
+    /// <summary>
+    /// 房间已被 Host 解散并物理删除。向 <c>room:{roomId}</c> group 广播,payload 仅含 roomId;
+    /// 前端据此从列表 / 围观视图移除该房间。Handler MUST 在 <c>SaveChangesAsync</c> 后调。
+    /// </summary>
+    Task RoomDissolvedAsync(RoomId roomId, CancellationToken ct);
 }

@@ -18,4 +18,11 @@ public interface IRoomRepository
 
     /// <summary>新增一个房间(未提交,需 <see cref="IUnitOfWork.SaveChangesAsync"/>)。</summary>
     Task AddAsync(Room room, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 标记删除一个房间聚合。实现 MUST 仅把实体从 EF 上下文中 <c>Remove</c>,
+    /// MUST NOT 调 <c>SaveChangesAsync</c>(交给 handler 的 <see cref="IUnitOfWork"/>);
+    /// Game / Moves / Spectators / ChatMessages 由 EF <c>OnDelete(Cascade)</c> 自动随根删除。
+    /// </summary>
+    Task DeleteAsync(Room room, CancellationToken cancellationToken);
 }
