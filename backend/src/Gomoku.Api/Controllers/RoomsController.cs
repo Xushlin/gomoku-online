@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Features.Rooms.CreateAiRoom;
 using Gomoku.Application.Features.Rooms.CreateRoom;
+using Gomoku.Application.Features.Rooms.Dissolve;
 using Gomoku.Application.Features.Rooms.GetRoomList;
 using Gomoku.Application.Features.Rooms.GetRoomState;
 using Gomoku.Application.Features.Rooms.JoinAsSpectator;
@@ -87,6 +88,17 @@ public sealed class RoomsController : ControllerBase
     public async Task<IActionResult> Leave(Guid id, CancellationToken cancellationToken)
     {
         await _mediator.Send(new LeaveRoomCommand(GetUserId(), new RoomId(id)), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// 解散房间(Host 专属)。仅 Waiting 状态允许;成功后房间物理删除,围观者会收到
+    /// SignalR <c>RoomDissolved</c> 事件。Playing 状态请走认输 / 超时路径(<c>add-timeout-resign</c>)。
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Dissolve(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DissolveRoomCommand(GetUserId(), new RoomId(id)), cancellationToken);
         return NoContent();
     }
 

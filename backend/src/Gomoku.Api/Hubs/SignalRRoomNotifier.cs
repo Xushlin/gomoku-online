@@ -60,4 +60,9 @@ public sealed class SignalRRoomNotifier : IRoomNotifier
     /// <inheritdoc />
     public Task OpponentUrgedAsync(RoomId roomId, UserId urgedUser, UrgeDto payload, CancellationToken ct) =>
         _hub.Clients.User(urgedUser.Value.ToString()).SendAsync("UrgeReceived", payload, ct);
+
+    /// <inheritdoc />
+    public Task RoomDissolvedAsync(RoomId roomId, CancellationToken ct) =>
+        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId))
+            .SendAsync("RoomDissolved", new { RoomId = roomId.Value }, ct);
 }

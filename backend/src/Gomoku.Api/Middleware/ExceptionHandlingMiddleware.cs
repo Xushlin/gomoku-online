@@ -107,6 +107,7 @@ public sealed class ExceptionHandlingMiddleware
 
         UserNotActiveException or
         NotAPlayerException or
+        NotRoomHostException or
         PlayerCannotPostSpectatorChannelException => (
             (int)HttpStatusCode.Forbidden,
             "Forbidden.",
