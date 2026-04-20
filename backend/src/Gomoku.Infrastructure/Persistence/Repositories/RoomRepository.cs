@@ -43,4 +43,14 @@ public sealed class RoomRepository : IRoomRepository
     /// <inheritdoc />
     public Task AddAsync(Room room, CancellationToken cancellationToken) =>
         _db.Rooms.AddAsync(room, cancellationToken).AsTask();
+
+    /// <inheritdoc />
+    public Task DeleteAsync(Room room, CancellationToken cancellationToken)
+    {
+        // Game / Moves / Spectators / ChatMessages 都在 EF 配置里设了 OnDelete(Cascade),
+        // 一次 Remove 聚合根即可让 SaveChangesAsync 时全部随之消失。
+        _db.Rooms.Remove(room);
+        _ = cancellationToken; // 同步 API,显式忽略
+        return Task.CompletedTask;
+    }
 }
