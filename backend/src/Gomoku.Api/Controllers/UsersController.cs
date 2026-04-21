@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Gomoku.Application.Common.DTOs;
+using Gomoku.Application.Features.Rooms.GetMyActiveRooms;
 using Gomoku.Application.Features.Users.GetCurrentUser;
 using Gomoku.Application.Features.Users.GetUserGames;
 using Gomoku.Application.Features.Users.GetUserProfile;
@@ -29,13 +30,29 @@ public sealed class UsersController : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<UserDto>> Me(CancellationToken cancellationToken)
     {
+        var userId = GetCurrentUserId();
+        var dto = await _mediator.Send(new GetCurrentUserQuery(userId), cancellationToken);
+        return Ok(dto);
+    }
+
+    /// <summary>
+    /// 当前登录用户的活动房间列表(Waiting + Playing,作为玩家);供前端"继续对局"UI。
+    /// 不含 Finished,不含围观。按 CreatedAt DESC 排序,不分页。
+    /// </summary>
+    [HttpGet("me/active-rooms")]
+    public async Task<ActionResult<IReadOnlyList<RoomSummaryDto>>> MyActiveRooms(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var rooms = await _mediator.Send(new GetMyActiveRoomsQuery(userId), cancellationToken);
+        return Ok(rooms);
+    }
+
+    private UserId GetCurrentUserId()
+    {
         var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
             ?? User.FindFirst("sub")?.Value
             ?? throw new UnauthorizedAccessException("Missing sub claim.");
-
-        var userId = new UserId(Guid.Parse(sub));
-        var dto = await _mediator.Send(new GetCurrentUserQuery(userId), cancellationToken);
-        return Ok(dto);
+        return new UserId(Guid.Parse(sub));
     }
 
     /// <summary>
