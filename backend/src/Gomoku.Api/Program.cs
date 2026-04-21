@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Gomoku.Api;
 using Gomoku.Api.Hubs;
 using Gomoku.Api.Middleware;
 using Gomoku.Application;
@@ -6,6 +7,7 @@ using Gomoku.Application.Abstractions;
 using Gomoku.Infrastructure;
 using Gomoku.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -52,6 +54,28 @@ builder.Host.UseSerilog((ctx, services, lc) => lc
     .Enrich.WithProperty("ApplicationName", "Gomoku.Api"));
 
 // ---------- 服务注册 ----------
+
+// CORS:给前端(Angular @ :4200 等)放行指定 origin。
+// "Cors:AllowedOrigins" 段缺失时保守默认 = 完全拒绝跨域(空数组)。
+// Production 通过 env var GOMOKU_CORS__ALLOWEDORIGINS__0 = https://gomoku.example.com 覆盖。
+var corsOptions = builder.Configuration.GetSection("Cors").Get<CorsOptions>() ?? new CorsOptions();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsOptions.PolicyName, policy =>
+    {
+        policy.WithOrigins(corsOptions.AllowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials()                       // SignalR WebSocket 握手必需
+              .WithExposedHeaders("X-Correlation-Id"); // 让前端 fetch 能读 observability 的 id
+    });
+});
+
+// Health checks:`/health` 是 liveness(纯 200,不检 DB);
+// `/health/ready` 是 readiness,带 DB ping(tags:"ready" 过滤)。
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<GomokuDbContext>("database", tags: new[] { "ready" });
+
 builder.Services.AddOpenApi();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -145,12 +169,23 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// CORS 必须在 UseAuthentication 之前 —— 预检 OPTIONS 不带 JWT,得先过 CORS。
+app.UseCors(CorsOptions.PolicyName);
+
 app.UseAuthentication();
 // CorrelationIdMiddleware 必须在 UseAuthentication 之后 —— 否则 User.FindFirst("sub") 为 null。
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<GomokuHub>("/hubs/gomoku");
+
+// Health endpoints(无 [Authorize],供运维探针)
+app.MapHealthChecks("/health"); // liveness:纯 200,不检 DB
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = c => c.Tags.Contains("ready"),
+});
 
 // 开发环境自动 migrate,避免"克隆后先 ef update"的摩擦。
 if (app.Environment.IsDevelopment())
