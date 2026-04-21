@@ -36,11 +36,19 @@ public interface IUserRepository
     Task AddAsync(User user, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 返回按 <c>Rating DESC, Wins DESC, GamesPlayed ASC</c> 排序的前 <paramref name="limit"/> 位
-    /// **真人**用户(<c>IsBot == false</c>)。bot 账号跟随 ELO 正常更新,但 MUST NOT 出现在排行榜。
-    /// 排序规则由**实现**保证;返回类型是领域类型,不泄漏 <c>IQueryable</c> 等 EF 细节。
+    /// 分页返回按 `Rating DESC, Wins DESC, GamesPlayed ASC` 排序的**真人**用户
+    /// (<c>IsBot == false</c>)+ 真人总数 Total。bot 账号跟随 ELO 正常更新,
+    /// 但 MUST NOT 出现在排行榜。
+    /// <para>
+    /// 先做一次 <c>CountAsync</c> 得 Total(过滤 bot 后),再
+    /// <c>Skip((page-1)*pageSize).Take(pageSize)</c> 物化 Users。
+    /// </para>
+    /// 返回类型是领域类型,不泄漏 <c>IQueryable</c> / `IOrderedEnumerable` 等 EF 细节。
     /// </summary>
-    Task<IReadOnlyList<User>> GetTopByRatingAsync(int limit, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<User> Users, int Total)> GetLeaderboardPagedAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// 按难度查找系统 seed 的机器人账号;若对应记录不存在或 <c>IsBot == false</c>,返回 <c>null</c>。
