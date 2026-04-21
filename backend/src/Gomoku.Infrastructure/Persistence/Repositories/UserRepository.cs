@@ -129,4 +129,30 @@ public sealed class UserRepository : IUserRepository
         var ids = await query.ToListAsync(cancellationToken);
         return ids;
     }
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<User> Users, int Total)> SearchByUsernamePagedAsync(
+        string? prefix, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        // 基础查询:过滤 bot,让 search 不出现 AI_Easy 等。
+        IQueryable<User> baseQuery = _db.Users.Where(u => !u.IsBot);
+
+        if (!string.IsNullOrEmpty(prefix))
+        {
+            // Username 列已用 NOCASE collation(见 UserConfiguration),EF 翻译的 SQL LIKE
+            // 天然大小写不敏感。显式 ToLower 作为 OrdinalIgnoreCase 行为的兜底。
+            var lower = prefix.ToLowerInvariant();
+            baseQuery = baseQuery.Where(u => u.Username.Value.ToLower().StartsWith(lower));
+        }
+
+        var total = await baseQuery.CountAsync(cancellationToken);
+
+        var users = await baseQuery
+            .OrderBy(u => u.Username.Value)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (users, total);
+    }
 }
