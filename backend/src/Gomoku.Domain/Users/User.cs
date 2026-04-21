@@ -214,4 +214,32 @@ public sealed class User
         Rating = newRating;
         TouchRowVersion();
     }
+
+    /// <summary>
+    /// 替换用户密码哈希。调用方(handler)MUST 先验证当前密码、自己调 <c>IPasswordHasher.Hash</c>
+    /// 产生 hash,再调本方法 —— Domain 不管密码字符串复杂度,只保障不变量。
+    /// <para>
+    /// Bot 账号禁止改密(防御):<c>IsBot == true</c> 抛 <see cref="InvalidOperationException"/>。
+    /// </para>
+    /// <para>
+    /// <c>PasswordHash</c> 是 User 父行业务属性,方法末尾调 <c>TouchRowVersion()</c>,
+    /// 让并发改密被 EF 乐观并发捕获(与 <see cref="RecordGameResult"/> 同一纪律)。
+    /// </para>
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="newPasswordHash"/> 为 null / 空 / 空白。</exception>
+    /// <exception cref="InvalidOperationException"><see cref="IsBot"/> 为 true。</exception>
+    public void ChangePassword(string newPasswordHash)
+    {
+        if (string.IsNullOrWhiteSpace(newPasswordHash))
+        {
+            throw new ArgumentException("Password hash must be non-empty.", nameof(newPasswordHash));
+        }
+        if (IsBot)
+        {
+            throw new InvalidOperationException("Bot accounts cannot change password.");
+        }
+
+        PasswordHash = newPasswordHash;
+        TouchRowVersion();
+    }
 }
