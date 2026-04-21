@@ -7,6 +7,7 @@ using Gomoku.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Serilog.Context;
 
 namespace Gomoku.Api.Hubs;
 
@@ -35,8 +36,11 @@ public sealed class GomokuHub : Hub
     {
         var userId = GetUserId();
         await _tracker.TrackAsync(Context.ConnectionId, userId);
-        _logger.LogDebug("SignalR connection {ConnectionId} opened for user {UserId}",
-            Context.ConnectionId, userId.Value);
+        using (LogContext.PushProperty("ConnectionId", Context.ConnectionId))
+        using (LogContext.PushProperty("UserId", userId.Value))
+        {
+            _logger.LogInformation("SignalR connection opened");
+        }
         await base.OnConnectedAsync();
     }
 
@@ -44,6 +48,18 @@ public sealed class GomokuHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         await _tracker.UntrackAsync(Context.ConnectionId);
+        using (LogContext.PushProperty("ConnectionId", Context.ConnectionId))
+        using (LogContext.PushProperty("UserId", Context.UserIdentifier ?? "anonymous"))
+        {
+            if (exception is not null)
+            {
+                _logger.LogWarning(exception, "SignalR connection closed with exception");
+            }
+            else
+            {
+                _logger.LogInformation("SignalR connection closed");
+            }
+        }
         await base.OnDisconnectedAsync(exception);
     }
 

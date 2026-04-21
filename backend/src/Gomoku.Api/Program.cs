@@ -9,12 +9,47 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 // 关闭 ASP.NET 对 JWT claims 的"友好重命名"——保持 sub/preferred_username 原样,
 // 而不是被改写成 ClaimTypes.NameIdentifier 之类的 xmlsoap URL。
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
+// Bootstrap logger:在 Host.UseSerilog 完成读配置之前,启动期异常至少能写到 Console。
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
+try
+{
+    Log.Information("Starting Gomoku.Api host");
+    await RunHostAsync(args);
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
+return;
+
+static async Task RunHostAsync(string[] args)
+{
 var builder = WebApplication.CreateBuilder(args);
+
+// 正式 Serilog:从配置读 sinks / MinimumLevel / Override;加 enrichers 自动带
+// MachineName / EnvironmentName / ApplicationName。
+builder.Host.UseSerilog((ctx, services, lc) => lc
+    .ReadFrom.Configuration(ctx.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithProperty("ApplicationName", "Gomoku.Api"));
 
 // ---------- 服务注册 ----------
 builder.Services.AddOpenApi();
@@ -100,6 +135,10 @@ var app = builder.Build();
 // ---------- HTTP pipeline ----------
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+// Serilog 自带的每请求汇总日志(Method / Path / Status / Elapsed)。
+// 放在中间件链靠前但在异常处理之后,能覆盖所有走完整管道的请求。
+app.UseSerilogRequestLogging();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -107,6 +146,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+// CorrelationIdMiddleware 必须在 UseAuthentication 之后 —— 否则 User.FindFirst("sub") 为 null。
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<GomokuHub>("/hubs/gomoku");
@@ -119,4 +160,6 @@ if (app.Environment.IsDevelopment())
     db.Database.Migrate();
 }
 
-app.Run();
+await app.RunAsync();
+}
+
