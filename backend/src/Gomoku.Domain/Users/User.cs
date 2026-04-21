@@ -57,8 +57,18 @@ public sealed class User
     /// <summary>注册时间(UTC)。</summary>
     public DateTime CreatedAt { get; private set; }
 
+    /// <summary>
+    /// 乐观并发令牌。SQLite 没有原生 rowversion 列,Domain 自管 16 字节 <see cref="Guid"/> 值,
+    /// EF 以 <c>IsConcurrencyToken</c> 使用。仅在 <see cref="RecordGameResult"/> 末尾触发
+    /// <see cref="TouchRowVersion"/> 刷新 —— refresh token 路径只操作子集合,不改 User 父行,
+    /// 并发场景无冲突,加保护反而把登录流程不必要地串行化。
+    /// </summary>
+    public byte[] RowVersion { get; private set; } = Guid.NewGuid().ToByteArray();
+
     /// <summary>聚合内的 refresh token 集合(只读视图 —— 外部 MUST NOT 修改)。</summary>
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens;
+
+    private void TouchRowVersion() => RowVersion = Guid.NewGuid().ToByteArray();
 
     // EF Core 物化用;外部不可调用。
     private User()
@@ -202,5 +212,6 @@ public sealed class User
 
         GamesPlayed++;
         Rating = newRating;
+        TouchRowVersion();
     }
 }
