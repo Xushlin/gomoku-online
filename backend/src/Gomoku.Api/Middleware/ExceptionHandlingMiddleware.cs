@@ -131,7 +131,8 @@ public sealed class ExceptionHandlingMiddleware
         PlayerCannotSpectateException or
         NotYourTurnException or
         NotOpponentsTurnException or
-        TurnNotTimedOutException => (
+        TurnNotTimedOutException or
+        GameNotFinishedException => (
             (int)HttpStatusCode.Conflict,
             "Conflict.",
             ex.Message),

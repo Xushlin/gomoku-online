@@ -3,6 +3,7 @@ using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Features.Rooms.CreateAiRoom;
 using Gomoku.Application.Features.Rooms.CreateRoom;
 using Gomoku.Application.Features.Rooms.Dissolve;
+using Gomoku.Application.Features.Rooms.GetGameReplay;
 using Gomoku.Application.Features.Rooms.Resign;
 using Gomoku.Application.Features.Rooms.GetRoomList;
 using Gomoku.Application.Features.Rooms.GetRoomState;
@@ -112,6 +113,17 @@ public sealed class RoomsController : ControllerBase
     {
         var ended = await _mediator.Send(new ResignCommand(GetUserId(), new RoomId(id)), cancellationToken);
         return Ok(ended);
+    }
+
+    /// <summary>
+    /// 按房间 Id 拉取 Finished 对局的完整回放(Moves 按 Ply 升序)。任何登录用户可访问。
+    /// Playing / Waiting 房间请求此端点返回 409。
+    /// </summary>
+    [HttpGet("{id:guid}/replay")]
+    public async Task<ActionResult<GameReplayDto>> Replay(Guid id, CancellationToken cancellationToken)
+    {
+        var dto = await _mediator.Send(new GetGameReplayQuery(new RoomId(id)), cancellationToken);
+        return Ok(dto);
     }
 
     /// <summary>加入围观。</summary>

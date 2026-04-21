@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Features.Users.GetCurrentUser;
+using Gomoku.Application.Features.Users.GetUserGames;
 using Gomoku.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -33,5 +34,22 @@ public sealed class UsersController : ControllerBase
         var userId = new UserId(Guid.Parse(sub));
         var dto = await _mediator.Send(new GetCurrentUserQuery(userId), cancellationToken);
         return Ok(dto);
+    }
+
+    /// <summary>
+    /// 分页返回指定用户参与过的 Finished 对局战绩。任何登录用户可查看任何其他用户的战绩
+    /// (公开原则,同 GitHub 公开仓库)。page 默认 1,pageSize 默认 20,pageSize 最大 100。
+    /// </summary>
+    [HttpGet("{id:guid}/games")]
+    public async Task<ActionResult<PagedResult<UserGameSummaryDto>>> Games(
+        Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new GetUserGamesPagedQuery(new UserId(id), page, pageSize),
+            cancellationToken);
+        return Ok(result);
     }
 }
