@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Gomoku.Api;
 using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Features.Auth.ChangePassword;
 using Gomoku.Application.Features.Auth.Login;
@@ -9,6 +10,7 @@ using Gomoku.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Gomoku.Api.Controllers;
 
@@ -27,6 +29,7 @@ public sealed class AuthController : ControllerBase
 
     /// <summary>注册新用户并立即签发一对 token。成功返回 HTTP 201。</summary>
     [HttpPost("register")]
+    [EnableRateLimiting(RateLimitingOptions.AuthStrictPolicyName)]
     public async Task<ActionResult<AuthResponse>> Register(
         [FromBody] RegisterCommand command,
         CancellationToken cancellationToken)
@@ -37,6 +40,7 @@ public sealed class AuthController : ControllerBase
 
     /// <summary>已有账号登录,签发一对 token。</summary>
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitingOptions.AuthStrictPolicyName)]
     public async Task<ActionResult<AuthResponse>> Login(
         [FromBody] LoginCommand command,
         CancellationToken cancellationToken)
@@ -50,6 +54,7 @@ public sealed class AuthController : ControllerBase
     /// 不需要 Authorization 头 —— refresh token 本身就是凭据。
     /// </summary>
     [HttpPost("refresh")]
+    [EnableRateLimiting(RateLimitingOptions.AuthStrictPolicyName)]
     public async Task<ActionResult<AuthResponse>> Refresh(
         [FromBody] RefreshTokenCommand command,
         CancellationToken cancellationToken)

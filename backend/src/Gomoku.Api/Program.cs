@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Threading.RateLimiting;
 using Gomoku.Api;
 using Gomoku.Api.Hubs;
 using Gomoku.Api.Middleware;
@@ -8,6 +9,7 @@ using Gomoku.Infrastructure;
 using Gomoku.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -75,6 +77,55 @@ builder.Services.AddCors(options =>
 // `/health/ready` 是 readiness,带 DB ping(tags:"ready" 过滤)。
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<GomokuDbContext>("database", tags: new[] { "ready" });
+
+// Rate limiting:全局 100/min/IP 兜底;auth-strict 命名策略 5/min/IP 贴 login/register/refresh。
+// Health 端点 + SignalR Hub 豁免(下方 MapHealthChecks/MapHub 附加 DisableRateLimiting)。
+var rlOpts = builder.Configuration.GetSection("RateLimiting").Get<RateLimitingOptions>()
+             ?? new RateLimitingOptions();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // 被拒时的响应:Retry-After 头 + 纯文本 body(不含敏感信息)
+    options.OnRejected = async (ctx, ct) =>
+    {
+        if (ctx.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            ctx.HttpContext.Response.Headers["Retry-After"] =
+                ((int)retryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+        ctx.HttpContext.Response.ContentType = "text/plain";
+        await ctx.HttpContext.Response.WriteAsync("Too many requests.", ct);
+    };
+
+    // Global limiter:按 IP 分区的 FixedWindow
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+    {
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = rlOpts.Global.PermitLimit,
+            Window = TimeSpan.FromSeconds(rlOpts.Global.WindowSeconds),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            AutoReplenishment = true,
+        });
+    });
+
+    // Named "auth-strict" 策略:login / register / refresh 贴 [EnableRateLimiting("auth-strict")]
+    options.AddPolicy(RateLimitingOptions.AuthStrictPolicyName, ctx =>
+    {
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = rlOpts.AuthStrict.PermitLimit,
+            Window = TimeSpan.FromSeconds(rlOpts.AuthStrict.WindowSeconds),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            AutoReplenishment = true,
+        });
+    });
+});
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers()
@@ -173,19 +224,24 @@ app.UseHttpsRedirection();
 // CORS 必须在 UseAuthentication 之前 —— 预检 OPTIONS 不带 JWT,得先过 CORS。
 app.UseCors(CorsOptions.PolicyName);
 
+// RateLimiter 在 CORS 之后、Authentication 之前:
+// 让未认证的爆破请求(login/register)也能被拦;预检 OPTIONS 是安全的(GlobalLimiter 100/min 够)。
+app.UseRateLimiter();
+
 app.UseAuthentication();
 // CorrelationIdMiddleware 必须在 UseAuthentication 之后 —— 否则 User.FindFirst("sub") 为 null。
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHub<GomokuHub>("/hubs/gomoku");
+// SignalR 握手只发生一次;长连接内 Hub 调用走 WebSocket 帧,不重复计入 HTTP rate limit。
+app.MapHub<GomokuHub>("/hubs/gomoku").DisableRateLimiting();
 
-// Health endpoints(无 [Authorize],供运维探针)
-app.MapHealthChecks("/health"); // liveness:纯 200,不检 DB
+// Health endpoints(无 [Authorize],供运维探针;高频访问,豁免限流)
+app.MapHealthChecks("/health").DisableRateLimiting(); // liveness:纯 200,不检 DB
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = c => c.Tags.Contains("ready"),
-});
+}).DisableRateLimiting();
 
 // 开发环境自动 migrate,避免"克隆后先 ef update"的摩擦。
 if (app.Environment.IsDevelopment())
