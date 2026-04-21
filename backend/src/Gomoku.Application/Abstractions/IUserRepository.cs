@@ -62,4 +62,15 @@ public interface IUserRepository
     /// 聚合,以降低轮询开销。
     /// </summary>
     Task<IReadOnlyList<RoomId>> GetRoomsNeedingBotMoveAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按 Username 前缀(大小写不敏感)分页搜索**真人**用户。bot 永远不在结果。
+    /// 实现 MUST:过滤 <c>!IsBot</c>;若 <paramref name="prefix"/> 非空按 StartsWith(case-insensitive);
+    /// 按 Username ASC 排序;先 <c>CountAsync</c> 得 Total,再 <c>Skip/Take</c>。
+    /// </summary>
+    Task<(IReadOnlyList<User> Users, int Total)> SearchByUsernamePagedAsync(
+        string? prefix,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 }
