@@ -63,6 +63,13 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDefaultValue(false);
         builder.Property(u => u.CreatedAt).IsRequired();
 
+        // 乐观并发令牌。Domain 自管 16 字节 Guid(SQLite 无原生 rowversion)。
+        // IsConcurrencyToken 让 EF 在 UPDATE Users 时自动加 WHERE RowVersion = @old;
+        // 并发更新的后写者命中 0 行 → DbUpdateConcurrencyException。
+        builder.Property(u => u.RowVersion)
+            .IsConcurrencyToken()
+            .IsRequired();
+
         builder.HasMany(u => u.RefreshTokens)
             .WithOne()
             .HasForeignKey(t => t.UserId)
