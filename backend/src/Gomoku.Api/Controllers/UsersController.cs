@@ -2,6 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Features.Users.GetCurrentUser;
 using Gomoku.Application.Features.Users.GetUserGames;
+using Gomoku.Application.Features.Users.GetUserProfile;
+using Gomoku.Application.Features.Users.SearchUsers;
 using Gomoku.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -50,6 +52,33 @@ public sealed class UsersController : ControllerBase
         var result = await _mediator.Send(
             new GetUserGamesPagedQuery(new UserId(id), page, pageSize),
             cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// 按 Id 返回他人公开主页(Rating / 战绩 / CreatedAt)。**不**含 Email。bot 账号也可查。
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<UserPublicProfileDto>> GetProfile(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var dto = await _mediator.Send(new GetUserProfileQuery(new UserId(id)), cancellationToken);
+        return Ok(dto);
+    }
+
+    /// <summary>
+    /// 按 Username 前缀(大小写不敏感)分页搜索真人。`search` 为空时返回所有真人按 Username ASC。
+    /// bot 账号永远不在搜索结果。
+    /// </summary>
+    [HttpGet("")]
+    public async Task<ActionResult<PagedResult<UserPublicProfileDto>>> Search(
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new SearchUsersQuery(search, page, pageSize), cancellationToken);
         return Ok(result);
     }
 }
