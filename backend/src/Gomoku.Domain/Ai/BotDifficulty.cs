@@ -11,4 +11,10 @@ public enum BotDifficulty
 
     /// <summary>启发式:自赢 → 堵五 → 中心 + 邻接打分,无博弈树。</summary>
     Medium = 1,
+
+    /// <summary>
+    /// Minimax + α-β 两层前瞻搜索,结合活三 / 冲四 / 活四等模式识别评估函数。
+    /// 比 <see cref="Medium"/> 明显强;设计上不追求顶级水平(不做 VCF/VCT / 迭代深化 / transposition)。
+    /// </summary>
+    Hard = 2,
 }

@@ -19,6 +19,14 @@ public class GomokuAiFactoryTests
     }
 
     [Fact]
+    public void Hard_Branch_Returns_HardAi()
+    {
+        var ai = GomokuAiFactory.Create(BotDifficulty.Hard, new Random(1));
+
+        ai.Should().BeOfType<HardAi>();
+    }
+
+    [Fact]
     public void Undefined_Difficulty_Throws()
     {
         var act = () => GomokuAiFactory.Create((BotDifficulty)99, new Random(1));

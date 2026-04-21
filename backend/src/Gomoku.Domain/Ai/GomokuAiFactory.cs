@@ -20,6 +20,7 @@ public static class GomokuAiFactory
         {
             BotDifficulty.Easy => new EasyAi(random),
             BotDifficulty.Medium => new MediumAi(random),
+            BotDifficulty.Hard => new HardAi(random),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(difficulty), difficulty, "Unknown BotDifficulty value."),
         };
