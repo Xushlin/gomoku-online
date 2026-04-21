@@ -1,4 +1,5 @@
 using Gomoku.Domain.Rooms;
+using Gomoku.Domain.Users;
 
 namespace Gomoku.Application.Abstractions;
 
@@ -38,5 +39,21 @@ public interface IRoomRepository
     Task<IReadOnlyList<RoomId>> GetRoomsWithExpiredTurnsAsync(
         DateTime now,
         int turnTimeoutSeconds,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 分页返回指定用户参与过的 Finished 对局房间,按 <c>Game.EndedAt DESC</c> 排序。
+    /// 实现 MUST:
+    /// <list type="bullet">
+    /// <item>过滤 <c>Status == Finished</c> 且 <c>BlackPlayerId == userId OR WhitePlayerId == userId</c></item>
+    /// <item>先做一次 <c>CountAsync</c> 得 Total,再 <c>Skip((page-1)*pageSize).Take(pageSize)</c></item>
+    /// <item><c>Include Game + Game.Moves</c> 以便调用方算 MoveCount(战绩列表卡片用)</item>
+    /// </list>
+    /// 签名不暴露 EF 类型。
+    /// </summary>
+    Task<(IReadOnlyList<Room> Rooms, int Total)> GetUserFinishedGamesPagedAsync(
+        UserId userId,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken);
 }
