@@ -85,15 +85,19 @@ public sealed class UserRepository : IUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<User>> GetTopByRatingAsync(int limit, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<User> Users, int Total)> GetLeaderboardPagedAsync(
+        int page, int pageSize, CancellationToken cancellationToken)
     {
-        return await _db.Users
-            .Where(u => !u.IsBot) // 机器人不进排行榜(见 elo-rating spec)
+        var baseQuery = _db.Users.Where(u => !u.IsBot); // 机器人不进排行榜(见 elo-rating spec)
+        var total = await baseQuery.CountAsync(cancellationToken);
+        var users = await baseQuery
             .OrderByDescending(u => u.Rating)
             .ThenByDescending(u => u.Wins)
             .ThenBy(u => u.GamesPlayed)
-            .Take(limit)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+        return (users, total);
     }
 
     /// <inheritdoc />
