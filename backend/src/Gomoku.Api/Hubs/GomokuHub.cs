@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Gomoku.Application.Abstractions;
 using Gomoku.Application.Features.Rooms.MakeMove;
 using Gomoku.Application.Features.Rooms.SendChatMessage;
 using Gomoku.Application.Features.Rooms.UrgeOpponent;
