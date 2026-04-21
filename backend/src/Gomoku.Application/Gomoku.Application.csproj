@@ -16,6 +16,11 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
+    <!--
+      仅用 Microsoft 的 ILogger<T> 抽象;Serilog 实现注入由 Api 层负责。
+      Application / Domain 都不直接依赖 Serilog 包。
+    -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
   </ItemGroup>
 
 </Project>

@@ -9,7 +9,10 @@ namespace Gomoku.Application;
 public static class DependencyInjection
 {
     /// <summary>
-    /// 注册 MediatR、FluentValidation 的所有 validator、以及 <see cref="ValidationBehavior{TRequest,TResponse}"/>。
+    /// 注册 MediatR、FluentValidation 的所有 validator,以及管道行为
+    /// (先 <see cref="ValidationBehavior{TRequest,TResponse}"/> 后
+    /// <see cref="LoggingBehavior{TRequest,TResponse}"/> —— 顺序决定 validation 失败的 400
+    /// 不会走 logging 的 enter/exit 日志,从而不产生噪声)。
     /// 不注册 Infrastructure 相关的 DbContext / 仓储 / 密码哈希等 —— 那些由 <c>AddInfrastructure</c> 负责。
     /// </summary>
     public static IServiceCollection AddApplication(this IServiceCollection services)
@@ -18,7 +21,10 @@ public static class DependencyInjection
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly);
+
+        // 顺序敏感:Validation 在前(失败就抛,不走 logging);Logging 在后。
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 
         return services;
     }
