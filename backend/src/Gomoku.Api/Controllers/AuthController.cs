@@ -1,9 +1,13 @@
+using System.IdentityModel.Tokens.Jwt;
 using Gomoku.Application.Common.DTOs;
+using Gomoku.Application.Features.Auth.ChangePassword;
 using Gomoku.Application.Features.Auth.Login;
 using Gomoku.Application.Features.Auth.Logout;
 using Gomoku.Application.Features.Auth.RefreshToken;
 using Gomoku.Application.Features.Auth.Register;
+using Gomoku.Domain.Users;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gomoku.Api.Controllers;
@@ -63,4 +67,27 @@ public sealed class AuthController : ControllerBase
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
+
+    /// <summary>
+    /// 修改当前登录用户的密码。要求提供当前密码做二次凭据验证;成功后全部 refresh token
+    /// 立即吊销(其它设备 session 失效,用户要用新密码重登)。204 返回。
+    /// </summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest body,
+        CancellationToken cancellationToken)
+    {
+        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst("sub")?.Value
+            ?? throw new UnauthorizedAccessException("Missing sub claim.");
+        var userId = new UserId(Guid.Parse(sub));
+        await _mediator.Send(
+            new ChangePasswordCommand(userId, body.CurrentPassword, body.NewPassword),
+            cancellationToken);
+        return NoContent();
+    }
 }
+
+/// <summary>POST /api/auth/change-password 的请求体。</summary>
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
