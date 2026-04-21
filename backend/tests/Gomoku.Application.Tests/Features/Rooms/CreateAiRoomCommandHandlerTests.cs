@@ -72,6 +72,30 @@ public class CreateAiRoomCommandHandlerTests
     }
 
     [Fact]
+    public async Task CreateAiRoom_Hard_Difficulty_Succeeds()
+    {
+        var host = RoomsFixtures.NewUser("Alice");
+        var bot = RoomsFixtures.NewBot(BotDifficulty.Hard);
+
+        RoomsFixtures.SetupUserLookup(_users, host);
+        _users.Setup(u => u.FindBotByDifficultyAsync(BotDifficulty.Hard, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bot);
+        RoomsFixtures.SetupClock(_clock);
+        _rooms.Setup(r => r.AddAsync(It.IsAny<Room>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var state = await sut.Handle(
+            new CreateAiRoomCommand(host.Id, "AI Hard match", BotDifficulty.Hard),
+            default);
+
+        state.Status.Should().Be(RoomStatus.Playing);
+        state.White!.Id.Should().Be(bot.Id.Value);
+        state.White.Username.Should().Be("AI_Hard");
+    }
+
+    [Fact]
     public async Task Bot_Host_Is_Rejected_As_ValidationException()
     {
         var botHost = RoomsFixtures.NewBot(BotDifficulty.Easy);

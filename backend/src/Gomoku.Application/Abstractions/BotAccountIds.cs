@@ -15,11 +15,15 @@ public static class BotAccountIds
     /// <summary>中级 AI 的固定 UserId。Guid 末尾 <c>bed10</c> ≈ "bed10"(medium 的四位缩写)。</summary>
     public static readonly Guid Medium = Guid.Parse("00000000-0000-0000-0000-0000000bed10");
 
+    /// <summary>高级 AI 的固定 UserId。Guid 末尾 <c>00ad</c> ≈ "hard" 的缩写(去掉非 hex 字符)。</summary>
+    public static readonly Guid Hard = Guid.Parse("00000000-0000-0000-0000-0000000000ad");
+
     /// <summary>按难度返回对应 bot UserId。未定义的难度抛 <see cref="ArgumentOutOfRangeException"/>。</summary>
     public static Guid For(BotDifficulty difficulty) => difficulty switch
     {
         BotDifficulty.Easy => Easy,
         BotDifficulty.Medium => Medium,
+        BotDifficulty.Hard => Hard,
         _ => throw new ArgumentOutOfRangeException(
             nameof(difficulty), difficulty, "No seeded bot account for this difficulty."),
     };
@@ -32,6 +36,7 @@ public static class BotAccountIds
     {
         if (userId == Easy) return BotDifficulty.Easy;
         if (userId == Medium) return BotDifficulty.Medium;
+        if (userId == Hard) return BotDifficulty.Hard;
         return null;
     }
 }
