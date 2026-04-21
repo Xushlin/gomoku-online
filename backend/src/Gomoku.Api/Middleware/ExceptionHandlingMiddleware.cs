@@ -130,7 +130,8 @@ public sealed class ExceptionHandlingMiddleware
         HostCannotLeaveWaitingRoomException or
         PlayerCannotSpectateException or
         NotYourTurnException or
-        NotOpponentsTurnException => (
+        NotOpponentsTurnException or
+        TurnNotTimedOutException => (
             (int)HttpStatusCode.Conflict,
             "Conflict.",
             ex.Message),

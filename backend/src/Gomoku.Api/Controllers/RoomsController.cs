@@ -3,6 +3,7 @@ using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Features.Rooms.CreateAiRoom;
 using Gomoku.Application.Features.Rooms.CreateRoom;
 using Gomoku.Application.Features.Rooms.Dissolve;
+using Gomoku.Application.Features.Rooms.Resign;
 using Gomoku.Application.Features.Rooms.GetRoomList;
 using Gomoku.Application.Features.Rooms.GetRoomState;
 using Gomoku.Application.Features.Rooms.JoinAsSpectator;
@@ -93,13 +94,24 @@ public sealed class RoomsController : ControllerBase
 
     /// <summary>
     /// 解散房间(Host 专属)。仅 Waiting 状态允许;成功后房间物理删除,围观者会收到
-    /// SignalR <c>RoomDissolved</c> 事件。Playing 状态请走认输 / 超时路径(<c>add-timeout-resign</c>)。
+    /// SignalR <c>RoomDissolved</c> 事件。Playing 状态请走认输 / 超时路径。
     /// </summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Dissolve(Guid id, CancellationToken cancellationToken)
     {
         await _mediator.Send(new DissolveRoomCommand(GetUserId(), new RoomId(id)), cancellationToken);
         return NoContent();
+    }
+
+    /// <summary>
+    /// 玩家主动认输。仅 Playing 状态允许;允许**任意回合**(含对手回合)。返回对局结束 DTO,
+    /// 含 <c>EndReason = Resigned</c>。同事务内写入双方 ELO 变动。
+    /// </summary>
+    [HttpPost("{id:guid}/resign")]
+    public async Task<ActionResult<GameEndedDto>> Resign(Guid id, CancellationToken cancellationToken)
+    {
+        var ended = await _mediator.Send(new ResignCommand(GetUserId(), new RoomId(id)), cancellationToken);
+        return Ok(ended);
     }
 
     /// <summary>加入围观。</summary>
