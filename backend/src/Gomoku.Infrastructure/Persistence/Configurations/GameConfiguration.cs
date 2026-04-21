@@ -25,6 +25,7 @@ public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Property(g => g.StartedAt).IsRequired();
         builder.Property(g => g.EndedAt);
         builder.Property(g => g.Result).HasConversion<int?>();
+        builder.Property(g => g.EndReason).HasConversion<int?>();
         builder.Property(g => g.WinnerUserId)
             .HasConversion(v => v.HasValue ? v.Value.Value : (Guid?)null,
                            v => v.HasValue ? new UserId(v.Value) : (UserId?)null);

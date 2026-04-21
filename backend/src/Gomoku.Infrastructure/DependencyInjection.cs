@@ -43,7 +43,13 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<GameOptions>()
+            .Bind(configuration.GetSection("Game"))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddHostedService<AiMoveWorker>();
+        services.AddHostedService<TurnTimeoutWorker>();
 
         return services;
     }

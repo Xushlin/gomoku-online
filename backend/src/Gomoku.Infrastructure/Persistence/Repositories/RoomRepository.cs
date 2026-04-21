@@ -53,4 +53,32 @@ public sealed class RoomRepository : IRoomRepository
         _ = cancellationToken; // 同步 API,显式忽略
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RoomId>> GetRoomsWithExpiredTurnsAsync(
+        DateTime now, int turnTimeoutSeconds, CancellationToken cancellationToken)
+    {
+        var cutoff = now.AddSeconds(-turnTimeoutSeconds);
+        // EF 需要一个可翻译的表达式。策略:先在 SQL 里按 Status=Playing + Game!=null 过滤,
+        // 再在内存里对 Moves 历史做 max(PlayedAt) vs StartedAt 比较。Moves 对活跃对局每房平均 < 50,
+        // 全量加载的代价远小于"复杂 LINQ GroupBy 不能翻译"的后果。
+        // 若后续量级变大(上千活跃对局),此处改写为带 correlated subquery 的 raw SQL。
+        var playing = await _db.Rooms
+            .Include(r => r.Game!)
+                .ThenInclude(g => g.Moves)
+            .Where(r => r.Status == RoomStatus.Playing && r.Game != null)
+            .ToListAsync(cancellationToken);
+
+        return playing
+            .Where(r =>
+            {
+                var game = r.Game!;
+                var lastActivity = game.Moves
+                    .OrderByDescending(m => m.Ply)
+                    .FirstOrDefault()?.PlayedAt ?? game.StartedAt;
+                return lastActivity <= cutoff;
+            })
+            .Select(r => r.Id)
+            .ToList();
+    }
 }
