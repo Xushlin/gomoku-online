@@ -42,6 +42,16 @@ public interface IRoomRepository
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// 返回指定用户**当前参与**的 Waiting + Playing 房间(不含 Finished、不含围观)。
+    /// 实现 MUST:过滤 <c>Status != Finished</c> 且 <c>BlackPlayerId == userId OR WhitePlayerId == userId</c>;
+    /// 按 <c>CreatedAt DESC</c> 排序;Include Game + Moves + _spectators(为映射 RoomSummaryDto 准备)。
+    /// 典型返回 0-5 条,不分页。
+    /// </summary>
+    Task<IReadOnlyList<Room>> GetActiveRoomsByUserAsync(
+        UserId userId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// 分页返回指定用户参与过的 Finished 对局房间,按 <c>Game.EndedAt DESC</c> 排序。
     /// 实现 MUST:
     /// <list type="bullet">
