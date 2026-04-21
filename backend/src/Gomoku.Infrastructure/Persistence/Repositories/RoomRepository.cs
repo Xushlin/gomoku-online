@@ -1,5 +1,6 @@
 using Gomoku.Application.Abstractions;
 using Gomoku.Domain.Rooms;
+using Gomoku.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gomoku.Infrastructure.Persistence.Repositories;
@@ -80,5 +81,29 @@ public sealed class RoomRepository : IRoomRepository
             })
             .Select(r => r.Id)
             .ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<Room> Rooms, int Total)> GetUserFinishedGamesPagedAsync(
+        UserId userId, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        // 仓储层对 userId 走值对象比较;EF 的 UserIdConverter 负责把 Guid 映射到 UserId。
+        // 直接 `==` 依赖 EF Core 的值转换器生成正确 WHERE 子句。
+        var baseQuery = _db.Rooms
+            .Where(r => r.Status == RoomStatus.Finished)
+            .Where(r => r.BlackPlayerId == userId
+                     || (r.WhitePlayerId != null && r.WhitePlayerId == userId));
+
+        var total = await baseQuery.CountAsync(cancellationToken);
+
+        var rooms = await baseQuery
+            .Include(r => r.Game!)
+                .ThenInclude(g => g.Moves)
+            .OrderByDescending(r => r.Game!.EndedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (rooms, total);
     }
 }
