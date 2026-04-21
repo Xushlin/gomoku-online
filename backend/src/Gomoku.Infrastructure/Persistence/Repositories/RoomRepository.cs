@@ -84,6 +84,21 @@ public sealed class RoomRepository : IRoomRepository
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<Room>> GetActiveRoomsByUserAsync(
+        UserId userId, CancellationToken cancellationToken)
+    {
+        return await _db.Rooms
+            .Include(r => r.Game!)
+                .ThenInclude(g => g.Moves)
+            .Include("_spectators")
+            .Where(r => r.Status != RoomStatus.Finished)
+            .Where(r => r.BlackPlayerId == userId
+                     || (r.WhitePlayerId != null && r.WhitePlayerId == userId))
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<(IReadOnlyList<Room> Rooms, int Total)> GetUserFinishedGamesPagedAsync(
         UserId userId, int page, int pageSize, CancellationToken cancellationToken)
     {
