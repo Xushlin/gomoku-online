@@ -103,5 +103,6 @@ public class RoomPlayMoveTests
         room.Game!.WinnerUserId.Should().Be(b);
         room.Game.Result.Should().Be(GameResult.BlackWin);
         room.Game.EndedAt.Should().Be(Now.AddSeconds(9));
+        room.Game.EndReason.Should().Be(GameEndReason.Connected5);
     }
 }

@@ -14,6 +14,12 @@ public sealed record MoveOutcome(SubMove Move, GameResult Result);
 public sealed record UrgeOutcome(UserId UrgedUser);
 
 /// <summary>
+/// 对局非连五路径(<see cref="Room.Resign"/> / <see cref="Room.TimeOutCurrentTurn"/>)的领域结果。
+/// <see cref="Result"/> 为胜方色;平局不可能通过认输 / 超时触发,故 <see cref="WinnerUserId"/> 非空。
+/// </summary>
+public sealed record GameEndOutcome(GameResult Result, UserId? WinnerUserId);
+
+/// <summary>
 /// 房间聚合根:承载玩家、围观者、对局、聊天、催促时间戳与生命周期状态机。
 /// 所有对 <see cref="Game"/> / <see cref="ChatMessage"/> / 围观者的修改 MUST 通过本类的领域方法。
 /// </summary>
@@ -268,11 +274,109 @@ public sealed class Room
                 GameResult.WhiteWin => WhitePlayerId,
                 _ => null,
             };
-            Game.FinishWith(result, winnerId, now);
+            Game.FinishWith(result, winnerId, GameEndReason.Connected5, now);
             TransitionStatus(RoomStatus.Finished);
         }
 
         return new MoveOutcome(appended, result);
+    }
+
+    /// <summary>
+    /// 玩家主动认输。允许**任意回合**调用(包括对手回合);对局立即结束,对手胜。
+    /// </summary>
+    /// <exception cref="RoomNotInPlayException">房间不在 <see cref="RoomStatus.Playing"/>。</exception>
+    /// <exception cref="NotAPlayerException"><paramref name="userId"/> 不是 Black / White 玩家。</exception>
+    public GameEndOutcome Resign(UserId userId, DateTime now)
+    {
+        if (Status != RoomStatus.Playing)
+        {
+            throw new RoomNotInPlayException(
+                $"Cannot resign when room status is {Status}.");
+        }
+
+        if (Game is null)
+        {
+            throw new RoomNotInPlayException("Room is in Playing state but has no Game instance.");
+        }
+
+        UserId opponentUserId;
+        GameResult opponentResult;
+        if (userId == BlackPlayerId)
+        {
+            opponentUserId = WhitePlayerId!.Value;
+            opponentResult = GameResult.WhiteWin;
+        }
+        else if (WhitePlayerId is not null && userId == WhitePlayerId.Value)
+        {
+            opponentUserId = BlackPlayerId;
+            opponentResult = GameResult.BlackWin;
+        }
+        else
+        {
+            throw new NotAPlayerException(
+                $"User {userId.Value} is not a player in this room and cannot resign.");
+        }
+
+        Game.FinishWith(opponentResult, opponentUserId, GameEndReason.Resigned, now);
+        TransitionStatus(RoomStatus.Finished);
+        return new GameEndOutcome(opponentResult, opponentUserId);
+    }
+
+    /// <summary>
+    /// 若当前回合的玩家超过 <paramref name="turnTimeoutSeconds"/> 未落子,则判其负、对手胜。
+    /// 方法**重新计算** <c>lastActivity = Moves.Last().PlayedAt ?? Game.StartedAt</c>;
+    /// 若 <c>(now - lastActivity).TotalSeconds &lt; turnTimeoutSeconds</c> 抛
+    /// <see cref="TurnNotTimedOutException"/>(防 worker 与玩家落子的竞态:worker poll 时超时,
+    /// 但到 handler 执行时对手恰好落了子推新了 lastActivity)。调用方(worker handler)
+    /// **MUST** 捕获 <see cref="TurnNotTimedOutException"/> 并吞掉,下轮轮询不会再命中该房间。
+    /// </summary>
+    /// <exception cref="RoomNotInPlayException">房间不在 Playing。</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="turnTimeoutSeconds"/> &lt; 1。</exception>
+    /// <exception cref="TurnNotTimedOutException">尚未到超时阈值。</exception>
+    public GameEndOutcome TimeOutCurrentTurn(DateTime now, int turnTimeoutSeconds)
+    {
+        if (Status != RoomStatus.Playing)
+        {
+            throw new RoomNotInPlayException(
+                $"Cannot time out when room status is {Status}.");
+        }
+
+        if (Game is null)
+        {
+            throw new RoomNotInPlayException("Room is in Playing state but has no Game instance.");
+        }
+
+        if (turnTimeoutSeconds < 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(turnTimeoutSeconds), turnTimeoutSeconds, "Timeout seconds must be at least 1.");
+        }
+
+        var lastMove = Game.Moves.OrderBy(m => m.Ply).LastOrDefault();
+        var lastActivity = lastMove?.PlayedAt ?? Game.StartedAt;
+
+        if ((now - lastActivity).TotalSeconds < turnTimeoutSeconds)
+        {
+            throw new TurnNotTimedOutException(
+                $"Current turn has not yet exceeded {turnTimeoutSeconds}s (elapsed {(now - lastActivity).TotalSeconds}s).");
+        }
+
+        UserId winnerUserId;
+        GameResult winnerResult;
+        if (Game.CurrentTurn == Stone.Black)
+        {
+            winnerUserId = WhitePlayerId!.Value;
+            winnerResult = GameResult.WhiteWin;
+        }
+        else
+        {
+            winnerUserId = BlackPlayerId;
+            winnerResult = GameResult.BlackWin;
+        }
+
+        Game.FinishWith(winnerResult, winnerUserId, GameEndReason.TurnTimeout, now);
+        TransitionStatus(RoomStatus.Finished);
+        return new GameEndOutcome(winnerResult, winnerUserId);
     }
 
     /// <summary>

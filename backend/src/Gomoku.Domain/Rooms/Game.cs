@@ -33,6 +33,14 @@ public sealed class Game
     /// <summary>胜方用户 Id;进行中或平局时为 <c>null</c>。</summary>
     public UserId? WinnerUserId { get; private set; }
 
+    /// <summary>
+    /// 对局结束原因。进行中 <c>null</c>;结束后非 <c>null</c>,取值对应触发路径:
+    /// <see cref="Room.PlayMove"/> 的连五 → <see cref="GameEndReason.Connected5"/>、
+    /// <see cref="Room.Resign"/> → <see cref="GameEndReason.Resigned"/>、
+    /// <see cref="Room.TimeOutCurrentTurn"/> → <see cref="GameEndReason.TurnTimeout"/>。
+    /// </summary>
+    public GameEndReason? EndReason { get; private set; }
+
     /// <summary>当前回合应该下的棋色。初始为 <see cref="Stone.Black"/>。</summary>
     public Stone CurrentTurn { get; private set; }
 
@@ -56,6 +64,7 @@ public sealed class Game
         EndedAt = null;
         Result = null;
         WinnerUserId = null;
+        EndReason = null;
         CurrentTurn = Stone.Black;
         RowVersion = Guid.NewGuid().ToByteArray();
     }
@@ -89,11 +98,16 @@ public sealed class Game
         return move;
     }
 
-    /// <summary>标记对局结束(仅由 <see cref="Room.PlayMove"/> 调用)。</summary>
-    internal void FinishWith(GameResult result, UserId? winnerUserId, DateTime endedAt)
+    /// <summary>
+    /// 标记对局结束(仅由 <see cref="Room"/> 聚合的结束路径调用:
+    /// <see cref="Room.PlayMove"/> 连五 / <see cref="Room.Resign"/> / <see cref="Room.TimeOutCurrentTurn"/>)。
+    /// 调用方 MUST 显式传入 <paramref name="reason"/>,杜绝默认值意外出现。
+    /// </summary>
+    internal void FinishWith(GameResult result, UserId? winnerUserId, GameEndReason reason, DateTime endedAt)
     {
         Result = result;
         WinnerUserId = winnerUserId;
+        EndReason = reason;
         EndedAt = endedAt;
         TouchRowVersion();
     }

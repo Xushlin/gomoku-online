@@ -128,3 +128,14 @@ public sealed class NotRoomHostException : Exception
     /// <inheritdoc />
     public NotRoomHostException(string message) : base(message) { }
 }
+
+/// <summary>
+/// <c>Room.TimeOutCurrentTurn</c> 被过早调用(当前回合未超过 <c>turnTimeoutSeconds</c>)。
+/// 典型出现在 <c>TurnTimeoutWorker</c> 查询与 handler 执行之间,对手刚落了一子让 lastActivity 推新;
+/// worker 应 try/catch 吞下此异常 —— 下轮查询不会再包含该房间。Api 层映射 HTTP 409。
+/// </summary>
+public sealed class TurnNotTimedOutException : Exception
+{
+    /// <inheritdoc />
+    public TurnNotTimedOutException(string message) : base(message) { }
+}
