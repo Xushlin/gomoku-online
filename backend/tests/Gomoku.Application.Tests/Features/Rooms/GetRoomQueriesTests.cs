@@ -37,7 +37,7 @@ public class GetRoomQueriesTests
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         RoomsFixtures.SetupUserLookup(_users, alice, bob);
 
-        var sut = new GetRoomStateQueryHandler(_rooms.Object, _users.Object);
+        var sut = new GetRoomStateQueryHandler(_rooms.Object, _users.Object, RoomsFixtures.TestGameOptions());
         var dto = await sut.Handle(new GetRoomStateQuery(room.Id), default);
 
         dto.Status.Should().Be(RoomStatus.Playing);
@@ -49,7 +49,7 @@ public class GetRoomQueriesTests
     {
         _rooms.Setup(r => r.FindByIdAsync(It.IsAny<RoomId>(), It.IsAny<CancellationToken>())).ReturnsAsync((Room?)null);
 
-        var sut = new GetRoomStateQueryHandler(_rooms.Object, _users.Object);
+        var sut = new GetRoomStateQueryHandler(_rooms.Object, _users.Object, RoomsFixtures.TestGameOptions());
         var act = () => sut.Handle(new GetRoomStateQuery(RoomId.NewId()), default);
         await act.Should().ThrowAsync<RoomNotFoundException>();
     }

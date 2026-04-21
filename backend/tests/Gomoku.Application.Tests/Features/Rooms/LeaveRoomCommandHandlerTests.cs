@@ -11,7 +11,7 @@ public class LeaveRoomCommandHandlerTests
     private readonly Mock<IRoomNotifier> _notifier = new();
 
     private LeaveRoomCommandHandler Build() => new(
-        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object);
+        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object, RoomsFixtures.TestGameOptions());
 
     [Fact]
     public async Task Player_Leaves_Playing_Room_Triggers_PlayerLeft()

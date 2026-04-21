@@ -25,4 +25,18 @@ public interface IRoomRepository
     /// Game / Moves / Spectators / ChatMessages 由 EF <c>OnDelete(Cascade)</c> 自动随根删除。
     /// </summary>
     Task DeleteAsync(Room room, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 返回所有"当前回合已超时"的房间 Id。匹配规则:
+    /// <list type="bullet">
+    /// <item><c>Status == Playing</c> 且 <c>Game != null</c></item>
+    /// <item><c>max(Moves.PlayedAt, Game.StartedAt) + turnTimeoutSeconds &lt;= now</c></item>
+    /// </list>
+    /// 只返回 <see cref="RoomId"/>,MUST NOT 物化 <see cref="Room"/> 聚合(worker 再按 Id 加载)。
+    /// 由 <c>TurnTimeoutWorker</c> 调用;签名不泄漏 EF 类型。
+    /// </summary>
+    Task<IReadOnlyList<RoomId>> GetRoomsWithExpiredTurnsAsync(
+        DateTime now,
+        int turnTimeoutSeconds,
+        CancellationToken cancellationToken);
 }

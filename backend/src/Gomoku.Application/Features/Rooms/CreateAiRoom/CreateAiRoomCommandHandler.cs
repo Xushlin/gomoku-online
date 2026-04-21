@@ -25,18 +25,21 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
     private readonly IUserRepository _users;
     private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
+    private readonly GameOptions _gameOptions;
 
     /// <inheritdoc />
     public CreateAiRoomCommandHandler(
         IRoomRepository rooms,
         IUserRepository users,
         IDateTimeProvider clock,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        Microsoft.Extensions.Options.IOptions<GameOptions> gameOptions)
     {
         _rooms = rooms;
         _users = users;
         _clock = clock;
         _uow = uow;
+        _gameOptions = gameOptions.Value;
     }
 
     /// <inheritdoc />
@@ -70,6 +73,6 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
             [host.Id.Value] = host.Username.Value,
             [bot.Id.Value] = bot.Username.Value,
         };
-        return room.ToState(usernames);
+        return room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
     }
 }

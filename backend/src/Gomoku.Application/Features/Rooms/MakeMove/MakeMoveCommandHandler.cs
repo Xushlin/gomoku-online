@@ -2,11 +2,13 @@ using Gomoku.Application.Abstractions;
 using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Common.Exceptions;
 using Gomoku.Application.Common.Mapping;
+using Gomoku.Application.Features.Rooms.Common;
 using Gomoku.Domain.Enums;
 using Gomoku.Domain.Rooms;
 using Gomoku.Domain.Users;
 using Gomoku.Domain.ValueObjects;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Gomoku.Application.Features.Rooms.MakeMove;
 
@@ -22,6 +24,7 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
     private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
     private readonly IRoomNotifier _notifier;
+    private readonly GameOptions _gameOptions;
 
     /// <inheritdoc />
     public MakeMoveCommandHandler(
@@ -29,13 +32,15 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
         IUserRepository users,
         IDateTimeProvider clock,
         IUnitOfWork uow,
-        IRoomNotifier notifier)
+        IRoomNotifier notifier,
+        IOptions<GameOptions> gameOptions)
     {
         _rooms = rooms;
         _users = users;
         _clock = clock;
         _uow = uow;
         _notifier = notifier;
+        _gameOptions = gameOptions.Value;
     }
 
     /// <inheritdoc />
@@ -48,7 +53,7 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
 
         if (outcome.Result != GameResult.Ongoing)
         {
-            await ApplyEloAsync(room, outcome.Result, cancellationToken);
+            await GameEloApplier.ApplyAsync(room, outcome.Result, _users, cancellationToken);
         }
 
         await _uow.SaveChangesAsync(cancellationToken);
@@ -61,7 +66,7 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             outcome.Move.PlayedAt);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames);
+        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
 
         await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
         await _notifier.MoveMadeAsync(room.Id, moveDto, cancellationToken);
@@ -71,41 +76,11 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             var ended = new GameEndedDto(
                 outcome.Result,
                 room.Game!.WinnerUserId?.Value,
-                room.Game.EndedAt!.Value);
+                room.Game.EndedAt!.Value,
+                room.Game.EndReason!.Value);
             await _notifier.GameEndedAsync(room.Id, ended, cancellationToken);
         }
 
         return moveDto;
-    }
-
-    private async Task ApplyEloAsync(Room room, GameResult result, CancellationToken cancellationToken)
-    {
-        var black = await _users.FindByIdAsync(room.BlackPlayerId, cancellationToken)
-            ?? throw new UserNotFoundException($"User '{room.BlackPlayerId.Value}' was not found.");
-        var whiteId = room.WhitePlayerId!.Value;
-        var white = await _users.FindByIdAsync(whiteId, cancellationToken)
-            ?? throw new UserNotFoundException($"User '{whiteId.Value}' was not found.");
-
-        var outcomeForBlack = result switch
-        {
-            GameResult.BlackWin => GameOutcome.Win,
-            GameResult.WhiteWin => GameOutcome.Loss,
-            GameResult.Draw => GameOutcome.Draw,
-            _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Unexpected GameResult for ELO."),
-        };
-        var outcomeForWhite = outcomeForBlack switch
-        {
-            GameOutcome.Win => GameOutcome.Loss,
-            GameOutcome.Loss => GameOutcome.Win,
-            _ => GameOutcome.Draw,
-        };
-
-        var (newBlackRating, newWhiteRating) = Gomoku.Domain.EloRating.EloRating.Calculate(
-            black.Rating, black.GamesPlayed,
-            white.Rating, white.GamesPlayed,
-            outcomeForBlack);
-
-        black.RecordGameResult(outcomeForBlack, newBlackRating);
-        white.RecordGameResult(outcomeForWhite, newWhiteRating);
     }
 }

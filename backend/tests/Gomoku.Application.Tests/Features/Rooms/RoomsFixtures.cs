@@ -1,9 +1,21 @@
+using Microsoft.Extensions.Options;
+
 namespace Gomoku.Application.Tests.Features.Rooms;
 
 /// <summary>Rooms handler 测试共用的 builder / mock 设置。</summary>
 internal static class RoomsFixtures
 {
     public static readonly DateTime Now = new(2026, 4, 18, 12, 0, 0, DateTimeKind.Utc);
+
+    /// <summary>
+    /// 生成一个测试用的 <see cref="IOptions{GameOptions}"/>,默认 60s turn timeout / 5s poll。
+    /// </summary>
+    public static IOptions<GameOptions> TestGameOptions(int turnTimeoutSeconds = 60, int timeoutPollIntervalMs = 5000) =>
+        Options.Create(new GameOptions
+        {
+            TurnTimeoutSeconds = turnTimeoutSeconds,
+            TimeoutPollIntervalMs = timeoutPollIntervalMs,
+        });
 
     public static User NewUser(string username = "Alice", string email = "alice@example.com") =>
         User.Register(

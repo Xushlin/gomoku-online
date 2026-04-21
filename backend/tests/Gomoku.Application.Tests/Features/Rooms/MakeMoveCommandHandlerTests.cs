@@ -12,7 +12,7 @@ public class MakeMoveCommandHandlerTests
     private readonly Mock<IRoomNotifier> _notifier = new();
 
     private MakeMoveCommandHandler Build() => new(
-        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object);
+        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object, RoomsFixtures.TestGameOptions());
 
     [Fact]
     public async Task Success_Non_Winning_Move_Fires_State_And_Move_Events()

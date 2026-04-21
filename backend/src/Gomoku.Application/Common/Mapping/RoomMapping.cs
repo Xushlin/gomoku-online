@@ -25,8 +25,15 @@ public static class RoomMapping
             CreatedAt: room.CreatedAt);
     }
 
-    /// <summary>转换为完整状态(含所有 Moves / ChatMessages / Spectators)。</summary>
-    public static RoomStateDto ToState(this Room room, IReadOnlyDictionary<Guid, string> usernames)
+    /// <summary>
+    /// 转换为完整状态(含所有 Moves / ChatMessages / Spectators)。
+    /// <paramref name="turnTimeoutSeconds"/> 从 <c>GameOptions</c> 注入,嵌入到
+    /// <see cref="GameSnapshotDto.TurnTimeoutSeconds"/> 以便客户端倒计时。
+    /// </summary>
+    public static RoomStateDto ToState(
+        this Room room,
+        IReadOnlyDictionary<Guid, string> usernames,
+        int turnTimeoutSeconds)
     {
         var specDtos = room.Spectators
             .Select(id => UserSummary(id, usernames))
@@ -43,11 +50,12 @@ public static class RoomMapping
         GameSnapshotDto? gameDto = null;
         if (room.Game is not null)
         {
-            var moves = room.Game.Moves
-                .OrderBy(mv => mv.Ply)
+            var orderedMoves = room.Game.Moves.OrderBy(mv => mv.Ply).ToList();
+            var moves = orderedMoves
                 .Select(mv => new MoveDto(mv.Ply, mv.Row, mv.Col, mv.Stone, mv.PlayedAt))
                 .ToList()
                 .AsReadOnly();
+            var turnStartedAt = orderedMoves.LastOrDefault()?.PlayedAt ?? room.Game.StartedAt;
             gameDto = new GameSnapshotDto(
                 Id: room.Game.Id,
                 CurrentTurn: room.Game.CurrentTurn,
@@ -55,6 +63,9 @@ public static class RoomMapping
                 EndedAt: room.Game.EndedAt,
                 Result: room.Game.Result,
                 WinnerUserId: room.Game.WinnerUserId?.Value,
+                EndReason: room.Game.EndReason,
+                TurnStartedAt: turnStartedAt,
+                TurnTimeoutSeconds: turnTimeoutSeconds,
                 Moves: moves);
         }
 

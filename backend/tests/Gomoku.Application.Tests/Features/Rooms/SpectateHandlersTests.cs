@@ -20,7 +20,7 @@ public class SpectateHandlersTests
         RoomsFixtures.SetupUserLookup(_users, host, bob, carol);
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new JoinAsSpectatorCommandHandler(_rooms.Object, _users.Object, _uow.Object, _notifier.Object);
+        var sut = new JoinAsSpectatorCommandHandler(_rooms.Object, _users.Object, _uow.Object, _notifier.Object, RoomsFixtures.TestGameOptions());
         await sut.Handle(new JoinAsSpectatorCommand(carol.Id, room.Id), default);
 
         room.Spectators.Should().Contain(carol.Id);
@@ -44,7 +44,7 @@ public class SpectateHandlersTests
         RoomsFixtures.SetupUserLookup(_users, host, bob, carol);
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new LeaveAsSpectatorCommandHandler(_rooms.Object, _users.Object, _uow.Object, _notifier.Object);
+        var sut = new LeaveAsSpectatorCommandHandler(_rooms.Object, _users.Object, _uow.Object, _notifier.Object, RoomsFixtures.TestGameOptions());
         await sut.Handle(new LeaveAsSpectatorCommand(carol.Id, room.Id), default);
 
         room.Spectators.Should().NotContain(carol.Id);

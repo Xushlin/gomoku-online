@@ -3,6 +3,7 @@ using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Common.Exceptions;
 using Gomoku.Application.Common.Mapping;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Gomoku.Application.Features.Rooms.JoinAsSpectator;
 
@@ -13,18 +14,21 @@ public sealed class JoinAsSpectatorCommandHandler : IRequestHandler<JoinAsSpecta
     private readonly IUserRepository _users;
     private readonly IUnitOfWork _uow;
     private readonly IRoomNotifier _notifier;
+    private readonly GameOptions _gameOptions;
 
     /// <inheritdoc />
     public JoinAsSpectatorCommandHandler(
         IRoomRepository rooms,
         IUserRepository users,
         IUnitOfWork uow,
-        IRoomNotifier notifier)
+        IRoomNotifier notifier,
+        IOptions<GameOptions> gameOptions)
     {
         _rooms = rooms;
         _users = users;
         _uow = uow;
         _notifier = notifier;
+        _gameOptions = gameOptions.Value;
     }
 
     /// <inheritdoc />
@@ -44,7 +48,7 @@ public sealed class JoinAsSpectatorCommandHandler : IRequestHandler<JoinAsSpecta
         await _notifier.SpectatorJoinedAsync(room.Id, spectatorDto, cancellationToken);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames);
+        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
         await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
 
         return Unit.Value;

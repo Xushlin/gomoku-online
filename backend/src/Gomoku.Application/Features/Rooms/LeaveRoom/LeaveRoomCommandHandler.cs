@@ -3,6 +3,7 @@ using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Common.Exceptions;
 using Gomoku.Application.Common.Mapping;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Gomoku.Application.Features.Rooms.LeaveRoom;
 
@@ -14,6 +15,7 @@ public sealed class LeaveRoomCommandHandler : IRequestHandler<LeaveRoomCommand, 
     private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
     private readonly IRoomNotifier _notifier;
+    private readonly GameOptions _gameOptions;
 
     /// <inheritdoc />
     public LeaveRoomCommandHandler(
@@ -21,13 +23,15 @@ public sealed class LeaveRoomCommandHandler : IRequestHandler<LeaveRoomCommand, 
         IUserRepository users,
         IDateTimeProvider clock,
         IUnitOfWork uow,
-        IRoomNotifier notifier)
+        IRoomNotifier notifier,
+        IOptions<GameOptions> gameOptions)
     {
         _rooms = rooms;
         _users = users;
         _clock = clock;
         _uow = uow;
         _notifier = notifier;
+        _gameOptions = gameOptions.Value;
     }
 
     /// <inheritdoc />
@@ -58,7 +62,7 @@ public sealed class LeaveRoomCommandHandler : IRequestHandler<LeaveRoomCommand, 
         }
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames);
+        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
         await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
 
         return Unit.Value;

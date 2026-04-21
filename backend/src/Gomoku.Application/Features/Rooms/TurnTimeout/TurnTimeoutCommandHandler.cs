@@ -2,13 +2,18 @@ using Gomoku.Application.Abstractions;
 using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Common.Exceptions;
 using Gomoku.Application.Common.Mapping;
+using Gomoku.Application.Features.Rooms.Common;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.JoinRoom;
+namespace Gomoku.Application.Features.Rooms.TurnTimeout;
 
-/// <summary>加入房间为白方并启动对局;广播 <c>PlayerJoined</c> + <c>RoomStateChanged</c>。</summary>
-public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, RoomStateDto>
+/// <summary>
+/// 超时判负 handler。流程与 <c>ResignCommandHandler</c> 对称,区别仅在 Domain 方法:
+/// <c>Room.TimeOutCurrentTurn</c>(Domain 自己防竞态 —— 若对手刚落子推新了 lastActivity,
+/// 则抛 <see cref="Gomoku.Domain.Exceptions.TurnNotTimedOutException"/>)。Worker 的 try/catch 吞之。
+/// </summary>
+public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutCommand, Unit>
 {
     private readonly IRoomRepository _rooms;
     private readonly IUserRepository _users;
@@ -18,7 +23,7 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
     private readonly GameOptions _gameOptions;
 
     /// <inheritdoc />
-    public JoinRoomCommandHandler(
+    public TurnTimeoutCommandHandler(
         IRoomRepository rooms,
         IUserRepository users,
         IDateTimeProvider clock,
@@ -35,22 +40,28 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
     }
 
     /// <inheritdoc />
-    public async Task<RoomStateDto> Handle(JoinRoomCommand request, CancellationToken cancellationToken)
+    public async Task<Unit> Handle(TurnTimeoutCommand request, CancellationToken cancellationToken)
     {
         var room = await _rooms.FindByIdAsync(request.RoomId, cancellationToken)
             ?? throw new RoomNotFoundException($"Room '{request.RoomId.Value}' was not found.");
 
-        room.JoinAsPlayer(request.UserId, _clock.UtcNow);
+        var outcome = room.TimeOutCurrentTurn(_clock.UtcNow, _gameOptions.TurnTimeoutSeconds);
+
+        await GameEloApplier.ApplyAsync(room, outcome.Result, _users, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        var ended = new GameEndedDto(
+            outcome.Result,
+            outcome.WinnerUserId?.Value,
+            room.Game!.EndedAt!.Value,
+            room.Game.EndReason!.Value);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
         var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
-        var joiner = new UserSummaryDto(request.UserId.Value,
-            usernames.TryGetValue(request.UserId.Value, out var n) ? n : "<unknown>");
 
-        await _notifier.PlayerJoinedAsync(room.Id, joiner, cancellationToken);
         await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
+        await _notifier.GameEndedAsync(room.Id, ended, cancellationToken);
 
-        return state;
+        return Unit.Value;
     }
 }
