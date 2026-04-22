@@ -46,7 +46,8 @@ Solution file is `.slnx` (XML), not `.sln`. `dotnet` CLI handles it transparentl
 ### Web (`frontend-web/`) — phase 1
 
 - **Angular 21** + TypeScript strict mode
-- **Tailwind CSS** + **Angular Material**
+- **Tailwind CSS** + **Angular Material** + **`@angular/cdk`**(overlays / dialogs / a11y)
+- **Transloco** for runtime i18n (initial locales: `zh-CN`, `en`;扩展靠添 JSON + 注册一条)
 - `@microsoft/signalr` client
 - State: **Angular Signals** first, NgRx only for genuinely complex flows
 - Tests: **Vitest** (not Karma/Jasmine) — use Angular 21's Vitest builder or `@analogjs/vitest-angular`
@@ -108,11 +109,58 @@ Don't ship without unit tests for:
 
 ## Frontend conventions (Angular)
 
+### 命名 & 结构
+
 - Filenames: **kebab-case**. Classes: PascalCase.
 - Use **standalone components** (Angular 17+ style) — don't create new NgModules unless unavoidable.
 - Prefer **Signals** over `BehaviorSubject` for local state.
 - When Tailwind class strings get long, extract via `@apply` into a custom utility.
 - All HTTP lives in `services/api/`. Components must not call `HttpClient` directly.
+
+### 设计 & UX(硬规则)
+
+- **Dark mode 从第 1 天起必须可工作**。方案:`ThemeService`(Signal)在 `<html>` 上 toggle `dark` class;颜色全走 CSS 变量(`--color-bg`、`--color-primary` 等),Tailwind 用 `dark:` variant 辅助;绝不在组件里写 `bg-gray-900` / `text-white` 这种硬编码暗色。
+- **响应式(mobile-first)**。每个路由 MUST 在 **375px** 宽度下可用,再逐步 `sm: / md: / lg: / xl:` 扩展到 1440px+。Tailwind 默认断点够用;不许为单屏幕分辨率专门写 CSS。
+- **现代化 UX**:CSS 过渡优于 JS 动画、`focus-visible` 环可见、骨架屏避免布局抖动、键盘可达每个交互元素、尊重 `prefers-reduced-motion`、loading / empty / error 三态都要有 UI,不许 "loading…" 纯文字糊弄。
+
+### 性能
+
+- **懒加载(Lazy loading)**是强制的:根壳(shell + login)外的每个路由都用 `loadComponent` / `loadChildren`。单 lazy chunk 控制在 **gzip 后 < 200 KB**,超了拆。
+- `<img loading="lazy">` 默认,只有首屏 above-the-fold 的例外。
+- SignalR 客户端装在服务里,**首次订阅时才连**,不在 app bootstrap 就握手 —— 未登录 / 不上对局页时不必要的连接是浪费。
+
+### 架构 —— SOLID,易扩展
+
+- **单一职责**:一个组件只干一件事。Container(拿数据 / 分发事件)与 Presentational(纯渲染输入)分层,**不混**。
+- **依赖倒置**:Service 有可能有替代实现(mock 测试 / 未来换 API 客户端 / 换状态后端)时,用**抽象类作为 DI token**,inject by token 不 by concrete。
+- **开闭**:新增主题 / 新增 locale / 新增对局难度 MUST 是"加一条配置或一个文件"级的改动,不改现有代码。
+- 组合优于继承。横切行为走 directive / pipe,不走 base class。
+- 组件 < 200 LOC。超出就抽 service 或 store。
+
+### 对话框 & 覆盖层
+
+- 对话框 / 浮层 / Popover MUST 基于 **Angular CDK**(`@angular/cdk/dialog` 或 `@angular/cdk/overlay`)。Material 的 `MatDialog` 也行(它包了 CDK);**不许**手写 `<div>` + `*ngIf` 土制模态 —— focus trap / ESC / backdrop / a11y attrs 都要,CDK 免费给。
+
+### i18n —— 国际化
+
+- 用 **Transloco**(或 Angular i18n + ICU 运行时切换)。
+- 首发 locale:`zh-CN`(简体)+ `en`。文件在 `src/assets/i18n/<locale>.json`,扁平 key / 点分路径(`room.join.button` 之类)。
+- 模板里**禁止硬编码**中文或英文;一律 `{{ 'key.path' | translate }}`。date / number 走 Angular 的 `formatDate` / `formatNumber` 带 locale 参数。
+- 语言切换由 `LanguageService`(Signal)承载,持久化到 `localStorage`;初值 = `localStorage` → `navigator.language` → `en` 回退链。
+- 加新 locale = 新增 `i18n/<locale>.json` + `LanguageService.supported` 注册一行,**不改**其它代码。
+
+### 主题切换(Material / System / 更多)
+
+- 主题以**注册表**形式:`ThemeService.register(name, tokens)`,`tokens` 是一组 CSS 变量值(`--color-primary`、`--color-surface`、`--radius-card`、`--shadow-elevated` 等)。切换主题 = 在 `<html>` 设 `data-theme="<name>"` + 持久化到 `localStorage`。
+- 首发两套:`material`(Angular Material 默认配色 + Material 圆角 / 阴影)、`system`(Apple / Fluent-ish 简洁风,更小圆角、更少阴影)。
+- **Dark/Light 是主题的正交维度**:每个主题都有明暗两套 token 集合,`ThemeService` 的两个 signal(`themeName` / `isDark`)独立切换。
+- 组件样式 MUST 引用 CSS 变量,不直接写色值;"这个按钮用主题蓝"= `var(--color-primary)`,不是 `#2962FF`。
+- 加新主题 = 新增一份 tokens 文件 + `ThemeService.register(...)` 一行,**不改**任何组件。
+
+### 前端测试
+
+- Vitest 覆盖:有逻辑的 service / store、有条件分支的组件、i18n 管道、`ThemeService` / `LanguageService` 等横切 service。纯展示组件可跳。
+- 对话框、路由守卫、SignalR 订阅等有副作用的路径,用 TestBed + `ComponentHarness` 写集成测试。
 
 ## Common commands
 
