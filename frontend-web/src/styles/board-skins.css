@@ -7,18 +7,113 @@
  * to change — .board-grid and .board-stone consume these variables.
  */
 
-/* --- Wood skin (default): warm tan surface, dark walnut lines, glossy stones --- */
+/*
+ * Wood skin (default) — Kaya-style yellow-cream surface with subtle directional
+ * grain stripes layered in, dark walnut grid + star points, deep-glossy black
+ * stones, ivory clamshell-style white stones. The grain comes from two
+ * repeating-linear-gradients (vertical fibres + horizontal cross-grain) at
+ * very low alpha; the radial gradient under them adds a soft top-left
+ * highlight so the surface doesn't feel flat.
+ */
 [data-board-skin='wood'] {
-  --board-bg: radial-gradient(ellipse at 30% 20%, #e9b57d 0%, #c88a4e 100%);
-  --board-line: rgb(50 25 8 / 0.65);
-  --board-star: rgb(50 25 8 / 0.85);
-  --board-radius: 8px;
-  --board-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+  --board-bg:
+    /* edge vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(70 40 12 / 0.18) 100%),
+    /* fine vertical fibres */
+    repeating-linear-gradient(
+      90deg,
+      rgb(110 70 30 / 0) 0,
+      rgb(110 70 30 / 0) 11px,
+      rgb(110 70 30 / 0.05) 11px,
+      rgb(110 70 30 / 0.05) 12px
+    ),
+    /* very faint horizontal cross-grain */
+    repeating-linear-gradient(
+      0deg,
+      rgb(120 80 30 / 0) 0,
+      rgb(120 80 30 / 0) 4px,
+      rgb(120 80 30 / 0.03) 4px,
+      rgb(120 80 30 / 0.03) 5px
+    ),
+    /* base highlight + body */
+    radial-gradient(ellipse at 28% 22%, #ecca8d 0%, #d2a464 55%, #b78342 100%);
+  --board-line: rgb(48 25 8 / 0.85);
+  --board-star: rgb(38 18 4 / 0.95);
+  --board-radius: 10px;
+  --board-shadow:
+    0 1px 0 rgb(255 235 195 / 0.4) inset,
+    0 -1px 0 rgb(40 20 5 / 0.25) inset,
+    0 10px 28px rgb(0 0 0 / 0.28),
+    0 2px 4px rgb(0 0 0 / 0.14);
 
-  --stone-black-fill: radial-gradient(circle at 30% 25%, #4a4a4a, #080808 70%);
-  --stone-black-shadow: 0 2px 3px rgb(0 0 0 / 0.5), inset -1px -1px 2px rgb(0 0 0 / 0.4);
-  --stone-white-fill: radial-gradient(circle at 30% 25%, #fffdf5, #d7c9a8 90%);
-  --stone-white-shadow: 0 2px 3px rgb(0 0 0 / 0.3), inset 0 0 0 1px rgb(120 100 70 / 0.5);
+  --stone-black-fill: radial-gradient(
+    circle at 32% 26%,
+    #6e6e6e 0%,
+    #2a2a2a 30%,
+    #060606 78%
+  );
+  --stone-black-shadow:
+    0 2px 4px rgb(0 0 0 / 0.55),
+    0 1px 1px rgb(0 0 0 / 0.4),
+    inset -1px -2px 3px rgb(0 0 0 / 0.5),
+    inset 1px 1px 1px rgb(255 255 255 / 0.08);
+  --stone-white-fill: radial-gradient(
+    circle at 32% 26%,
+    #ffffff 0%,
+    #f5edd4 30%,
+    #d4c498 88%
+  );
+  --stone-white-shadow:
+    0 2px 4px rgb(0 0 0 / 0.35),
+    0 1px 1px rgb(0 0 0 / 0.2),
+    inset 0 0 0 0.5px rgb(140 110 70 / 0.5),
+    inset -1px -2px 3px rgb(120 90 50 / 0.25);
+
+  --last-move-ring: #ff9f1a;
+}
+
+/*
+ * Wood skin in dark mode — same identity (still wood), dimmer ambient so it
+ * doesn't glare against the dark page bg. Grain alphas drop, base shifts
+ * toward walnut. White stones gain a touch of cream so they keep contrast
+ * on the darker surface; black stones unchanged.
+ */
+[data-board-skin='wood'].dark {
+  --board-bg:
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(0 0 0 / 0.35) 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgb(60 30 10 / 0) 0,
+      rgb(60 30 10 / 0) 11px,
+      rgb(60 30 10 / 0.12) 11px,
+      rgb(60 30 10 / 0.12) 12px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgb(60 30 10 / 0) 0,
+      rgb(60 30 10 / 0) 4px,
+      rgb(60 30 10 / 0.06) 4px,
+      rgb(60 30 10 / 0.06) 5px
+    ),
+    radial-gradient(ellipse at 28% 22%, #b08552 0%, #88582e 55%, #5e3c1c 100%);
+  --board-line: rgb(20 10 2 / 0.85);
+  --board-star: rgb(20 10 2 / 0.95);
+  --board-shadow:
+    0 1px 0 rgb(180 140 90 / 0.25) inset,
+    0 -1px 0 rgb(0 0 0 / 0.5) inset,
+    0 10px 28px rgb(0 0 0 / 0.55),
+    0 2px 4px rgb(0 0 0 / 0.35);
+
+  --stone-white-fill: radial-gradient(
+    circle at 32% 26%,
+    #f5ecd0 0%,
+    #d8c69a 35%,
+    #a89564 92%
+  );
+  --stone-white-shadow:
+    0 2px 4px rgb(0 0 0 / 0.5),
+    inset 0 0 0 0.5px rgb(80 60 40 / 0.7),
+    inset -1px -2px 3px rgb(80 50 25 / 0.45);
 
   --last-move-ring: #ffb000;
 }
