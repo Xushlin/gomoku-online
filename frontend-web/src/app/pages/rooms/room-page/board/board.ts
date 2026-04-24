@@ -20,6 +20,7 @@ interface CellCoord {
   standalone: true,
   imports: [TranslocoPipe],
   templateUrl: './board.html',
+  styles: [':host { display: block; width: 100%; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Board {
