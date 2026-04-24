@@ -5,6 +5,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '../../core/i18n/supported-locales';
+import { BoardSkinService } from '../../core/theme/board-skin.service';
 import { ThemeService } from '../../core/theme/theme.service';
 
 @Component({
@@ -17,18 +18,26 @@ import { ThemeService } from '../../core/theme/theme.service';
 export class Header {
   protected readonly language = inject(LanguageService);
   protected readonly theme = inject(ThemeService);
+  protected readonly boardSkin = inject(BoardSkinService);
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   protected readonly locales = SUPPORTED_LOCALES;
   protected readonly currentLocaleKey = computed(() => `header.language.${this.language.current()}`);
   protected readonly currentThemeKey = computed(() => `header.theme.${this.theme.themeName()}`);
+  protected readonly currentBoardSkinKey = computed(
+    () => `header.board-skin.${this.boardSkin.skinName()}`,
+  );
   protected readonly darkStateKey = computed(() =>
     this.theme.isDark() ? 'header.theme.dark-on' : 'header.theme.dark-off',
   );
 
   protected get themes(): readonly string[] {
     return this.theme.availableThemes();
+  }
+
+  protected get boardSkins(): readonly string[] {
+    return this.boardSkin.availableSkins();
   }
 
   protected localeKey(locale: SupportedLocale): string {
@@ -39,12 +48,20 @@ export class Header {
     return `header.theme.${name}`;
   }
 
+  protected boardSkinKey(name: string): string {
+    return `header.board-skin.${name}`;
+  }
+
   protected selectLocale(locale: SupportedLocale): void {
     this.language.use(locale);
   }
 
   protected selectTheme(name: string): void {
     this.theme.activate(name);
+  }
+
+  protected selectBoardSkin(name: string): void {
+    this.boardSkin.activate(name);
   }
 
   protected toggleDark(): void {

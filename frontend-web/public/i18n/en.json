@@ -13,6 +13,11 @@
       "dark-on": "On",
       "dark-off": "Off"
     },
+    "board-skin": {
+      "label": "Board",
+      "wood": "Wood",
+      "classic": "Classic"
+    },
     "auth": {
       "login-cta": "Log in",
       "logout": "Log out",

@@ -13,6 +13,11 @@
       "dark-on": "开",
       "dark-off": "关"
     },
+    "board-skin": {
+      "label": "棋盘",
+      "wood": "木质",
+      "classic": "简约"
+    },
     "auth": {
       "login-cta": "登录",
       "logout": "退出登录",
