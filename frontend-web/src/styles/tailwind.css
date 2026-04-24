@@ -7,3 +7,31 @@
  * Tailwind's media strategy here; user-chosen dark mode has to win over OS pref.
  */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Theme-token registration.
+ *
+ * MUST live in this file (not tokens.css) — Tailwind v4 only scans `@theme`
+ * blocks in the stylesheet that imports `tailwindcss`. Declaring a token here
+ * (e.g. `--color-primary`) tells Tailwind to generate the matching utilities
+ * (`bg-primary`, `text-primary`, `border-primary`, …).
+ *
+ * The VALUES below are placeholders — the real per-theme values cascade in
+ * at runtime via `[data-theme="..."]` selectors in tokens.css. So:
+ *   - Add a token here  → utilities become available
+ *   - Add a theme's value in tokens.css → that theme's paint kicks in
+ */
+@theme {
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-primary: #1565c0;
+  --color-text: #1a1a1a;
+  --color-muted: #616161;
+  --color-border: #e0e0e0;
+  --color-danger: #c62828;
+  --color-success: #2e7d32;
+  --color-warning: #e65100;
+
+  --radius-card: 12px;
+  --shadow-elevated: 0 4px 12px rgb(0 0 0 / 0.12);
+}

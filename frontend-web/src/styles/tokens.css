@@ -1,39 +1,20 @@
 /*
- * Design tokens. This file is the ONE allowed home for concrete color, radius,
- * and shadow values. Everything else in src/ MUST consume these via CSS
- * variables (`var(--color-*)`) or via Tailwind utilities that map to them
- * (`bg-bg`, `text-text`, `rounded-card`, `shadow-elevated`).
+ * Design tokens — runtime values per theme.
+ *
+ * Token NAMES are declared in `tailwind.css` via `@theme { ... }` so Tailwind
+ * can generate the matching utilities (`bg-bg`, `text-primary`, etc.). This
+ * file is responsible only for the per-theme values that cascade in at runtime
+ * when `<html data-theme="..." (class="dark")>` flips.
  *
  * Structure:
- *   @theme { ... }           -> declares token names so Tailwind generates utilities
- *   [data-theme="material"]  -> light-mode token values for the Material theme
- *   [data-theme="material"].dark
- *                            -> dark-mode overrides for the Material theme
- *   [data-theme="system"]    -> light-mode token values for the System theme
- *   [data-theme="system"].dark
- *                            -> dark-mode overrides for the System theme
+ *   [data-theme="material"]          -> light-mode values for Material
+ *   [data-theme="material"].dark     -> dark-mode overrides for Material
+ *   [data-theme="system"]            -> light-mode values for System
+ *   [data-theme="system"].dark       -> dark-mode overrides for System
  *
- * Adding a new theme = append two more blocks (light + dark) plus one line in
+ * Adding a new theme = append two blocks (light + dark) plus one line in
  * DefaultThemeService; no other file needs to change.
  */
-
-@theme {
-  /* Placeholder declarations so Tailwind generates the `bg-*`, `text-*`,
-     `rounded-*`, `shadow-*` utilities. The actual values are cascaded in by
-     the [data-theme] selectors below. Values here are light-Material defaults. */
-  --color-bg: #fafafa;
-  --color-surface: #ffffff;
-  --color-primary: #1565c0;
-  --color-text: #1a1a1a;
-  --color-muted: #616161;
-  --color-border: #e0e0e0;
-  --color-danger: #c62828;
-  --color-success: #2e7d32;
-  --color-warning: #e65100;
-
-  --radius-card: 12px;
-  --shadow-elevated: 0 4px 12px rgb(0 0 0 / 0.12);
-}
 
 /* --- Material theme --- */
 
