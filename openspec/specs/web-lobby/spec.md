@@ -295,42 +295,6 @@ Active rooms / My active rooms 卡片的操作按钮 SHALL 执行如下流程:
 
 ---
 
-### Requirement: `/rooms/:id` 临时占位组件
-
-`app.routes.ts` SHALL 包含 lazy route:
-
-```ts
-{
-  path: 'rooms/:id',
-  canMatch: [authGuard],
-  loadComponent: () => import('./pages/rooms/room-placeholder/room-placeholder').then(m => m.RoomPlaceholder),
-}
-```
-
-`RoomPlaceholder` 行为:
-
-1. mount 时 `inject(ActivatedRoute)` 读 `id`,`inject(RoomsApiService).getById(id)` 拉房间状态。
-2. 渲染 `{ room.name, host.username, 我是 Black / White / spectator(通过 auth.user().id 与 black.id / white.id 比对), status }`。
-3. 最顶上 MUST 显示一个标记为 `lobby.placeholder.coming-soon` 翻译的 banner 明确告诉用户"棋盘在下一版上线"。
-4. 一个"Leave room"按钮:调 `rooms.leave(id)` 然后 `router.navigateByUrl('/home')`。
-5. 404(`RoomNotFound`)→ 翻译后的文案 + 返回 lobby 的链接;MUST NOT 抛未捕获 promise 到 console。
-
-本组件明确标记为 **throwaway**,`add-web-game-board` MUST 在其 proposal 里列出"替换 `RoomPlaceholder`"作为一项 task。
-
-#### Scenario: placeholder 渲染并显示 banner
-- **WHEN** 登录用户访问 `/rooms/abc123`,后端回 200 + RoomState
-- **THEN** 页面显示房间名 + 主机名 + 我方身份 + 顶部 coming-soon banner(翻译版)
-
-#### Scenario: Leave 回大厅
-- **WHEN** 用户点 Leave
-- **THEN** 发出 `POST /api/rooms/abc123/leave`,无论结果如何最终 `router.navigateByUrl('/home')`
-
-#### Scenario: 404 不崩
-- **WHEN** 访问 `/rooms/invalid-id`,后端回 404
-- **THEN** 页面展示翻译后的"房间不存在"文案 + 返回 `/home` 的按钮;console 无 unhandled rejection
-
----
-
 ### Requirement: i18n —— `lobby.*` 翻译树同步扩充
 
 `public/i18n/en.json` 与 `public/i18n/zh-CN.json` SHALL 同步新增 `lobby.*` 键集合:
