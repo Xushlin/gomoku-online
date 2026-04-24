@@ -101,11 +101,11 @@ body {
   background: radial-gradient(
     circle at 30% 30%,
     var(--color-bg),
-    color-mix(in srgb, var(--color-bg) 80%, var(--color-border))
+    color-mix(in srgb, var(--color-bg) 60%, var(--color-muted))
   );
   box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.2),
-    inset 0 0 0 1px var(--color-border);
+    0 2px 4px rgb(0 0 0 / 0.35),
+    inset 0 0 0 1.5px var(--color-muted);
 }
 
 .board-cell--last-move::after {
