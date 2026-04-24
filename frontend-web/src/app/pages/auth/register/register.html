@@ -1,0 +1,107 @@
+<app-auth-card [title]="'auth.register.title' | transloco">
+  @if (bannerKey(); as key) {
+    <div
+      class="bg-surface text-danger border-border rounded-card mb-4 border p-3 text-sm"
+      role="alert"
+    >
+      {{ key | transloco }}
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="text-muted">{{ 'auth.register.email-label' | transloco }}</span>
+      <input
+        type="email"
+        autocomplete="email"
+        formControlName="email"
+        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+      />
+      @let emailCtrl = form.controls.email;
+      @if (emailCtrl.touched && emailCtrl.errors) {
+        <span class="text-danger text-xs">
+          @if (emailCtrl.errors['required']) {
+            {{ 'auth.errors.required' | transloco }}
+          } @else if (emailCtrl.errors['email']) {
+            {{ 'auth.errors.email-invalid' | transloco }}
+          } @else if (emailCtrl.errors['serverKey']) {
+            {{ emailCtrl.errors['serverKey'] | transloco }}
+          } @else if (emailCtrl.errors['server']) {
+            {{ emailCtrl.errors['server'] }}
+          }
+        </span>
+      }
+    </label>
+
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="text-muted">{{ 'auth.register.username-label' | transloco }}</span>
+      <input
+        type="text"
+        autocomplete="username"
+        formControlName="username"
+        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+      />
+      @let usernameCtrl = form.controls.username;
+      @if (usernameCtrl.touched && usernameCtrl.errors) {
+        <span class="text-danger text-xs">
+          @if (usernameCtrl.errors['required']) {
+            {{ 'auth.errors.required' | transloco }}
+          } @else if (usernameCtrl.errors['minlength']) {
+            {{ 'auth.errors.username-min-length' | transloco }}
+          } @else if (usernameCtrl.errors['serverKey']) {
+            {{ usernameCtrl.errors['serverKey'] | transloco }}
+          } @else if (usernameCtrl.errors['server']) {
+            {{ usernameCtrl.errors['server'] }}
+          }
+        </span>
+      }
+    </label>
+
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="text-muted">{{ 'auth.register.password-label' | transloco }}</span>
+      <input
+        type="password"
+        autocomplete="new-password"
+        formControlName="password"
+        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+      />
+      @let passwordCtrl = form.controls.password;
+      @if (passwordCtrl.touched && passwordCtrl.errors) {
+        <span class="text-danger text-xs">
+          @if (passwordCtrl.errors['required']) {
+            {{ 'auth.errors.required' | transloco }}
+          } @else if (passwordCtrl.errors['minlength']) {
+            {{ 'auth.errors.password-min-length' | transloco }}
+          } @else if (passwordCtrl.errors['missingLetter']) {
+            {{ 'auth.errors.password-missing-letter' | transloco }}
+          } @else if (passwordCtrl.errors['missingDigit']) {
+            {{ 'auth.errors.password-missing-digit' | transloco }}
+          } @else if (passwordCtrl.errors['serverKey']) {
+            {{ passwordCtrl.errors['serverKey'] | transloco }}
+          } @else if (passwordCtrl.errors['server']) {
+            {{ passwordCtrl.errors['server'] }}
+          }
+        </span>
+      }
+    </label>
+
+    <button
+      type="submit"
+      class="bg-primary text-bg rounded-card mt-2 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+      [disabled]="submitting()"
+    >
+      @if (submitting()) {
+        {{ 'auth.register.submit-loading' | transloco }}
+      } @else {
+        {{ 'auth.register.submit' | transloco }}
+      }
+    </button>
+
+    <a
+      routerLink="/login"
+      class="text-primary text-center text-xs hover:underline"
+    >
+      {{ 'auth.register.already-have-account-cta' | transloco }}
+    </a>
+  </form>
+</app-auth-card>

@@ -1,0 +1,79 @@
+<app-auth-card [title]="'auth.login.title' | transloco">
+  @if (banner().kind !== 'none') {
+    <div
+      [class.bg-surface]="banner().kind === 'info'"
+      [class.text-success]="banner().kind === 'info'"
+      [class.bg-surface]="banner().kind === 'error'"
+      [class.text-danger]="banner().kind === 'error'"
+      class="border-border rounded-card mb-4 border p-3 text-sm"
+      role="alert"
+    >
+      {{ banner().key | transloco }}
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="text-muted">{{ 'auth.login.email-label' | transloco }}</span>
+      <input
+        type="email"
+        autocomplete="email"
+        formControlName="email"
+        [placeholder]="'auth.login.email-placeholder' | transloco"
+        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+      />
+      @let emailCtrl = form.controls.email;
+      @if (emailCtrl.touched && emailCtrl.errors) {
+        <span class="text-danger text-xs">
+          @if (emailCtrl.errors['required']) {
+            {{ 'auth.errors.required' | transloco }}
+          } @else if (emailCtrl.errors['email']) {
+            {{ 'auth.errors.email-invalid' | transloco }}
+          } @else if (emailCtrl.errors['server']) {
+            {{ emailCtrl.errors['server'] }}
+          }
+        </span>
+      }
+    </label>
+
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="text-muted">{{ 'auth.login.password-label' | transloco }}</span>
+      <input
+        type="password"
+        autocomplete="current-password"
+        formControlName="password"
+        [placeholder]="'auth.login.password-placeholder' | transloco"
+        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+      />
+      @let passwordCtrl = form.controls.password;
+      @if (passwordCtrl.touched && passwordCtrl.errors) {
+        <span class="text-danger text-xs">
+          @if (passwordCtrl.errors['required']) {
+            {{ 'auth.errors.required' | transloco }}
+          } @else if (passwordCtrl.errors['server']) {
+            {{ passwordCtrl.errors['server'] }}
+          }
+        </span>
+      }
+    </label>
+
+    <button
+      type="submit"
+      class="bg-primary text-bg rounded-card mt-2 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+      [disabled]="submitting()"
+    >
+      @if (submitting()) {
+        {{ 'auth.login.submit-loading' | transloco }}
+      } @else {
+        {{ 'auth.login.submit' | transloco }}
+      }
+    </button>
+
+    <a
+      routerLink="/register"
+      class="text-primary text-center text-xs hover:underline"
+    >
+      {{ 'auth.login.no-account-cta' | transloco }}
+    </a>
+  </form>
+</app-auth-card>
