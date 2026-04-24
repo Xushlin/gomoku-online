@@ -15,6 +15,11 @@ set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
 echo.
+echo [0/3] Freeing ports 4200 and 5145 if anything is listening...
+powershell -NoProfile -Command ^
+  "Get-NetTCPConnection -LocalPort 4200,5145 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { $p = Get-Process -Id $_ -ErrorAction Stop; Write-Host ('  killing PID ' + $_ + ' (' + $p.ProcessName + ')'); Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } catch {} }"
+
+echo.
 echo [1/3] Starting backend (dotnet run, http://localhost:5145)...
 start "Gomoku Backend" cmd /k "cd /d "%ROOT%backend" && dotnet run --project src\Gomoku.Api --launch-profile http"
 
