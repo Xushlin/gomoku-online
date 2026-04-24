@@ -11,13 +11,11 @@ Multi-platform online Gomoku (五子棋) game. Players register, create/join roo
 Project is in initial scaffolding. Completed:
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gomoku.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`)
+- [x] Backend MVP (auth, rooms, gameplay, AI, ELO, replay, presence, observability, rate limiting) — see `openspec/specs/` and `openspec/changes/archive/`
+- [x] `frontend-web/` Angular 21 scaffold (Tailwind v4, Material/CDK, Transloco zh-CN+en, ThemeService, LanguageService, Vitest) — `add-web-scaffold`. No business pages yet.
 
 Not yet done:
-- [ ] First OpenSpec change: `add-domain-core` — no proposal exists yet
-- `Program.cs` still holds the .NET template `WeatherForecast` sample; `Application` / `Domain` / `Infrastructure` projects contain only placeholder `Class1.cs`
-- `frontend-web/`, `frontend-desktop/`, `frontend-mobile/` directories are empty — framework decisions made (see below) but nothing scaffolded
-
-Expect tasks to be about *adding* things from near-zero, not modifying existing code.
+- `frontend-desktop/`, `frontend-mobile/` directories are empty — frontend-web business pages (`add-web-auth-pages` / `-lobby` / `-game-board` / `-replay-and-profile`) come next.
 
 ## Workflow — OpenSpec is mandatory
 
