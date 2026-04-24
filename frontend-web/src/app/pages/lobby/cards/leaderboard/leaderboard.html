@@ -1,0 +1,58 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col border"
+>
+  <header class="border-border border-b p-4">
+    <h2 class="text-lg font-semibold tracking-tight">
+      {{ 'lobby.leaderboard.title' | transloco }}
+    </h2>
+  </header>
+
+  <div class="flex flex-col p-4">
+    @if (slice.loading() && slice.data() === null) {
+      <ul class="flex flex-col gap-2" aria-hidden="true">
+        @for (i of [0, 1, 2, 3, 4]; track i) {
+          <li class="border-border bg-bg rounded-card flex h-8 animate-pulse items-center border"></li>
+        }
+      </ul>
+    } @else if (slice.error() && slice.data() === null) {
+      <div class="flex flex-col items-center justify-center gap-2 py-4 text-sm">
+        <p class="text-danger">{{ 'lobby.errors.generic' | transloco }}</p>
+        <button
+          type="button"
+          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5"
+          (click)="refresh()"
+        >
+          {{ 'lobby.errors.retry' | transloco }}
+        </button>
+      </div>
+    } @else if ((slice.data()?.length ?? 0) === 0) {
+      <p class="text-muted py-3 text-sm">
+        {{ 'lobby.leaderboard.empty' | transloco }}
+      </p>
+    } @else {
+      <ol class="flex flex-col">
+        @for (entry of slice.data()!; track trackEntry($index, entry)) {
+          <li
+            class="border-border flex items-center gap-3 border-b py-2 text-sm last:border-b-0"
+          >
+            <span class="text-muted w-6 shrink-0 text-right font-mono text-xs">
+              @if (tierIcon(entry.rank); as icon) {
+                <span aria-hidden="true">{{ icon }}</span>
+                <span class="sr-only">{{ tierKey(entry.rank)! | transloco }}</span>
+              } @else {
+                #{{ entry.rank }}
+              }
+            </span>
+            <span class="flex-1 truncate">{{ entry.username }}</span>
+            <span class="text-text w-14 shrink-0 text-right font-mono text-xs">
+              {{ entry.rating }}
+            </span>
+            <span class="text-muted w-20 shrink-0 text-right font-mono text-xs">
+              {{ entry.wins }}-{{ entry.losses }}-{{ entry.draws }}
+            </span>
+          </li>
+        }
+      </ol>
+    }
+  </div>
+</section>

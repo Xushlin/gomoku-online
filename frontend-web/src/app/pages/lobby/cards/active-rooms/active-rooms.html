@@ -1,0 +1,109 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex h-full flex-col border"
+>
+  <header class="border-border flex items-center justify-between gap-2 border-b p-4">
+    <h2 class="text-lg font-semibold tracking-tight">
+      {{ 'lobby.rooms.title' | transloco }}
+    </h2>
+    <button
+      type="button"
+      class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+      (click)="openCreateDialog()"
+    >
+      {{ 'lobby.rooms.create-button' | transloco }}
+    </button>
+  </header>
+
+  <div class="flex min-h-0 flex-1 flex-col p-4">
+    @if (slice.loading() && slice.data() === null) {
+      <ul class="flex flex-col gap-2" aria-hidden="true">
+        @for (i of [0, 1, 2]; track i) {
+          <li class="border-border bg-bg rounded-card flex h-14 animate-pulse items-center border"></li>
+        }
+      </ul>
+    } @else if (slice.error() && slice.data() === null) {
+      <div class="flex flex-col items-center justify-center gap-2 py-6 text-sm">
+        <p class="text-danger">{{ 'lobby.errors.generic' | transloco }}</p>
+        <button
+          type="button"
+          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5"
+          (click)="refresh()"
+        >
+          {{ 'lobby.errors.retry' | transloco }}
+        </button>
+      </div>
+    } @else if ((slice.data()?.length ?? 0) === 0) {
+      <div class="text-muted flex flex-col items-center justify-center gap-3 py-6 text-sm">
+        <p>{{ 'lobby.rooms.empty' | transloco }}</p>
+        <button
+          type="button"
+          class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+          (click)="openCreateDialog()"
+        >
+          {{ 'lobby.rooms.create-button' | transloco }}
+        </button>
+      </div>
+    } @else {
+      <ul class="flex flex-col gap-2">
+        @for (room of slice.data()!; track trackRoom($index, room)) {
+          <li
+            class="border-border bg-bg rounded-card flex flex-col gap-2 border p-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div class="flex min-w-0 flex-col gap-1">
+              <div class="flex items-center gap-2">
+                <span class="truncate text-sm font-semibold">{{ room.name }}</span>
+                @if (room.status === 'Waiting') {
+                  <span
+                    class="bg-surface text-muted border-border rounded-card border px-2 py-0.5 text-xs"
+                    >{{ 'lobby.rooms.status-waiting' | transloco }}</span
+                  >
+                } @else if (room.status === 'Playing') {
+                  <span
+                    class="bg-surface text-success border-border rounded-card border px-2 py-0.5 text-xs"
+                    >{{ 'lobby.rooms.status-playing' | transloco }}</span
+                  >
+                }
+              </div>
+              <p class="text-muted text-xs">
+                <span>{{ 'lobby.rooms.host' | transloco }}: {{ room.host.username }}</span>
+                <span class="mx-2">·</span>
+                <span>
+                  {{ 'lobby.rooms.seat-black' | transloco }}:
+                  {{ room.black?.username ?? ('lobby.rooms.seat-empty' | transloco) }}
+                </span>
+                <span class="mx-2">·</span>
+                <span>
+                  {{ 'lobby.rooms.seat-white' | transloco }}:
+                  {{ room.white?.username ?? ('lobby.rooms.seat-empty' | transloco) }}
+                </span>
+                <span class="mx-2">·</span>
+                <span>{{ 'lobby.rooms.spectators' | transloco }}: {{ room.spectatorCount }}</span>
+              </p>
+            </div>
+            <div class="flex shrink-0 gap-2">
+              @if (room.status === 'Waiting') {
+                <button
+                  type="button"
+                  class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+                  [disabled]="navigating() === room.id"
+                  (click)="join(room)"
+                >
+                  {{ 'lobby.rooms.join' | transloco }}
+                </button>
+              } @else if (room.status === 'Playing') {
+                <button
+                  type="button"
+                  class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm disabled:opacity-50"
+                  [disabled]="navigating() === room.id"
+                  (click)="watch(room)"
+                >
+                  {{ 'lobby.rooms.watch' | transloco }}
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</section>

@@ -1,0 +1,66 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated w-full max-w-sm border p-6"
+>
+  <h2 class="mb-4 text-lg font-semibold tracking-tight">
+    {{ 'lobby.create-room.dialog-title' | transloco }}
+  </h2>
+
+  @if (bannerKey(); as key) {
+    <div
+      class="bg-bg text-danger border-border rounded-card mb-4 border p-3 text-sm"
+      role="alert"
+    >
+      {{ key | transloco }}
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="text-muted">{{ 'lobby.create-room.name-label' | transloco }}</span>
+      <input
+        type="text"
+        autocomplete="off"
+        formControlName="name"
+        [placeholder]="'lobby.create-room.name-placeholder' | transloco"
+        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+      />
+      @let nameCtrl = form.controls.name;
+      @if (nameCtrl.touched && nameCtrl.errors) {
+        <span class="text-danger text-xs">
+          @if (nameCtrl.errors['required']) {
+            {{ 'auth.errors.required' | transloco }}
+          } @else if (nameCtrl.errors['minlength']) {
+            {{ 'lobby.create-room.errors.min-length' | transloco }}
+          } @else if (nameCtrl.errors['maxlength']) {
+            {{ 'lobby.create-room.errors.max-length' | transloco }}
+          } @else if (nameCtrl.errors['pattern']) {
+            {{ 'lobby.create-room.errors.whitespace-only' | transloco }}
+          } @else if (nameCtrl.errors['server']) {
+            {{ nameCtrl.errors['server'] }}
+          }
+        </span>
+      }
+    </label>
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+        (click)="cancel()"
+      >
+        {{ 'lobby.create-room.cancel' | transloco }}
+      </button>
+      <button
+        type="submit"
+        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+        [disabled]="submitting()"
+      >
+        @if (submitting()) {
+          {{ 'lobby.create-room.submit-loading' | transloco }}
+        } @else {
+          {{ 'lobby.create-room.submit' | transloco }}
+        }
+      </button>
+    </div>
+  </form>
+</section>

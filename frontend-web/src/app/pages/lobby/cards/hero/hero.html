@@ -1,0 +1,22 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-2 border p-6 sm:flex-row sm:items-center sm:justify-between"
+>
+  <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">
+    {{
+      'lobby.hero.welcome'
+        | transloco: { username: auth.user()?.username ?? '' }
+    }}
+  </h1>
+  <p class="text-muted text-sm">
+    <span class="text-text font-semibold">
+      @if (onlineCount.loading() && onlineCount.data() === null) {
+        <span class="bg-border inline-block h-4 w-6 animate-pulse rounded"></span>
+      } @else if (onlineCount.error() && onlineCount.data() === null) {
+        —
+      } @else {
+        {{ onlineCount.data() }}
+      }
+    </span>
+    {{ 'lobby.hero.online-count-label' | transloco }}
+  </p>
+</section>
