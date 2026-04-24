@@ -1,0 +1,26 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated w-full max-w-xs border p-6"
+>
+  <h2 class="mb-2 text-lg font-semibold tracking-tight">
+    {{ 'game.actions.resign-confirm-title' | transloco }}
+  </h2>
+  <p class="text-muted mb-4 text-sm">
+    {{ 'game.actions.resign-confirm-body' | transloco }}
+  </p>
+  <div class="flex justify-end gap-2">
+    <button
+      type="button"
+      class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+      (click)="cancel()"
+    >
+      {{ 'game.actions.resign-confirm-cancel' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="bg-danger text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+      (click)="confirm()"
+    >
+      {{ 'game.actions.resign-confirm-ok' | transloco }}
+    </button>
+  </div>
+</section>

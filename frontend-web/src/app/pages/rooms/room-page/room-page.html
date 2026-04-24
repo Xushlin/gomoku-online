@@ -1,0 +1,103 @@
+<section class="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
+  @if (connectionStatus() === 'reconnecting') {
+    <div
+      class="bg-surface text-text border-border rounded-card border px-3 py-2 text-sm"
+      role="status"
+    >
+      {{ 'game.connection.reconnecting' | transloco }}
+    </div>
+  } @else if (connectionStatus() === 'disconnected' && !loading() && !notFound()) {
+    <div
+      class="bg-surface text-danger border-border rounded-card flex items-center justify-between gap-3 border px-3 py-2 text-sm"
+      role="alert"
+    >
+      <span>{{ 'game.connection.disconnected' | transloco }}</span>
+      <button
+        type="button"
+        class="border-border text-text hover:bg-bg rounded-card border px-2 py-1 text-xs"
+        (click)="retryConnection()"
+      >
+        {{ 'game.connection.retry' | transloco }}
+      </button>
+    </div>
+  }
+
+  @if (urgeToast()) {
+    <div
+      class="bg-surface text-text border-border rounded-card shadow-elevated border px-3 py-2 text-sm"
+      role="status"
+    >
+      {{ 'game.urge.toast' | transloco }}
+    </div>
+  }
+
+  @if (errorToastKey(); as key) {
+    <div
+      class="bg-surface text-danger border-border rounded-card border px-3 py-2 text-sm"
+      role="alert"
+    >
+      {{ key | transloco }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="flex flex-col gap-3">
+      <div class="bg-border h-6 w-1/3 animate-pulse rounded"></div>
+      <div class="bg-border aspect-square w-full max-w-[600px] animate-pulse rounded"></div>
+    </div>
+  } @else if (notFound()) {
+    <div
+      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+    >
+      <p class="text-danger">{{ 'game.room.not-found' | transloco }}</p>
+      <a
+        routerLink="/home"
+        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+      >
+        {{ 'game.room.back-to-lobby' | transloco }}
+      </a>
+    </div>
+  } @else if (loadError()) {
+    <div
+      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+    >
+      <p class="text-danger">{{ 'game.errors.generic' | transloco }}</p>
+      <button
+        type="button"
+        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+        (click)="retryLoad()"
+      >
+        {{ 'game.connection.retry' | transloco }}
+      </button>
+    </div>
+  } @else if (state(); as room) {
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div class="flex min-w-0 flex-col gap-4">
+        <app-board
+          [state]="room"
+          [mySide]="mySide()"
+          [submitting]="submittingMove()"
+          (cellClick)="handleCellClick($event)"
+        />
+      </div>
+      <div class="flex flex-col gap-4">
+        <app-room-sidebar
+          [state]="room"
+          [mySide]="mySide()"
+          [turnRemainingMs]="turnRemainingMs()"
+          [canUrge]="canUrge()"
+          (resign)="handleResign()"
+          (leave)="handleLeave()"
+          (urge)="handleUrge()"
+        />
+        <app-chat-panel
+          [state]="room"
+          [mySide]="mySide()"
+          [canSend]="connectionStatus() === 'connected'"
+          [forbiddenBannerKey]="chatBannerKey()"
+          (send)="handleChatSend($event)"
+        />
+      </div>
+    </div>
+  }
+</section>

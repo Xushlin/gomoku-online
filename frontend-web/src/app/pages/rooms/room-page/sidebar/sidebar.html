@@ -1,0 +1,100 @@
+@if (state(); as room) {
+  <aside
+    class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col gap-3 border p-4 text-sm"
+  >
+    <header class="flex flex-col gap-1">
+      <h2 class="text-lg font-semibold tracking-tight">{{ room.name }}</h2>
+      <p class="text-muted text-xs">
+        {{ 'game.room.host-label' | transloco }}: {{ room.host.username }}
+      </p>
+    </header>
+
+    <div class="flex flex-col gap-1">
+      <p>
+        <span class="text-muted">{{ 'game.room.seat-black' | transloco }}:</span>
+        <span>{{ room.black?.username || ('game.room.seat-empty' | transloco) }}</span>
+      </p>
+      <p>
+        <span class="text-muted">{{ 'game.room.seat-white' | transloco }}:</span>
+        <span>{{ room.white?.username || ('game.room.seat-empty' | transloco) }}</span>
+      </p>
+      <p>
+        <span class="text-muted">{{ 'game.room.spectators-label' | transloco }}:</span>
+        <span>{{ room.spectators.length }}</span>
+      </p>
+    </div>
+
+    <p>
+      <span
+        class="border-border rounded-card inline-block border px-2 py-0.5 text-xs"
+        [class.text-success]="room.status === 'Playing'"
+        [class.text-muted]="room.status === 'Waiting'"
+        [class.text-danger]="room.status === 'Finished'"
+      >
+        @switch (room.status) {
+          @case ('Waiting') {
+            {{ 'game.room.status-waiting' | transloco }}
+          }
+          @case ('Playing') {
+            {{ 'game.room.status-playing' | transloco }}
+          }
+          @case ('Finished') {
+            {{ 'game.room.status-finished' | transloco }}
+          }
+        }
+      </span>
+    </p>
+
+    @if (room.game && room.status === 'Playing') {
+      <div class="flex flex-col gap-1">
+        <p class="text-xs">
+          @if (room.game.currentTurn === 'Black') {
+            {{ 'game.turn.black-turn' | transloco }}
+          } @else {
+            {{ 'game.turn.white-turn' | transloco }}
+          }
+          @if (myTurn()) {
+            <span class="text-primary ml-1 font-semibold">
+              {{ 'game.turn.your-turn' | transloco }}
+            </span>
+          }
+        </p>
+        <p class="text-xs">
+          <span class="text-muted">{{ 'game.turn.countdown-label' | transloco }}:</span>
+          <span class="ml-1 font-mono" [class.text-danger]="countdownDanger()">
+            {{ countdownText() }}
+          </span>
+        </p>
+      </div>
+    }
+
+    @if (isPlayer()) {
+      <div class="flex flex-col gap-2 pt-2">
+        @if (room.status === 'Playing') {
+          <button
+            type="button"
+            class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+            [disabled]="!canUrge()"
+            (click)="emitUrge()"
+          >
+            {{ 'game.actions.urge' | transloco }}
+          </button>
+          <button
+            type="button"
+            class="border-border text-danger hover:bg-bg rounded-card border px-3 py-1.5 text-xs"
+            (click)="openResignConfirm()"
+          >
+            {{ 'game.actions.resign' | transloco }}
+          </button>
+        }
+        <button
+          type="button"
+          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs"
+          (click)="emitLeave()"
+        >
+          {{ 'game.actions.leave' | transloco }}
+        </button>
+      </div>
+    }
+  </aside>
+}

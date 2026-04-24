@@ -1,0 +1,77 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col border"
+>
+  <header class="border-border flex items-center gap-2 border-b p-3">
+    <h2 class="mr-2 text-sm font-semibold tracking-tight">
+      {{ 'game.chat.title' | transloco }}
+    </h2>
+    <div role="tablist" class="flex gap-1">
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeChannel() === 'Room'"
+        class="rounded-card border-border border px-2 py-1 text-xs"
+        [class.bg-primary]="activeChannel() === 'Room'"
+        [class.text-bg]="activeChannel() === 'Room'"
+        (click)="setTab('Room')"
+      >
+        {{ 'game.chat.tab-room' | transloco }}
+      </button>
+      @if (isSpectator()) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeChannel() === 'Spectator'"
+          class="rounded-card border-border border px-2 py-1 text-xs"
+          [class.bg-primary]="activeChannel() === 'Spectator'"
+          [class.text-bg]="activeChannel() === 'Spectator'"
+          (click)="setTab('Spectator')"
+        >
+          {{ 'game.chat.tab-spectator' | transloco }}
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (forbiddenBannerKey(); as key) {
+    <div class="bg-bg text-danger border-border m-3 border p-2 text-xs" role="alert">
+      {{ key | transloco }}
+    </div>
+  }
+
+  <div #list class="flex max-h-60 min-h-40 flex-col gap-1 overflow-y-auto p-3 text-sm">
+    @if (visibleMessages().length === 0) {
+      <p class="text-muted text-xs">{{ 'game.chat.empty' | transloco }}</p>
+    }
+    @for (msg of visibleMessages(); track msg.id) {
+      <p class="break-words">
+        <span class="text-muted mr-1 text-xs">{{ msg.senderUsername }}:</span>
+        <span>{{ msg.content }}</span>
+      </p>
+    }
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="border-border flex flex-col gap-1 border-t p-3">
+    <div class="flex gap-2">
+      <input
+        type="text"
+        formControlName="content"
+        [maxLength]="maxLength"
+        [placeholder]="'game.chat.placeholder' | transloco"
+        class="bg-bg text-text border-border rounded-card flex-1 border px-3 py-1.5 text-sm"
+      />
+      <button
+        type="submit"
+        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+        [disabled]="!canSend() || form.invalid || trimmedLength() === 0"
+      >
+        {{ 'game.chat.send' | transloco }}
+      </button>
+    </div>
+    @if (form.controls.content.touched && form.controls.content.errors?.['maxlength']) {
+      <span class="text-danger text-xs">
+        {{ 'game.chat.max-length-error' | transloco }}
+      </span>
+    }
+  </form>
+</section>
