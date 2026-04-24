@@ -1,0 +1,48 @@
+/*
+ * Board skins — CSS variable bags selected by `<html data-board-skin="...">`.
+ *
+ * Adding a new skin = append one block here + one TypeScript token file under
+ * `src/app/core/theme/skins/` + one `register(...)` call in
+ * `DefaultBoardSkinService`. No other file (no component, no template) needs
+ * to change — .board-grid and .board-stone consume these variables.
+ */
+
+/* --- Wood skin (default): warm tan surface, dark walnut lines, glossy stones --- */
+[data-board-skin='wood'] {
+  --board-bg: radial-gradient(ellipse at 30% 20%, #e9b57d 0%, #c88a4e 100%);
+  --board-line: rgb(50 25 8 / 0.65);
+  --board-star: rgb(50 25 8 / 0.85);
+  --board-radius: 8px;
+  --board-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+
+  --stone-black-fill: radial-gradient(circle at 30% 25%, #4a4a4a, #080808 70%);
+  --stone-black-shadow: 0 2px 3px rgb(0 0 0 / 0.5), inset -1px -1px 2px rgb(0 0 0 / 0.4);
+  --stone-white-fill: radial-gradient(circle at 30% 25%, #fffdf5, #d7c9a8 90%);
+  --stone-white-shadow: 0 2px 3px rgb(0 0 0 / 0.3), inset 0 0 0 1px rgb(120 100 70 / 0.5);
+
+  --last-move-ring: #ffb000;
+}
+
+/* --- Classic skin: follows the active app theme (bg / surface / border) --- */
+[data-board-skin='classic'] {
+  --board-bg: var(--color-surface);
+  --board-line: var(--color-border);
+  --board-star: var(--color-muted);
+  --board-radius: var(--radius-card);
+  --board-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+
+  --stone-black-fill: radial-gradient(
+    circle at 30% 25%,
+    color-mix(in srgb, var(--color-text) 65%, white),
+    var(--color-text) 70%
+  );
+  --stone-black-shadow: 0 1px 2px rgb(0 0 0 / 0.35), inset -1px -1px 2px rgb(0 0 0 / 0.25);
+  --stone-white-fill: radial-gradient(
+    circle at 30% 25%,
+    var(--color-bg),
+    color-mix(in srgb, var(--color-bg) 60%, var(--color-muted))
+  );
+  --stone-white-shadow: 0 2px 4px rgb(0 0 0 / 0.35), inset 0 0 0 1.5px var(--color-muted);
+
+  --last-move-ring: var(--color-primary);
+}

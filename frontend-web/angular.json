@@ -55,6 +55,7 @@
               "@angular/cdk/a11y-prebuilt.css",
               "src/styles/tailwind.css",
               "src/styles/tokens.css",
+              "src/styles/board-skins.css",
               "src/styles/global.css"
             ]
           },

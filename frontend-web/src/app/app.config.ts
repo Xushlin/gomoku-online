@@ -23,6 +23,10 @@ import { provideAppHttp } from './core/http/http-config';
 import { DefaultLanguageService, LanguageService } from './core/i18n/language.service';
 import { provideAppI18n } from './core/i18n/transloco-root.config';
 import { DefaultGameHubService, GameHubService } from './core/realtime/game-hub.service';
+import {
+  BoardSkinService,
+  DefaultBoardSkinService,
+} from './core/theme/board-skin.service';
 import { DefaultThemeService, ThemeService } from './core/theme/theme.service';
 
 export const appConfig: ApplicationConfig = {
@@ -32,6 +36,7 @@ export const appConfig: ApplicationConfig = {
     provideAppHttp([authInterceptor]),
     provideAppI18n(),
     { provide: ThemeService, useClass: DefaultThemeService },
+    { provide: BoardSkinService, useClass: DefaultBoardSkinService },
     { provide: LanguageService, useClass: DefaultLanguageService },
     { provide: AuthService, useClass: DefaultAuthService },
     { provide: PresenceApiService, useClass: DefaultPresenceApiService },
@@ -39,11 +44,15 @@ export const appConfig: ApplicationConfig = {
     { provide: LeaderboardApiService, useClass: DefaultLeaderboardApiService },
     { provide: GameHubService, useClass: DefaultGameHubService },
     // Preload i18n + restore session before first paint so the UI boots with
-    // the user logged in (if a valid refresh token is stored).
+    // the user logged in (if a valid refresh token is stored). Also eagerly
+    // constructs ThemeService + BoardSkinService so their `<html>`-attribute
+    // side effects land before the first render.
     provideAppInitializer(() => {
       const transloco = inject(TranslocoService);
       const language = inject(LanguageService);
       const auth = inject(AuthService);
+      inject(ThemeService);
+      inject(BoardSkinService);
       return Promise.all([
         firstValueFrom(transloco.load(language.current())),
         auth.bootstrap(),
