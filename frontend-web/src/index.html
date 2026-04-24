@@ -1,5 +1,11 @@
 <!doctype html>
-<html lang="en">
+<!--
+  Default `data-theme` and `data-board-skin` are seeded here so the matching
+  CSS variable blocks (tokens.css / board-skins.css) cascade on first paint —
+  before ThemeService / BoardSkinService have a chance to run JS. Both
+  services overwrite these attributes if the user has a stored preference.
+-->
+<html lang="en" data-theme="material" data-board-skin="wood">
   <head>
     <meta charset="utf-8" />
     <title>GomokuWeb</title>
