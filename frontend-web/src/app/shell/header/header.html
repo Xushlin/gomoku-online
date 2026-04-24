@@ -1,0 +1,102 @@
+<header
+  class="bg-surface text-text border-border sticky top-0 z-10 flex items-center gap-2 border-b px-4 py-3 sm:gap-4 sm:px-6"
+>
+  <a
+    routerLink="/home"
+    class="text-text mr-auto text-base font-semibold tracking-tight"
+    >Gomoku</a
+  >
+
+  <button
+    type="button"
+    class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+    [cdkMenuTriggerFor]="languageMenu"
+    [attr.aria-label]="'header.language.label' | transloco"
+  >
+    <span class="text-muted hidden sm:inline">{{ 'header.language.label' | transloco }}:</span>
+    <span>{{ currentLocaleKey() | transloco }}</span>
+  </button>
+
+  <ng-template #languageMenu>
+    <ul
+      cdkMenu
+      class="bg-surface text-text border-border shadow-elevated rounded-card min-w-40 overflow-hidden border py-1"
+    >
+      @for (locale of locales; track locale) {
+        <li>
+          <button
+            type="button"
+            cdkMenuItem
+            class="hover:bg-bg flex w-full items-center px-3 py-2 text-left text-sm"
+            (cdkMenuItemTriggered)="selectLocale(locale)"
+          >
+            {{ localeKey(locale) | transloco }}
+          </button>
+        </li>
+      }
+    </ul>
+  </ng-template>
+
+  <button
+    type="button"
+    class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+    [cdkMenuTriggerFor]="themeMenu"
+    [attr.aria-label]="'header.theme.label' | transloco"
+  >
+    <span class="text-muted hidden sm:inline">{{ 'header.theme.label' | transloco }}:</span>
+    <span>{{ currentThemeKey() | transloco }}</span>
+  </button>
+
+  <ng-template #themeMenu>
+    <ul
+      cdkMenu
+      class="bg-surface text-text border-border shadow-elevated rounded-card min-w-40 overflow-hidden border py-1"
+    >
+      @for (name of themes; track name) {
+        <li>
+          <button
+            type="button"
+            cdkMenuItem
+            class="hover:bg-bg flex w-full items-center px-3 py-2 text-left text-sm"
+            (cdkMenuItemTriggered)="selectTheme(name)"
+          >
+            {{ themeKey(name) | transloco }}
+          </button>
+        </li>
+      }
+    </ul>
+  </ng-template>
+
+  <button
+    type="button"
+    role="switch"
+    [attr.aria-checked]="theme.isDark()"
+    [attr.aria-label]="'header.theme.dark-toggle' | transloco"
+    class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+    (click)="toggleDark()"
+  >
+    <span class="text-muted hidden sm:inline">{{ 'header.theme.dark-toggle' | transloco }}:</span>
+    <span>{{ darkStateKey() | transloco }}</span>
+  </button>
+
+  @if (auth.isAuthenticated()) {
+    @let currentUser = auth.user();
+    @if (currentUser) {
+      <span class="text-muted hidden text-sm sm:inline">{{ currentUser.username }}</span>
+    }
+    <button
+      type="button"
+      class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+      (click)="logout()"
+    >
+      {{ 'header.auth.logout' | transloco }}
+    </button>
+  } @else {
+    <a
+      routerLink="/login"
+      class="bg-primary text-bg rounded-card inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold"
+    >
+      {{ 'header.auth.login-cta' | transloco }}
+    </a>
+  }
+</header>

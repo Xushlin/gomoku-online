@@ -1,0 +1,215 @@
+{
+  "header": {
+    "language": {
+      "label": "Language",
+      "en": "English",
+      "zh-CN": "简体中文"
+    },
+    "theme": {
+      "label": "Theme",
+      "material": "Material",
+      "system": "System",
+      "dark-toggle": "Dark mode",
+      "dark-on": "On",
+      "dark-off": "Off"
+    },
+    "auth": {
+      "login-cta": "Log in",
+      "logout": "Log out",
+      "account": "Account"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "submit": "Log in",
+      "submit-loading": "Logging in…",
+      "email-label": "Email",
+      "email-placeholder": "you@example.com",
+      "password-label": "Password",
+      "password-placeholder": "••••••••",
+      "no-account-cta": "Don't have an account? Register",
+      "flash": {
+        "password-changed": "Password changed. Please log in with your new password."
+      },
+      "errors": {
+        "invalid-credentials": "Email or password is incorrect.",
+        "account-inactive": "This account is not active.",
+        "network": "Network error — please try again."
+      }
+    },
+    "register": {
+      "title": "Create an account",
+      "submit": "Register",
+      "submit-loading": "Creating account…",
+      "email-label": "Email",
+      "username-label": "Username",
+      "password-label": "Password",
+      "already-have-account-cta": "Already have an account? Log in",
+      "errors": {
+        "email-taken": "That email is already registered.",
+        "username-taken": "That username is taken."
+      }
+    },
+    "change-password": {
+      "title": "Change password",
+      "submit": "Change password",
+      "submit-loading": "Updating…",
+      "current-label": "Current password",
+      "new-label": "New password",
+      "confirm-label": "Confirm new password",
+      "success-toast": "Password changed.",
+      "errors": {
+        "wrong-current": "Current password is incorrect.",
+        "mismatch": "Passwords don't match."
+      }
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "network": "Network error — please try again.",
+      "required": "This field is required.",
+      "email-invalid": "Enter a valid email address.",
+      "password-min-length": "Password must be at least 8 characters.",
+      "password-missing-letter": "Password must contain a letter.",
+      "password-missing-digit": "Password must contain a digit.",
+      "username-min-length": "Username must be at least 3 characters."
+    }
+  },
+  "lobby": {
+    "hero": {
+      "welcome": "Welcome, {{username}}!",
+      "online-count-label": "players online",
+      "online-count-empty": "—"
+    },
+    "rooms": {
+      "title": "Active rooms",
+      "create-button": "Create room",
+      "empty": "No rooms yet — create one to get started.",
+      "loading-retry": "Retry",
+      "join": "Join",
+      "watch": "Watch",
+      "status-waiting": "Waiting",
+      "status-playing": "Playing",
+      "status-finished": "Finished",
+      "seat-black": "Black",
+      "seat-white": "White",
+      "seat-empty": "open",
+      "host": "Host",
+      "spectators": "Spectators"
+    },
+    "my-rooms": {
+      "title": "My active rooms",
+      "empty": "You have no games in progress.",
+      "resume": "Resume",
+      "you-are-black": "You are Black",
+      "you-are-white": "You are White",
+      "you-are-spectator": "Spectating"
+    },
+    "leaderboard": {
+      "title": "Top players",
+      "empty": "No ranked players yet.",
+      "rank": "Rank",
+      "rating": "Rating",
+      "wins": "Wins",
+      "losses": "Losses",
+      "draws": "Draws",
+      "tier-gold": "Gold",
+      "tier-silver": "Silver",
+      "tier-bronze": "Bronze"
+    },
+    "create-room": {
+      "dialog-title": "Create a new room",
+      "name-label": "Room name",
+      "name-placeholder": "My gomoku room",
+      "submit": "Create",
+      "submit-loading": "Creating…",
+      "cancel": "Cancel",
+      "errors": {
+        "min-length": "Name must be at least 3 characters.",
+        "max-length": "Name must be at most 50 characters.",
+        "whitespace-only": "Name cannot be blank.",
+        "generic": "Couldn't create the room. Please try again.",
+        "network": "Network error — please try again."
+      }
+    },
+    "errors": {
+      "generic": "Couldn't load this card. Please try again.",
+      "network": "Network error — please try again.",
+      "retry": "Retry"
+    }
+  },
+  "game": {
+    "room": {
+      "name-label": "Room",
+      "host-label": "Host",
+      "seat-black": "Black",
+      "seat-white": "White",
+      "seat-empty": "Open",
+      "spectators-label": "Spectators",
+      "status-waiting": "Waiting",
+      "status-playing": "Playing",
+      "status-finished": "Finished",
+      "not-found": "This room doesn't exist or has ended.",
+      "back-to-lobby": "Back to lobby"
+    },
+    "board": {
+      "cell-aria-label": "Row {{row}} Column {{col}}",
+      "last-move-label": "Last move"
+    },
+    "turn": {
+      "your-turn": "Your turn",
+      "opponent-turn": "Opponent's turn",
+      "black-turn": "Black to play",
+      "white-turn": "White to play",
+      "countdown-label": "Time left"
+    },
+    "actions": {
+      "resign": "Resign",
+      "resign-confirm-title": "Resign?",
+      "resign-confirm-body": "You will lose this game.",
+      "resign-confirm-ok": "Resign",
+      "resign-confirm-cancel": "Cancel",
+      "leave": "Leave room",
+      "urge": "Urge opponent"
+    },
+    "chat": {
+      "title": "Chat",
+      "tab-room": "Room",
+      "tab-spectator": "Spectator",
+      "send": "Send",
+      "placeholder": "Message…",
+      "empty": "No messages yet.",
+      "max-length-error": "Message is too long (max 500 characters).",
+      "forbidden-error": "Can't send on this channel."
+    },
+    "urge": {
+      "toast": "Your opponent is urging you to move.",
+      "button-disabled-own-turn": "It's your turn.",
+      "button-disabled-cooldown": "Please wait before urging again."
+    },
+    "ended": {
+      "title-win": "You won!",
+      "title-lose": "You lost.",
+      "title-draw": "Draw.",
+      "reason-connected-5": "Five in a row.",
+      "reason-resigned": "Opponent resigned.",
+      "reason-timeout": "Turn timed out.",
+      "back-to-lobby": "Back to lobby",
+      "dismiss": "Stay and review"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "network": "Network error — please try again.",
+      "not-your-turn": "It's not your turn.",
+      "invalid-move": "That move isn't allowed.",
+      "concurrent-move-refetched": "Out of sync — board refreshed.",
+      "urge-cooldown": "Urge is on cooldown."
+    },
+    "connection": {
+      "reconnecting": "Reconnecting…",
+      "disconnected": "Disconnected from the game server.",
+      "retry": "Retry",
+      "connected": "Connected"
+    }
+  }
+}

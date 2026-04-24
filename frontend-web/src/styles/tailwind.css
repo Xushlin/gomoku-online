@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+/*
+ * Dark-mode variant.
+ * Tailwind's `dark:` modifier matches any ancestor with `.dark` class — we
+ * toggle this class on <html> from ThemeService.setDark(). We MUST NOT use
+ * Tailwind's media strategy here; user-chosen dark mode has to win over OS pref.
+ */
+@custom-variant dark (&:where(.dark, .dark *));

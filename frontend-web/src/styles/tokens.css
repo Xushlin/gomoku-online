@@ -1,0 +1,98 @@
+/*
+ * Design tokens. This file is the ONE allowed home for concrete color, radius,
+ * and shadow values. Everything else in src/ MUST consume these via CSS
+ * variables (`var(--color-*)`) or via Tailwind utilities that map to them
+ * (`bg-bg`, `text-text`, `rounded-card`, `shadow-elevated`).
+ *
+ * Structure:
+ *   @theme { ... }           -> declares token names so Tailwind generates utilities
+ *   [data-theme="material"]  -> light-mode token values for the Material theme
+ *   [data-theme="material"].dark
+ *                            -> dark-mode overrides for the Material theme
+ *   [data-theme="system"]    -> light-mode token values for the System theme
+ *   [data-theme="system"].dark
+ *                            -> dark-mode overrides for the System theme
+ *
+ * Adding a new theme = append two more blocks (light + dark) plus one line in
+ * DefaultThemeService; no other file needs to change.
+ */
+
+@theme {
+  /* Placeholder declarations so Tailwind generates the `bg-*`, `text-*`,
+     `rounded-*`, `shadow-*` utilities. The actual values are cascaded in by
+     the [data-theme] selectors below. Values here are light-Material defaults. */
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-primary: #1565c0;
+  --color-text: #1a1a1a;
+  --color-muted: #616161;
+  --color-border: #e0e0e0;
+  --color-danger: #c62828;
+  --color-success: #2e7d32;
+  --color-warning: #e65100;
+
+  --radius-card: 12px;
+  --shadow-elevated: 0 4px 12px rgb(0 0 0 / 0.12);
+}
+
+/* --- Material theme --- */
+
+[data-theme='material'] {
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-primary: #1565c0;
+  --color-text: #1a1a1a;
+  --color-muted: #616161;
+  --color-border: #e0e0e0;
+  --color-danger: #c62828;
+  --color-success: #2e7d32;
+  --color-warning: #e65100;
+
+  --radius-card: 12px;
+  --shadow-elevated: 0 4px 12px rgb(0 0 0 / 0.12);
+}
+
+[data-theme='material'].dark {
+  --color-bg: #121212;
+  --color-surface: #1e1e1e;
+  --color-primary: #90caf9;
+  --color-text: #e8e8e8;
+  --color-muted: #9e9e9e;
+  --color-border: #2a2a2a;
+  --color-danger: #ef9a9a;
+  --color-success: #a5d6a7;
+  --color-warning: #ffb74d;
+
+  --shadow-elevated: 0 4px 12px rgb(0 0 0 / 0.6);
+}
+
+/* --- System theme (flatter, smaller radius, lighter shadow) --- */
+
+[data-theme='system'] {
+  --color-bg: #ffffff;
+  --color-surface: #f7f7f8;
+  --color-primary: #0a66d6;
+  --color-text: #111111;
+  --color-muted: #555555;
+  --color-border: #e5e5e5;
+  --color-danger: #b42318;
+  --color-success: #1f7a34;
+  --color-warning: #b45309;
+
+  --radius-card: 6px;
+  --shadow-elevated: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+}
+
+[data-theme='system'].dark {
+  --color-bg: #0b0b0d;
+  --color-surface: #151518;
+  --color-primary: #4ea3ff;
+  --color-text: #eaeaea;
+  --color-muted: #9a9a9a;
+  --color-border: #2a2a2e;
+  --color-danger: #fca5a5;
+  --color-success: #86efac;
+  --color-warning: #fbbf24;
+
+  --shadow-elevated: 0 1px 2px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.6);
+}

@@ -1,0 +1,215 @@
+{
+  "header": {
+    "language": {
+      "label": "语言",
+      "en": "English",
+      "zh-CN": "简体中文"
+    },
+    "theme": {
+      "label": "主题",
+      "material": "Material",
+      "system": "简约",
+      "dark-toggle": "深色模式",
+      "dark-on": "开",
+      "dark-off": "关"
+    },
+    "auth": {
+      "login-cta": "登录",
+      "logout": "退出登录",
+      "account": "账户"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "登录",
+      "submit": "登录",
+      "submit-loading": "登录中…",
+      "email-label": "邮箱",
+      "email-placeholder": "you@example.com",
+      "password-label": "密码",
+      "password-placeholder": "••••••••",
+      "no-account-cta": "还没有账户?去注册",
+      "flash": {
+        "password-changed": "密码已修改,请使用新密码重新登录。"
+      },
+      "errors": {
+        "invalid-credentials": "邮箱或密码错误。",
+        "account-inactive": "该账户已被禁用。",
+        "network": "网络错误,请重试。"
+      }
+    },
+    "register": {
+      "title": "创建账户",
+      "submit": "注册",
+      "submit-loading": "创建中…",
+      "email-label": "邮箱",
+      "username-label": "用户名",
+      "password-label": "密码",
+      "already-have-account-cta": "已有账户?去登录",
+      "errors": {
+        "email-taken": "该邮箱已被注册。",
+        "username-taken": "该用户名已被占用。"
+      }
+    },
+    "change-password": {
+      "title": "修改密码",
+      "submit": "修改密码",
+      "submit-loading": "保存中…",
+      "current-label": "当前密码",
+      "new-label": "新密码",
+      "confirm-label": "确认新密码",
+      "success-toast": "密码已修改。",
+      "errors": {
+        "wrong-current": "当前密码不正确。",
+        "mismatch": "两次输入的密码不一致。"
+      }
+    },
+    "errors": {
+      "generic": "出了点问题,请重试。",
+      "network": "网络错误,请重试。",
+      "required": "此字段必填。",
+      "email-invalid": "请输入有效的邮箱地址。",
+      "password-min-length": "密码至少 8 位。",
+      "password-missing-letter": "密码必须包含字母。",
+      "password-missing-digit": "密码必须包含数字。",
+      "username-min-length": "用户名至少 3 位。"
+    }
+  },
+  "lobby": {
+    "hero": {
+      "welcome": "欢迎回来,{{username}}!",
+      "online-count-label": "位玩家在线",
+      "online-count-empty": "—"
+    },
+    "rooms": {
+      "title": "活跃房间",
+      "create-button": "创建房间",
+      "empty": "还没有房间 —— 创建一个开始吧。",
+      "loading-retry": "重试",
+      "join": "加入",
+      "watch": "观战",
+      "status-waiting": "等待中",
+      "status-playing": "对局中",
+      "status-finished": "已结束",
+      "seat-black": "黑方",
+      "seat-white": "白方",
+      "seat-empty": "空位",
+      "host": "房主",
+      "spectators": "观众"
+    },
+    "my-rooms": {
+      "title": "我的对局",
+      "empty": "你目前没有进行中的对局。",
+      "resume": "回到对局",
+      "you-are-black": "你执黑",
+      "you-are-white": "你执白",
+      "you-are-spectator": "围观中"
+    },
+    "leaderboard": {
+      "title": "排行榜",
+      "empty": "暂无上榜玩家。",
+      "rank": "排名",
+      "rating": "积分",
+      "wins": "胜",
+      "losses": "负",
+      "draws": "平",
+      "tier-gold": "金",
+      "tier-silver": "银",
+      "tier-bronze": "铜"
+    },
+    "create-room": {
+      "dialog-title": "创建新房间",
+      "name-label": "房间名",
+      "name-placeholder": "我的五子棋房",
+      "submit": "创建",
+      "submit-loading": "创建中…",
+      "cancel": "取消",
+      "errors": {
+        "min-length": "房间名至少 3 个字符。",
+        "max-length": "房间名最多 50 个字符。",
+        "whitespace-only": "房间名不能只有空白。",
+        "generic": "创建房间失败,请重试。",
+        "network": "网络错误,请重试。"
+      }
+    },
+    "errors": {
+      "generic": "加载失败,请重试。",
+      "network": "网络错误,请重试。",
+      "retry": "重试"
+    }
+  },
+  "game": {
+    "room": {
+      "name-label": "房间",
+      "host-label": "房主",
+      "seat-black": "黑方",
+      "seat-white": "白方",
+      "seat-empty": "空位",
+      "spectators-label": "观众",
+      "status-waiting": "等待中",
+      "status-playing": "对局中",
+      "status-finished": "已结束",
+      "not-found": "房间不存在或已结束。",
+      "back-to-lobby": "返回大厅"
+    },
+    "board": {
+      "cell-aria-label": "第 {{row}} 行 第 {{col}} 列",
+      "last-move-label": "最后一步"
+    },
+    "turn": {
+      "your-turn": "轮到你了",
+      "opponent-turn": "等待对手",
+      "black-turn": "黑方回合",
+      "white-turn": "白方回合",
+      "countdown-label": "剩余时间"
+    },
+    "actions": {
+      "resign": "认输",
+      "resign-confirm-title": "确认认输?",
+      "resign-confirm-body": "确认后本局将判负。",
+      "resign-confirm-ok": "确认认输",
+      "resign-confirm-cancel": "取消",
+      "leave": "离开房间",
+      "urge": "催促对手"
+    },
+    "chat": {
+      "title": "聊天",
+      "tab-room": "房间",
+      "tab-spectator": "观众",
+      "send": "发送",
+      "placeholder": "说点什么…",
+      "empty": "还没有消息。",
+      "max-length-error": "消息过长(最多 500 字符)。",
+      "forbidden-error": "该频道不允许发送。"
+    },
+    "urge": {
+      "toast": "对手在催你落子了。",
+      "button-disabled-own-turn": "当前是你的回合。",
+      "button-disabled-cooldown": "请稍后再催。"
+    },
+    "ended": {
+      "title-win": "你赢了!",
+      "title-lose": "你输了。",
+      "title-draw": "平局。",
+      "reason-connected-5": "五子连珠。",
+      "reason-resigned": "对手认输。",
+      "reason-timeout": "超时判负。",
+      "back-to-lobby": "返回大厅",
+      "dismiss": "留下查看"
+    },
+    "errors": {
+      "generic": "出了点问题,请重试。",
+      "network": "网络错误,请重试。",
+      "not-your-turn": "还没到你的回合。",
+      "invalid-move": "这一步不合法。",
+      "concurrent-move-refetched": "状态不同步,棋盘已刷新。",
+      "urge-cooldown": "催促冷却中。"
+    },
+    "connection": {
+      "reconnecting": "正在重连…",
+      "disconnected": "已断开连接。",
+      "retry": "重试",
+      "connected": "已连接"
+    }
+  }
+}
