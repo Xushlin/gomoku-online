@@ -39,3 +39,72 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Gomoku board — 15×15 grid drawn as repeating linear gradients so the lines
+ * are crisp (no double-border artifacts) and cells stay transparent buttons.
+ * Stones are rendered as circles inside each cell, centred and sized at 78 %
+ * of the cell so they sit convincingly on the intersection they occupy.
+ * All colours pull from theme tokens — swapping themes re-skins the board.
+ */
+.board-grid {
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-size: calc(100% / 15) calc(100% / 15);
+  background-position: 0.5px 0.5px;
+  box-shadow:
+    inset 0 0 0 1px var(--color-border),
+    0 2px 8px rgb(0 0 0 / 0.08);
+}
+
+.board-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.board-cell:focus-visible {
+  z-index: 1;
+}
+
+.board-stone {
+  display: block;
+  width: 78%;
+  height: 78%;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+.board-stone--black {
+  background: radial-gradient(
+    circle at 30% 30%,
+    color-mix(in srgb, var(--color-text) 65%, white),
+    var(--color-text) 70%
+  );
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.35),
+    inset -1px -1px 2px rgb(0 0 0 / 0.25);
+}
+.board-stone--white {
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--color-bg),
+    color-mix(in srgb, var(--color-bg) 80%, var(--color-border))
+  );
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.2),
+    inset 0 0 0 1px var(--color-border);
+}
+
+.board-cell--last-move::after {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--color-primary);
+  pointer-events: none;
+}

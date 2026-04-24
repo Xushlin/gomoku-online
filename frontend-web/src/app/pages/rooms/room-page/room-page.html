@@ -71,8 +71,8 @@
       </button>
     </div>
   } @else if (state(); as room) {
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div class="flex min-w-0 flex-col gap-4">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_300px]">
+      <div class="flex min-w-0 flex-col items-center gap-4">
         <app-board
           [state]="room"
           [mySide]="mySide()"

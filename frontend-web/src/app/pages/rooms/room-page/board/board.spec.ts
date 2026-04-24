@@ -151,7 +151,7 @@ describe('Board', () => {
     fixture.detectChanges();
     const buttons = allButtons(fixture);
     const idx = 3 * 15 + 4;
-    expect(buttons[idx].classList.contains('ring-2')).toBe(true);
+    expect(buttons[idx].classList.contains('board-cell--last-move')).toBe(true);
     expect(buttons[idx].getAttribute('aria-describedby')).toBe('board-last-move-label');
   });
 

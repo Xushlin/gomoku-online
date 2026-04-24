@@ -1,5 +1,5 @@
 <div
-  class="bg-surface border-border rounded-card relative mx-auto grid aspect-square w-full max-w-[600px] grid-cols-15 grid-rows-15 overflow-hidden border"
+  class="board-grid rounded-card relative mx-auto grid aspect-square w-full max-w-[480px] grid-cols-[repeat(15,1fr)] grid-rows-[repeat(15,1fr)]"
 >
   <span id="board-last-move-label" class="sr-only">
     {{ 'game.board.last-move-label' | transloco }}
@@ -8,25 +8,17 @@
     @for (c of cols; track c) {
       <button
         type="button"
-        class="border-border relative flex items-center justify-center border-[0.5px] p-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default"
-        [class.ring-2]="isLastMove(r, c)"
-        [class.ring-inset]="isLastMove(r, c)"
-        [class.ring-primary]="isLastMove(r, c)"
+        class="board-cell focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default"
+        [class.board-cell--last-move]="isLastMove(r, c)"
         [attr.aria-label]="'game.board.cell-aria-label' | transloco: { row: r + 1, col: c + 1 }"
         [attr.aria-describedby]="isLastMove(r, c) ? 'board-last-move-label' : null"
         [disabled]="cellDisabled(r, c)"
         (click)="handleClick(r, c)"
       >
         @if (stoneAt(r, c) === 'Black') {
-          <span
-            class="bg-text pointer-events-none block h-[70%] w-[70%] rounded-full"
-            aria-hidden="true"
-          ></span>
+          <span class="board-stone board-stone--black" aria-hidden="true"></span>
         } @else if (stoneAt(r, c) === 'White') {
-          <span
-            class="bg-bg border-border pointer-events-none block h-[70%] w-[70%] rounded-full border-2"
-            aria-hidden="true"
-          ></span>
+          <span class="board-stone board-stone--white" aria-hidden="true"></span>
         }
       </button>
     }
