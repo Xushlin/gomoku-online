@@ -155,6 +155,12 @@
       "error": "Search failed. Try again.",
       "search-button-aria": "Search players"
     },
+    "recent-games": {
+      "title": "Recent games",
+      "view-all": "View all",
+      "empty": "No finished games yet — play one to start your history.",
+      "error": "Couldn't load your recent games."
+    },
     "ai-game": {
       "title": "Play vs AI",
       "description": "Solo practice against the bot — pick a difficulty and start.",

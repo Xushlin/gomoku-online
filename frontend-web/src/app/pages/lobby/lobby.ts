@@ -10,6 +10,7 @@ import { FindPlayerCard } from './cards/find-player/find-player';
 import { HeroCard } from './cards/hero/hero';
 import { LeaderboardCard } from './cards/leaderboard/leaderboard';
 import { MyActiveRoomsCard } from './cards/my-active-rooms/my-active-rooms';
+import { MyRecentGamesCard } from './cards/my-recent-games/my-recent-games';
 
 /**
  * Lobby container — owns the `LobbyDataService` for the page lifetime so
@@ -19,7 +20,15 @@ import { MyActiveRoomsCard } from './cards/my-active-rooms/my-active-rooms';
 @Component({
   selector: 'app-lobby',
   standalone: true,
-  imports: [ActiveRoomsCard, AiGameCard, FindPlayerCard, HeroCard, LeaderboardCard, MyActiveRoomsCard],
+  imports: [
+    ActiveRoomsCard,
+    AiGameCard,
+    FindPlayerCard,
+    HeroCard,
+    LeaderboardCard,
+    MyActiveRoomsCard,
+    MyRecentGamesCard,
+  ],
   templateUrl: './lobby.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: LobbyDataService, useClass: DefaultLobbyDataService }],

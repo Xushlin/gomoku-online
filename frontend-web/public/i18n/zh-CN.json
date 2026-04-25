@@ -155,6 +155,12 @@
       "error": "搜索失败,请重试。",
       "search-button-aria": "搜索玩家"
     },
+    "recent-games": {
+      "title": "最近对局",
+      "view-all": "查看全部",
+      "empty": "还没有已结束的对局 —— 来一局开启你的对局记录吧。",
+      "error": "最近对局加载失败。"
+    },
     "ai-game": {
       "title": "人机对战",
       "description": "选个难度,跟 AI 单挑一局。",
