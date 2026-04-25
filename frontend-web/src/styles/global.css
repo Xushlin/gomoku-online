@@ -77,10 +77,12 @@ body {
   margin-inline: auto;
   border-radius: var(--board-radius, 8px);
   box-shadow: var(--board-shadow, 0 2px 8px rgb(0 0 0 / 0.08));
-  /* Fallback solid color so the board still has a surface even if the
-     gradient layer in --board-bg fails to substitute (e.g. before the
-     skin service has set [data-board-skin] on <html>). */
-  background-color: #c88a4e;
+  /* Per-skin base colour. background-image only accepts <image> values
+     (gradients / urls / none), so for skins whose base is a solid colour
+     (e.g. classic = var(--color-surface)) we must put it on
+     background-color instead. The fallback wood orange covers the brief
+     window before BoardSkinService writes [data-board-skin] on <html>. */
+  background-color: var(--board-bg-color, #c88a4e);
   background-image:
     /* 5 star points (天元 + 4 corners), each a tiny radial-gradient dot */
     radial-gradient(circle 3.5px at 23.333% 23.333%, var(--board-star, #555) 100%, transparent 100%),
@@ -92,8 +94,8 @@ body {
     linear-gradient(to right, var(--board-line, #888) 1px, transparent 1px),
     /* horizontal grid lines at cell centres */
     linear-gradient(to bottom, var(--board-line, #888) 1px, transparent 1px),
-    /* base board surface (gradient / color / image per skin) */
-    var(--board-bg, none);
+    /* base board surface texture (gradient / image / none per skin) */
+    var(--board-bg-image, none);
   background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat, no-repeat;
   background-size:
     100% 100%,

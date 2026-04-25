@@ -16,7 +16,8 @@
  * highlight so the surface doesn't feel flat.
  */
 [data-board-skin='wood'] {
-  --board-bg:
+  --board-bg-color: #c88a4e;
+  --board-bg-image:
     /* edge vignette */
     radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(70 40 12 / 0.18) 100%),
     /* fine vertical fibres */
@@ -79,7 +80,8 @@
  * on the darker surface; black stones unchanged.
  */
 [data-board-skin='wood'].dark {
-  --board-bg:
+  --board-bg-color: #6e4a28;
+  --board-bg-image:
     radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(0 0 0 / 0.35) 100%),
     repeating-linear-gradient(
       90deg,
@@ -120,7 +122,8 @@
 
 /* --- Classic skin: follows the active app theme (bg / surface / border) --- */
 [data-board-skin='classic'] {
-  --board-bg: var(--color-surface);
+  --board-bg-color: var(--color-surface);
+  --board-bg-image: none;
   --board-line: var(--color-border);
   --board-star: var(--color-muted);
   --board-radius: var(--radius-card);
