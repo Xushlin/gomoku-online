@@ -100,6 +100,18 @@
   <button
     type="button"
     role="switch"
+    [attr.aria-checked]="!sound.muted()"
+    [attr.aria-label]="'header.sound.label' | transloco"
+    class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+    (click)="toggleSound()"
+  >
+    <span class="text-muted hidden sm:inline">{{ 'header.sound.label' | transloco }}:</span>
+    <span>{{ soundStateKey() | transloco }}</span>
+  </button>
+
+  <button
+    type="button"
+    role="switch"
     [attr.aria-checked]="theme.isDark()"
     [attr.aria-label]="'header.theme.dark-toggle' | transloco"
     class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"

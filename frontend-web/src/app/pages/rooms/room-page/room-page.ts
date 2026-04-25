@@ -9,6 +9,7 @@ import type { GameEndedDto } from '../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
+import { SoundService } from '../../../core/sound/sound.service';
 import { Board } from './board/board';
 import { ChatPanel, type SendChatPayload } from './chat/chat-panel';
 import { GameEndedDialog, type GameEndedDialogData, type GameEndedDialogResult } from './dialogs/game-ended-dialog';
@@ -33,6 +34,7 @@ export class RoomPage implements OnInit, OnDestroy {
   private readonly rooms = inject(RoomsApiService);
   private readonly auth = inject(AuthService);
   private readonly hub = inject(GameHubService);
+  private readonly sound = inject(SoundService);
   private readonly dialog = inject(Dialog);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -52,6 +54,9 @@ export class RoomPage implements OnInit, OnDestroy {
   private readonly timeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private roomId: string | null = null;
   private lastStatus: ReturnType<GameHubService['connectionStatus']> = 'disconnected';
+  /** Sentinel `-1` means "no observation yet" — first state hydration sets the
+   * count without firing a sound. Subsequent increments fire `move-place`. */
+  private previousMoveCount = -1;
 
   protected readonly mySide = computed<'black' | 'white' | 'spectator'>(() => {
     const s = this.state();
@@ -82,13 +87,36 @@ export class RoomPage implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const ended = this.hub.gameEnded();
-      if (ended && !this.gameEndedDialogOpen) this.openGameEndedDialog(ended);
+      if (!ended) return;
+      if (!this.gameEndedDialogOpen) this.openGameEndedDialog(ended);
+      this.playGameEndSound(ended);
     });
     effect(() => {
       const status = this.connectionStatus();
       if (this.lastStatus === 'reconnecting' && status === 'connected') void this.rehydrate();
       this.lastStatus = status;
     });
+    effect(() => {
+      const n = this.state()?.game?.moves.length ?? 0;
+      if (this.previousMoveCount === -1) {
+        this.previousMoveCount = n;
+        return;
+      }
+      if (n > this.previousMoveCount) this.sound.play('move-place');
+      this.previousMoveCount = n;
+    });
+  }
+
+  private playGameEndSound(ended: GameEndedDto): void {
+    if (ended.result === 'Draw') {
+      this.sound.play('game-draw');
+      return;
+    }
+    const side = this.mySide();
+    const won =
+      (ended.result === 'BlackWin' && side === 'black') ||
+      (ended.result === 'WhiteWin' && side === 'white');
+    this.sound.play(won ? 'game-win' : 'game-lose');
   }
 
   ngOnInit(): void {
@@ -105,6 +133,7 @@ export class RoomPage implements OnInit, OnDestroy {
     }
     this.hub.urged$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.urgeToast.set(true);
+      this.sound.play('urge');
       this.schedule('urge-toast', URGE_TOAST_MS, () => this.urgeToast.set(false));
     });
     this.hub.roomDissolved$

@@ -5,6 +5,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '../../core/i18n/supported-locales';
+import { SoundService } from '../../core/sound/sound.service';
 import { BoardSkinService } from '../../core/theme/board-skin.service';
 import { ThemeService } from '../../core/theme/theme.service';
 
@@ -19,6 +20,7 @@ export class Header {
   protected readonly language = inject(LanguageService);
   protected readonly theme = inject(ThemeService);
   protected readonly boardSkin = inject(BoardSkinService);
+  protected readonly sound = inject(SoundService);
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -30,6 +32,9 @@ export class Header {
   );
   protected readonly darkStateKey = computed(() =>
     this.theme.isDark() ? 'header.theme.dark-on' : 'header.theme.dark-off',
+  );
+  protected readonly soundStateKey = computed(() =>
+    this.sound.muted() ? 'header.sound.off' : 'header.sound.on',
   );
 
   protected get themes(): readonly string[] {
@@ -66,6 +71,10 @@ export class Header {
 
   protected toggleDark(): void {
     this.theme.setDark(!this.theme.isDark());
+  }
+
+  protected toggleSound(): void {
+    this.sound.setMuted(!this.sound.muted());
   }
 
   protected logout(): void {

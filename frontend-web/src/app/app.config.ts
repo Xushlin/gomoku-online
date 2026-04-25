@@ -24,6 +24,7 @@ import { provideAppHttp } from './core/http/http-config';
 import { DefaultLanguageService, LanguageService } from './core/i18n/language.service';
 import { provideAppI18n } from './core/i18n/transloco-root.config';
 import { DefaultGameHubService, GameHubService } from './core/realtime/game-hub.service';
+import { DefaultSoundService, SoundService } from './core/sound/sound.service';
 import {
   BoardSkinService,
   DefaultBoardSkinService,
@@ -38,6 +39,7 @@ export const appConfig: ApplicationConfig = {
     provideAppI18n(),
     { provide: ThemeService, useClass: DefaultThemeService },
     { provide: BoardSkinService, useClass: DefaultBoardSkinService },
+    { provide: SoundService, useClass: DefaultSoundService },
     { provide: LanguageService, useClass: DefaultLanguageService },
     { provide: AuthService, useClass: DefaultAuthService },
     { provide: PresenceApiService, useClass: DefaultPresenceApiService },
@@ -55,6 +57,7 @@ export const appConfig: ApplicationConfig = {
       const auth = inject(AuthService);
       inject(ThemeService);
       inject(BoardSkinService);
+      inject(SoundService);
       return Promise.all([
         firstValueFrom(transloco.load(language.current())),
         auth.bootstrap(),

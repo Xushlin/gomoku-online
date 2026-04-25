@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
+import { SoundService } from '../../../core/sound/sound.service';
 import { RoomPage } from './room-page';
 
 function makeRoomState() {
@@ -104,6 +105,18 @@ function mount(id = 'r-1') {
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: GameHubService, useValue: hub },
+      {
+        provide: SoundService,
+        useValue: {
+          play: vi.fn(),
+          muted: signal(false),
+          packName: signal('wood'),
+          setMuted: vi.fn(),
+          register: vi.fn(),
+          activate: vi.fn(),
+          availablePacks: () => ['wood'],
+        },
+      },
       { provide: RoomsApiService, useValue: rooms },
       { provide: Router, useValue: router },
       { provide: ActivatedRoute, useValue: activatedRoute(id) },

@@ -18,6 +18,11 @@
       "wood": "Wood",
       "classic": "Classic"
     },
+    "sound": {
+      "label": "Sound",
+      "on": "On",
+      "off": "Off"
+    },
     "auth": {
       "login-cta": "Log in",
       "logout": "Log out",
