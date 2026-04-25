@@ -65,17 +65,34 @@
                 }
               </div>
               <p class="text-muted text-xs">
-                <span>{{ 'lobby.rooms.host' | transloco }}: {{ room.host.username }}</span>
+                <span>{{ 'lobby.rooms.host' | transloco }}:</span>
+                <a
+                  class="username-link mx-1"
+                  [routerLink]="['/users', room.host.id]"
+                  (click)="$event.stopPropagation()"
+                >{{ room.host.username }}</a>
                 <span class="mx-2">·</span>
-                <span>
-                  {{ 'lobby.rooms.seat-black' | transloco }}:
-                  {{ room.black?.username ?? ('lobby.rooms.seat-empty' | transloco) }}
-                </span>
+                <span>{{ 'lobby.rooms.seat-black' | transloco }}:</span>
+                @if (room.black; as black) {
+                  <a
+                    class="username-link mx-1"
+                    [routerLink]="['/users', black.id]"
+                    (click)="$event.stopPropagation()"
+                  >{{ black.username }}</a>
+                } @else {
+                  <span class="mx-1">{{ 'lobby.rooms.seat-empty' | transloco }}</span>
+                }
                 <span class="mx-2">·</span>
-                <span>
-                  {{ 'lobby.rooms.seat-white' | transloco }}:
-                  {{ room.white?.username ?? ('lobby.rooms.seat-empty' | transloco) }}
-                </span>
+                <span>{{ 'lobby.rooms.seat-white' | transloco }}:</span>
+                @if (room.white; as white) {
+                  <a
+                    class="username-link mx-1"
+                    [routerLink]="['/users', white.id]"
+                    (click)="$event.stopPropagation()"
+                  >{{ white.username }}</a>
+                } @else {
+                  <span class="mx-1">{{ 'lobby.rooms.seat-empty' | transloco }}</span>
+                }
                 <span class="mx-2">·</span>
                 <span>{{ 'lobby.rooms.spectators' | transloco }}: {{ room.spectatorCount }}</span>
               </p>

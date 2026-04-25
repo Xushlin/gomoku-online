@@ -43,7 +43,11 @@
                 #{{ entry.rank }}
               }
             </span>
-            <span class="flex-1 truncate">{{ entry.username }}</span>
+            <a
+              class="username-link flex-1 truncate"
+              [routerLink]="['/users', entry.userId]"
+              (click)="$event.stopPropagation()"
+            >{{ entry.username }}</a>
             <span class="text-text w-14 shrink-0 text-right font-mono text-xs">
               {{ entry.rating }}
             </span>

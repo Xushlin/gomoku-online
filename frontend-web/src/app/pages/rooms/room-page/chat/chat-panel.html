@@ -45,7 +45,12 @@
     }
     @for (msg of visibleMessages(); track msg.id) {
       <p class="break-words">
-        <span class="text-muted mr-1 text-xs">{{ msg.senderUsername }}:</span>
+        <a
+          class="username-link mr-1 text-xs"
+          [routerLink]="['/users', msg.senderUserId]"
+          (click)="$event.stopPropagation()"
+        >{{ msg.senderUsername }}</a>
+        <span class="text-muted text-xs">:</span>
         <span>{{ msg.content }}</span>
       </p>
     }

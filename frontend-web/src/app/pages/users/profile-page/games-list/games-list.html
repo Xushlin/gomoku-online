@@ -1,0 +1,70 @@
+<section class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4">
+  <h2 class="text-base font-semibold tracking-tight">
+    {{ 'profile.games-title' | transloco }}
+  </h2>
+
+  @if (loading() && games().length === 0) {
+    <div class="flex flex-col gap-2" aria-hidden="true">
+      <div class="bg-border h-5 w-2/3 animate-pulse rounded"></div>
+      <div class="bg-border h-5 w-1/2 animate-pulse rounded"></div>
+      <div class="bg-border h-5 w-3/4 animate-pulse rounded"></div>
+    </div>
+  } @else if (error() && games().length === 0) {
+    <p class="text-danger text-sm">{{ 'profile.errors.generic' | transloco }}</p>
+  } @else if (games().length === 0) {
+    <p class="text-muted text-sm">{{ 'profile.games-empty' | transloco }}</p>
+  } @else {
+    <ul class="flex flex-col gap-1 text-sm">
+      @for (g of games(); track g.roomId) {
+        @let opp = opponentOf(g);
+        <li>
+          <button
+            type="button"
+            class="hover:bg-bg border-border flex w-full flex-col items-start gap-0.5 rounded border px-3 py-2 text-left"
+            (click)="onRowClick(g.roomId)"
+          >
+            <div class="flex w-full flex-wrap items-center gap-2">
+              <span class="text-muted text-xs">vs</span>
+              <a
+                class="username-link"
+                [routerLink]="['/users', opp.id]"
+                (click)="$event.stopPropagation()"
+              >{{ opp.username }}</a>
+              <span class="text-muted text-xs">·</span>
+              <span class="font-semibold">{{ resultKey(g) | transloco }}</span>
+              <span class="text-muted text-xs">·</span>
+              <span class="text-muted text-xs">{{ reasonKey(g) | transloco }}</span>
+            </div>
+            <div class="flex w-full flex-wrap items-center gap-2 text-xs">
+              <span class="text-muted">{{ g.endedAt | date: 'short' : undefined : language.current() }}</span>
+              <span class="text-muted">·</span>
+              <span class="text-muted">{{ g.moveCount }} {{ 'replay.scrubber.ply-label' | transloco }}</span>
+            </div>
+          </button>
+        </li>
+      }
+    </ul>
+
+    <div class="flex items-center justify-between gap-2 pt-2 text-xs">
+      <button
+        type="button"
+        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 disabled:opacity-50"
+        [disabled]="!hasPrev()"
+        (click)="prevPage()"
+      >
+        {{ 'profile.prev-page' | transloco }}
+      </button>
+      <span class="text-muted">
+        {{ 'profile.page-indicator' | transloco: { page: page(), total: totalPages() } }}
+      </span>
+      <button
+        type="button"
+        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 disabled:opacity-50"
+        [disabled]="!hasNext()"
+        (click)="nextPage()"
+      >
+        {{ 'profile.next-page' | transloco }}
+      </button>
+    </div>
+  }
+</section>

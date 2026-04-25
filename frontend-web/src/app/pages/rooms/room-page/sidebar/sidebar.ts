@@ -1,5 +1,6 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomState } from '../../../../core/api/models/room.model';
 import {
@@ -10,7 +11,7 @@ import {
 @Component({
   selector: 'app-room-sidebar',
   standalone: true,
-  imports: [TranslocoPipe],
+  imports: [RouterLink, TranslocoPipe],
   templateUrl: './sidebar.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -22,6 +22,7 @@ function mount(data: GameEndedDialogData) {
                 'reason-resigned': 'Opponent resigned.',
                 'reason-timeout': 'Turn timed out.',
                 'back-to-lobby': 'Back to lobby',
+                'view-replay': 'View replay',
                 dismiss: 'Stay',
               },
             },
@@ -50,6 +51,7 @@ describe('GameEndedDialog', () => {
       winnerUserId: 'u-1',
       endReason: 'Connected5',
       mySide: 'black',
+      roomId: 'r-1',
     });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('You won!');
   });
@@ -60,6 +62,7 @@ describe('GameEndedDialog', () => {
       winnerUserId: 'u-1',
       endReason: 'Resigned',
       mySide: 'white',
+      roomId: 'r-1',
     });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('You lost.');
   });
@@ -70,29 +73,45 @@ describe('GameEndedDialog', () => {
       winnerUserId: null,
       endReason: 'Connected5',
       mySide: 'black',
+      roomId: 'r-1',
     });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Draw.');
   });
 
-  it('primary button closes with "home"', () => {
+  it('Back-to-lobby button closes with "home"', () => {
     const { fixture, dialogRef } = mount({
       result: 'Draw',
       winnerUserId: null,
       endReason: 'Connected5',
       mySide: 'spectator',
+      roomId: 'r-1',
     });
     const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
-    // Dismiss is first, back-to-lobby is second (primary)
-    buttons[1].click();
+    // [Dismiss, View-replay, Back-to-lobby] — back-to-lobby is the third (index 2)
+    buttons[2].click();
     expect(dialogRef.close).toHaveBeenCalledWith('home');
   });
 
-  it('secondary button closes with "stay"', () => {
+  it('View-replay button closes with "replay"', () => {
+    const { fixture, dialogRef } = mount({
+      result: 'BlackWin',
+      winnerUserId: 'u-1',
+      endReason: 'Connected5',
+      mySide: 'black',
+      roomId: 'r-1',
+    });
+    const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+    buttons[1].click();
+    expect(dialogRef.close).toHaveBeenCalledWith('replay');
+  });
+
+  it('Dismiss button closes with "stay"', () => {
     const { fixture, dialogRef } = mount({
       result: 'Draw',
       winnerUserId: null,
       endReason: 'Connected5',
       mySide: 'spectator',
+      roomId: 'r-1',
     });
     const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
     buttons[0].click();

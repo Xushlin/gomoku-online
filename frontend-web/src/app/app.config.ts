@@ -17,6 +17,7 @@ import {
   PresenceApiService,
 } from './core/api/presence-api.service';
 import { DefaultRoomsApiService, RoomsApiService } from './core/api/rooms-api.service';
+import { DefaultUsersApiService, UsersApiService } from './core/api/users-api.service';
 import { AuthService, DefaultAuthService } from './core/auth/auth.service';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { provideAppHttp } from './core/http/http-config';
@@ -41,6 +42,7 @@ export const appConfig: ApplicationConfig = {
     { provide: AuthService, useClass: DefaultAuthService },
     { provide: PresenceApiService, useClass: DefaultPresenceApiService },
     { provide: RoomsApiService, useClass: DefaultRoomsApiService },
+    { provide: UsersApiService, useClass: DefaultUsersApiService },
     { provide: LeaderboardApiService, useClass: DefaultLeaderboardApiService },
     { provide: GameHubService, useClass: DefaultGameHubService },
     // Preload i18n + restore session before first paint so the UI boots with

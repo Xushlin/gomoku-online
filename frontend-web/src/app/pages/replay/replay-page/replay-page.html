@@ -1,0 +1,155 @@
+<section class="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
+  @if (loading()) {
+    <div class="flex flex-col gap-3">
+      <div class="bg-border h-6 w-1/3 animate-pulse rounded"></div>
+      <div class="bg-border aspect-square w-full max-w-[480px] animate-pulse rounded"></div>
+    </div>
+  } @else if (notFound()) {
+    <div
+      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+    >
+      <p class="text-danger">{{ 'replay.errors.not-found' | transloco }}</p>
+      <a
+        routerLink="/home"
+        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+      >
+        {{ 'replay.back-to-lobby' | transloco }}
+      </a>
+    </div>
+  } @else if (notFinished()) {
+    <div
+      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+    >
+      <p class="text-danger">{{ 'replay.errors.still-in-progress' | transloco }}</p>
+      <button
+        type="button"
+        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+        (click)="goLive()"
+      >
+        {{ 'replay.errors.still-in-progress-go-live' | transloco }}
+      </button>
+    </div>
+  } @else if (loadError()) {
+    <div
+      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+    >
+      <p class="text-danger">{{ 'replay.errors.generic' | transloco }}</p>
+      <button
+        type="button"
+        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+        (click)="retry()"
+      >
+        {{ 'replay.retry' | transloco }}
+      </button>
+    </div>
+  } @else if (replay(); as r) {
+    <header class="flex flex-col gap-1">
+      <h1 class="text-lg font-semibold tracking-tight">
+        <span class="text-muted text-sm">{{ 'replay.title-prefix' | transloco }} ·</span>
+        {{ r.name }}
+      </h1>
+      <p class="text-muted text-xs">
+        <span>{{ 'game.room.seat-black' | transloco }}:</span>
+        <a
+          class="username-link mx-1"
+          [routerLink]="['/users', r.black.id]"
+          (click)="$event.stopPropagation()"
+        >{{ r.black.username }}</a>
+        <span class="mx-1">·</span>
+        <span>{{ 'game.room.seat-white' | transloco }}:</span>
+        <a
+          class="username-link mx-1"
+          [routerLink]="['/users', r.white.id]"
+          (click)="$event.stopPropagation()"
+        >{{ r.white.username }}</a>
+        <span class="mx-1">·</span>
+        @switch (r.endReason) {
+          @case ('Connected5') { <span>{{ 'game.ended.reason-connected-5' | transloco }}</span> }
+          @case ('Resigned') { <span>{{ 'game.ended.reason-resigned' | transloco }}</span> }
+          @case ('TurnTimeout') { <span>{{ 'game.ended.reason-timeout' | transloco }}</span> }
+        }
+        <span class="mx-1">·</span>
+        <span>{{ r.endedAt | date: 'short' : undefined : language.current() }}</span>
+      </p>
+    </header>
+
+    <app-board
+      [state]="boardState()"
+      [mySide]="'spectator'"
+      [submitting]="false"
+      [readonly]="true"
+    />
+
+    <div
+      class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-3 text-sm"
+    >
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <button
+          type="button"
+          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          [disabled]="atStart()"
+          [attr.aria-label]="'replay.scrubber.first' | transloco"
+          (click)="first()"
+        >⏮</button>
+        <button
+          type="button"
+          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          [disabled]="atStart()"
+          [attr.aria-label]="'replay.scrubber.prev' | transloco"
+          (click)="onPrev()"
+        >⏪</button>
+        <button
+          type="button"
+          class="bg-primary text-bg rounded-card px-3 py-1.5 text-xs font-semibold"
+          (click)="togglePlay()"
+        >
+          {{ playButtonKey() | transloco }}
+        </button>
+        <button
+          type="button"
+          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          [disabled]="atEnd()"
+          [attr.aria-label]="'replay.scrubber.next' | transloco"
+          (click)="onNext()"
+        >⏩</button>
+        <button
+          type="button"
+          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          [disabled]="atEnd()"
+          [attr.aria-label]="'replay.scrubber.last' | transloco"
+          (click)="last()"
+        >⏭</button>
+      </div>
+
+      <label class="flex items-center gap-3 text-xs">
+        <span class="text-muted">{{ 'replay.scrubber.ply-label' | transloco }}:</span>
+        <input
+          type="range"
+          min="0"
+          [attr.max]="totalMoves()"
+          step="1"
+          [value]="currentPly()"
+          (input)="onSeek($event)"
+          class="flex-1"
+        />
+        <span class="font-mono">{{ currentPly() }} / {{ totalMoves() }}</span>
+      </label>
+
+      <div class="flex items-center justify-center gap-2 text-xs">
+        <span class="text-muted">{{ 'replay.scrubber.speed-label' | transloco }}:</span>
+        @for (s of speeds; track s) {
+          <button
+            type="button"
+            class="border-border text-text hover:bg-bg rounded-card border px-2 py-0.5"
+            [class.bg-primary]="speed() === s"
+            [class.text-bg]="speed() === s"
+            (click)="setSpeed(s)"
+          >{{ s }}×</button>
+        }
+        @if (atEnd()) {
+          <span class="text-muted ml-2">· {{ 'replay.scrubber.end-of-game' | transloco }}</span>
+        }
+      </div>
+    </div>
+  }
+</section>

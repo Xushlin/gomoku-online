@@ -32,6 +32,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/rooms/room-page/room-page').then((m) => m.RoomPage),
   },
+  {
+    path: 'replay/:id',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./pages/replay/replay-page/replay-page').then((m) => m.ReplayPage),
+  },
+  {
+    path: 'users/:id',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./pages/users/profile-page/profile-page').then((m) => m.ProfilePage),
+  },
   { path: '', pathMatch: 'full', redirectTo: 'home' },
   { path: '**', redirectTo: 'home' },
 ];

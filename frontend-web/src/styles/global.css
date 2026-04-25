@@ -41,6 +41,21 @@ body {
 }
 
 /*
+ * Username links — every place in the app that renders someone else's
+ * username wraps it in `<a class="username-link" [routerLink]="['/users', id]"
+ * (click)="$event.stopPropagation()">`. The class centralises the visual
+ * (theme primary color, no underline at rest, underline on hover) so a
+ * future change can re-skin all 7+ occurrences in one edit.
+ */
+.username-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.username-link:hover {
+  text-decoration: underline;
+}
+
+/*
  * Gomoku board — 15×15 intersection grid.
  *
  *   - Surface, grid lines, star points, stones, and last-move ring all read

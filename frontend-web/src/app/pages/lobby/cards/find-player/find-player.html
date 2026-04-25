@@ -1,0 +1,42 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col gap-3 border p-4"
+>
+  <h2 class="text-base font-semibold tracking-tight">
+    {{ 'lobby.find-player.title' | transloco }}
+  </h2>
+  <input
+    type="text"
+    [formControl]="inputCtrl"
+    [placeholder]="'lobby.find-player.placeholder' | transloco"
+    [attr.aria-label]="'lobby.find-player.search-button-aria' | transloco"
+    class="bg-bg text-text border-border rounded-card border px-3 py-2 text-sm"
+  />
+
+  @if (hintTooShort()) {
+    <p class="text-muted text-xs">{{ 'lobby.find-player.hint-too-short' | transloco }}</p>
+  } @else if (loading()) {
+    <div class="flex flex-col gap-1" aria-hidden="true">
+      <div class="bg-border h-5 w-2/3 animate-pulse rounded"></div>
+      <div class="bg-border h-5 w-1/2 animate-pulse rounded"></div>
+    </div>
+  } @else if (error()) {
+    <p class="text-danger text-xs">{{ 'lobby.find-player.error' | transloco }}</p>
+  } @else if (showNoResults()) {
+    <p class="text-muted text-xs">{{ 'lobby.find-player.no-results' | transloco }}</p>
+  } @else if (results().length > 0) {
+    <ul class="flex flex-col gap-1 text-sm">
+      @for (u of results(); track u.id) {
+        <li>
+          <button
+            type="button"
+            class="hover:bg-bg border-border flex w-full items-center justify-between gap-2 rounded border px-3 py-2 text-left"
+            (click)="pick(u)"
+          >
+            <span class="text-primary font-medium">{{ u.username }}</span>
+            <span class="text-muted font-mono text-xs">{{ u.rating }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>

@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type {
   ChatChannel,
@@ -29,7 +30,7 @@ export interface SendChatPayload {
 @Component({
   selector: 'app-chat-panel',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslocoPipe],
+  imports: [ReactiveFormsModule, RouterLink, TranslocoPipe],
   templateUrl: './chat-panel.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

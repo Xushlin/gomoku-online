@@ -141,6 +141,14 @@
       "generic": "加载失败,请重试。",
       "network": "网络错误,请重试。",
       "retry": "重试"
+    },
+    "find-player": {
+      "title": "查找玩家",
+      "placeholder": "按用户名搜索…",
+      "hint-too-short": "输入 3 个或以上字符开始搜索。",
+      "no-results": "未找到匹配的玩家。",
+      "error": "搜索失败,请重试。",
+      "search-button-aria": "搜索玩家"
     }
   },
   "game": {
@@ -200,6 +208,7 @@
       "reason-resigned": "对手认输。",
       "reason-timeout": "超时判负。",
       "back-to-lobby": "返回大厅",
+      "view-replay": "查看回放",
       "dismiss": "留下查看"
     },
     "errors": {
@@ -215,6 +224,50 @@
       "disconnected": "已断开连接。",
       "retry": "重试",
       "connected": "已连接"
+    }
+  },
+  "replay": {
+    "title-prefix": "回放",
+    "retry": "重试",
+    "back-to-lobby": "返回大厅",
+    "errors": {
+      "not-found": "回放不可用 —— 该房间可能已被清理。",
+      "still-in-progress": "对局尚未结束。",
+      "still-in-progress-go-live": "去看实时对局",
+      "generic": "回放加载失败,请重试。"
+    },
+    "scrubber": {
+      "first": "首步",
+      "prev": "上一步",
+      "next": "下一步",
+      "last": "末步",
+      "play": "播放",
+      "pause": "暂停",
+      "replay": "重播",
+      "speed-label": "速度",
+      "end-of-game": "对局结束",
+      "ply-label": "步数"
+    }
+  },
+  "profile": {
+    "rating-label": "积分",
+    "wins-label": "胜",
+    "losses-label": "负",
+    "draws-label": "平",
+    "win-rate-label": "胜率",
+    "joined-label": "注册于",
+    "games-title": "对局记录",
+    "games-empty": "暂无已结束对局。",
+    "result-win": "胜",
+    "result-loss": "负",
+    "result-draw": "平",
+    "page-indicator": "第 {{page}} 页 / 共 {{total}} 页",
+    "prev-page": "上一页",
+    "next-page": "下一页",
+    "not-found": "未找到该用户。",
+    "back-to-lobby": "返回大厅",
+    "errors": {
+      "generic": "资料加载失败,请重试。"
     }
   }
 }

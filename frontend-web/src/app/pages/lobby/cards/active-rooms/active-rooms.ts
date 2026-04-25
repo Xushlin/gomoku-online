@@ -1,6 +1,6 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomSummary } from '../../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../../core/api/rooms-api.service';
@@ -13,7 +13,7 @@ import {
 @Component({
   selector: 'app-active-rooms-card',
   standalone: true,
-  imports: [TranslocoPipe],
+  imports: [RouterLink, TranslocoPipe],
   templateUrl: './active-rooms.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

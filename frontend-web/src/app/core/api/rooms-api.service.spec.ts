@@ -116,4 +116,25 @@ describe('RoomsApiService', () => {
     });
     http.verify();
   });
+
+  it('getReplay() GETs /api/rooms/{id}/replay with URL encoding', () => {
+    const { svc, http } = setup();
+    svc.getReplay('abc 123').subscribe();
+    const req = http.expectOne('/api/rooms/abc%20123/replay');
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      roomId: 'abc 123',
+      name: 'Room',
+      host: { id: 'u-1', username: 'alice' },
+      black: { id: 'u-1', username: 'alice' },
+      white: { id: 'u-2', username: 'bob' },
+      startedAt: '2026-04-24T00:00:00Z',
+      endedAt: '2026-04-24T00:05:00Z',
+      result: 'BlackWin',
+      winnerUserId: 'u-1',
+      endReason: 'Connected5',
+      moves: [],
+    });
+    http.verify();
+  });
 });

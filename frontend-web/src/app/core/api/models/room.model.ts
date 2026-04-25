@@ -64,6 +64,27 @@ export interface GameEndedDto {
   readonly endReason: GameEndReason;
 }
 
+/**
+ * Returned by `GET /api/rooms/{id}/replay`. Always represents a Finished
+ * game — `result` / `winnerUserId-on-non-draw` / `endReason` / `endedAt` are
+ * all guaranteed non-null by the backend's domain invariants. `Moves` is in
+ * ply order (ascending). No `chatMessages`, no `spectators`, no `status` —
+ * those are live-room concerns.
+ */
+export interface GameReplayDto {
+  readonly roomId: string;
+  readonly name: string;
+  readonly host: UserSummary;
+  readonly black: UserSummary;
+  readonly white: UserSummary;
+  readonly startedAt: string;
+  readonly endedAt: string;
+  readonly result: GameResult;
+  readonly winnerUserId: string | null;
+  readonly endReason: GameEndReason;
+  readonly moves: readonly MoveDto[];
+}
+
 export interface UrgeDto {
   readonly roomId: string;
   readonly urgerUserId: string;

@@ -1,7 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { GameEndedDto, RoomState, RoomSummary } from './models/room.model';
+import type {
+  GameEndedDto,
+  GameReplayDto,
+  RoomState,
+  RoomSummary,
+} from './models/room.model';
 
 export abstract class RoomsApiService {
   abstract list(): Observable<readonly RoomSummary[]>;
@@ -12,6 +17,7 @@ export abstract class RoomsApiService {
   abstract leave(roomId: string): Observable<void>;
   abstract spectate(roomId: string): Observable<void>;
   abstract resign(roomId: string): Observable<GameEndedDto>;
+  abstract getReplay(roomId: string): Observable<GameReplayDto>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -48,5 +54,11 @@ export class DefaultRoomsApiService extends RoomsApiService {
 
   resign(roomId: string): Observable<GameEndedDto> {
     return this.http.post<GameEndedDto>(`/api/rooms/${encodeURIComponent(roomId)}/resign`, {});
+  }
+
+  getReplay(roomId: string): Observable<GameReplayDto> {
+    return this.http.get<GameReplayDto>(
+      `/api/rooms/${encodeURIComponent(roomId)}/replay`,
+    );
   }
 }

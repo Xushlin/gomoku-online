@@ -1,6 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { RoomState } from '../../../../core/api/models/room.model';
@@ -91,6 +92,7 @@ function mount() {
     ],
     providers: [
       { provide: Dialog, useValue: { open: () => ({ closed: { subscribe: () => ({}) } }) } },
+      provideRouter([]),
     ],
   });
   const fixture = TestBed.createComponent(Host);

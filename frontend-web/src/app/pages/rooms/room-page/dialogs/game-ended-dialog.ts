@@ -8,9 +8,10 @@ export interface GameEndedDialogData {
   readonly winnerUserId: string | null;
   readonly endReason: GameEndReason;
   readonly mySide: 'black' | 'white' | 'spectator';
+  readonly roomId: string;
 }
 
-export type GameEndedDialogResult = 'home' | 'stay';
+export type GameEndedDialogResult = 'home' | 'stay' | 'replay';
 
 @Component({
   selector: 'app-game-ended-dialog',
@@ -44,6 +45,10 @@ export class GameEndedDialog {
 
   protected backToLobby(): void {
     this.dialogRef.close('home');
+  }
+
+  protected viewReplay(): void {
+    this.dialogRef.close('replay');
   }
 
   protected stay(): void {

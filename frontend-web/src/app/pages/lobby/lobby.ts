@@ -5,6 +5,7 @@ import {
   LobbyDataService,
 } from '../../core/lobby/lobby-data.service';
 import { ActiveRoomsCard } from './cards/active-rooms/active-rooms';
+import { FindPlayerCard } from './cards/find-player/find-player';
 import { HeroCard } from './cards/hero/hero';
 import { LeaderboardCard } from './cards/leaderboard/leaderboard';
 import { MyActiveRoomsCard } from './cards/my-active-rooms/my-active-rooms';
@@ -17,7 +18,7 @@ import { MyActiveRoomsCard } from './cards/my-active-rooms/my-active-rooms';
 @Component({
   selector: 'app-lobby',
   standalone: true,
-  imports: [ActiveRoomsCard, HeroCard, LeaderboardCard, MyActiveRoomsCard],
+  imports: [ActiveRoomsCard, FindPlayerCard, HeroCard, LeaderboardCard, MyActiveRoomsCard],
   templateUrl: './lobby.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: LobbyDataService, useClass: DefaultLobbyDataService }],

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { LeaderboardEntry } from '../../../../core/api/models/leaderboard.model';
 import { LobbyDataService } from '../../../../core/lobby/lobby-data.service';
@@ -6,7 +7,7 @@ import { LobbyDataService } from '../../../../core/lobby/lobby-data.service';
 @Component({
   selector: 'app-leaderboard-card',
   standalone: true,
-  imports: [TranslocoPipe],
+  imports: [RouterLink, TranslocoPipe],
   templateUrl: './leaderboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

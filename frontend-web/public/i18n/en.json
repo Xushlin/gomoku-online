@@ -141,6 +141,14 @@
       "generic": "Couldn't load this card. Please try again.",
       "network": "Network error — please try again.",
       "retry": "Retry"
+    },
+    "find-player": {
+      "title": "Find player",
+      "placeholder": "Search by username…",
+      "hint-too-short": "Type 3+ characters to search.",
+      "no-results": "No players match.",
+      "error": "Search failed. Try again.",
+      "search-button-aria": "Search players"
     }
   },
   "game": {
@@ -200,6 +208,7 @@
       "reason-resigned": "Opponent resigned.",
       "reason-timeout": "Turn timed out.",
       "back-to-lobby": "Back to lobby",
+      "view-replay": "View replay",
       "dismiss": "Stay and review"
     },
     "errors": {
@@ -215,6 +224,50 @@
       "disconnected": "Disconnected from the game server.",
       "retry": "Retry",
       "connected": "Connected"
+    }
+  },
+  "replay": {
+    "title-prefix": "Replay",
+    "retry": "Retry",
+    "back-to-lobby": "Back to lobby",
+    "errors": {
+      "not-found": "This replay isn't available — the room may have been cleaned up.",
+      "still-in-progress": "Game is still in progress.",
+      "still-in-progress-go-live": "Open the live room",
+      "generic": "Couldn't load the replay. Please try again."
+    },
+    "scrubber": {
+      "first": "First",
+      "prev": "Previous",
+      "next": "Next",
+      "last": "Last",
+      "play": "Play",
+      "pause": "Pause",
+      "replay": "Replay",
+      "speed-label": "Speed",
+      "end-of-game": "End of game",
+      "ply-label": "Move"
+    }
+  },
+  "profile": {
+    "rating-label": "Rating",
+    "wins-label": "Wins",
+    "losses-label": "Losses",
+    "draws-label": "Draws",
+    "win-rate-label": "Win rate",
+    "joined-label": "Joined",
+    "games-title": "Games",
+    "games-empty": "No finished games yet.",
+    "result-win": "Won",
+    "result-loss": "Lost",
+    "result-draw": "Drew",
+    "page-indicator": "Page {{page}} of {{total}}",
+    "prev-page": "Previous",
+    "next-page": "Next",
+    "not-found": "User not found.",
+    "back-to-lobby": "Back to lobby",
+    "errors": {
+      "generic": "Couldn't load this profile. Please try again."
     }
   }
 }

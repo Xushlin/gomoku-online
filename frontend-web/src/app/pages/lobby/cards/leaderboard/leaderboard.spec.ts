@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LeaderboardEntry } from '../../../../core/api/models/leaderboard.model';
@@ -45,7 +46,7 @@ function mount(entries: readonly LeaderboardEntry[]) {
         preloadLangs: true,
       }),
     ],
-    providers: [{ provide: LobbyDataService, useValue: stub }],
+    providers: [{ provide: LobbyDataService, useValue: stub }, provideRouter([])],
   });
   const fixture = TestBed.createComponent(LeaderboardCard);
   fixture.detectChanges();

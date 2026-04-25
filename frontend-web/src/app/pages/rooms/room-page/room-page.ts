@@ -222,17 +222,21 @@ export class RoomPage implements OnInit, OnDestroy {
   }
 
   private openGameEndedDialog(ended: GameEndedDto): void {
+    if (!this.roomId) return;
     this.gameEndedDialogOpen = true;
     const data: GameEndedDialogData = {
       result: ended.result,
       winnerUserId: ended.winnerUserId,
       endReason: ended.endReason,
       mySide: this.mySide(),
+      roomId: this.roomId,
     };
     const ref = this.dialog.open<GameEndedDialogResult>(GameEndedDialog, { data });
     ref.closed.subscribe((outcome) => {
       this.gameEndedDialogOpen = false;
       if (outcome === 'home') void this.router.navigateByUrl('/home');
+      else if (outcome === 'replay' && this.roomId)
+        void this.router.navigateByUrl(`/replay/${this.roomId}`);
     });
   }
 
