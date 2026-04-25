@@ -280,6 +280,8 @@
     }
   },
   "profile": {
+    "online": "在线",
+    "offline": "离线",
     "rating-label": "积分",
     "wins-label": "胜",
     "losses-label": "负",

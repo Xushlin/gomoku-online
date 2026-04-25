@@ -7,6 +7,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PresenceApiService } from '../../../core/api/presence-api.service';
 import { UsersApiService } from '../../../core/api/users-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ProfilePage } from './profile-page';
@@ -47,10 +48,19 @@ function routerStub() {
   };
 }
 
-function mount(opts: { id?: string | null; getProfile?: ReturnType<typeof vi.fn> } = {}) {
+function mount(opts: {
+  id?: string | null;
+  getProfile?: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getUserOnline?: any;
+} = {}) {
   const users = new StubUsers();
   if (opts.getProfile) users.getProfile = opts.getProfile;
   const router = routerStub();
+  const presence = {
+    getOnlineCount: vi.fn(),
+    getUserOnline: opts.getUserOnline ?? vi.fn(() => of(true)),
+  };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [
@@ -65,6 +75,7 @@ function mount(opts: { id?: string | null; getProfile?: ReturnType<typeof vi.fn>
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: UsersApiService, useValue: users },
+      { provide: PresenceApiService, useValue: presence },
       { provide: Router, useValue: router },
       { provide: ActivatedRoute, useValue: activatedRoute(opts.id ?? 'u-1') },
       { provide: LanguageService, useValue: { current: signal('en') } },
@@ -72,7 +83,7 @@ function mount(opts: { id?: string | null; getProfile?: ReturnType<typeof vi.fn>
   });
   const fixture = TestBed.createComponent(ProfilePage);
   fixture.detectChanges();
-  return { fixture, users, router };
+  return { fixture, users, router, presence };
 }
 
 describe('ProfilePage', () => {
@@ -124,5 +135,25 @@ describe('ProfilePage', () => {
     });
     const comp = fixture.componentInstance as unknown as { winRateLabel: () => string };
     expect(comp.winRateLabel()).toBe('—');
+  });
+
+  it('presence dot has bg-success when online', () => {
+    const { fixture } = mount({ getUserOnline: vi.fn(() => of(true)) });
+    const dot = fixture.nativeElement.querySelector('h1 span.rounded-full') as HTMLElement | null;
+    expect(dot?.classList.contains('bg-success')).toBe(true);
+  });
+
+  it('presence dot has bg-muted when offline', () => {
+    const { fixture } = mount({ getUserOnline: vi.fn(() => of(false)) });
+    const dot = fixture.nativeElement.querySelector('h1 span.rounded-full') as HTMLElement | null;
+    expect(dot?.classList.contains('bg-muted')).toBe(true);
+  });
+
+  it('presence dot is omitted on getUserOnline failure', () => {
+    const { fixture } = mount({
+      getUserOnline: vi.fn(() => throwError(() => new Error('boom'))),
+    });
+    const dot = fixture.nativeElement.querySelector('h1 span.rounded-full');
+    expect(dot).toBeNull();
   });
 });

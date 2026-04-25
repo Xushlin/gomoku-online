@@ -280,6 +280,8 @@
     }
   },
   "profile": {
+    "online": "Online",
+    "offline": "Offline",
     "rating-label": "Rating",
     "wins-label": "Wins",
     "losses-label": "Losses",

@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { UserPublicProfileDto } from '../../../core/api/models/user-profile.model';
+import { PresenceApiService } from '../../../core/api/presence-api.service';
 import { UsersApiService } from '../../../core/api/users-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { GamesList } from './games-list/games-list';
@@ -26,6 +27,7 @@ import { GamesList } from './games-list/games-list';
 export class ProfilePage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly users = inject(UsersApiService);
+  private readonly presenceApi = inject(PresenceApiService);
   protected readonly language = inject(LanguageService);
 
   protected userId = signal<string | null>(null);
@@ -33,6 +35,8 @@ export class ProfilePage implements OnInit {
   protected readonly loading = signal<boolean>(true);
   protected readonly notFound = signal<boolean>(false);
   protected readonly loadError = signal<boolean>(false);
+  /** Presence state. `null` = unknown / failed → don't render the dot. */
+  protected readonly presence = signal<boolean | null>(null);
 
   protected readonly winRateLabel = computed<string>(() => {
     const p = this.profile();
@@ -62,6 +66,7 @@ export class ProfilePage implements OnInit {
     this.loading.set(true);
     this.notFound.set(false);
     this.loadError.set(false);
+    this.presence.set(null);
     this.users.getProfile(id).subscribe({
       next: (p) => {
         this.profile.set(p);
@@ -75,6 +80,10 @@ export class ProfilePage implements OnInit {
         }
         this.loadError.set(true);
       },
+    });
+    this.presenceApi.getUserOnline(id).subscribe({
+      next: (online) => this.presence.set(online),
+      error: () => this.presence.set(null),
     });
   }
 }

@@ -37,4 +37,23 @@ describe('PresenceApiService', () => {
     expect(value).toBe(42);
     http.verify();
   });
+
+  it('getUserOnline() GETs /api/presence/users/{id} with URL encoding', () => {
+    const { svc, http } = setup();
+    svc.getUserOnline('abc 123').subscribe();
+    const req = http.expectOne('/api/presence/users/abc%20123');
+    expect(req.request.method).toBe('GET');
+    req.flush({ userId: 'abc 123', isOnline: true });
+    http.verify();
+  });
+
+  it('getUserOnline() unwraps { userId, isOnline } to a plain boolean', () => {
+    const { svc, http } = setup();
+    let value: boolean | undefined;
+    svc.getUserOnline('u-1').subscribe((v) => (value = v));
+    const req = http.expectOne('/api/presence/users/u-1');
+    req.flush({ userId: 'u-1', isOnline: false });
+    expect(value).toBe(false);
+    http.verify();
+  });
 });
