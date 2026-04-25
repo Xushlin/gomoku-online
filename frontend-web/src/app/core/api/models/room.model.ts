@@ -10,6 +10,7 @@ export type Stone = 'Empty' | 'Black' | 'White';
 export type GameResult = 'Ongoing' | 'BlackWin' | 'WhiteWin' | 'Draw';
 export type GameEndReason = 'Connected5' | 'Resigned' | 'TurnTimeout';
 export type ChatChannel = 'Room' | 'Spectator';
+export type BotDifficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface UserSummary {
   readonly id: string;

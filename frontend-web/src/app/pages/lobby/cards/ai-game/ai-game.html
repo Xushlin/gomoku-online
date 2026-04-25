@@ -1,0 +1,17 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col gap-3 border p-4"
+>
+  <h2 class="text-base font-semibold tracking-tight">
+    {{ 'lobby.ai-game.title' | transloco }}
+  </h2>
+  <p class="text-muted text-xs">
+    {{ 'lobby.ai-game.description' | transloco }}
+  </p>
+  <button
+    type="button"
+    class="bg-primary text-bg rounded-card self-start px-3 py-1.5 text-sm font-semibold"
+    (click)="open()"
+  >
+    {{ 'lobby.ai-game.button' | transloco }}
+  </button>
+</section>

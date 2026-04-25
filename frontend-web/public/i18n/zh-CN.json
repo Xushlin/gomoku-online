@@ -149,6 +149,25 @@
       "no-results": "未找到匹配的玩家。",
       "error": "搜索失败,请重试。",
       "search-button-aria": "搜索玩家"
+    },
+    "ai-game": {
+      "title": "人机对战",
+      "description": "选个难度,跟 AI 单挑一局。",
+      "button": "新建 AI 对局",
+      "dialog-title": "新建 AI 对局",
+      "name-label": "房间名",
+      "name-placeholder": "我的人机房",
+      "difficulty-label": "难度",
+      "difficulty-easy": "简单",
+      "difficulty-medium": "中等",
+      "difficulty-hard": "困难",
+      "submit": "开始",
+      "submit-loading": "创建中…",
+      "cancel": "取消",
+      "errors": {
+        "generic": "AI 对局创建失败,请重试。",
+        "network": "网络错误,请重试。"
+      }
     }
   },
   "game": {

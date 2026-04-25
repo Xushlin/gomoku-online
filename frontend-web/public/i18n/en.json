@@ -149,6 +149,25 @@
       "no-results": "No players match.",
       "error": "Search failed. Try again.",
       "search-button-aria": "Search players"
+    },
+    "ai-game": {
+      "title": "Play vs AI",
+      "description": "Solo practice against the bot — pick a difficulty and start.",
+      "button": "New AI game",
+      "dialog-title": "New AI game",
+      "name-label": "Room name",
+      "name-placeholder": "AI match",
+      "difficulty-label": "Difficulty",
+      "difficulty-easy": "Easy",
+      "difficulty-medium": "Medium",
+      "difficulty-hard": "Hard",
+      "submit": "Start",
+      "submit-loading": "Starting…",
+      "cancel": "Cancel",
+      "errors": {
+        "generic": "Couldn't start the AI game. Please try again.",
+        "network": "Network error — please try again."
+      }
     }
   },
   "game": {

@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type {
+  BotDifficulty,
   GameEndedDto,
   GameReplayDto,
   RoomState,
@@ -13,6 +14,7 @@ export abstract class RoomsApiService {
   abstract myActiveRooms(): Observable<readonly RoomSummary[]>;
   abstract getById(roomId: string): Observable<RoomState>;
   abstract create(name: string): Observable<RoomSummary>;
+  abstract createAiRoom(name: string, difficulty: BotDifficulty): Observable<RoomState>;
   abstract join(roomId: string): Observable<RoomState>;
   abstract leave(roomId: string): Observable<void>;
   abstract spectate(roomId: string): Observable<void>;
@@ -38,6 +40,10 @@ export class DefaultRoomsApiService extends RoomsApiService {
 
   create(name: string): Observable<RoomSummary> {
     return this.http.post<RoomSummary>('/api/rooms', { name });
+  }
+
+  createAiRoom(name: string, difficulty: BotDifficulty): Observable<RoomState> {
+    return this.http.post<RoomState>('/api/rooms/ai', { name, difficulty });
   }
 
   join(roomId: string): Observable<RoomState> {
