@@ -46,6 +46,13 @@ describe('DefaultSoundService', () => {
     expect(svc.packName()).toBe('wood');
   });
 
+  it('registers wood + chiptune by default', () => {
+    const svc = setup();
+    const packs = svc.availablePacks();
+    expect(packs).toContain('wood');
+    expect(packs).toContain('chiptune');
+  });
+
   it('persists muted state to localStorage', () => {
     const svc = setup();
     svc.setMuted(true);

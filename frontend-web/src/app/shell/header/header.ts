@@ -30,6 +30,9 @@ export class Header {
   protected readonly currentBoardSkinKey = computed(
     () => `header.board-skin.${this.boardSkin.skinName()}`,
   );
+  protected readonly currentSoundPackKey = computed(
+    () => `header.sound-pack.${this.sound.packName()}`,
+  );
   protected readonly darkStateKey = computed(() =>
     this.theme.isDark() ? 'header.theme.dark-on' : 'header.theme.dark-off',
   );
@@ -45,6 +48,10 @@ export class Header {
     return this.boardSkin.availableSkins();
   }
 
+  protected get soundPacks(): readonly string[] {
+    return this.sound.availablePacks();
+  }
+
   protected localeKey(locale: SupportedLocale): string {
     return `header.language.${locale}`;
   }
@@ -57,6 +64,10 @@ export class Header {
     return `header.board-skin.${name}`;
   }
 
+  protected soundPackKey(name: string): string {
+    return `header.sound-pack.${name}`;
+  }
+
   protected selectLocale(locale: SupportedLocale): void {
     this.language.use(locale);
   }
@@ -67,6 +78,11 @@ export class Header {
 
   protected selectBoardSkin(name: string): void {
     this.boardSkin.activate(name);
+  }
+
+  protected selectSoundPack(name: string): void {
+    this.sound.activate(name);
+    if (!this.sound.muted()) this.sound.play('move-place');
   }
 
   protected toggleDark(): void {

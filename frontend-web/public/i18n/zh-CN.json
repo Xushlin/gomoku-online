@@ -23,6 +23,11 @@
       "on": "开",
       "off": "关"
     },
+    "sound-pack": {
+      "label": "音效皮肤",
+      "wood": "木质",
+      "chiptune": "8-bit"
+    },
     "auth": {
       "login-cta": "登录",
       "logout": "退出登录",

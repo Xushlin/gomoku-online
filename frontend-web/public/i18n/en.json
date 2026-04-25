@@ -23,6 +23,11 @@
       "on": "On",
       "off": "Off"
     },
+    "sound-pack": {
+      "label": "Sound pack",
+      "wood": "Wood",
+      "chiptune": "Chiptune"
+    },
     "auth": {
       "login-cta": "Log in",
       "logout": "Log out",

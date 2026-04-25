@@ -99,6 +99,36 @@
 
   <button
     type="button"
+    class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+    [cdkMenuTriggerFor]="soundPackMenu"
+    [attr.aria-label]="'header.sound-pack.label' | transloco"
+  >
+    <span class="text-muted hidden sm:inline">{{ 'header.sound-pack.label' | transloco }}:</span>
+    <span>{{ currentSoundPackKey() | transloco }}</span>
+  </button>
+
+  <ng-template #soundPackMenu>
+    <ul
+      cdkMenu
+      class="bg-surface text-text border-border shadow-elevated rounded-card min-w-40 overflow-hidden border py-1"
+    >
+      @for (name of soundPacks; track name) {
+        <li>
+          <button
+            type="button"
+            cdkMenuItem
+            class="hover:bg-bg flex w-full items-center px-3 py-2 text-left text-sm"
+            (cdkMenuItemTriggered)="selectSoundPack(name)"
+          >
+            {{ soundPackKey(name) | transloco }}
+          </button>
+        </li>
+      }
+    </ul>
+  </ng-template>
+
+  <button
+    type="button"
     role="switch"
     [attr.aria-checked]="!sound.muted()"
     [attr.aria-label]="'header.sound.label' | transloco"

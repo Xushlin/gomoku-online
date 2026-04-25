@@ -1,4 +1,5 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
+import { chiptunePack } from './packs/chiptune';
 import { woodPack } from './packs/wood';
 import type { SoundEventName, SoundPack } from './sound.tokens';
 
@@ -51,6 +52,7 @@ export class DefaultSoundService extends SoundService {
   constructor() {
     super();
     this.register(DEFAULT_PACK, woodPack);
+    this.register('chiptune', chiptunePack);
 
     this._muted.set(this.readMuted());
     const initialPack = this.resolveInitialPack();
