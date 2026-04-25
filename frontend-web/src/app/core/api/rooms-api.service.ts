@@ -17,6 +17,7 @@ export abstract class RoomsApiService {
   abstract createAiRoom(name: string, difficulty: BotDifficulty): Observable<RoomState>;
   abstract join(roomId: string): Observable<RoomState>;
   abstract leave(roomId: string): Observable<void>;
+  abstract dissolve(roomId: string): Observable<void>;
   abstract spectate(roomId: string): Observable<void>;
   abstract resign(roomId: string): Observable<GameEndedDto>;
   abstract getReplay(roomId: string): Observable<GameReplayDto>;
@@ -52,6 +53,10 @@ export class DefaultRoomsApiService extends RoomsApiService {
 
   leave(roomId: string): Observable<void> {
     return this.http.post<void>(`/api/rooms/${encodeURIComponent(roomId)}/leave`, {});
+  }
+
+  dissolve(roomId: string): Observable<void> {
+    return this.http.delete<void>(`/api/rooms/${encodeURIComponent(roomId)}`);
   }
 
   spectate(roomId: string): Observable<void> {

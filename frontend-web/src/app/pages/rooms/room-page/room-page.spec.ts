@@ -60,6 +60,7 @@ class StubHub {
 class StubRoomsApi {
   getById = vi.fn(() => of(makeRoomState()));
   leave = vi.fn(() => of(undefined));
+  dissolve = vi.fn(() => of(undefined));
   resign = vi.fn(() =>
     of({
       result: 'BlackWin' as const,

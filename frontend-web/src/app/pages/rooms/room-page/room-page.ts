@@ -231,8 +231,19 @@ export class RoomPage implements OnInit, OnDestroy {
   }
 
   protected handleLeave(): void {
-    if (!this.roomId) return;
-    this.rooms.leave(this.roomId).subscribe({
+    const id = this.roomId;
+    if (!id) return;
+    // Host of a Waiting room must dissolve, not leave — backend rejects
+    // POST /leave with HostCannotLeaveWaitingRoom in that exact shape.
+    // Once dissolve fires, the server emits RoomDissolved, the existing
+    // roomDissolved$ subscription navigates us to /home, and any spectators
+    // get the same redirect.
+    const state = this.state();
+    const myId = this.auth.user()?.id;
+    const isHostOfWaiting =
+      state?.status === 'Waiting' && myId && state.host.id === myId;
+    const op = isHostOfWaiting ? this.rooms.dissolve(id) : this.rooms.leave(id);
+    op.subscribe({
       next: () => void this.router.navigateByUrl('/home'),
       error: () => this.flashError('game.errors.generic'),
     });

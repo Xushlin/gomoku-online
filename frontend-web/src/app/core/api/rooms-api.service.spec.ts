@@ -103,6 +103,15 @@ describe('RoomsApiService', () => {
     http.verify();
   });
 
+  it('dissolve() DELETEs /api/rooms/{id}', () => {
+    const { svc, http } = setup();
+    svc.dissolve('r-1').subscribe();
+    const req = http.expectOne('/api/rooms/r-1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    http.verify();
+  });
+
   it('spectate() POSTs to /api/rooms/{id}/spectate', () => {
     const { svc, http } = setup();
     svc.spectate('r-1').subscribe();
