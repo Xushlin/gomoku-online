@@ -22,6 +22,10 @@ import { AuthService, DefaultAuthService } from './core/auth/auth.service';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { provideAppHttp } from './core/http/http-config';
 import { DefaultLanguageService, LanguageService } from './core/i18n/language.service';
+// Side-effect import: registers Angular locale data for every non-default
+// locale in SUPPORTED_LOCALES, so DatePipe / formatDate don't crash with
+// NG0701 when the user is on zh-CN. Must run before any component renders.
+import './core/i18n/register-locales';
 import { provideAppI18n } from './core/i18n/transloco-root.config';
 import { DefaultGameHubService, GameHubService } from './core/realtime/game-hub.service';
 import { DefaultSoundService, SoundService } from './core/sound/sound.service';
