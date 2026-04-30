@@ -1,5 +1,7 @@
 # Gomoku Online
 
+[![CI](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml/badge.svg)](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml)
+
 Real-time multiplayer Gomoku (五子棋) — play another human across a SignalR
 connection, or take on a built-in AI in three difficulties. Web client is
 Angular 21 + Tailwind, backend is .NET 10 with Clean Architecture and CQRS.
