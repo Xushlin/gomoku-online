@@ -164,4 +164,4 @@ history and `openspec/specs/` for current behaviour:
 
 ## License
 
-Not yet picked. If you want to use any of this, open an issue and ask.
+[MIT](LICENSE) — do whatever, just keep the copyright notice.
