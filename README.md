@@ -1,6 +1,9 @@
 # Gomoku Online
 
+**English** · [简体中文](README.zh-CN.md)
+
 [![CI](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml/badge.svg)](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Real-time multiplayer Gomoku (五子棋) — play another human across a SignalR
 connection, or take on a built-in AI in three difficulties. Web client is
@@ -156,7 +159,6 @@ Vitest for unit tests, no Karma. Templates use control-flow blocks (`@if /
 Roughly in priority order — see `openspec/changes/archive/` for fine-grained
 history and `openspec/specs/` for current behaviour:
 
-- GitHub Actions CI (build + lint + test on PR)
 - Electron desktop wrap (`frontend-desktop/`)
 - Flutter mobile client (`frontend-mobile/`)
 - Volume slider / additional sound packs / additional board skins

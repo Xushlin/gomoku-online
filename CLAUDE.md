@@ -8,25 +8,29 @@ Multi-platform online Gomoku (五子棋) game. Players register, create/join roo
 
 ## Current phase
 
-Project is in initial scaffolding. Completed:
+Backend MVP and web client v1 are both feature-complete. Detail:
+
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gomoku.slnx`)
-- [x] OpenSpec initialized (`openspec/config.yaml`)
-- [x] Backend MVP (auth, rooms, gameplay, AI, ELO, replay, presence, observability, rate limiting) — see `openspec/specs/` and `openspec/changes/archive/`
-- [x] `frontend-web/` Angular 21 scaffold (Tailwind v4, Material/CDK, Transloco zh-CN+en, ThemeService, LanguageService, Vitest) — `add-web-scaffold`. No business pages yet.
+- [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
+- [x] **Backend MVP** — auth, rooms, gameplay, AI (Easy / Medium / Hard, with side-picker), ELO, replay, presence, observability, rate limiting. Live specs in `openspec/specs/`.
+- [x] **Web client v1** (`frontend-web/`) — Angular 21, Tailwind v4, Material/CDK, Transloco (`zh-CN` + `en`). Auth pages, lobby, real-time game board, replay player, public profiles, find-player search, AI room creation with side-picker, sound effects (Wood + Chiptune packs), board skins (Wood + Classic), themes (Material + System) × dark/light, presence dots.
+- [x] GitHub Actions CI runs on every push and PR (`backend` + `web` jobs in parallel).
 
 Not yet done:
-- `frontend-desktop/`, `frontend-mobile/` directories are empty — frontend-web business pages (`add-web-auth-pages` / `-lobby` / `-game-board` / `-replay-and-profile`) come next.
+
+- `frontend-desktop/` — empty. Phase 2: Electron wrap of the Angular app.
+- `frontend-mobile/` — empty. Phase 3: Flutter + Material 3.
 
 ## Workflow — OpenSpec is mandatory
 
 **Never write implementation code without an approved OpenSpec proposal.** This is a hard rule, not a preference.
 
-1. **Propose** — new feature → create a change in `openspec/changes/<change-name>/` (`proposal.md` + `tasks.md` + `specs/`). Use `/opsx:propose` or `/openspec-propose`.
+1. **Propose** — for each new feature, create a change directory at `openspec/changes/<change-name>/` containing `proposal.md`, `tasks.md`, and `specs/`. Use `/opsx:propose` or `/openspec-propose`.
 2. **Review** — the user reads the proposal and requests edits. Wait for explicit approval before touching code.
 3. **Implement** — once approved, work through `tasks.md` item by item, checking off as you go. Use `/opsx:apply`.
-4. **Archive** — when done, `openspec archive <change-name>` moves specs from `changes/` to `specs/`.
+4. **Archive** — when done, `openspec archive <change-name>` moves spec deltas from `changes/` into the live `openspec/specs/` tree and renames the change directory under `archive/`.
 
-Project-wide agent rules belong in `openspec/AGENTS.md` (to be created). `openspec/changes/archive/` and `openspec/specs/` are currently empty.
+Pure bug fixes that bring code into compliance with an existing spec don't need a new proposal — fix the code, commit. Spec-level corrections that document already-shipped behaviour can ship as a tiny `fix-spec-<name>-drift` change.
 
 ## Tech stack
 
@@ -34,21 +38,21 @@ Project-wide agent rules belong in `openspec/AGENTS.md` (to be created). `opensp
 
 - ASP.NET Core Web API, target `net10.0` on every project (nullable + implicit usings enabled)
 - **MediatR** for CQRS — every write is a `Command`, every read is a `Query`, one handler per file
-- **EF Core** — SQLite for early dev, SQL Server when scaling
+- **EF Core** — SQLite for local dev, SQL Server when scaling
 - **SignalR** for real-time play and chat
 - **FluentValidation** for input validation, **Serilog** for logging, **JWT** for auth
-- Tests: **xUnit** + **FluentAssertions**
+- Tests: **xUnit** + **FluentAssertions** + **Moq**
 
-Solution file is `.slnx` (XML), not `.sln`. `dotnet` CLI handles it transparently; older tooling may not.
+The solution file is `.slnx` (XML), not `.sln`. The `dotnet` CLI handles it transparently; older tooling may not.
 
 ### Web (`frontend-web/`) — phase 1
 
 - **Angular 21** + TypeScript strict mode
-- **Tailwind CSS** + **Angular Material** + **`@angular/cdk`**(overlays / dialogs / a11y)
-- **Transloco** for runtime i18n (initial locales: `zh-CN`, `en`;扩展靠添 JSON + 注册一条)
-- `@microsoft/signalr` client
-- State: **Angular Signals** first, NgRx only for genuinely complex flows
-- Tests: **Vitest** (not Karma/Jasmine) — use Angular 21's Vitest builder or `@analogjs/vitest-angular`
+- **Tailwind CSS v4** + **Angular Material** + **`@angular/cdk`** (overlays / dialogs / a11y)
+- **Transloco** for runtime i18n (initial locales: `zh-CN`, `en`; adding a new locale = drop one JSON file + register one line)
+- `@microsoft/signalr` client (lazy-imported on first hub call to keep it out of the main bundle)
+- State: **Angular Signals** first; NgRx only for genuinely complex flows
+- Tests: **Vitest** (not Karma/Jasmine)
 
 ### Desktop (`frontend-desktop/`) — phase 2
 
@@ -72,7 +76,7 @@ Domain  ← Application  ← Infrastructure
 - **`Gomoku.Infrastructure`** — EF Core, persistence, external adapters. Implements `Application` interfaces.
 - **`Gomoku.Api`** — ASP.NET host, HTTP endpoints, SignalR hubs, DI composition root.
 
-None of these project references are wired yet — preserve the direction when adding them. **Never** have `Api` reference `Domain` directly; **never** put DB access outside `Infrastructure`.
+Preserve the direction when adding project references. **Never** have `Api` reference `Domain` directly; **never** put DB access outside `Infrastructure`.
 
 ### DDD aggregates
 
@@ -85,7 +89,7 @@ None of these project references are wired yet — preserve the direction when a
 
 - Commands: `CreateRoomCommand`, `MakeMoveCommand`, ...
 - Queries: `GetRoomListQuery`, `GetLeaderboardQuery`, ...
-- One handler per file, name matches the command/query.
+- One handler per file; the file name matches the command/query.
 - **SignalR hubs route messages only** — they dispatch to MediatR and push results back. No business logic in hubs.
 
 ### Hard rules
@@ -103,62 +107,64 @@ Don't ship without unit tests for:
 - Every Application handler.
 - Frontend: components and services with real logic (pure display components can skip).
 
-`Gomoku.Domain.Tests` and `Gomoku.Application.Tests` exist. If an Api-level integration test project is added, name it `Gomoku.Api.Tests` and register it in `Gomoku.slnx`. The test csprojs have `Xunit` as a global using — don't add `using Xunit;` in test files.
+`Gomoku.Domain.Tests` and `Gomoku.Application.Tests` exist. If an Api-level integration test project is added, name it `Gomoku.Api.Tests` and register it in `Gomoku.slnx`. The test csprojs declare `Xunit` as a global using — don't add `using Xunit;` in test files.
 
 ## Frontend conventions (Angular)
 
-### 命名 & 结构
+### Naming & structure
 
 - Filenames: **kebab-case**. Classes: PascalCase.
-- Use **standalone components** (Angular 17+ style) — don't create new NgModules unless unavoidable.
+- Use **standalone components** (Angular 17+ style). Don't create new NgModules unless unavoidable.
 - Prefer **Signals** over `BehaviorSubject` for local state.
 - When Tailwind class strings get long, extract via `@apply` into a custom utility.
-- All HTTP lives in `services/api/`. Components must not call `HttpClient` directly.
+- All HTTP lives in `core/api/`. Components must not call `HttpClient` directly.
 
-### 设计 & UX(硬规则)
+### Design & UX (hard rules)
 
-- **Dark mode 从第 1 天起必须可工作**。方案:`ThemeService`(Signal)在 `<html>` 上 toggle `dark` class;颜色全走 CSS 变量(`--color-bg`、`--color-primary` 等),Tailwind 用 `dark:` variant 辅助;绝不在组件里写 `bg-gray-900` / `text-white` 这种硬编码暗色。
-- **响应式(mobile-first)**。每个路由 MUST 在 **375px** 宽度下可用,再逐步 `sm: / md: / lg: / xl:` 扩展到 1440px+。Tailwind 默认断点够用;不许为单屏幕分辨率专门写 CSS。
-- **现代化 UX**:CSS 过渡优于 JS 动画、`focus-visible` 环可见、骨架屏避免布局抖动、键盘可达每个交互元素、尊重 `prefers-reduced-motion`、loading / empty / error 三态都要有 UI,不许 "loading…" 纯文字糊弄。
+- **Dark mode must work from day one.** Mechanism: `ThemeService` (Signal) toggles a `.dark` class on `<html>`; colors come from CSS variables (`--color-bg`, `--color-primary`, etc.); Tailwind's `dark:` variant assists. Never hard-code dark colors in components (no `bg-gray-900` / `text-white`).
+- **Responsive (mobile-first).** Every route MUST work at **375 px** width, then progressively enhance via `sm: / md: / lg: / xl:` up to 1440 px+. Tailwind's default breakpoints are sufficient — don't write CSS for one specific resolution.
+- **Modern UX.** CSS transitions over JS animations. Visible `focus-visible` ring. Skeleton placeholders to avoid layout shift. Every interactive element keyboard-reachable. Respect `prefers-reduced-motion`. Loading / empty / error states all need real UI — no plain `"loading…"` text.
 
-### 性能
+### Performance
 
-- **懒加载(Lazy loading)**是强制的:根壳(shell + login)外的每个路由都用 `loadComponent` / `loadChildren`。单 lazy chunk 控制在 **gzip 后 < 200 KB**,超了拆。
-- `<img loading="lazy">` 默认,只有首屏 above-the-fold 的例外。
-- SignalR 客户端装在服务里,**首次订阅时才连**,不在 app bootstrap 就握手 —— 未登录 / 不上对局页时不必要的连接是浪费。
+- **Lazy loading is mandatory.** Every route outside the root shell (shell + login) uses `loadComponent` / `loadChildren`. Each lazy chunk stays **under 200 KB gzipped**; split if larger.
+- `<img loading="lazy">` is the default; only above-the-fold first-paint images are exempt.
+- The SignalR client is constructed inside a service and **only connects on first subscription** — never at app bootstrap. A user who never opens a game page should never establish a hub connection.
 
-### 架构 —— SOLID,易扩展
+### Architecture — SOLID, easy to extend
 
-- **单一职责**:一个组件只干一件事。Container(拿数据 / 分发事件)与 Presentational(纯渲染输入)分层,**不混**。
-- **依赖倒置**:Service 有可能有替代实现(mock 测试 / 未来换 API 客户端 / 换状态后端)时,用**抽象类作为 DI token**,inject by token 不 by concrete。
-- **开闭**:新增主题 / 新增 locale / 新增对局难度 MUST 是"加一条配置或一个文件"级的改动,不改现有代码。
-- 组合优于继承。横切行为走 directive / pipe,不走 base class。
-- 组件 < 200 LOC。超出就抽 service 或 store。
+- **Single responsibility.** A component does one thing. Container components (fetch data, dispatch events) and presentational components (pure rendering of inputs) are separate — don't mix.
+- **Dependency inversion.** When a service has plausible alternative implementations (mock for tests / future API client / different state backend), use an **abstract class as the DI token**. Inject by token, not by concrete class.
+- **Open/closed.** Adding a new theme / locale / difficulty MUST be a "drop one config file or one TS file" change — no edits to existing components.
+- Composition over inheritance. Cross-cutting behavior goes in directives / pipes, not base classes.
+- Components stay under 200 LOC. If larger, extract a service or store.
 
-### 对话框 & 覆盖层
+### Dialogs & overlays
 
-- 对话框 / 浮层 / Popover MUST 基于 **Angular CDK**(`@angular/cdk/dialog` 或 `@angular/cdk/overlay`)。Material 的 `MatDialog` 也行(它包了 CDK);**不许**手写 `<div>` + `*ngIf` 土制模态 —— focus trap / ESC / backdrop / a11y attrs 都要,CDK 免费给。
+Dialogs / popovers / overlays MUST use **Angular CDK** (`@angular/cdk/dialog` or `@angular/cdk/overlay`). Material's `MatDialog` is fine (it wraps CDK). **Never** hand-roll `<div>` + `*ngIf` modals — focus trap, ESC handling, backdrop, ARIA attributes are all required, and CDK gives them for free.
 
-### i18n —— 国际化
+### i18n
 
-- 用 **Transloco**(或 Angular i18n + ICU 运行时切换)。
-- 首发 locale:`zh-CN`(简体)+ `en`。文件在 `src/assets/i18n/<locale>.json`,扁平 key / 点分路径(`room.join.button` 之类)。
-- 模板里**禁止硬编码**中文或英文;一律 `{{ 'key.path' | translate }}`。date / number 走 Angular 的 `formatDate` / `formatNumber` 带 locale 参数。
-- 语言切换由 `LanguageService`(Signal)承载,持久化到 `localStorage`;初值 = `localStorage` → `navigator.language` → `en` 回退链。
-- 加新 locale = 新增 `i18n/<locale>.json` + `LanguageService.supported` 注册一行,**不改**其它代码。
+- Use **Transloco** (or Angular i18n + ICU runtime switching).
+- Initial locales: `zh-CN` (Simplified Chinese) + `en`. Files at `public/i18n/<locale>.json`. Flat keys / dotted paths (`room.join.button`).
+- Templates **MUST NOT hard-code** Chinese or English display strings — always `{{ 'key.path' | transloco }}`. Date / number formatting goes through Angular's `formatDate` / `formatNumber` with a locale parameter.
+- The active language is held by `LanguageService` (Signal), persisted to `localStorage`. Resolution order: `localStorage` → `navigator.language` → `en` fallback.
+- Adding a new locale = drop a new `i18n/<locale>.json` + add one entry to `LanguageService.supported` + register Angular locale data in `core/i18n/register-locales.ts`. No other file changes.
 
-### 主题切换(Material / System / 更多)
+### Theme switching (Material / System / future)
 
-- 主题以**注册表**形式:`ThemeService.register(name, tokens)`,`tokens` 是一组 CSS 变量值(`--color-primary`、`--color-surface`、`--radius-card`、`--shadow-elevated` 等)。切换主题 = 在 `<html>` 设 `data-theme="<name>"` + 持久化到 `localStorage`。
-- 首发两套:`material`(Angular Material 默认配色 + Material 圆角 / 阴影)、`system`(Apple / Fluent-ish 简洁风,更小圆角、更少阴影)。
-- **Dark/Light 是主题的正交维度**:每个主题都有明暗两套 token 集合,`ThemeService` 的两个 signal(`themeName` / `isDark`)独立切换。
-- 组件样式 MUST 引用 CSS 变量,不直接写色值;"这个按钮用主题蓝"= `var(--color-primary)`,不是 `#2962FF`。
-- 加新主题 = 新增一份 tokens 文件 + `ThemeService.register(...)` 一行,**不改**任何组件。
+- Themes are kept in a registry: `ThemeService.register(name, tokens)`. `tokens` is a CSS variable bag (`--color-primary`, `--color-surface`, `--radius-card`, `--shadow-elevated`, …). Switching = setting `data-theme="<name>"` on `<html>` and persisting to `localStorage`.
+- Two themes ship: `material` (Angular Material default palette + Material radii / shadows) and `system` (Apple / Fluent-ish minimal — smaller radii, lighter shadows).
+- **Dark/Light is an orthogonal axis to the theme.** Each theme has light + dark token sets. `ThemeService` exposes two signals (`themeName` and `isDark`) that switch independently.
+- Component styles MUST reference CSS variables, never literal colors. "This button uses theme-blue" = `var(--color-primary)`, not `#2962FF`.
+- Adding a new theme = drop one tokens file + one `ThemeService.register(...)` call. No component changes.
 
-### 前端测试
+The same registry pattern applies to **board skins** (`BoardSkinService`, currently `wood` + `classic`) and **sound packs** (`SoundService`, currently `wood` + `chiptune`).
 
-- Vitest 覆盖:有逻辑的 service / store、有条件分支的组件、i18n 管道、`ThemeService` / `LanguageService` 等横切 service。纯展示组件可跳。
-- 对话框、路由守卫、SignalR 订阅等有副作用的路径,用 TestBed + `ComponentHarness` 写集成测试。
+### Frontend tests
+
+- Vitest covers: services / stores with logic, components with conditional branches, the i18n pipe, cross-cutting services like `ThemeService` / `LanguageService` / `SoundService`. Pure presentational components can skip.
+- For side-effecting paths (dialogs, route guards, SignalR subscriptions), use TestBed + `ComponentHarness` integration tests.
 
 ## Common commands
 
@@ -190,28 +196,28 @@ dotnet ef database update \
   --project src/Gomoku.Infrastructure \
   --startup-project src/Gomoku.Api
 
-# Roll back the last migration (before it's been shared / pushed)
+# Roll back the last migration (only before it has been merged / pushed)
 dotnet ef migrations remove \
   --project src/Gomoku.Infrastructure \
   --startup-project src/Gomoku.Api
 
-# Generate an idempotent SQL script for review / prod apply
+# Generate an idempotent SQL script for review / production apply
 dotnet ef migrations script --idempotent \
   --project src/Gomoku.Infrastructure \
   --startup-project src/Gomoku.Api \
   -o migrations.sql
 ```
 
-Rule: never edit a migration that has been merged to `main` — add a new one instead.
+Rule: never edit a migration that has already been merged to `main` — add a new one instead.
 
-### Frontend (once Angular is scaffolded)
+### Frontend
 
 ```bash
 npm install
-npm start           # ng serve
+npm start           # ng serve (with the dev proxy → :5145)
 npm run build
 npm test            # Vitest, watch mode
-npm run test -- --run   # Vitest, single run (CI)
+npm run test -- --run   # Vitest, single run (CI mode)
 npm run lint
 ```
 
@@ -219,15 +225,15 @@ npm run lint
 
 Use **GitHub Flow** plus **Conventional Commits**.
 
-**Branches** — `main` is protected, always deployable. Branch off `main` for every change; PR back to `main`:
+**Branches** — `main` is protected and always deployable. Branch off `main` for every change; PR back to `main`:
 
 ```
-feat/<slug>      新功能         feat/room-chat
-fix/<slug>       修 bug         fix/elo-draw-calc
-refactor/<slug>  重构           refactor/move-validator
-docs/<slug>      文档           docs/signalr-contract
-chore/<slug>     构建 / 杂项    chore/upgrade-ef-core
-test/<slug>      只加测试       test/win-detection-edge
+feat/<slug>      new feature       feat/room-chat
+fix/<slug>       bug fix           fix/elo-draw-calc
+refactor/<slug>  refactor          refactor/move-validator
+docs/<slug>      docs only         docs/signalr-contract
+chore/<slug>     build / misc      chore/upgrade-ef-core
+test/<slug>      tests only        test/win-detection-edge
 ```
 
 Slugs are kebab-case. Tie to an OpenSpec change name when one exists (e.g. `feat/add-domain-core`).
@@ -237,12 +243,12 @@ Slugs are kebab-case. Tie to an OpenSpec change name when one exists (e.g. `feat
 ```
 <type>(<scope>): <subject>
 
-[optional body — 说明 "为什么",不是 "做了什么"]
+[optional body — explain WHY, not WHAT]
 
 [optional footer — BREAKING CHANGE: ... / Refs: #123]
 ```
 
-Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `revert`. Scope is the module (`domain`, `api`, `web`, `infra`, etc.). Subject is imperative mood, ≤72 chars, no trailing period. Breaking changes get a `!` after the type/scope *and* a `BREAKING CHANGE:` footer.
+Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `revert`. Scope is the module (`domain`, `api`, `web`, `infra`, etc.). Subject is in the imperative mood, ≤ 72 chars, no trailing period. Breaking changes get a `!` after the type/scope **and** a `BREAKING CHANGE:` footer.
 
 Examples:
 
@@ -252,52 +258,52 @@ fix(api): return 409 instead of 500 when room is full
 refactor(web)!: replace BehaviorSubject with Signals in game store
 ```
 
-中英文皆可,但一条提交内只用一种语言。不要提交未通过的测试。
+A single commit can be in English or Chinese, but pick one — don't mix within a single commit. Don't commit failing tests.
 
 ## Code review
 
-All merges to `main` go through PR. Direct push is forbidden.
+All merges to `main` go through a PR. Direct push is forbidden.
 
-### PR 要求
+### PR requirements
 
-- **关联 OpenSpec 变更**:PR 描述里写明对应的 `openspec/changes/<name>/`;若没有关联变更,说明为什么不需要(如纯文档、构建修复)。
-- **体量**:单个 PR 尽量控制在 **400 行改动** 以内(不含自动生成的 migration / lock file)。超出就拆。
-- **CI 必绿**:`dotnet build` + `dotnet test` + 前端 `npm test -- --run` + lint 全部通过才能请人审。
-- **至少 1 个 approve** 才能合并;触碰架构、安全、数据库 schema 的 PR 建议 2 个 approve。
-- 合并方式:**Squash merge**,commit message 用 Conventional Commits 格式并保留 PR 编号(`feat(domain): ... (#42)`)。
+- **Link to the OpenSpec change.** The PR description states the corresponding `openspec/changes/<name>/`. If there is no associated change, explain why one isn't needed (pure docs, build fix, spec-drift correction).
+- **Size.** Each PR ideally stays under **400 lines of net change** (excluding auto-generated migration / lock files). Split when larger.
+- **CI must be green.** `dotnet build` + `dotnet test` + the web `npm run lint` + `npm test -- --run` must all pass before requesting review.
+- **At least 1 approval** to merge. PRs touching architecture, security, or DB schema benefit from 2 approvals.
+- Merge style: **Squash merge**. Use Conventional Commits format and keep the PR number (`feat(domain): ... (#42)`).
 
-### 作者自检(提 PR 前)
+### Author self-check (before opening a PR)
 
-- [ ] 分层没破:`Domain` 无外部依赖;`Application` 只依赖 `Domain`;DB 访问只在 `Infrastructure`;`Api` 不直接引用 `Domain`
-- [ ] `Domain`/`Application` 里没有 `async void` / `.Result` / `.Wait()`
-- [ ] SignalR Hub 只做路由,业务逻辑在 Handler 里
-- [ ] 公共方法有 XML `<summary>`;接口加 `I` 前缀
-- [ ] 单元测试覆盖:判胜 / ELO / 新增 Handler / 有逻辑的前端 service
-- [ ] 没有提交密钥、连接串、`appsettings.*.json` 里的敏感值
-- [ ] OpenSpec `tasks.md` 勾选到位,PR 描述里贴最新进度
+- [ ] Layer direction intact: `Domain` has no outward dependencies; `Application` only depends on `Domain`; DB access only in `Infrastructure`; `Api` does not directly reference `Domain`
+- [ ] No `async void` / `.Result` / `.Wait()` in `Domain` or `Application`
+- [ ] SignalR hub is purely a router; business logic lives in handlers
+- [ ] Public methods have an XML `<summary>`; interfaces start with `I`
+- [ ] Unit tests cover: win detection / ELO / new handlers / web services with logic
+- [ ] No secrets / connection strings / sensitive `appsettings.*.json` values committed
+- [ ] OpenSpec `tasks.md` is checked off; latest progress reflected in the PR description
 
-### 审查者关注点(按优先级)
+### Reviewer focus (in priority order)
 
-1. **正确性与业务逻辑** — 判胜规则、ELO 公式、禁手、超时、断线重连这类规则是否对;边界值是否测了。
-2. **架构与依赖方向** — 有没有偷懒跨层调用;有没有把 DB / HTTP 细节泄漏到 `Application` 或 `Domain`。
-3. **并发与异步** — 有没有死锁风险;`async` 用得对不对;SignalR group / connection 生命周期。
-4. **安全** — 输入校验(FluentValidation)、鉴权/授权、SQL 注入、XSS、JWT 校验、围观者不能发落子命令。
-5. **测试质量** — 不只看覆盖率,看有没有测 *行为* 而不是 *实现*;mock 有没有滥用。
-6. **可读性** — 命名、函数长度、注释解释 *为什么* 而不是 *做了什么*。
-7. **性能** — 只在有指标/profile 证据时提,别凭感觉要求优化。
+1. **Correctness and business logic** — win detection rules, ELO formula, forbidden moves, timeouts, reconnection. Are edge cases tested?
+2. **Architecture and dependency direction** — any sneaky cross-layer calls? Are DB / HTTP details leaking into `Application` or `Domain`?
+3. **Concurrency and async** — deadlock risk? `async` used correctly? SignalR group / connection lifecycle right?
+4. **Security** — input validation (FluentValidation), authn/authz, SQL injection, XSS, JWT verification, spectators must not be able to send move commands.
+5. **Test quality** — not just coverage; do tests assert *behavior* rather than *implementation*? Is mocking abused?
+6. **Readability** — naming, function length, comments that explain *why* rather than *what*.
+7. **Performance** — only raise this when there's a metric or profile to point at. Don't ask for optimization on a hunch.
 
-### 评论礼仪
+### Comment etiquette
 
-给评论加前缀,让作者知道哪些必改、哪些可选:
+Prefix review comments so the author knows what's required vs. optional:
 
-- `must:` — 必须改,否则不合并(正确性 / 安全 / 架构违规)
-- `should:` — 强烈建议改,需要理由才能保留
-- `nit:` — 小意见 / 风格,作者可自行决定
-- `question:` — 纯提问,不是要求改动
-- `praise:` — 写得好就说出来
+- `must:` — must change, otherwise no merge (correctness / security / architectural violation)
+- `should:` — strongly suggested change; the author needs a reason to keep their version
+- `nit:` — minor / style; the author's call
+- `question:` — pure question, not a request for change
+- `praise:` — when something's well-done, say so
 
-作者可以拒绝 `should` / `nit`,但要简短说明。`must` 未解决前不要点 approve。
+Authors can decline `should` / `nit` items but should briefly explain why. Don't approve while a `must:` is unresolved.
 
 ## Shell
 
-Windows host, bash shell. Use Unix syntax (`/dev/null`, forward slashes) in commands, not `NUL` / backslashes.
+Windows host, bash shell. Use Unix syntax in commands (`/dev/null`, forward slashes), not `NUL` / backslashes.
