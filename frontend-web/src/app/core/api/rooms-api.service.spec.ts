@@ -75,12 +75,26 @@ describe('RoomsApiService', () => {
     http.verify();
   });
 
-  it('createAiRoom() POSTs { name, difficulty } to /api/rooms/ai', () => {
+  it('createAiRoom() POSTs { name, difficulty } to /api/rooms/ai when humanSide omitted', () => {
     const { svc, http } = setup();
     svc.createAiRoom('Hard match', 'Hard').subscribe();
     const req = http.expectOne('/api/rooms/ai');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ name: 'Hard match', difficulty: 'Hard' });
+    req.flush({});
+    http.verify();
+  });
+
+  it('createAiRoom() POSTs { name, difficulty, humanSide } when humanSide given', () => {
+    const { svc, http } = setup();
+    svc.createAiRoom('Defense', 'Medium', 'White').subscribe();
+    const req = http.expectOne('/api/rooms/ai');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      name: 'Defense',
+      difficulty: 'Medium',
+      humanSide: 'White',
+    });
     req.flush({});
     http.verify();
   });

@@ -3,6 +3,7 @@ using Gomoku.Application.Abstractions;
 using Gomoku.Application.Common.DTOs;
 using Gomoku.Application.Common.Exceptions;
 using Gomoku.Application.Common.Mapping;
+using Gomoku.Domain.Enums;
 using Gomoku.Domain.Rooms;
 using MediatR;
 using ValidationException = Gomoku.Application.Common.Exceptions.ValidationException;
@@ -64,6 +65,13 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
         var now = _clock.UtcNow;
         var room = Room.Create(RoomId.NewId(), request.Name, request.HostUserId, now);
         room.JoinAsPlayer(bot.Id, now);
+        // Human picked White → seat the bot on Black so it plays first. Same
+        // transaction as create + join, so the AI worker can't race with
+        // the swap (room invisible until commit).
+        if (request.HumanSide == Stone.White)
+        {
+            room.SwapPlayers(now);
+        }
 
         await _rooms.AddAsync(room, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);

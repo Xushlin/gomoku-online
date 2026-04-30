@@ -135,6 +135,36 @@ public sealed class Room
     }
 
     /// <summary>
+    /// 在棋局尚未开局时(<see cref="Status"/> = Playing 且 <c>Game.Moves</c> 为空)
+    /// 互换 <see cref="BlackPlayerId"/> 与 <see cref="WhitePlayerId"/>。<see cref="HostUserId"/>
+    /// 不变(host 仍是房间创建者),<see cref="Game"/>.<c>CurrentTurn</c> 不变(始终是 Black,
+    /// 因为黑子先行的规则与"谁坐黑"无关)。
+    ///
+    /// 主要给 <c>CreateAiRoomCommandHandler</c> 用 —— 真人选择执白时,对 <c>JoinAsPlayer</c>
+    /// 后立刻 swap,使 bot 占黑、第 1 步轮到 bot。AI worker 同事务提交后才能看见房间,
+    /// 不存在与 swap 的竞争。
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Status 不是 Playing,或已经有落子。</exception>
+    public void SwapPlayers(DateTime now)
+    {
+        _ = now; // 目前未用时间戳(为未来"swap 时间审计"留参数位)
+
+        if (Status != RoomStatus.Playing)
+        {
+            throw new InvalidOperationException(
+                $"Cannot swap players when room status is {Status}; only valid in Playing.");
+        }
+
+        if (Game is null || Game.Moves.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "Cannot swap players after the first move.");
+        }
+
+        (BlackPlayerId, WhitePlayerId) = (WhitePlayerId!.Value, BlackPlayerId);
+    }
+
+    /// <summary>
     /// 玩家 / 围观者离开房间。Waiting 状态下 Host 不得"静默离开"(请用解散房间接口,本变更未实现)。
     /// 对局中的玩家离开视为"离席",不改变 Game 状态 —— 超时 / 认输留给后续变更。
     /// </summary>

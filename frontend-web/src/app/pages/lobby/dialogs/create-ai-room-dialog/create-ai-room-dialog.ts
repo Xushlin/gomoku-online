@@ -3,7 +3,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
-import type { BotDifficulty, RoomState } from '../../../../core/api/models/room.model';
+import type {
+  BotDifficulty,
+  BotSide,
+  RoomState,
+} from '../../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../../core/api/rooms-api.service';
 import { isProblemDetails } from '../../../../core/auth/problem-details';
 import { mapProblemDetailsToForm } from '../../../auth/shared/problem-details.mapper';
@@ -29,6 +33,7 @@ export class CreateAiRoomDialog {
   protected readonly bannerKey = signal<string | null>(null);
 
   protected readonly difficulties: readonly BotDifficulty[] = ['Easy', 'Medium', 'Hard'];
+  protected readonly sides: readonly BotSide[] = ['Black', 'White'];
 
   protected readonly form = this.fb.nonNullable.group({
     name: [
@@ -41,14 +46,23 @@ export class CreateAiRoomDialog {
       ],
     ],
     difficulty: this.fb.nonNullable.control<BotDifficulty>('Medium', Validators.required),
+    humanSide: this.fb.nonNullable.control<BotSide>('Black', Validators.required),
   });
 
   protected difficultyKey(d: BotDifficulty): string {
     return `lobby.ai-game.difficulty-${d.toLowerCase()}`;
   }
 
+  protected sideKey(s: BotSide): string {
+    return `lobby.ai-game.side-${s.toLowerCase()}`;
+  }
+
   protected pickDifficulty(d: BotDifficulty): void {
     this.form.controls.difficulty.setValue(d);
+  }
+
+  protected pickSide(s: BotSide): void {
+    this.form.controls.humanSide.setValue(s);
   }
 
   protected submit(): void {
@@ -58,8 +72,8 @@ export class CreateAiRoomDialog {
     }
     this.submitting.set(true);
     this.bannerKey.set(null);
-    const { name, difficulty } = this.form.getRawValue();
-    this.rooms.createAiRoom(name.trim(), difficulty).subscribe({
+    const { name, difficulty, humanSide } = this.form.getRawValue();
+    this.rooms.createAiRoom(name.trim(), difficulty, humanSide).subscribe({
       next: (state) => {
         this.submitting.set(false);
         this.dialogRef.close(state);

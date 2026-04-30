@@ -12,6 +12,7 @@ using Gomoku.Application.Features.Rooms.JoinRoom;
 using Gomoku.Application.Features.Rooms.LeaveAsSpectator;
 using Gomoku.Application.Features.Rooms.LeaveRoom;
 using Gomoku.Domain.Ai;
+using Gomoku.Domain.Enums;
 using Gomoku.Domain.Rooms;
 using Gomoku.Domain.Users;
 using MediatR;
@@ -56,7 +57,11 @@ public sealed class RoomsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var state = await _mediator.Send(
-            new CreateAiRoomCommand(GetUserId(), body.Name, body.Difficulty),
+            new CreateAiRoomCommand(
+                GetUserId(),
+                body.Name,
+                body.Difficulty,
+                body.HumanSide ?? Stone.Black),
             cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = state.Id }, state);
     }
@@ -154,5 +159,13 @@ public sealed class RoomsController : ControllerBase
 /// <summary>POST /api/rooms 的请求体。</summary>
 public sealed record CreateRoomRequest(string Name);
 
-/// <summary>POST /api/rooms/ai 的请求体。<c>Difficulty</c> 以字符串形式(JsonStringEnumConverter)。</summary>
-public sealed record CreateAiRoomRequest(string Name, BotDifficulty Difficulty);
+/// <summary>
+/// POST /api/rooms/ai 的请求体。<c>Difficulty</c> 以字符串形式(JsonStringEnumConverter)。
+/// <c>HumanSide</c> 可空 —— 缺省 / null 时 controller 默认填 <c>Stone.Black</c>(向后兼容,
+/// 旧客户端继续工作)。显式 <c>"Black"</c> / <c>"White"</c> 让真人选边;<c>"Empty"</c> 等其它
+/// 值由 application validator 拒绝(HTTP 400)。
+/// </summary>
+public sealed record CreateAiRoomRequest(
+    string Name,
+    BotDifficulty Difficulty,
+    Stone? HumanSide = null);

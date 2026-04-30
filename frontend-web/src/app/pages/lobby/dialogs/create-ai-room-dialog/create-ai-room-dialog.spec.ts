@@ -62,30 +62,55 @@ describe('CreateAiRoomDialog', () => {
     expect(comp.form.controls.difficulty.value).toBe('Medium');
   });
 
+  it('default humanSide is Black', () => {
+    const { fixture } = mount();
+    const comp = fixture.componentInstance as unknown as {
+      form: { controls: { humanSide: { value: string } } };
+    };
+    expect(comp.form.controls.humanSide.value).toBe('Black');
+  });
+
   it('valid submit calls createAiRoom with form values + closes with RoomState', () => {
     const { fixture, rooms, dialogRef } = mount();
     const comp = fixture.componentInstance as unknown as {
-      form: { setValue: (v: { name: string; difficulty: string }) => void };
+      form: {
+        setValue: (v: { name: string; difficulty: string; humanSide: string }) => void;
+      };
       submit: () => void;
     };
-    comp.form.setValue({ name: 'Hard match', difficulty: 'Hard' });
+    comp.form.setValue({ name: 'Hard match', difficulty: 'Hard', humanSide: 'Black' });
     comp.submit();
-    expect(rooms.createAiRoom).toHaveBeenCalledWith('Hard match', 'Hard');
+    expect(rooms.createAiRoom).toHaveBeenCalledWith('Hard match', 'Hard', 'Black');
     expect(dialogRef.close).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'r-ai-1' }),
     );
+  });
+
+  it('picking White flows through to the outgoing arg', () => {
+    const { fixture, rooms } = mount();
+    const comp = fixture.componentInstance as unknown as {
+      pickSide: (s: 'Black' | 'White') => void;
+      form: {
+        setValue: (v: { name: string; difficulty: string; humanSide: string }) => void;
+      };
+      submit: () => void;
+    };
+    comp.form.setValue({ name: 'Defense', difficulty: 'Medium', humanSide: 'Black' });
+    comp.pickSide('White');
+    comp.submit();
+    expect(rooms.createAiRoom).toHaveBeenCalledWith('Defense', 'Medium', 'White');
   });
 
   it('too-short name blocks submit, no HTTP call', () => {
     const { fixture, rooms } = mount();
     const comp = fixture.componentInstance as unknown as {
       form: {
-        setValue: (v: { name: string; difficulty: string }) => void;
+        setValue: (v: { name: string; difficulty: string; humanSide: string }) => void;
         invalid: boolean;
       };
       submit: () => void;
     };
-    comp.form.setValue({ name: 'ab', difficulty: 'Medium' });
+    comp.form.setValue({ name: 'ab', difficulty: 'Medium', humanSide: 'Black' });
     comp.submit();
     expect(comp.form.invalid).toBe(true);
     expect(rooms.createAiRoom).not.toHaveBeenCalled();
@@ -114,12 +139,12 @@ describe('CreateAiRoomDialog', () => {
     );
     const comp = fixture.componentInstance as unknown as {
       form: {
-        setValue: (v: { name: string; difficulty: string }) => void;
+        setValue: (v: { name: string; difficulty: string; humanSide: string }) => void;
         controls: { name: { errors: Record<string, unknown> | null } };
       };
       submit: () => void;
     };
-    comp.form.setValue({ name: 'Duplicate', difficulty: 'Medium' });
+    comp.form.setValue({ name: 'Duplicate', difficulty: 'Medium', humanSide: 'Black' });
     comp.submit();
     expect(comp.form.controls.name.errors?.['server']).toBe('Name already taken');
   });

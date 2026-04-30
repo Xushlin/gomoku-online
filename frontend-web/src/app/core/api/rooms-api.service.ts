@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type {
   BotDifficulty,
+  BotSide,
   GameEndedDto,
   GameReplayDto,
   RoomState,
@@ -14,7 +15,11 @@ export abstract class RoomsApiService {
   abstract myActiveRooms(): Observable<readonly RoomSummary[]>;
   abstract getById(roomId: string): Observable<RoomState>;
   abstract create(name: string): Observable<RoomSummary>;
-  abstract createAiRoom(name: string, difficulty: BotDifficulty): Observable<RoomState>;
+  abstract createAiRoom(
+    name: string,
+    difficulty: BotDifficulty,
+    humanSide?: BotSide,
+  ): Observable<RoomState>;
   abstract join(roomId: string): Observable<RoomState>;
   abstract leave(roomId: string): Observable<void>;
   abstract dissolve(roomId: string): Observable<void>;
@@ -43,8 +48,19 @@ export class DefaultRoomsApiService extends RoomsApiService {
     return this.http.post<RoomSummary>('/api/rooms', { name });
   }
 
-  createAiRoom(name: string, difficulty: BotDifficulty): Observable<RoomState> {
-    return this.http.post<RoomState>('/api/rooms/ai', { name, difficulty });
+  createAiRoom(
+    name: string,
+    difficulty: BotDifficulty,
+    humanSide?: BotSide,
+  ): Observable<RoomState> {
+    // Build body conditionally so old callers (no humanSide arg) keep
+    // their existing 2-field POST body — backend defaults to Black.
+    const body: { name: string; difficulty: BotDifficulty; humanSide?: BotSide } = {
+      name,
+      difficulty,
+    };
+    if (humanSide !== undefined) body.humanSide = humanSide;
+    return this.http.post<RoomState>('/api/rooms/ai', body);
   }
 
   join(roomId: string): Observable<RoomState> {

@@ -11,6 +11,12 @@ export type GameResult = 'Ongoing' | 'BlackWin' | 'WhiteWin' | 'Draw';
 export type GameEndReason = 'Connected5' | 'Resigned' | 'TurnTimeout';
 export type ChatChannel = 'Room' | 'Spectator';
 export type BotDifficulty = 'Easy' | 'Medium' | 'Hard';
+/**
+ * Which side the human plays in an AI room. Black = human plays first
+ * (legacy default); White = bot plays first. Subset of `Stone` excluding
+ * `'Empty'` — backend rejects Empty in the AI command validator.
+ */
+export type BotSide = 'Black' | 'White';
 
 export interface UserSummary {
   readonly id: string;

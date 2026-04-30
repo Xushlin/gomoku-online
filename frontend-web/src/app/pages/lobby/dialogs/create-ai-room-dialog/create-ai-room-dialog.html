@@ -63,6 +63,27 @@
       </div>
     </fieldset>
 
+    <fieldset class="flex flex-col gap-2 text-sm">
+      <legend class="text-muted">{{ 'lobby.ai-game.side-label' | transloco }}</legend>
+      <div role="radiogroup" class="flex gap-2">
+        @for (s of sides; track s) {
+          @let active = form.controls.humanSide.value === s;
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="active"
+            class="rounded-card border-border flex-1 border px-3 py-1.5 text-sm"
+            [class.bg-primary]="active"
+            [class.text-bg]="active"
+            [class.font-semibold]="active"
+            (click)="pickSide(s)"
+          >
+            {{ sideKey(s) | transloco }}
+          </button>
+        }
+      </div>
+    </fieldset>
+
     <div class="flex justify-end gap-2">
       <button
         type="button"

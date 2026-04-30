@@ -1,4 +1,5 @@
 using Gomoku.Application.Features.Rooms.CreateAiRoom;
+using Gomoku.Domain.Enums;
 
 namespace Gomoku.Application.Tests.Features.Rooms;
 
@@ -25,7 +26,7 @@ public class CreateAiRoomCommandHandlerTests
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
         var state = await sut.Handle(
-            new CreateAiRoomCommand(host.Id, "AI match", BotDifficulty.Medium),
+            new CreateAiRoomCommand(host.Id, "AI match", BotDifficulty.Medium, Stone.Black),
             default);
 
         state.Name.Should().Be("AI match");
@@ -51,7 +52,7 @@ public class CreateAiRoomCommandHandlerTests
         RoomsFixtures.SetupClock(_clock);
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
-        var act = () => sut.Handle(new CreateAiRoomCommand(missingId, "AI", BotDifficulty.Easy), default);
+        var act = () => sut.Handle(new CreateAiRoomCommand(missingId, "AI", BotDifficulty.Easy, Stone.Black), default);
 
         await act.Should().ThrowAsync<UserNotFoundException>();
     }
@@ -66,7 +67,7 @@ public class CreateAiRoomCommandHandlerTests
         RoomsFixtures.SetupClock(_clock);
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
-        var act = () => sut.Handle(new CreateAiRoomCommand(host.Id, "AI", BotDifficulty.Easy), default);
+        var act = () => sut.Handle(new CreateAiRoomCommand(host.Id, "AI", BotDifficulty.Easy, Stone.Black), default);
 
         await act.Should().ThrowAsync<UserNotFoundException>();
     }
@@ -87,12 +88,41 @@ public class CreateAiRoomCommandHandlerTests
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
         var state = await sut.Handle(
-            new CreateAiRoomCommand(host.Id, "AI Hard match", BotDifficulty.Hard),
+            new CreateAiRoomCommand(host.Id, "AI Hard match", BotDifficulty.Hard, Stone.Black),
             default);
 
         state.Status.Should().Be(RoomStatus.Playing);
         state.White!.Id.Should().Be(bot.Id.Value);
         state.White.Username.Should().Be("AI_Hard");
+    }
+
+    [Fact]
+    public async Task Human_White_Swaps_Seats_So_Bot_Plays_Black()
+    {
+        var host = RoomsFixtures.NewUser("Alice");
+        var bot = RoomsFixtures.NewBot(BotDifficulty.Medium);
+
+        RoomsFixtures.SetupUserLookup(_users, host);
+        _users.Setup(u => u.FindBotByDifficultyAsync(BotDifficulty.Medium, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bot);
+        RoomsFixtures.SetupClock(_clock);
+        _rooms.Setup(r => r.AddAsync(It.IsAny<Room>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var state = await sut.Handle(
+            new CreateAiRoomCommand(host.Id, "Defense", BotDifficulty.Medium, Stone.White),
+            default);
+
+        // Seats swapped: bot on Black (plays first), human on White, host
+        // still the human.
+        state.Black!.Id.Should().Be(bot.Id.Value);
+        state.White!.Id.Should().Be(host.Id.Value);
+        state.Host.Id.Should().Be(host.Id.Value);
+        // Game.CurrentTurn unchanged — still Black, which is now the bot.
+        state.Game!.CurrentTurn.Should().Be(Stone.Black);
+        state.Game.Moves.Should().BeEmpty();
     }
 
     [Fact]
@@ -104,7 +134,7 @@ public class CreateAiRoomCommandHandlerTests
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
         var act = () => sut.Handle(
-            new CreateAiRoomCommand(botHost.Id, "AI", BotDifficulty.Easy),
+            new CreateAiRoomCommand(botHost.Id, "AI", BotDifficulty.Easy, Stone.Black),
             default);
 
         await act.Should().ThrowAsync<ValidationException>();
