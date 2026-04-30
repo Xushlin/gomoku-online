@@ -1,0 +1,89 @@
+name: 🐛 Web bug
+description: Something on the Angular web client misbehaves — visual glitch, runtime error, broken interaction.
+title: "[web] "
+labels: ["bug", "area:web"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The more concrete the repro, the faster the fix.
+        For backend / API issues use the **Backend bug** template instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Plain-language description. What did you click, what did you expect, what did you get?
+      placeholder: |
+        I clicked "Leave room" on a Waiting AI room I created and got a generic error toast.
+        Expected: get sent back to /home.
+    validations:
+      required: true
+
+  - type: input
+    id: route
+    attributes:
+      label: Route / page
+      description: Which URL path / component was active?
+      placeholder: "/rooms/<some-id>  or  /users/me  or  /lobby"
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Theme + dark mode
+      description: Helps reproduce visual issues.
+      multiple: false
+      options:
+        - "Material — light"
+        - "Material — dark"
+        - "System — light"
+        - "System — dark"
+        - "Doesn't matter"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: locale
+    attributes:
+      label: Language
+      multiple: false
+      options:
+        - "en"
+        - "zh-CN"
+        - "Doesn't matter"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser + version
+      placeholder: "Chrome 134 / Firefox 136 / Safari 18.4 …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: DevTools console output
+      description: Open DevTools (F12) → Console tab → copy any red errors.
+      render: text
+
+  - type: textarea
+    id: network
+    attributes:
+      label: Failing network requests
+      description: DevTools → Network → any 4xx/5xx requests around the failure (URL + status + response body).
+      render: text
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Log in as Alice
+        2. Click "New AI game" → Hard → White → submit
+        3. Wait for game to start
+        4. Click "Leave room" — error toast appears
+    validations:
+      required: true

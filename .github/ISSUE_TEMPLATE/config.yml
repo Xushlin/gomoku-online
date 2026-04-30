@@ -1,0 +1,12 @@
+# Force every issue through one of the structured templates so we don't end up
+# triaging "doesn't work" posts. The three templates cover the three kinds of
+# things this repo wants to receive: web bug, backend bug, feature request.
+blank_issues_enabled: false
+
+contact_links:
+  - name: 📖 OpenSpec workflow
+    url: https://github.com/Xushlin/gomoku-online/blob/main/CLAUDE.md
+    about: Read this before opening a feature request — every change goes through proposal → spec delta → tasks → archive.
+  - name: 🛠 Live capability specs
+    url: https://github.com/Xushlin/gomoku-online/tree/main/openspec/specs
+    about: Source of truth for current behaviour. Skim the relevant spec before reporting "X is broken" — sometimes "X" is by design.

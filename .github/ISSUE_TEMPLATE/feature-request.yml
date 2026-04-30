@@ -1,0 +1,51 @@
+name: 💡 Feature request
+description: Propose a new capability — mirrors the OpenSpec proposal shape so it can graduate into a real change later.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template mirrors the **Why / What / Capabilities / Impact** shape
+        of an `openspec` proposal. Filling it in well makes it cheap to
+        graduate into a real change directory under `openspec/changes/`.
+        See [`CLAUDE.md`](../../CLAUDE.md) for the workflow.
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: 1–2 sentences on the problem or opportunity. What gap does this close? Why now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What changes
+      description: Be specific about new capabilities, modifications, or removals. Mark breaking changes with **BREAKING**.
+    validations:
+      required: true
+
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: Affected capabilities
+      description: |
+        Which OpenSpec capabilities (`openspec/specs/<name>/`) does this touch?
+        Examples: `web-game-board`, `room-and-gameplay`, `ai-opponent`.
+      placeholder: |
+        New: <name> — short description
+        Modified: <existing-name> — what requirement is changing
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Explicitly out of scope
+      description: What's tempting to bolt on but you're deliberately deferring? Helps reviewers calibrate review depth.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other shapes you thought about and rejected, with one-line "rejected because ..." rationale.

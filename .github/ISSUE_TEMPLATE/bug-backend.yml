@@ -1,0 +1,68 @@
+name: 🐛 Backend bug
+description: A REST endpoint, SignalR hub method, or domain invariant misbehaves.
+title: "[backend] "
+labels: ["bug", "area:backend"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For UI / Angular issues use the **Web bug** template instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: One paragraph — what did you call, what should the response be, what did you actually get?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      multiple: false
+      options:
+        - "REST endpoint (HTTP)"
+        - "SignalR hub method"
+        - "Domain aggregate / invariant"
+        - "Application handler / validator"
+        - "Migration / EF Core"
+        - "Background worker (AI / timeout)"
+        - "Auth / JWT"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: endpoint
+    attributes:
+      label: Endpoint or method
+      placeholder: "POST /api/rooms/{id}/resign  or  GomokuHub.MakeMove  or  Room.JoinAsPlayer"
+
+  - type: textarea
+    id: request
+    attributes:
+      label: Request (curl / hub call args)
+      description: Full request including method, path, headers (redact tokens), body.
+      render: http
+
+  - type: textarea
+    id: response
+    attributes:
+      label: Actual response / exception
+      description: HTTP status + body, or the exception type + message + relevant stack frames.
+      render: text
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Serilog output
+      description: From `backend/src/Gomoku.Api/logs/gomoku-<date>.log` if available — search for the request's `CorrelationId` or `RequestId`.
+      render: text
