@@ -35,5 +35,5 @@
 ## 6. 验收
 
 - [x] 6.1 `npm run lint` + `npm test -- --run` 全绿;无新增色值字面量违规(midnight CSS 块与 skins/*.ts 属于 token 定义层,豁免范围与 wood/classic 相同)
-- [ ] 6.2 手动验证:三档音量试听差异明显、0 静音;midnight 在浅/深两主题下外观一致、375px 下黑子轮廓清晰;minimal 五个事件音量明显低于 wood
+- [x] 6.2 手动验证:三档音量试听差异明显、0 静音;midnight 在浅/深两主题下外观一致、375px 下黑子轮廓清晰;minimal 五个事件音量明显低于 wood
 - [x] 6.3 `openspec validate add-web-sound-volume-and-variants` 通过
