@@ -124,6 +124,23 @@
           </button>
         </li>
       }
+      <!-- Deliberately NOT a cdkMenuItem: interacting with the slider must not close the menu. -->
+      <li class="border-border mt-1 border-t px-3 pt-2 pb-1.5">
+        <label class="text-muted flex items-center gap-2 text-sm">
+          <span>{{ 'header.sound.volume' | transloco }}</span>
+          <input
+            #volumeSlider
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            class="accent-primary w-full"
+            [value]="sound.volume()"
+            (change)="onVolumeChange(volumeSlider.value)"
+            [attr.aria-label]="'header.sound.volume' | transloco"
+          />
+        </label>
+      </li>
     </ul>
   </ng-template>
 

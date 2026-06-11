@@ -16,17 +16,20 @@
     "board-skin": {
       "label": "棋盘",
       "wood": "木质",
-      "classic": "简约"
+      "classic": "简约",
+      "midnight": "午夜"
     },
     "sound": {
       "label": "音效",
       "on": "开",
-      "off": "关"
+      "off": "关",
+      "volume": "音量"
     },
     "sound-pack": {
       "label": "音效皮肤",
       "wood": "木质",
-      "chiptune": "8-bit"
+      "chiptune": "8-bit",
+      "minimal": "极简"
     },
     "auth": {
       "login-cta": "登录",

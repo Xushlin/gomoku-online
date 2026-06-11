@@ -16,17 +16,20 @@
     "board-skin": {
       "label": "Board",
       "wood": "Wood",
-      "classic": "Classic"
+      "classic": "Classic",
+      "midnight": "Midnight"
     },
     "sound": {
       "label": "Sound",
       "on": "On",
-      "off": "Off"
+      "off": "Off",
+      "volume": "Volume"
     },
     "sound-pack": {
       "label": "Sound pack",
       "wood": "Wood",
-      "chiptune": "Chiptune"
+      "chiptune": "Chiptune",
+      "minimal": "Minimal"
     },
     "auth": {
       "login-cta": "Log in",

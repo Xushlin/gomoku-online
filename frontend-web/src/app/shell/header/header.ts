@@ -85,6 +85,13 @@ export class Header {
     if (!this.sound.muted()) this.sound.play('move-place');
   }
 
+  protected onVolumeChange(value: string): void {
+    this.sound.setVolume(Number(value));
+    // Audition the new level on release so the user hears what they chose
+    // (mirrors the pack-switch audition; silent when muted or at 0).
+    if (!this.sound.muted()) this.sound.play('move-place');
+  }
+
   protected toggleDark(): void {
     this.theme.setDark(!this.theme.isDark());
   }
