@@ -39,6 +39,20 @@ describe('DefaultBoardSkinService', () => {
     expect(doc.documentElement.dataset['boardSkin']).toBe('classic');
   });
 
+  it('registers midnight as a built-in skin', () => {
+    const { svc } = setup();
+    expect(svc.availableSkins()).toContain('midnight');
+  });
+
+  it('activate(midnight) sets the attribute and persists', () => {
+    const { svc, doc } = setup();
+    svc.activate('midnight');
+    expect(doc.documentElement.dataset['boardSkin']).toBe('midnight');
+    expect(localStorage.getItem('gomoku:board-skin')).toBe('midnight');
+    const { svc: next } = setup('midnight');
+    expect(next.skinName()).toBe('midnight');
+  });
+
   it('ignores a stored skin that is not registered, falls back to default', () => {
     const { svc } = setup('bamboo');
     expect(svc.skinName()).toBe('wood');

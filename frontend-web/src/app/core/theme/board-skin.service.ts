@@ -1,6 +1,7 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
 import type { BoardSkinTokens } from './board-skin.tokens';
 import { classicSkin } from './skins/classic';
+import { midnightSkin } from './skins/midnight';
 import { woodSkin } from './skins/wood';
 
 const SKIN_STORAGE_KEY = 'gomoku:board-skin';
@@ -37,6 +38,7 @@ export class DefaultBoardSkinService extends BoardSkinService {
     super();
     this.register('wood', woodSkin);
     this.register('classic', classicSkin);
+    this.register('midnight', midnightSkin);
     this.apply(this.resolveInitial());
   }
 
