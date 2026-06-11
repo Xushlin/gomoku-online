@@ -1,19 +1,25 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
 import { chiptunePack } from './packs/chiptune';
+import { minimalPack } from './packs/minimal';
 import { woodPack } from './packs/wood';
 import type { SoundEventName, SoundPack } from './sound.tokens';
 
 const MUTED_STORAGE_KEY = 'gomoku:sound-muted';
 const PACK_STORAGE_KEY = 'gomoku:sound-pack';
+const VOLUME_STORAGE_KEY = 'gomoku:sound-volume';
 const DEFAULT_PACK = 'wood';
+const DEFAULT_VOLUME = 100;
 
 /**
- * Cross-cutting audio API. Two orthogonal pieces of state:
- *   - muted:    whether all sounds are silenced (master gain → 0).
+ * Cross-cutting audio API. Three orthogonal pieces of state:
+ *   - muted:    whether all sounds are silenced (early return in play()).
+ *   - volume:   master loudness 0–100; rides the shared GainNode. Kept
+ *               separate from `muted` so un-muting restores the previous
+ *               level without any "remembered volume" bookkeeping.
  *   - packName: which registered pack is currently active.
  *
  * The actual audio graph is lazy: `AudioContext` and the master `GainNode`
- * are constructed on the first non-muted `play()` call (browser autoplay
+ * are constructed on the first audible `play()` call (browser autoplay
  * policy demands a user-gesture, and any `play()` invocation is necessarily
  * downstream of one). Construction failure (jsdom, --no-audio flag, locked-
  * down browser) is silently absorbed; subsequent `play()`s are no-ops.
@@ -24,9 +30,11 @@ const DEFAULT_PACK = 'wood';
  */
 export abstract class SoundService {
   abstract readonly muted: Signal<boolean>;
+  abstract readonly volume: Signal<number>;
   abstract readonly packName: Signal<string>;
   abstract play(event: SoundEventName): void;
   abstract setMuted(muted: boolean): void;
+  abstract setVolume(volume: number): void;
   abstract register(name: string, pack: SoundPack): void;
   abstract activate(name: string): void;
   abstract availablePacks(): readonly string[];
@@ -39,10 +47,12 @@ export class DefaultSoundService extends SoundService {
   private readonly doc = inject(DOCUMENT);
 
   private readonly _muted = signal<boolean>(false);
+  private readonly _volume = signal<number>(DEFAULT_VOLUME);
   private readonly _packName = signal<string>(DEFAULT_PACK);
   private readonly packs = new Map<string, SoundPack>();
 
   readonly muted: Signal<boolean> = this._muted.asReadonly();
+  readonly volume: Signal<number> = this._volume.asReadonly();
   readonly packName: Signal<string> = this._packName.asReadonly();
 
   private ctx: AudioContext | null = null;
@@ -53,14 +63,17 @@ export class DefaultSoundService extends SoundService {
     super();
     this.register(DEFAULT_PACK, woodPack);
     this.register('chiptune', chiptunePack);
+    this.register('minimal', minimalPack);
 
     this._muted.set(this.readMuted());
+    this._volume.set(this.resolveInitialVolume());
     const initialPack = this.resolveInitialPack();
     this._packName.set(initialPack);
   }
 
   play(event: SoundEventName): void {
-    if (this._muted()) return;
+    // Volume 0 is a de-facto mute — skip graph construction just like muted.
+    if (this._muted() || this._volume() === 0) return;
     const ctx = this.ensureContext();
     if (!ctx || !this.masterGain) return;
     const pack = this.packs.get(this._packName());
@@ -75,6 +88,16 @@ export class DefaultSoundService extends SoundService {
   setMuted(muted: boolean): void {
     this._muted.set(muted);
     this.persist(MUTED_STORAGE_KEY, muted ? '1' : '0');
+  }
+
+  setVolume(volume: number): void {
+    const clamped = Math.round(Math.min(100, Math.max(0, volume)));
+    if (!Number.isFinite(clamped)) return;
+    this._volume.set(clamped);
+    this.persist(VOLUME_STORAGE_KEY, String(clamped));
+    if (this.masterGain) {
+      this.masterGain.gain.value = this.gainFor(clamped);
+    }
   }
 
   register(name: string, pack: SoundPack): void {
@@ -110,7 +133,7 @@ export class DefaultSoundService extends SoundService {
     try {
       const ctx = new Ctor();
       const gain = ctx.createGain();
-      gain.gain.value = 1;
+      gain.gain.value = this.gainFor(this._volume());
       gain.connect(ctx.destination);
       this.ctx = ctx;
       this.masterGain = gain;
@@ -130,6 +153,24 @@ export class DefaultSoundService extends SoundService {
     if (stored && this.packs.has(stored)) return stored;
     if (stored) this.persist(PACK_STORAGE_KEY, DEFAULT_PACK);
     return DEFAULT_PACK;
+  }
+
+  private resolveInitialVolume(): number {
+    const stored = this.read(VOLUME_STORAGE_KEY);
+    if (stored === null) return DEFAULT_VOLUME;
+    const parsed = Number(stored);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) return DEFAULT_VOLUME;
+    return parsed;
+  }
+
+  /**
+   * Perceptual loudness curve: human hearing is roughly logarithmic, so a
+   * linear slider→amplitude map crams all audible change into the top of the
+   * slider. The squared curve is the standard cheap approximation; 100 → 1
+   * keeps the historical loudness for untouched sliders.
+   */
+  private gainFor(volume: number): number {
+    return (volume / 100) ** 2;
   }
 
   private readMuted(): boolean {

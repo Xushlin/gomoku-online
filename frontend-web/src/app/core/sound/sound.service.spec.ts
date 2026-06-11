@@ -5,6 +5,7 @@ import type { SoundPack } from './sound.tokens';
 
 const STORAGE_MUTED = 'gomoku:sound-muted';
 const STORAGE_PACK = 'gomoku:sound-pack';
+const STORAGE_VOLUME = 'gomoku:sound-volume';
 
 class FakeAudioContextSpy {
   createGain = vi.fn(() => ({
@@ -46,11 +47,20 @@ describe('DefaultSoundService', () => {
     expect(svc.packName()).toBe('wood');
   });
 
-  it('registers wood + chiptune by default', () => {
+  it('registers wood + chiptune + minimal by default', () => {
     const svc = setup();
     const packs = svc.availablePacks();
     expect(packs).toContain('wood');
     expect(packs).toContain('chiptune');
+    expect(packs).toContain('minimal');
+  });
+
+  it('activate(minimal) persists and survives reconstruction', () => {
+    const svc = setup();
+    svc.activate('minimal');
+    expect(localStorage.getItem(STORAGE_PACK)).toBe('minimal');
+    const next = setup();
+    expect(next.packName()).toBe('minimal');
   });
 
   it('persists muted state to localStorage', () => {
@@ -102,11 +112,11 @@ describe('DefaultSoundService', () => {
   it('register() adds to availablePacks; activate() switches', () => {
     const svc = setup();
     const stubPack: SoundPack = { play: vi.fn() };
-    svc.register('minimal', stubPack);
-    expect(svc.availablePacks()).toContain('minimal');
-    svc.activate('minimal');
-    expect(svc.packName()).toBe('minimal');
-    expect(localStorage.getItem(STORAGE_PACK)).toBe('minimal');
+    svc.register('custom', stubPack);
+    expect(svc.availablePacks()).toContain('custom');
+    svc.activate('custom');
+    expect(svc.packName()).toBe('custom');
+    expect(localStorage.getItem(STORAGE_PACK)).toBe('custom');
   });
 
   it('activate() on unregistered pack is a no-op', () => {
@@ -132,5 +142,77 @@ describe('DefaultSoundService', () => {
     svc.play('move-place');
     expect(stubPlay).toHaveBeenCalledTimes(1);
     expect(stubPlay.mock.calls[0][0]).toBe('move-place');
+  });
+
+  describe('volume', () => {
+    it('defaults to 100', () => {
+      const svc = setup();
+      expect(svc.volume()).toBe(100);
+    });
+
+    it('clamps and rounds setVolume input', () => {
+      const svc = setup();
+      svc.setVolume(150);
+      expect(svc.volume()).toBe(100);
+      svc.setVolume(-5);
+      expect(svc.volume()).toBe(0);
+      svc.setVolume(33.7);
+      expect(svc.volume()).toBe(34);
+      expect(localStorage.getItem(STORAGE_VOLUME)).toBe('34');
+    });
+
+    it('restores persisted volume on next construction', () => {
+      const svc = setup();
+      svc.setVolume(40);
+      expect(localStorage.getItem(STORAGE_VOLUME)).toBe('40');
+      const next = setup();
+      expect(next.volume()).toBe(40);
+    });
+
+    it.each(['abc', '-3', '999', '33.7'])(
+      'falls back to 100 when localStorage holds %j',
+      (garbage) => {
+        localStorage.setItem(STORAGE_VOLUME, garbage);
+        const svc = setup();
+        expect(svc.volume()).toBe(100);
+      },
+    );
+
+    it('play() at volume 0 does not construct AudioContext', () => {
+      const ctorSpy = vi.fn(() => new FakeAudioContextSpy());
+      const svc = setup({ audioCtor: ctorSpy });
+      svc.setVolume(0);
+      svc.play('move-place');
+      expect(ctorSpy).not.toHaveBeenCalled();
+    });
+
+    it('applies the perceptual (squared) curve to the master gain', () => {
+      const instances: FakeAudioContextSpy[] = [];
+      class TrackingAudioContext extends FakeAudioContextSpy {
+        constructor() {
+          super();
+          instances.push(this);
+        }
+      }
+      const svc = setup({ audioCtor: TrackingAudioContext });
+      svc.setVolume(50);
+      svc.play('move-place'); // constructs ctx with current volume
+      expect(instances).toHaveLength(1);
+      const gainNode = instances[0].createGain.mock.results[0].value;
+      expect(gainNode.gain.value).toBeCloseTo(0.25);
+      // Live update once the context exists:
+      svc.setVolume(100);
+      expect(gainNode.gain.value).toBeCloseTo(1);
+    });
+
+    it('mute and volume do not interfere', () => {
+      const svc = setup();
+      svc.setVolume(40);
+      svc.setMuted(true);
+      svc.setMuted(false);
+      expect(svc.volume()).toBe(40);
+      svc.setVolume(70);
+      expect(svc.muted()).toBe(false);
+    });
   });
 });
