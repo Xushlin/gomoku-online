@@ -1,10 +1,10 @@
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
-using Gomoku.Infrastructure.Persistence.Converters;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
+using Gewu.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Gomoku.Infrastructure.Persistence.Configurations;
+namespace Gewu.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// <see cref="Room"/> 聚合根的 EF 映射。<c>_spectators</c> (List&lt;RoomSpectator&gt;)

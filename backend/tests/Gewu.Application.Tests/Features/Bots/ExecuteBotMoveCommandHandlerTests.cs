@@ -1,10 +1,10 @@
-using Gomoku.Application.Features.Bots.ExecuteBotMove;
-using Gomoku.Application.Features.Rooms.MakeMove;
-using Gomoku.Application.Tests.Features.Rooms;
-using Gomoku.Domain.Enums;
+using Gewu.Application.Features.Bots.ExecuteBotMove;
+using Gewu.Application.Features.Rooms.MakeMove;
+using Gewu.Application.Tests.Features.Rooms;
+using Gewu.Domain.Enums;
 using MediatR;
 
-namespace Gomoku.Application.Tests.Features.Bots;
+namespace Gewu.Application.Tests.Features.Bots;
 
 public class ExecuteBotMoveCommandHandlerTests
 {
@@ -25,7 +25,7 @@ public class ExecuteBotMoveCommandHandlerTests
         var bot = RoomsFixtures.NewBot(BotDifficulty.Easy);
         var room = RoomsFixtures.PlayingRoom(host, bot); // host=Black, bot=White
         // 当前回合 == Black(host)—— bot 不该走。先让 host 走一步,回合变成 White。
-        room.PlayMove(host.Id, new Gomoku.Domain.ValueObjects.Position(7, 7), RoomsFixtures.Now.AddSeconds(2));
+        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 7), RoomsFixtures.Now.AddSeconds(2));
         room.Game!.CurrentTurn.Should().Be(Stone.White); // 确认轮到白方(bot)
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
@@ -55,7 +55,7 @@ public class ExecuteBotMoveCommandHandlerTests
         var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
-        await act.Should().ThrowAsync<Gomoku.Domain.Exceptions.NotYourTurnException>();
+        await act.Should().ThrowAsync<Gewu.Domain.Exceptions.NotYourTurnException>();
         _sender.Verify(s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -85,7 +85,7 @@ public class ExecuteBotMoveCommandHandlerTests
         var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
-        await act.Should().ThrowAsync<Gomoku.Domain.Exceptions.RoomNotInPlayException>();
+        await act.Should().ThrowAsync<Gewu.Domain.Exceptions.RoomNotInPlayException>();
     }
 
     [Fact]
@@ -102,6 +102,6 @@ public class ExecuteBotMoveCommandHandlerTests
         var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(orphanBot.Id, room.Id), default);
 
-        await act.Should().ThrowAsync<Gomoku.Domain.Exceptions.NotAPlayerException>();
+        await act.Should().ThrowAsync<Gewu.Domain.Exceptions.NotAPlayerException>();
     }
 }

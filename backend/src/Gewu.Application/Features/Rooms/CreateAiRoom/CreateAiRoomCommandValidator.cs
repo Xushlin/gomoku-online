@@ -1,7 +1,7 @@
 using FluentValidation;
-using Gomoku.Domain.Enums;
+using Gewu.Domain.Enums;
 
-namespace Gomoku.Application.Features.Rooms.CreateAiRoom;
+namespace Gewu.Application.Features.Rooms.CreateAiRoom;
 
 /// <summary>
 /// <see cref="CreateAiRoomCommand"/> 校验器。规则与 <c>CreateRoomCommand</c> 对齐:

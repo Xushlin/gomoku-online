@@ -1,9 +1,9 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
-namespace Gomoku.Infrastructure.Persistence.Repositories;
+namespace Gewu.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// EF Core 支持的 <see cref="IRoomRepository"/> 实现。
@@ -12,10 +12,10 @@ namespace Gomoku.Infrastructure.Persistence.Repositories;
 /// </summary>
 public sealed class RoomRepository : IRoomRepository
 {
-    private readonly GomokuDbContext _db;
+    private readonly AppDbContext _db;
 
     /// <inheritdoc />
-    public RoomRepository(GomokuDbContext db)
+    public RoomRepository(AppDbContext db)
     {
         _db = db;
     }

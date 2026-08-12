@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Users;
+namespace Gewu.Domain.Users;
 
 /// <summary>
 /// 一方视角下的对局结果。用于 <see cref="User.RecordGameResult"/> 的入参以及

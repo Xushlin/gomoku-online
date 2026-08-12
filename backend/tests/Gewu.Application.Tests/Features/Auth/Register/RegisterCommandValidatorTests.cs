@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Auth.Register;
+using Gewu.Application.Features.Auth.Register;
 
-namespace Gomoku.Application.Tests.Features.Auth.Register;
+namespace Gewu.Application.Tests.Features.Auth.Register;
 
 public class RegisterCommandValidatorTests
 {

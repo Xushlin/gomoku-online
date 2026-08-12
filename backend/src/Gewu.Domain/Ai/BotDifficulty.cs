@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Ai;
+namespace Gewu.Domain.Ai;
 
 /// <summary>
 /// AI 机器人难度。底层整数值 MUST 保持稳定,以便未来序列化 / 配置文件 / migration seed 的

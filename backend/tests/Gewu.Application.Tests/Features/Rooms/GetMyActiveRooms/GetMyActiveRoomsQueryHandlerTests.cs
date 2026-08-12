@@ -1,8 +1,8 @@
-using Gomoku.Application.Features.Rooms.GetMyActiveRooms;
-using Gomoku.Application.Tests.Features.Rooms;
-using Gomoku.Domain.Enums;
+using Gewu.Application.Features.Rooms.GetMyActiveRooms;
+using Gewu.Application.Tests.Features.Rooms;
+using Gewu.Domain.Enums;
 
-namespace Gomoku.Application.Tests.Features.Rooms.GetMyActiveRooms;
+namespace Gewu.Application.Tests.Features.Rooms.GetMyActiveRooms;
 
 public class GetMyActiveRoomsQueryHandlerTests
 {

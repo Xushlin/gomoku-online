@@ -1,6 +1,6 @@
-using Gomoku.Domain.Exceptions;
+using Gewu.Domain.Exceptions;
 
-namespace Gomoku.Domain.ValueObjects;
+namespace Gewu.Domain.ValueObjects;
 
 /// <summary>
 /// 棋盘坐标值对象。<see cref="Row"/> 与 <see cref="Col"/> 的取值范围均为 [0..14]。

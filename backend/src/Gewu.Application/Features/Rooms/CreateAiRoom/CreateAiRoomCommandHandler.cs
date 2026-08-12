@@ -1,14 +1,14 @@
 using FluentValidation.Results;
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Rooms;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Rooms;
 using MediatR;
-using ValidationException = Gomoku.Application.Common.Exceptions.ValidationException;
+using ValidationException = Gewu.Application.Common.Exceptions.ValidationException;
 
-namespace Gomoku.Application.Features.Rooms.CreateAiRoom;
+namespace Gewu.Application.Features.Rooms.CreateAiRoom;
 
 /// <summary>
 /// 创建 AI 房间 handler。流程:

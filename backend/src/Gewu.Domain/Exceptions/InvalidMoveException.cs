@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Exceptions;
+namespace Gewu.Domain.Exceptions;
 
 /// <summary>
 /// 领域级非法落子异常。用于表达违反 Gomoku 不变量的行为,例如:

@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Domain.Rooms;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Rooms;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.GetGameReplay;
+namespace Gewu.Application.Features.Rooms.GetGameReplay;
 
 /// <summary>
 /// 按房间 Id 构造 <see cref="GameReplayDto"/>。仅 Finished 房间允许;其他状态抛

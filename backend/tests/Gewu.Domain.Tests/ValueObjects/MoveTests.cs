@@ -1,6 +1,6 @@
-using Move = Gomoku.Domain.ValueObjects.Move;
+using Move = Gewu.Domain.ValueObjects.Move;
 
-namespace Gomoku.Domain.Tests.ValueObjects;
+namespace Gewu.Domain.Tests.ValueObjects;
 
 public class MoveTests
 {

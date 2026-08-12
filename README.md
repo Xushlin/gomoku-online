@@ -1,13 +1,18 @@
-# Gomoku Online
+# Gewu · 格物
 
 **English** · [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml/badge.svg)](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Real-time multiplayer Gomoku (五子棋) — play another human across a SignalR
-connection, or take on a built-in AI in three difficulties. Web client is
-Angular 21 + Tailwind, backend is .NET 10 with Clean Architecture and CQRS.
+An online game hall for Chinese classics — idiom puzzles, 五子棋, 一字棋,
+中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what every game
+here has in common.
+
+The first game is live: real-time multiplayer **gomoku (五子棋)** — play another
+human across a SignalR connection, or take on a built-in AI in three
+difficulties. Web client is Angular 21 + Tailwind, backend is .NET 10 with
+Clean Architecture and CQRS.
 
 ## Status
 
@@ -47,8 +52,8 @@ Backend (.NET 10 SDK required):
 
 ```bash
 cd backend
-dotnet restore Gomoku.slnx
-dotnet run --project src/Gomoku.Api --launch-profile http
+dotnet restore Gewu.slnx
+dotnet run --project src/Gewu.Api --launch-profile http
 ```
 
 Web (Node 20+ recommended):
@@ -63,7 +68,7 @@ npm start
 
 ```bash
 # Backend — domain + application unit tests (~390 tests)
-cd backend && dotnet test Gomoku.slnx
+cd backend && dotnet test Gewu.slnx
 
 # Web — Vitest (~178 tests)
 cd frontend-web && npm test
@@ -73,15 +78,15 @@ cd frontend-web && npm test
 
 ```
 backend/
-  Gomoku.slnx                       (XML solution file — net10.0 across all projects)
+  Gewu.slnx                       (XML solution file — net10.0 across all projects)
   src/
-    Gomoku.Domain/                  (pure entities, value objects, aggregates; zero outward deps)
-    Gomoku.Application/             (MediatR handlers, DTOs, infrastructure interfaces)
-    Gomoku.Infrastructure/          (EF Core, persistence; implements Application interfaces)
-    Gomoku.Api/                     (ASP.NET host, controllers, SignalR hubs, DI composition root)
+    Gewu.Domain/                  (pure entities, value objects, aggregates; zero outward deps)
+    Gewu.Application/             (MediatR handlers, DTOs, infrastructure interfaces)
+    Gewu.Infrastructure/          (EF Core, persistence; implements Application interfaces)
+    Gewu.Api/                     (ASP.NET host, controllers, SignalR hubs, DI composition root)
   tests/
-    Gomoku.Domain.Tests/
-    Gomoku.Application.Tests/
+    Gewu.Domain.Tests/
+    Gewu.Application.Tests/
 
 frontend-web/
   src/app/
@@ -127,7 +132,7 @@ Infrastructure / Api`). MediatR for CQRS — every write is a `Command`, every
 read is a `Query`, one handler per file. SignalR hubs route messages only;
 they dispatch to MediatR and push results back, no business logic.
 
-Persistence is SQLite for local dev (`backend/src/Gomoku.Api/gomoku.db`,
+Persistence is SQLite for local dev (`backend/src/Gewu.Api/gewu.db`,
 auto-migrated on first run); SQL Server-ready when needed.
 
 JWT auth with HS256 — dev-only key in `appsettings.Development.json`. Production

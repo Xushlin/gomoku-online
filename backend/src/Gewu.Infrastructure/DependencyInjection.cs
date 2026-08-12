@@ -1,21 +1,21 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Infrastructure.Ai;
-using Gomoku.Infrastructure.Authentication;
-using Gomoku.Infrastructure.BackgroundServices;
-using Gomoku.Infrastructure.Common;
-using Gomoku.Infrastructure.Persistence;
-using Gomoku.Infrastructure.Persistence.Repositories;
+using Gewu.Application.Abstractions;
+using Gewu.Infrastructure.Ai;
+using Gewu.Infrastructure.Authentication;
+using Gewu.Infrastructure.BackgroundServices;
+using Gewu.Infrastructure.Common;
+using Gewu.Infrastructure.Persistence;
+using Gewu.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Gomoku.Infrastructure;
+namespace Gewu.Infrastructure;
 
 /// <summary>Infrastructure 层 DI 注册入口。</summary>
 public static class DependencyInjection
 {
     /// <summary>
-    /// 注册 <c>GomokuDbContext</c>(SQLite)、仓储、UnitOfWork、密码哈希、JWT 服务、时钟。
+    /// 注册 <c>AppDbContext</c>(SQLite)、仓储、UnitOfWork、密码哈希、JWT 服务、时钟。
     /// 绑定 <see cref="JwtOptions"/> 到配置节 <c>"Jwt"</c>。
     /// </summary>
     public static IServiceCollection AddInfrastructure(
@@ -25,7 +25,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Missing ConnectionStrings:Default configuration.");
 
-        services.AddDbContext<GomokuDbContext>(options => options.UseSqlite(connectionString));
+        services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();

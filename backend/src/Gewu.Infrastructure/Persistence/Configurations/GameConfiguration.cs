@@ -1,10 +1,10 @@
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
-using Gomoku.Infrastructure.Persistence.Converters;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
+using Gewu.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Gomoku.Infrastructure.Persistence.Configurations;
+namespace Gewu.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// <see cref="Game"/> 子实体映射。<c>RowVersion</c> 启用乐观并发。<c>Moves</c> 由

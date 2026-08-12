@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>`GET /api/presence/online-count` 端点返回 payload:当前在线用户数。</summary>
 public sealed record OnlineCountDto(int Count);

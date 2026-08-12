@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Domain.Ai;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Domain.Ai;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
-namespace Gomoku.Infrastructure.Persistence.Repositories;
+namespace Gewu.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// EF Core 支持的 <see cref="IUserRepository"/> 实现。<c>Email</c> / <c>Username</c>
@@ -13,10 +13,10 @@ namespace Gomoku.Infrastructure.Persistence.Repositories;
 /// </summary>
 public sealed class UserRepository : IUserRepository
 {
-    private readonly GomokuDbContext _db;
+    private readonly AppDbContext _db;
 
     /// <inheritdoc />
-    public UserRepository(GomokuDbContext db)
+    public UserRepository(AppDbContext db)
     {
         _db = db;
     }

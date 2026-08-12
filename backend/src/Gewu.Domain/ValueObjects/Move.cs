@@ -1,7 +1,7 @@
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Exceptions;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Exceptions;
 
-namespace Gomoku.Domain.ValueObjects;
+namespace Gewu.Domain.ValueObjects;
 
 /// <summary>
 /// 一次落子:在 <see cref="Position"/> 上落下一枚 <see cref="Stone"/>。

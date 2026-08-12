@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Move = Gomoku.Domain.Rooms.Move;
+using Move = Gewu.Domain.Rooms.Move;
 
-namespace Gomoku.Infrastructure.Persistence.Configurations;
+namespace Gewu.Infrastructure.Persistence.Configurations;
 
 /// <summary><see cref="Move"/>(对局内落子)的 EF 映射。<c>(GameId, Ply)</c> 唯一。</summary>
 public sealed class MoveConfiguration : IEntityTypeConfiguration<Move>

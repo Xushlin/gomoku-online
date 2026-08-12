@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Exceptions;
+namespace Gewu.Domain.Exceptions;
 
 // 这个文件集中承载 Room 聚合与其子实体的领域级异常。每个异常都是 sealed,
 // 都继承 System.Exception,消息由调用方传入(指明触发的具体上下文)。

@@ -1,6 +1,6 @@
-using Gomoku.Domain.Users;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>
 /// 房间内一条已发送的聊天消息。由 <see cref="Room.PostChatMessage"/> 内部构造。

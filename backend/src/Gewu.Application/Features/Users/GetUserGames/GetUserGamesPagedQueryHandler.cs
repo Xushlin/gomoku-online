@@ -1,10 +1,10 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Domain.Rooms;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Rooms;
 using MediatR;
 
-namespace Gomoku.Application.Features.Users.GetUserGames;
+namespace Gewu.Application.Features.Users.GetUserGames;
 
 /// <summary>
 /// 分页拉取用户战绩 handler。调 <see cref="IRoomRepository.GetUserFinishedGamesPagedAsync"/> 取

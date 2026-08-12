@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Gomoku.Infrastructure.Persistence.Migrations
+namespace Gewu.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class AddGameEndReason : Migration

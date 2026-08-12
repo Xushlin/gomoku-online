@@ -1,7 +1,7 @@
 using FluentValidation;
-using Gomoku.Domain.Rooms;
+using Gewu.Domain.Rooms;
 
-namespace Gomoku.Application.Features.Rooms.SendChatMessage;
+namespace Gewu.Application.Features.Rooms.SendChatMessage;
 
 /// <summary>聊天命令入参粗校验:Content 非空、长度 1–500、Channel 是枚举定义值。</summary>
 public sealed class SendChatMessageCommandValidator : AbstractValidator<SendChatMessageCommand>

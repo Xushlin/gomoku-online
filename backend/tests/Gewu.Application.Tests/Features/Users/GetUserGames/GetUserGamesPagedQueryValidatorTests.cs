@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Users.GetUserGames;
+using Gewu.Application.Features.Users.GetUserGames;
 
-namespace Gomoku.Application.Tests.Features.Users.GetUserGames;
+namespace Gewu.Application.Tests.Features.Users.GetUserGames;
 
 public class GetUserGamesPagedQueryValidatorTests
 {

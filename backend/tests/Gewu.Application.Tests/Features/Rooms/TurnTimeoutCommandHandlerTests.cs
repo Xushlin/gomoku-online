@@ -1,8 +1,8 @@
-using Gomoku.Application.Features.Rooms.TurnTimeout;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Exceptions;
+using Gewu.Application.Features.Rooms.TurnTimeout;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Exceptions;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class TurnTimeoutCommandHandlerTests
 {

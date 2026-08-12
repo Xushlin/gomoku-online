@@ -1,8 +1,8 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Users;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.GetMyActiveRooms;
+namespace Gewu.Application.Features.Rooms.GetMyActiveRooms;
 
 /// <summary>
 /// 当前登录用户的活动房间列表(Waiting + Playing,作为玩家参与;不含围观)。

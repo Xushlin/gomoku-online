@@ -1,6 +1,6 @@
-using Gomoku.Domain.Users;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Domain.EloRating;
+namespace Gewu.Domain.EloRating;
 
 /// <summary>
 /// 标准 Harvard-Sargon(HS)ELO 积分计算。纯函数 —— 相同入参必产相同出参,

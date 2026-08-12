@@ -1,12 +1,12 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Gomoku.Api/Gomoku.Api.csproj" />
-    <Project Path="src/Gomoku.Application/Gomoku.Application.csproj" />
-    <Project Path="src/Gomoku.Domain/Gomoku.Domain.csproj" />
-    <Project Path="src/Gomoku.Infrastructure/Gomoku.Infrastructure.csproj" />
+    <Project Path="src/Gewu.Api/Gewu.Api.csproj" />
+    <Project Path="src/Gewu.Application/Gewu.Application.csproj" />
+    <Project Path="src/Gewu.Domain/Gewu.Domain.csproj" />
+    <Project Path="src/Gewu.Infrastructure/Gewu.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Gomoku.Application.Tests/Gomoku.Application.Tests.csproj" />
-    <Project Path="tests/Gomoku.Domain.Tests/Gomoku.Domain.Tests.csproj" />
+    <Project Path="tests/Gewu.Application.Tests/Gewu.Application.Tests.csproj" />
+    <Project Path="tests/Gewu.Domain.Tests/Gewu.Domain.Tests.csproj" />
   </Folder>
 </Solution>

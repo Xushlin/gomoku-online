@@ -1,10 +1,10 @@
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
-/// 跨 SignalR 连接的用户在线状态追踪契约。由 Api 层(<c>Gomoku.Api.Hubs.ConnectionTracker</c>)
+/// 跨 SignalR 连接的用户在线状态追踪契约。由 Api 层(<c>Gewu.Api.Hubs.ConnectionTracker</c>)
 /// 实现为内存引用计数;未来水平扩展改 Redis 实现即可,Application / Domain 不动。
 /// <para>
 /// 单用户多连接(多标签 / 多设备)算**一个在线**:引用计数 ≥ 1 即 online;最后一条连接

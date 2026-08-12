@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Users;
+namespace Gewu.Domain.Users;
 
 /// <summary>
 /// 用户聚合根。承载身份(<see cref="Email"/> / <see cref="Username"/>)、凭据哈希、

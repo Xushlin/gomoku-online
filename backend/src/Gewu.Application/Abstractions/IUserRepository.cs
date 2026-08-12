@@ -1,8 +1,8 @@
-using Gomoku.Domain.Ai;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Domain.Ai;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 用户聚合的持久化契约。签名只接受 / 返回领域类型,MUST NOT 暴露

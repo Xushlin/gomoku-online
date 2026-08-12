@@ -1,13 +1,13 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Features.Bots.ExecuteBotMove;
-using Gomoku.Domain.Enums;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Features.Bots.ExecuteBotMove;
+using Gewu.Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Infrastructure.BackgroundServices;
+namespace Gewu.Infrastructure.BackgroundServices;
 
 /// <summary>
 /// 后台服务:循环轮询所有"状态 Playing 且当前回合玩家是 bot"的房间,
@@ -91,7 +91,7 @@ public sealed class AiMoveWorker : BackgroundService
             try
             {
                 var room = await rooms.FindByIdAsync(roomId, ct);
-                if (room is null || room.Status != Gomoku.Domain.Rooms.RoomStatus.Playing || room.Game is null)
+                if (room is null || room.Status != Gewu.Domain.Rooms.RoomStatus.Playing || room.Game is null)
                 {
                     continue;
                 }

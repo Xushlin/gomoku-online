@@ -1,12 +1,12 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Features.Presence.GetOnlineCount;
-using Gomoku.Application.Features.Presence.IsUserOnline;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Features.Presence.GetOnlineCount;
+using Gewu.Application.Features.Presence.IsUserOnline;
+using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Gomoku.Api.Controllers;
+namespace Gewu.Api.Controllers;
 
 /// <summary>
 /// 在线状态查询。计数来自 <c>IConnectionTracker</c>(内存引用计数,同用户多连接算一个);

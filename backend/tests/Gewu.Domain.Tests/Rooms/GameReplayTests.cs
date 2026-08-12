@@ -1,7 +1,7 @@
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Domain.Enums;
+using Gewu.Domain.ValueObjects;
 
-namespace Gomoku.Domain.Tests.Rooms;
+namespace Gewu.Domain.Tests.Rooms;
 
 public class GameReplayTests
 {

@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>
 /// 排行榜单条目。仅包含**公开展示**字段;MUST NOT 泄漏 <c>Email</c> / <c>PasswordHash</c>

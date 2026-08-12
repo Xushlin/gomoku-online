@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Exceptions;
+namespace Gewu.Domain.Exceptions;
 
 /// <summary>
 /// 领域级非法用户名异常。用于表达 <c>Username</c> 值对象构造时发现的问题:

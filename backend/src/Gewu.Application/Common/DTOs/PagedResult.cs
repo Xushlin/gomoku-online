@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>
 /// 通用分页结果容器。<paramref name="Total"/> 是**过滤后**的总数,客户端用

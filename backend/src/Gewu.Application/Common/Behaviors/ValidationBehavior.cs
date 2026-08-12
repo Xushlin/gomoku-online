@@ -1,9 +1,9 @@
 using FluentValidation;
-using Gomoku.Application.Common.Exceptions;
+using Gewu.Application.Common.Exceptions;
 using MediatR;
-using ValidationException = Gomoku.Application.Common.Exceptions.ValidationException;
+using ValidationException = Gewu.Application.Common.Exceptions.ValidationException;
 
-namespace Gomoku.Application.Common.Behaviors;
+namespace Gewu.Application.Common.Behaviors;
 
 /// <summary>
 /// MediatR 管道行为:在 handler 执行前,依次调用 DI 容器中所有 <see cref="IValidator{TRequest}"/>,

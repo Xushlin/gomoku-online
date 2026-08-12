@@ -1,10 +1,10 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Features.Users.GetLeaderboard;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Features.Users.GetLeaderboard;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Gomoku.Api.Controllers;
+namespace Gewu.Api.Controllers;
 
 /// <summary>
 /// 排行榜只读端点。返回按 <c>Rating DESC, Wins DESC, GamesPlayed ASC</c> 排好的真人用户,

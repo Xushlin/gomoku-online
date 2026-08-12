@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Rooms.CreateRoom;
+using Gewu.Application.Features.Rooms.CreateRoom;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class CreateRoomCommandHandlerTests
 {

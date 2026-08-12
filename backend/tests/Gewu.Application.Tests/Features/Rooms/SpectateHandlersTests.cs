@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Rooms.JoinAsSpectator;
-using Gomoku.Application.Features.Rooms.LeaveAsSpectator;
+using Gewu.Application.Features.Rooms.JoinAsSpectator;
+using Gewu.Application.Features.Rooms.LeaveAsSpectator;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class SpectateHandlersTests
 {

@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Users.SearchUsers;
-using Gomoku.Application.Tests.Features.Rooms;
+using Gewu.Application.Features.Users.SearchUsers;
+using Gewu.Application.Tests.Features.Rooms;
 
-namespace Gomoku.Application.Tests.Features.Users.SearchUsers;
+namespace Gewu.Application.Tests.Features.Users.SearchUsers;
 
 public class SearchUsersQueryHandlerTests
 {

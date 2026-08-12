@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.GetRoomState;
+namespace Gewu.Application.Features.Rooms.GetRoomState;
 
 /// <summary>完整房间状态查询 handler。</summary>
 public sealed class GetRoomStateQueryHandler : IRequestHandler<GetRoomStateQuery, RoomStateDto>

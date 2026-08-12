@@ -1,8 +1,8 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
 using MediatR;
 
-namespace Gomoku.Application.Features.Presence.GetOnlineCount;
+namespace Gewu.Application.Features.Presence.GetOnlineCount;
 
 /// <summary>调 <see cref="IConnectionTracker.GetOnlineUserCount"/> 返回当前在线人数。</summary>
 public sealed class GetOnlineCountQueryHandler : IRequestHandler<GetOnlineCountQuery, OnlineCountDto>

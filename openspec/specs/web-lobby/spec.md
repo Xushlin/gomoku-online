@@ -231,7 +231,7 @@ DTO 文件 SHALL 独立于 service 文件,放在 `src/app/core/api/models/`:
   }
   ```
 
-字段名 MUST 对齐后端实际 wire 形态(camelCase);实施时 MUST 通过读 `backend/src/Gomoku.Api/Common/DTOs/*.cs`(或等价)确认 `RoomSummaryDto` 的真实字段名后再 ship。
+字段名 MUST 对齐后端实际 wire 形态(camelCase);实施时 MUST 通过读 `backend/src/Gewu.Api/Common/DTOs/*.cs`(或等价)确认 `RoomSummaryDto` 的真实字段名后再 ship。
 
 #### Scenario: 类型收敛到后端
 - **WHEN** 实施期对比 `backend/` 下的 DTO 源文件

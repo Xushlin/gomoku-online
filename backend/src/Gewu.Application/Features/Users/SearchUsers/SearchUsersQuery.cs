@@ -1,7 +1,7 @@
-using Gomoku.Application.Common.DTOs;
+using Gewu.Application.Common.DTOs;
 using MediatR;
 
-namespace Gomoku.Application.Features.Users.SearchUsers;
+namespace Gewu.Application.Features.Users.SearchUsers;
 
 /// <summary>
 /// 按用户名前缀(大小写不敏感)分页搜索真人。<see cref="Search"/> 允许 <c>null</c> 或空串

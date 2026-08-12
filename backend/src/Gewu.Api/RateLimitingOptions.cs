@@ -1,4 +1,4 @@
-namespace Gomoku.Api;
+namespace Gewu.Api;
 
 /// <summary>
 /// Rate limiting 配置 POCO,绑定 <c>appsettings.json</c> 的 <c>"RateLimiting"</c> 段。

@@ -14,8 +14,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Gomoku.Application\Gomoku.Application.csproj" />
-    <ProjectReference Include="..\Gomoku.Domain\Gomoku.Domain.csproj" />
+    <ProjectReference Include="..\Gewu.Application\Gewu.Application.csproj" />
+    <ProjectReference Include="..\Gewu.Domain\Gewu.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

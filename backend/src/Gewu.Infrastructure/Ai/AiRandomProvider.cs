@@ -1,6 +1,6 @@
-using Gomoku.Application.Abstractions;
+using Gewu.Application.Abstractions;
 
-namespace Gomoku.Infrastructure.Ai;
+namespace Gewu.Infrastructure.Ai;
 
 /// <summary>
 /// <see cref="IAiRandomProvider"/> 的生产实现。返回 <see cref="Random.Shared"/> —— 线程安全,

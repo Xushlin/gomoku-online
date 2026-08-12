@@ -1,16 +1,16 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Features.Rooms.MakeMove;
-using Gomoku.Domain.Ai;
-using Gomoku.Domain.Entities;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Exceptions;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Features.Rooms.MakeMove;
+using Gewu.Domain.Ai;
+using Gewu.Domain.Entities;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Exceptions;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.ValueObjects;
 using MediatR;
-using DomainMove = Gomoku.Domain.ValueObjects.Move;
+using DomainMove = Gewu.Domain.ValueObjects.Move;
 
-namespace Gomoku.Application.Features.Bots.ExecuteBotMove;
+namespace Gewu.Application.Features.Bots.ExecuteBotMove;
 
 /// <summary>
 /// 执行 AI 一步走子。由 <c>AiMoveWorker</c> 发,不对外暴露。Handler 做三件事:

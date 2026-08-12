@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Tests.Rooms;
+namespace Gewu.Domain.Tests.Rooms;
 
 public class RoomCreateTests
 {
@@ -32,7 +32,7 @@ public class RoomCreateTests
     public void Create_Blank_Name_Throws(string? name)
     {
         var act = () => Room.Create(RoomId.NewId(), name!, UserId.NewId(), Now);
-        act.Should().Throw<Gomoku.Domain.Exceptions.InvalidRoomNameException>();
+        act.Should().Throw<Gewu.Domain.Exceptions.InvalidRoomNameException>();
     }
 
     [Theory]
@@ -41,7 +41,7 @@ public class RoomCreateTests
     public void Create_Short_Name_Throws(string name)
     {
         var act = () => Room.Create(RoomId.NewId(), name, UserId.NewId(), Now);
-        act.Should().Throw<Gomoku.Domain.Exceptions.InvalidRoomNameException>()
+        act.Should().Throw<Gewu.Domain.Exceptions.InvalidRoomNameException>()
             .WithMessage("*out of range*");
     }
 
@@ -50,7 +50,7 @@ public class RoomCreateTests
     {
         var long51 = new string('x', 51);
         var act = () => Room.Create(RoomId.NewId(), long51, UserId.NewId(), Now);
-        act.Should().Throw<Gomoku.Domain.Exceptions.InvalidRoomNameException>()
+        act.Should().Throw<Gewu.Domain.Exceptions.InvalidRoomNameException>()
             .WithMessage("*out of range*");
     }
 }

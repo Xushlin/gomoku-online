@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Presence.GetOnlineCount;
+using Gewu.Application.Features.Presence.GetOnlineCount;
 
-namespace Gomoku.Application.Tests.Features.Presence.GetOnlineCount;
+namespace Gewu.Application.Tests.Features.Presence.GetOnlineCount;
 
 public class GetOnlineCountQueryHandlerTests
 {

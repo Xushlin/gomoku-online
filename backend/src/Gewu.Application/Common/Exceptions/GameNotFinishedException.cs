@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.Exceptions;
+namespace Gewu.Application.Common.Exceptions;
 
 /// <summary>
 /// 对 Playing / Waiting 状态房间请求 `/replay` 端点时抛出。Api 层映射 HTTP 409,

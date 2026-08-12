@@ -1,17 +1,17 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Application.Features.Rooms.Common;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
+using Gewu.Application.Features.Rooms.Common;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.TurnTimeout;
+namespace Gewu.Application.Features.Rooms.TurnTimeout;
 
 /// <summary>
 /// 超时判负 handler。流程与 <c>ResignCommandHandler</c> 对称,区别仅在 Domain 方法:
 /// <c>Room.TimeOutCurrentTurn</c>(Domain 自己防竞态 —— 若对手刚落子推新了 lastActivity,
-/// 则抛 <see cref="Gomoku.Domain.Exceptions.TurnNotTimedOutException"/>)。Worker 的 try/catch 吞之。
+/// 则抛 <see cref="Gewu.Domain.Exceptions.TurnNotTimedOutException"/>)。Worker 的 try/catch 吞之。
 /// </summary>
 public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutCommand, Unit>
 {

@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Rooms.CreateAiRoom;
-using Gomoku.Domain.Enums;
+using Gewu.Application.Features.Rooms.CreateAiRoom;
+using Gewu.Domain.Enums;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class CreateAiRoomCommandHandlerTests
 {
@@ -36,7 +36,7 @@ public class CreateAiRoomCommandHandlerTests
         state.White!.Id.Should().Be(bot.Id.Value);
         state.White.Username.Should().Be("AI_Medium");
         state.Game.Should().NotBeNull();
-        state.Game!.CurrentTurn.Should().Be(Gomoku.Domain.Enums.Stone.Black);
+        state.Game!.CurrentTurn.Should().Be(Gewu.Domain.Enums.Stone.Black);
         state.Game.Moves.Should().BeEmpty();
 
         _rooms.Verify(r => r.AddAsync(It.IsAny<Room>(), It.IsAny<CancellationToken>()), Times.Once);

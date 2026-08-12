@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Tests.Enums;
+namespace Gewu.Domain.Tests.Enums;
 
 public class GameResultTests
 {

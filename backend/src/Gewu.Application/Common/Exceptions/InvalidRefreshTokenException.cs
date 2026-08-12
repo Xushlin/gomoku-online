@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.Exceptions;
+namespace Gewu.Application.Common.Exceptions;
 
 /// <summary>
 /// 提交的 refresh token 不合法:不存在 / 已过期 / 已吊销。全局中间件映射为 HTTP 401。

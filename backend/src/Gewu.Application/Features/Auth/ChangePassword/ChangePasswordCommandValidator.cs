@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Gomoku.Application.Features.Auth.ChangePassword;
+namespace Gewu.Application.Features.Auth.ChangePassword;
 
 /// <summary>
 /// <see cref="ChangePasswordCommand"/> 校验器:CurrentPassword 非空;NewPassword 复用

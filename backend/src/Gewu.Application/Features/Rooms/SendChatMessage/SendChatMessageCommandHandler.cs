@@ -1,9 +1,9 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.SendChatMessage;
+namespace Gewu.Application.Features.Rooms.SendChatMessage;
 
 /// <summary>聊天 handler。查发送者的 username snapshot,调 <c>Room.PostChatMessage</c>,按频道推送。</summary>
 public sealed class SendChatMessageCommandHandler : IRequestHandler<SendChatMessageCommand, ChatMessageDto>

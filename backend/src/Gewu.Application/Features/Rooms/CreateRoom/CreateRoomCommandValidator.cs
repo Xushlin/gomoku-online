@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Gomoku.Application.Features.Rooms.CreateRoom;
+namespace Gewu.Application.Features.Rooms.CreateRoom;
 
 /// <summary><see cref="CreateRoomCommand"/> 校验器:Name 非空,trim 后 3–50 字符。</summary>
 public sealed class CreateRoomCommandValidator : AbstractValidator<CreateRoomCommand>

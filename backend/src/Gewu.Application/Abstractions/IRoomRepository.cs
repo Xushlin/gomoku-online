@@ -1,7 +1,7 @@
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 房间聚合的持久化契约。签名只接受 / 返回领域类型,MUST NOT 暴露

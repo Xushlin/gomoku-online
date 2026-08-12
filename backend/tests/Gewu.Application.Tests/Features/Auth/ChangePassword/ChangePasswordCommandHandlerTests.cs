@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Auth.ChangePassword;
+using Gewu.Application.Features.Auth.ChangePassword;
 
-namespace Gomoku.Application.Tests.Features.Auth.ChangePassword;
+namespace Gewu.Application.Tests.Features.Auth.ChangePassword;
 
 public class ChangePasswordCommandHandlerTests
 {

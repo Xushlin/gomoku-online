@@ -1,7 +1,7 @@
-using Gomoku.Domain.Rooms;
+using Gewu.Domain.Rooms;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.TurnTimeout;
+namespace Gewu.Application.Features.Rooms.TurnTimeout;
 
 /// <summary>
 /// 超时判当前回合玩家负的**内部命令**,仅由 <c>TurnTimeoutWorker</c> 发送。

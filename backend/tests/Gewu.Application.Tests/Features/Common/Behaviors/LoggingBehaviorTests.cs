@@ -1,8 +1,8 @@
-using Gomoku.Application.Common.Behaviors;
+using Gewu.Application.Common.Behaviors;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Gomoku.Application.Tests.Features.Common.Behaviors;
+namespace Gewu.Application.Tests.Features.Common.Behaviors;
 
 public class LoggingBehaviorTests
 {

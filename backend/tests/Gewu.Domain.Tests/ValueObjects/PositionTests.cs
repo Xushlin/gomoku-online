@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Tests.ValueObjects;
+namespace Gewu.Domain.Tests.ValueObjects;
 
 public class PositionTests
 {

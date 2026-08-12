@@ -1,12 +1,12 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Application.Features.Rooms.Common;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
+using Gewu.Application.Features.Rooms.Common;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.Resign;
+namespace Gewu.Application.Features.Rooms.Resign;
 
 /// <summary>
 /// 玩家认输 handler。流程:

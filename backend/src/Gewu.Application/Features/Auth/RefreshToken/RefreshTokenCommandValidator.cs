@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Gomoku.Application.Features.Auth.RefreshToken;
+namespace Gewu.Application.Features.Auth.RefreshToken;
 
 /// <summary><see cref="RefreshTokenCommand"/> 的基础校验:<c>RefreshToken</c> 非空。</summary>
 public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshTokenCommand>

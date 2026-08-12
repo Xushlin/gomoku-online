@@ -1,10 +1,10 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Domain.Ai;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Ai;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Users;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.CreateAiRoom;
+namespace Gewu.Application.Features.Rooms.CreateAiRoom;
 
 /// <summary>
 /// 创建一个 AI 对局房间。调用方(必须是真人)成为 Host;seeded 机器人按

@@ -1,7 +1,7 @@
-using Gomoku.Domain.Exceptions;
-using Move = Gomoku.Domain.ValueObjects.Move;
+using Gewu.Domain.Exceptions;
+using Move = Gewu.Domain.ValueObjects.Move;
 
-namespace Gomoku.Domain.Tests.Rooms;
+namespace Gewu.Domain.Tests.Rooms;
 
 public class RoomTimeOutTests
 {

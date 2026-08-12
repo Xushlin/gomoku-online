@@ -1,25 +1,25 @@
 using System.IdentityModel.Tokens.Jwt;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Features.Rooms.CreateAiRoom;
-using Gomoku.Application.Features.Rooms.CreateRoom;
-using Gomoku.Application.Features.Rooms.Dissolve;
-using Gomoku.Application.Features.Rooms.GetGameReplay;
-using Gomoku.Application.Features.Rooms.Resign;
-using Gomoku.Application.Features.Rooms.GetRoomList;
-using Gomoku.Application.Features.Rooms.GetRoomState;
-using Gomoku.Application.Features.Rooms.JoinAsSpectator;
-using Gomoku.Application.Features.Rooms.JoinRoom;
-using Gomoku.Application.Features.Rooms.LeaveAsSpectator;
-using Gomoku.Application.Features.Rooms.LeaveRoom;
-using Gomoku.Domain.Ai;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Features.Rooms.CreateAiRoom;
+using Gewu.Application.Features.Rooms.CreateRoom;
+using Gewu.Application.Features.Rooms.Dissolve;
+using Gewu.Application.Features.Rooms.GetGameReplay;
+using Gewu.Application.Features.Rooms.Resign;
+using Gewu.Application.Features.Rooms.GetRoomList;
+using Gewu.Application.Features.Rooms.GetRoomState;
+using Gewu.Application.Features.Rooms.JoinAsSpectator;
+using Gewu.Application.Features.Rooms.JoinRoom;
+using Gewu.Application.Features.Rooms.LeaveAsSpectator;
+using Gewu.Application.Features.Rooms.LeaveRoom;
+using Gewu.Domain.Ai;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Gomoku.Api.Controllers;
+namespace Gewu.Api.Controllers;
 
 /// <summary>房间聚合的 REST 接口。落子 / 聊天 / 催促走 SignalR,不在此处。</summary>
 [ApiController]

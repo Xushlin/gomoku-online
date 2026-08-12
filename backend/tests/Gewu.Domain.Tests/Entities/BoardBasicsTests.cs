@@ -1,6 +1,6 @@
-using Move = Gomoku.Domain.ValueObjects.Move;
+using Move = Gewu.Domain.ValueObjects.Move;
 
-namespace Gomoku.Domain.Tests.Entities;
+namespace Gewu.Domain.Tests.Entities;
 
 public class BoardBasicsTests
 {

@@ -1,10 +1,10 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 
-namespace Gomoku.Application.Features.Users.GetCurrentUser;
+namespace Gewu.Application.Features.Users.GetCurrentUser;
 
 /// <summary>
 /// 从 JWT 取出 <c>sub</c> (UserId) 后查询用户。找不到 → <see cref="UserNotFoundException"/> (404);

@@ -3,16 +3,16 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Gomoku.Infrastructure.Persistence.Migrations
+namespace Gewu.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class AddHardBotAccount : Migration
     {
-        // 与 Gomoku.Application.Abstractions.BotAccountIds.Hard 完全一致。
+        // 与 Gewu.Application.Abstractions.BotAccountIds.Hard 完全一致。
         // 迁移 + BotAccountIds 是整个代码库中**唯一**允许出现此字面量的地方。
         private static readonly Guid HardBotId = Guid.Parse("00000000-0000-0000-0000-0000000000ad");
 
-        // 与 Gomoku.Domain.Users.User.BotPasswordHashMarker 同值。
+        // 与 Gewu.Domain.Users.User.BotPasswordHashMarker 同值。
         private const string BotPasswordHashMarker = "__BOT_NO_LOGIN__";
 
         // 固定时间戳(UTC),保证 migration 可重放。

@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.JoinRoom;
+namespace Gewu.Application.Features.Rooms.JoinRoom;
 
 /// <summary>加入房间为白方并启动对局;广播 <c>PlayerJoined</c> + <c>RoomStateChanged</c>。</summary>
 public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, RoomStateDto>

@@ -1,14 +1,14 @@
-using Gomoku.Application.Abstractions;
+using Gewu.Application.Abstractions;
 
-namespace Gomoku.Infrastructure.Persistence;
+namespace Gewu.Infrastructure.Persistence;
 
-/// <summary>对 <see cref="GomokuDbContext.SaveChangesAsync(CancellationToken)"/> 的薄封装。</summary>
+/// <summary>对 <see cref="AppDbContext.SaveChangesAsync(CancellationToken)"/> 的薄封装。</summary>
 public sealed class UnitOfWork : IUnitOfWork
 {
-    private readonly GomokuDbContext _db;
+    private readonly AppDbContext _db;
 
     /// <inheritdoc />
-    public UnitOfWork(GomokuDbContext db)
+    public UnitOfWork(AppDbContext db)
     {
         _db = db;
     }

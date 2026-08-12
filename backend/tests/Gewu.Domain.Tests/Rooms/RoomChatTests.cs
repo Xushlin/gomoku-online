@@ -1,6 +1,6 @@
-using Gomoku.Domain.Exceptions;
+using Gewu.Domain.Exceptions;
 
-namespace Gomoku.Domain.Tests.Rooms;
+namespace Gewu.Domain.Tests.Rooms;
 
 public class RoomChatTests
 {

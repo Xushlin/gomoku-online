@@ -1,7 +1,7 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Common.Mapping;
+namespace Gewu.Application.Common.Mapping;
 
 /// <summary><see cref="User"/> 聚合到 <see cref="UserDto"/> 的转换。不暴露敏感字段。</summary>
 public static class UserMapping

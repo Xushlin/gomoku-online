@@ -1,9 +1,9 @@
-using Gomoku.Domain.Entities;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.ValueObjects;
-using Move = Gomoku.Domain.ValueObjects.Move;
+using Gewu.Domain.Entities;
+using Gewu.Domain.Enums;
+using Gewu.Domain.ValueObjects;
+using Move = Gewu.Domain.ValueObjects.Move;
 
-namespace Gomoku.Domain.Ai;
+namespace Gewu.Domain.Ai;
 
 /// <summary>
 /// 高级 AI:Minimax + α-β 两层前瞻搜索(默认 <c>searchDepth=2</c>),配合一个基于

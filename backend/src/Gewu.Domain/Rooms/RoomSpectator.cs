@@ -1,6 +1,6 @@
-using Gomoku.Domain.Users;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>
 /// <see cref="Room"/> 聚合内的围观者记录子实体。EF 把它映射为独立联结表 <c>RoomSpectators</c>,

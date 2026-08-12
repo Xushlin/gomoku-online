@@ -64,5 +64,5 @@ body:
     id: logs
     attributes:
       label: Relevant Serilog output
-      description: From `backend/src/Gomoku.Api/logs/gomoku-<date>.log` if available — search for the request's `CorrelationId` or `RequestId`.
+      description: From `backend/src/Gewu.Api/logs/gomoku-<date>.log` if available — search for the request's `CorrelationId` or `RequestId`.
       render: text

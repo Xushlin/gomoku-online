@@ -3,17 +3,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Gomoku.Infrastructure.Persistence.Migrations
+namespace Gewu.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class AddBotSupport : Migration
     {
-        // 这两个 Guid 必须与 Gomoku.Application.Abstractions.BotAccountIds 完全一致。
+        // 这两个 Guid 必须与 Gewu.Application.Abstractions.BotAccountIds 完全一致。
         // 迁移 + BotAccountIds 是整个代码库中**唯一**允许出现这两个字面量的地方。
         private static readonly Guid EasyBotId = Guid.Parse("00000000-0000-0000-0000-00000000ea51");
         private static readonly Guid MediumBotId = Guid.Parse("00000000-0000-0000-0000-0000000bed10");
 
-        // 固定常量,与 Gomoku.Domain.Users.User.BotPasswordHashMarker 同值。
+        // 固定常量,与 Gewu.Domain.Users.User.BotPasswordHashMarker 同值。
         // 任何 PasswordHasher.Verify 对此值都会返回 Failed。
         private const string BotPasswordHashMarker = "__BOT_NO_LOGIN__";
 

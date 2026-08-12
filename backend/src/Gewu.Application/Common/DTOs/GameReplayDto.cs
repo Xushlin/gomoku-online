@@ -1,6 +1,6 @@
-using Gomoku.Domain.Enums;
+using Gewu.Domain.Enums;
 
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>
 /// 一局 Finished 对局的完整回放 payload。`Moves` MUST 按 <c>Ply</c> 升序;认输 / 超时

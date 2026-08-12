@@ -1,7 +1,7 @@
-using Gomoku.Domain.Users;
+using Gewu.Domain.Users;
 using MediatR;
 
-namespace Gomoku.Application.Features.Auth.ChangePassword;
+namespace Gewu.Application.Features.Auth.ChangePassword;
 
 /// <summary>
 /// 修改当前登录用户的密码。要求提供当前密码做二次凭据验证;成功后**吊销全部 refresh token**

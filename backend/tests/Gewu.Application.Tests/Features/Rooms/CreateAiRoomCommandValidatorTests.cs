@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Rooms.CreateAiRoom;
-using Gomoku.Domain.Enums;
+using Gewu.Application.Features.Rooms.CreateAiRoom;
+using Gewu.Domain.Enums;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class CreateAiRoomCommandValidatorTests
 {

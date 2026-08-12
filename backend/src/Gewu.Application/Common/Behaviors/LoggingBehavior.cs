@@ -2,7 +2,7 @@ using System.Diagnostics;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Gomoku.Application.Common.Behaviors;
+namespace Gewu.Application.Common.Behaviors;
 
 /// <summary>
 /// MediatR 管道行为:为每一次 Command / Query 分发自动记录 enter / exit / duration / exception 日志。

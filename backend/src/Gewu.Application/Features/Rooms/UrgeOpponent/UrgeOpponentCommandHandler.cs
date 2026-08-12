@@ -1,10 +1,10 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.UrgeOpponent;
+namespace Gewu.Application.Features.Rooms.UrgeOpponent;
 
 /// <summary>催促 handler。调 <c>Room.UrgeOpponent</c>,仅推给被催方。</summary>
 public sealed class UrgeOpponentCommandHandler : IRequestHandler<UrgeOpponentCommand, UrgeDto>

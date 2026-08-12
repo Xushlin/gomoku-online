@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>
 /// 房间生命周期状态。

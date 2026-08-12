@@ -4,11 +4,11 @@
 
 如何证明我是这个用户。涵盖密码哈希(`PasswordHasher<User>` V3 格式)、JWT Access Token(HS256,15 分钟)的签发与校验、Refresh Token 的高熵生成与 SHA-256 哈希入库、基于轮换(rotation)的 7 天刷新流程、幂等登出、FluentValidation 管道、全局异常到 HTTP 状态码的映射表、以及 `IDateTimeProvider` 作为系统唯一现在来源。
 
-HTTP 端点:`POST /api/auth/{register,login,refresh,logout}`。实现位于 `backend/src/Gomoku.Infrastructure/Authentication/` 与 `backend/src/Gomoku.Api/`。
+HTTP 端点:`POST /api/auth/{register,login,refresh,logout}`。实现位于 `backend/src/Gewu.Infrastructure/Authentication/` 与 `backend/src/Gewu.Api/`。
 ## Requirements
 ### Requirement: 密码以 ASP.NET Identity `PasswordHasher` 的 V3 格式哈希,不落盘明文
 
-系统 SHALL 在 Infrastructure 层用 `Microsoft.AspNetCore.Identity.PasswordHasher<Gomoku.Domain.Entities.User>` 实现 `IPasswordHasher` 接口,接口契约仅包含 `string Hash(string plainPassword)` 与 `bool Verify(string plainPassword, string hashed)`。明文密码 MUST NOT 写入数据库或任何持久化形态;日志 / 异常消息中也 MUST NOT 出现明文密码。
+系统 SHALL 在 Infrastructure 层用 `Microsoft.AspNetCore.Identity.PasswordHasher<Gewu.Domain.Entities.User>` 实现 `IPasswordHasher` 接口,接口契约仅包含 `string Hash(string plainPassword)` 与 `bool Verify(string plainPassword, string hashed)`。明文密码 MUST NOT 写入数据库或任何持久化形态;日志 / 异常消息中也 MUST NOT 出现明文密码。
 
 #### Scenario: 哈希成功后可验证
 - **WHEN** 对 `"Password1"` 调 `Hash`,再用 `Verify("Password1", result)`
@@ -281,7 +281,7 @@ Api 层 SHALL 实现一个异常处理中间件,在 pipeline 顶端包住所有�
 Application 层 SHALL 定义 `IDateTimeProvider { DateTime UtcNow { get; } }`;Infrastructure MUST 提供 `SystemDateTimeProvider` 实现 `DateTime.UtcNow`。所有 Handler / 领域方法调用处 MUST 通过该抽象获取当前时间,MUST NOT 在 Application / Domain 层直接读 `DateTime.UtcNow`。
 
 #### Scenario: 代码扫描
-- **WHEN** 在 `Gomoku.Application/` 与 `Gomoku.Domain/` 目录下搜索 `DateTime.UtcNow`
+- **WHEN** 在 `Gewu.Application/` 与 `Gewu.Domain/` 目录下搜索 `DateTime.UtcNow`
 - **THEN** MUST 零匹配(Handler 的 `CreatedAt` / token 过期时间均来自 `IDateTimeProvider`)
 
 #### Scenario: 测试中可注入固定时间
@@ -293,8 +293,8 @@ Application 层 SHALL 定义 `IDateTimeProvider { DateTime UtcNow { get; } }`;In
 ### Requirement: Application / Infrastructure 层通过 `DependencyInjection` 扩展方法暴露 DI 注册
 
 系统 SHALL 提供:
-- `Gomoku.Application.DependencyInjection.AddApplication(IServiceCollection)` —— 注册 MediatR、FluentValidation 的 validator assembly、`ValidationBehavior`;
-- `Gomoku.Infrastructure.DependencyInjection.AddInfrastructure(IServiceCollection, IConfiguration)` —— 注册 `GomokuDbContext`(SQLite)、`IUserRepository` / `IUnitOfWork` 实现、`IPasswordHasher` 实现、`IJwtTokenService` 实现、`IDateTimeProvider` 实现,并绑定 `JwtOptions`。
+- `Gewu.Application.DependencyInjection.AddApplication(IServiceCollection)` —— 注册 MediatR、FluentValidation 的 validator assembly、`ValidationBehavior`;
+- `Gewu.Infrastructure.DependencyInjection.AddInfrastructure(IServiceCollection, IConfiguration)` —— 注册 `AppDbContext`(SQLite)、`IUserRepository` / `IUnitOfWork` 实现、`IPasswordHasher` 实现、`IJwtTokenService` 实现、`IDateTimeProvider` 实现,并绑定 `JwtOptions`。
 
 `Program.cs` MUST 只调用这两个扩展方法完成 Application / Infrastructure 的接线,MUST NOT 直接 `AddScoped<IUserRepository, ...>`。
 
@@ -304,7 +304,7 @@ Application 层 SHALL 定义 `IDateTimeProvider { DateTime UtcNow { get; } }`;In
 
 #### Scenario: 未来替换 Infrastructure 实现
 - **WHEN** 新 Infrastructure 变更要把 `SqliteUserRepository` 换成 `SqlServerUserRepository`
-- **THEN** 修改范围 MUST 局限在 `Gomoku.Infrastructure/DependencyInjection.cs` 与新实现类内部,Application / Api 层不需要改动
+- **THEN** 修改范围 MUST 局限在 `Gewu.Infrastructure/DependencyInjection.cs` 与新实现类内部,Application / Api 层不需要改动
 
 ### Requirement: `POST /api/auth/change-password` 允许登录用户修改密码
 

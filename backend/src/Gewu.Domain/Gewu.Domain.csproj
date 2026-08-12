@@ -11,7 +11,7 @@
     避免为单元测试把它们升级为 public。Domain 仍保持 0 NuGet 的铁律,这只是测试工具。
   -->
   <ItemGroup>
-    <InternalsVisibleTo Include="Gomoku.Domain.Tests" />
+    <InternalsVisibleTo Include="Gewu.Domain.Tests" />
   </ItemGroup>
 
 </Project>

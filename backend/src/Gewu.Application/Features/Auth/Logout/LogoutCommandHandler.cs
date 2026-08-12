@@ -1,7 +1,7 @@
-using Gomoku.Application.Abstractions;
+using Gewu.Application.Abstractions;
 using MediatR;
 
-namespace Gomoku.Application.Features.Auth.Logout;
+namespace Gewu.Application.Features.Auth.Logout;
 
 /// <summary>
 /// 登出 handler。行为幂等:任何"找不到用户 / 找不到 token / token 已吊销"都**静默成功**

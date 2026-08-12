@@ -1,8 +1,8 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
 using MediatR;
 
-namespace Gomoku.Application.Features.Users.SearchUsers;
+namespace Gewu.Application.Features.Users.SearchUsers;
 
 /// <summary>
 /// 调仓储分页 API → 映射为 <see cref="UserPublicProfileDto"/> → 包 <see cref="PagedResult{T}"/>。

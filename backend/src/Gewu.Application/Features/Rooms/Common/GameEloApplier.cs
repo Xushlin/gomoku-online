@@ -1,10 +1,10 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Features.Rooms.Common;
+namespace Gewu.Application.Features.Rooms.Common;
 
 /// <summary>
 /// 共享的 ELO 应用 helper。`MakeMoveCommandHandler` / `ResignCommandHandler` /
@@ -47,7 +47,7 @@ internal static class GameEloApplier
             _ => GameOutcome.Draw,
         };
 
-        var (newBlackRating, newWhiteRating) = Gomoku.Domain.EloRating.EloRating.Calculate(
+        var (newBlackRating, newWhiteRating) = Gewu.Domain.EloRating.EloRating.Calculate(
             black.Rating, black.GamesPlayed,
             white.Rating, white.GamesPlayed,
             outcomeForBlack);

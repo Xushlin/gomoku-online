@@ -1,7 +1,7 @@
-using Gomoku.Application.Common.DTOs;
+using Gewu.Application.Common.DTOs;
 using MediatR;
 
-namespace Gomoku.Application.Features.Users.GetLeaderboard;
+namespace Gewu.Application.Features.Users.GetLeaderboard;
 
 /// <summary>
 /// 分页查询排行榜。`Page` 从 1 起;`PageSize` 在 [1, 100](validator 校验)。

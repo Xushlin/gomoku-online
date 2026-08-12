@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using Gomoku.Domain.Exceptions;
+using Gewu.Domain.Exceptions;
 
-namespace Gomoku.Domain.Users;
+namespace Gewu.Domain.Users;
 
 /// <summary>
 /// 用户名值对象。规则:

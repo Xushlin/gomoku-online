@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Gomoku.Application\Gomoku.Application.csproj" />
-    <ProjectReference Include="..\Gomoku.Infrastructure\Gomoku.Infrastructure.csproj" />
+    <ProjectReference Include="..\Gewu.Application\Gewu.Application.csproj" />
+    <ProjectReference Include="..\Gewu.Infrastructure\Gewu.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

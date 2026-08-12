@@ -1,10 +1,10 @@
 @echo off
 REM ============================================================
-REM Gomoku dev launcher — double-click to start backend + frontend.
+REM Gewu dev launcher — double-click to start backend + frontend.
 REM
 REM Opens two windows:
-REM   [Gomoku Backend]  .NET API on http://localhost:5145
-REM   [Gomoku Frontend] Angular dev server on http://localhost:4200
+REM   [Gewu Backend]  .NET API on http://localhost:5145
+REM   [Gewu Frontend] Angular dev server on http://localhost:4200
 REM Then opens the browser at http://localhost:4200 once it's up.
 REM
 REM Close either window to stop that side. Ctrl+C also works.
@@ -21,10 +21,10 @@ powershell -NoProfile -Command ^
 
 echo.
 echo [1/3] Starting backend (dotnet run, http://localhost:5145)...
-start "Gomoku Backend" cmd /k "cd /d "%ROOT%backend" && dotnet run --project src\Gomoku.Api --launch-profile http"
+start "Gewu Backend" cmd /k "cd /d "%ROOT%backend" && dotnet run --project src\Gewu.Api --launch-profile http"
 
 echo [2/3] Starting frontend (npm start, http://localhost:4200)...
-start "Gomoku Frontend" cmd /k "cd /d "%ROOT%frontend-web" && npm start"
+start "Gewu Frontend" cmd /k "cd /d "%ROOT%frontend-web" && npm start"
 
 echo [3/3] Waiting for frontend to come up, then opening browser...
 REM Poll until port 4200 answers (up to ~60s), then launch the browser.

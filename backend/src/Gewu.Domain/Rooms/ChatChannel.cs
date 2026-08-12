@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>
 /// 聊天频道。<see cref="Room"/> 频道对房间内所有人可见(玩家 + 围观者);

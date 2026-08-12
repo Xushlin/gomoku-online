@@ -1,16 +1,16 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Application.Features.Rooms.Common;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
+using Gewu.Application.Features.Rooms.Common;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
+using Gewu.Domain.ValueObjects;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.MakeMove;
+namespace Gewu.Application.Features.Rooms.MakeMove;
 
 /// <summary>
 /// 落子 handler。流程:加载聚合 → <c>Room.PlayMove</c> → SaveChanges(乐观并发) →

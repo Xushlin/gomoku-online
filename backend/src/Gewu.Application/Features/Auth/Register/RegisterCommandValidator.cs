@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Gomoku.Application.Features.Auth.Register;
+namespace Gewu.Application.Features.Auth.Register;
 
 /// <summary>
 /// <see cref="RegisterCommand"/> 的 FluentValidation 校验器。

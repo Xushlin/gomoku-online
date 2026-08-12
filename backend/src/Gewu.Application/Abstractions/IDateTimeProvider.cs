@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 全系统"现在"(UTC)的唯一来源。所有 Domain / Application 层需要时间戳的地方

@@ -1,9 +1,9 @@
 using FluentValidation;
-using Gomoku.Application.Common.Behaviors;
+using Gewu.Application.Common.Behaviors;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Gomoku.Application;
+namespace Gewu.Application;
 
 /// <summary>Application 层 DI 注册入口。Api 层通过 <c>AddApplication()</c> 一次完成接线。</summary>
 public static class DependencyInjection

@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Rooms.LeaveRoom;
+using Gewu.Application.Features.Rooms.LeaveRoom;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class LeaveRoomCommandHandlerTests
 {

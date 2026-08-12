@@ -1,7 +1,7 @@
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Features.Rooms.JoinRoom;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Features.Rooms.JoinRoom;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class JoinRoomCommandHandlerTests
 {

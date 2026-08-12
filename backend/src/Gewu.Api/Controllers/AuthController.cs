@@ -1,18 +1,18 @@
 using System.IdentityModel.Tokens.Jwt;
-using Gomoku.Api;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Features.Auth.ChangePassword;
-using Gomoku.Application.Features.Auth.Login;
-using Gomoku.Application.Features.Auth.Logout;
-using Gomoku.Application.Features.Auth.RefreshToken;
-using Gomoku.Application.Features.Auth.Register;
-using Gomoku.Domain.Users;
+using Gewu.Api;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Features.Auth.ChangePassword;
+using Gewu.Application.Features.Auth.Login;
+using Gewu.Application.Features.Auth.Logout;
+using Gewu.Application.Features.Auth.RefreshToken;
+using Gewu.Application.Features.Auth.Register;
+using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace Gomoku.Api.Controllers;
+namespace Gewu.Api.Controllers;
 
 /// <summary>注册 / 登录 / 刷新 / 登出 四个端点。</summary>
 [ApiController]

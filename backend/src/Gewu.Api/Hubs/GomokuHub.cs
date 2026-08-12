@@ -1,16 +1,16 @@
 using System.IdentityModel.Tokens.Jwt;
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Features.Rooms.MakeMove;
-using Gomoku.Application.Features.Rooms.SendChatMessage;
-using Gomoku.Application.Features.Rooms.UrgeOpponent;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Features.Rooms.MakeMove;
+using Gewu.Application.Features.Rooms.SendChatMessage;
+using Gewu.Application.Features.Rooms.UrgeOpponent;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Serilog.Context;
 
-namespace Gomoku.Api.Hubs;
+namespace Gewu.Api.Hubs;
 
 /// <summary>
 /// 单一 SignalR Hub:所有实时操作都经它路由到 MediatR handler。Hub 本身 MUST NOT

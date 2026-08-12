@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Tests.Rooms;
+namespace Gewu.Domain.Tests.Rooms;
 
 public class RoomIdTests
 {

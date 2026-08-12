@@ -1,8 +1,8 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
 using MediatR;
 
-namespace Gomoku.Application.Features.Users.GetLeaderboard;
+namespace Gewu.Application.Features.Users.GetLeaderboard;
 
 /// <summary>
 /// 分页拉取排行榜。调仓储分页 API → 取 `(users, total)` → 映射为 <see cref="LeaderboardEntryDto"/>;

@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Rooms.UrgeOpponent;
+using Gewu.Application.Features.Rooms.UrgeOpponent;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class UrgeOpponentCommandHandlerTests
 {

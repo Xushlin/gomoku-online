@@ -1,9 +1,9 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.GetMyActiveRooms;
+namespace Gewu.Application.Features.Rooms.GetMyActiveRooms;
 
 /// <summary>
 /// 调仓储拉用户活动房间 → 收集所有 UserId(Host / Black / White)一次 lookup →

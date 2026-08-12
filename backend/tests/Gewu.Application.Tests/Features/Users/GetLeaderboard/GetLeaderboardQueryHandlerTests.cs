@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Users.GetLeaderboard;
+using Gewu.Application.Features.Users.GetLeaderboard;
 
-namespace Gomoku.Application.Tests.Features.Users.GetLeaderboard;
+namespace Gewu.Application.Tests.Features.Users.GetLeaderboard;
 
 public class GetLeaderboardQueryHandlerTests
 {

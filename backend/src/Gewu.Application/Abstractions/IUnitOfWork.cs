@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 持久化保存点。Handler 在内存中修改聚合后,通过此接口提交一次变更。

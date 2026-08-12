@@ -1,12 +1,12 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Auth.Login;
+namespace Gewu.Application.Features.Auth.Login;
 
 /// <summary>
 /// 登录流程:构造 <see cref="Email"/> → 查 user → 校验密码 → 检查启用状态 →
@@ -48,7 +48,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
         {
             email = new Email(request.Email);
         }
-        catch (Gomoku.Domain.Exceptions.InvalidEmailException)
+        catch (Gewu.Domain.Exceptions.InvalidEmailException)
         {
             // 邮箱格式非法也回同样的模糊错误,不暴露校验细节。
             throw new InvalidCredentialsException();

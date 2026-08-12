@@ -1,11 +1,11 @@
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Exceptions;
-using Gomoku.Domain.Users;
-using Gomoku.Domain.ValueObjects;
-using DomainMove = Gomoku.Domain.ValueObjects.Move;
-using SubMove = Gomoku.Domain.Rooms.Move;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Exceptions;
+using Gewu.Domain.Users;
+using Gewu.Domain.ValueObjects;
+using DomainMove = Gewu.Domain.ValueObjects.Move;
+using SubMove = Gewu.Domain.Rooms.Move;
 
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>一次成功落子的领域级结果,<see cref="Room.PlayMove"/> 返回给 handler。</summary>
 public sealed record MoveOutcome(SubMove Move, GameResult Result);

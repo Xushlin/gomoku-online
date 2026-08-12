@@ -2,12 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Gomoku.Application.Abstractions;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Domain.Users;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Gomoku.Infrastructure.Authentication;
+namespace Gewu.Infrastructure.Authentication;
 
 /// <summary>
 /// HS256 签名的 JWT 签发服务,以及 refresh token 的随机生成 + SHA-256 哈希。

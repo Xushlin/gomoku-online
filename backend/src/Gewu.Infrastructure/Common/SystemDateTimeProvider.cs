@@ -1,6 +1,6 @@
-using Gomoku.Application.Abstractions;
+using Gewu.Application.Abstractions;
 
-namespace Gomoku.Infrastructure.Common;
+namespace Gewu.Infrastructure.Common;
 
 /// <summary>返回 <see cref="DateTime.UtcNow"/> 的默认 <see cref="IDateTimeProvider"/> 实现。</summary>
 public sealed class SystemDateTimeProvider : IDateTimeProvider

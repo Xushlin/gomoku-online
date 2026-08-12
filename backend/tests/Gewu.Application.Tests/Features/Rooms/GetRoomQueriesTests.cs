@@ -1,8 +1,8 @@
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Features.Rooms.GetRoomList;
-using Gomoku.Application.Features.Rooms.GetRoomState;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Features.Rooms.GetRoomList;
+using Gewu.Application.Features.Rooms.GetRoomState;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class GetRoomQueriesTests
 {

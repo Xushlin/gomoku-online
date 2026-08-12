@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>
 /// 用户信息对外 DTO。**MUST NOT** 包含 <c>PasswordHash</c> 或 refresh token 相关字段。

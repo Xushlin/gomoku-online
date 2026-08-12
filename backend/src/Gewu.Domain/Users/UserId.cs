@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Users;
+namespace Gewu.Domain.Users;
 
 /// <summary>
 /// 用户主键的强类型包装值对象。内部承载一个 <see cref="Guid"/>,

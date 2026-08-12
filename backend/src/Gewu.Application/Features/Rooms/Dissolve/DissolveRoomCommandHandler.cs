@@ -1,8 +1,8 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.Exceptions;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.Exceptions;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.Dissolve;
+namespace Gewu.Application.Features.Rooms.Dissolve;
 
 /// <summary>
 /// 解散房间 handler。流程:

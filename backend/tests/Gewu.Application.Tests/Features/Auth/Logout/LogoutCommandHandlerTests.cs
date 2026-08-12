@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Auth.Logout;
+using Gewu.Application.Features.Auth.Logout;
 using MediatR;
 
-namespace Gomoku.Application.Tests.Features.Auth.Logout;
+namespace Gewu.Application.Tests.Features.Auth.Logout;
 
 public class LogoutCommandHandlerTests
 {

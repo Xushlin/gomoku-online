@@ -1,8 +1,8 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Users;
 using MediatR;
 
-namespace Gomoku.Application.Features.Presence.IsUserOnline;
+namespace Gewu.Application.Features.Presence.IsUserOnline;
 
 /// <summary>
 /// 查询指定用户当前是否在线(至少有一条活 SignalR 连接)。

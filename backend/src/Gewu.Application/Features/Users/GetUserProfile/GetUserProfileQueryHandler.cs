@@ -1,9 +1,9 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
 using MediatR;
 
-namespace Gomoku.Application.Features.Users.GetUserProfile;
+namespace Gewu.Application.Features.Users.GetUserProfile;
 
 /// <summary>
 /// Load user,找不到抛 <see cref="UserNotFoundException"/>,否则映射为

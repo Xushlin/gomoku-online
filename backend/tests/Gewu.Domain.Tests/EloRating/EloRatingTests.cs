@@ -1,6 +1,6 @@
-using static Gomoku.Domain.EloRating.EloRating;
+using static Gewu.Domain.EloRating.EloRating;
 
-namespace Gomoku.Domain.Tests.Elo;
+namespace Gewu.Domain.Tests.Elo;
 
 public class EloRatingTests
 {

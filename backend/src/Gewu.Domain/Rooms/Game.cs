@@ -1,9 +1,9 @@
-using Gomoku.Domain.Entities;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Users;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Domain.Entities;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Users;
+using Gewu.Domain.ValueObjects;
 
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>
 /// <see cref="Room"/> 聚合内的对局子实体,承载回合、Moves 列表、开始/结束时间、结果与胜方。

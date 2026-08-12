@@ -1,12 +1,12 @@
 using System.Net;
 using System.Text.Json;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Domain.Exceptions;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ValidationException = Gomoku.Application.Common.Exceptions.ValidationException;
+using ValidationException = Gewu.Application.Common.Exceptions.ValidationException;
 
-namespace Gomoku.Api.Middleware;
+namespace Gewu.Api.Middleware;
 
 /// <summary>
 /// 全局异常中间件。把领域 / 应用异常映射为 HTTP + <see cref="ProblemDetails"/>(RFC 7807)响应。

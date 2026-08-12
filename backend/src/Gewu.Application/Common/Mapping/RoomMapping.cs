@@ -1,8 +1,8 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Common.Mapping;
+namespace Gewu.Application.Common.Mapping;
 
 /// <summary>
 /// <see cref="Room"/> 聚合到对外 DTO 的转换。Host / 玩家 / 围观者的 Username 由调用方

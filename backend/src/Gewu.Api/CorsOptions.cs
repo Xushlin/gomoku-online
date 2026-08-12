@@ -1,4 +1,4 @@
-namespace Gomoku.Api;
+namespace Gewu.Api;
 
 /// <summary>
 /// CORS 策略配置 POCO,绑定 <c>appsettings.json</c> 的 <c>"Cors"</c> 段。

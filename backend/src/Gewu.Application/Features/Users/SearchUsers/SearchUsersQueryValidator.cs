@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Gomoku.Application.Features.Users.SearchUsers;
+namespace Gewu.Application.Features.Users.SearchUsers;
 
 /// <summary>
 /// Page / PageSize 校验与 <c>GetUserGamesPagedQueryValidator</c> 对齐。Search 可空,非空

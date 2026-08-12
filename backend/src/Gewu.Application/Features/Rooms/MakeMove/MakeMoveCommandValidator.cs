@@ -1,7 +1,7 @@
 using FluentValidation;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Domain.ValueObjects;
 
-namespace Gomoku.Application.Features.Rooms.MakeMove;
+namespace Gewu.Application.Features.Rooms.MakeMove;
 
 /// <summary>落子命令的入参粗校验:行列在 [0..14] 范围内。</summary>
 public sealed class MakeMoveCommandValidator : AbstractValidator<MakeMoveCommand>

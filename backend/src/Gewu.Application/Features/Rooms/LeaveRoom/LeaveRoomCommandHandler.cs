@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.LeaveRoom;
+namespace Gewu.Application.Features.Rooms.LeaveRoom;
 
 /// <summary>离开房间 handler。区分玩家 / 围观者触发不同事件。</summary>
 public sealed class LeaveRoomCommandHandler : IRequestHandler<LeaveRoomCommand, Unit>

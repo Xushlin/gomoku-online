@@ -1,16 +1,16 @@
 using System.IdentityModel.Tokens.Jwt;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Features.Rooms.GetMyActiveRooms;
-using Gomoku.Application.Features.Users.GetCurrentUser;
-using Gomoku.Application.Features.Users.GetUserGames;
-using Gomoku.Application.Features.Users.GetUserProfile;
-using Gomoku.Application.Features.Users.SearchUsers;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Features.Rooms.GetMyActiveRooms;
+using Gewu.Application.Features.Users.GetCurrentUser;
+using Gewu.Application.Features.Users.GetUserGames;
+using Gewu.Application.Features.Users.GetUserProfile;
+using Gewu.Application.Features.Users.SearchUsers;
+using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Gomoku.Api.Controllers;
+namespace Gewu.Api.Controllers;
 
 /// <summary>当前用户信息查询。其他用户资料编辑 / 头像等留给后续变更。</summary>
 [ApiController]

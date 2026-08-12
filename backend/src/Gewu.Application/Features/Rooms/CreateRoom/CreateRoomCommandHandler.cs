@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
-using Gomoku.Domain.Rooms;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Rooms;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.CreateRoom;
+namespace Gewu.Application.Features.Rooms.CreateRoom;
 
 /// <summary>创建房间 handler。</summary>
 public sealed class CreateRoomCommandHandler : IRequestHandler<CreateRoomCommand, RoomSummaryDto>

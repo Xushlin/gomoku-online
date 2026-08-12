@@ -1,9 +1,9 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 
-namespace Gomoku.Application.Features.Rooms.GetRoomList;
+namespace Gewu.Application.Features.Rooms.GetRoomList;
 
 /// <summary>活跃房间列表查询 handler。</summary>
 public sealed class GetRoomListQueryHandler : IRequestHandler<GetRoomListQuery, IReadOnlyList<RoomSummaryDto>>

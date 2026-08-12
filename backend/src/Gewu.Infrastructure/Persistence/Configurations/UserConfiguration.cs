@@ -1,9 +1,9 @@
-using Gomoku.Domain.Users;
-using Gomoku.Infrastructure.Persistence.Converters;
+using Gewu.Domain.Users;
+using Gewu.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Gomoku.Infrastructure.Persistence.Configurations;
+namespace Gewu.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// <see cref="User"/> 聚合根的 EF 映射。<see cref="UserId"/> 用 <see cref="UserIdConverter"/>

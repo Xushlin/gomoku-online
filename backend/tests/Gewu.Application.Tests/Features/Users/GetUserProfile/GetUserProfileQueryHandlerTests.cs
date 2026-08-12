@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Users.GetUserProfile;
-using Gomoku.Application.Tests.Features.Rooms;
+using Gewu.Application.Features.Users.GetUserProfile;
+using Gewu.Application.Tests.Features.Rooms;
 
-namespace Gomoku.Application.Tests.Features.Users.GetUserProfile;
+namespace Gewu.Application.Tests.Features.Users.GetUserProfile;
 
 public class GetUserProfileQueryHandlerTests
 {

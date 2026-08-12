@@ -1,9 +1,9 @@
-using Gomoku.Application.Features.Rooms.GetGameReplay;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.ValueObjects;
-using Move = Gomoku.Domain.ValueObjects.Move;
+using Gewu.Application.Features.Rooms.GetGameReplay;
+using Gewu.Domain.Enums;
+using Gewu.Domain.ValueObjects;
+using Move = Gewu.Domain.ValueObjects.Move;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class GetGameReplayQueryHandlerTests
 {

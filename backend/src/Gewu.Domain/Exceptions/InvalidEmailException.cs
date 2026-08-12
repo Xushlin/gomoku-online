@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Exceptions;
+namespace Gewu.Domain.Exceptions;
 
 /// <summary>
 /// 领域级非法邮箱异常。用于表达 <c>Email</c> 值对象构造时发现的格式问题:

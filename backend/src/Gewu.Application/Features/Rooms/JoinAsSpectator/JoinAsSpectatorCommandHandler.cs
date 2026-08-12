@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.JoinAsSpectator;
+namespace Gewu.Application.Features.Rooms.JoinAsSpectator;
 
 /// <summary>围观者加入 handler。广播 <c>SpectatorJoined</c> + <c>RoomStateChanged</c>。</summary>
 public sealed class JoinAsSpectatorCommandHandler : IRequestHandler<JoinAsSpectatorCommand, Unit>

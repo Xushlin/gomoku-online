@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Ai;
+namespace Gewu.Domain.Ai;
 
 /// <summary>
 /// 按 <see cref="BotDifficulty"/> 构造 AI 实现。工厂无状态,每次调用返回新实例。

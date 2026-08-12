@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Gomoku.Application.Features.Users.GetLeaderboard;
+namespace Gewu.Application.Features.Users.GetLeaderboard;
 
 /// <summary>
 /// <see cref="GetLeaderboardQuery"/> 校验:Page ≥ 1;PageSize 在 [1, 100]。

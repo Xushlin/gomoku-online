@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Auth.Login;
+using Gewu.Application.Features.Auth.Login;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Tests.Features.Auth.Login;
+namespace Gewu.Application.Tests.Features.Auth.Login;
 
 public class LoginCommandHandlerTests
 {

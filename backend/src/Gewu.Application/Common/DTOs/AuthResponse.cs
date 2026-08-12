@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>
 /// 注册 / 登录 / 刷新成功后返回给客户端的响应体。<see cref="RefreshToken"/> 是**原始字符串**,

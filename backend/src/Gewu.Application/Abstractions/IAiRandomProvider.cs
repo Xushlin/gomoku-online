@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// AI 决策所需随机源的抽象。生产实现返回一个 <see cref="Random.Shared"/> 包装;

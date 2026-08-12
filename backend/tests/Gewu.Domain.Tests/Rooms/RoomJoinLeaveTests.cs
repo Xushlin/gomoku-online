@@ -1,7 +1,7 @@
-using Gomoku.Domain.Exceptions;
-using Gomoku.Domain.Enums;
+using Gewu.Domain.Exceptions;
+using Gewu.Domain.Enums;
 
-namespace Gomoku.Domain.Tests.Rooms;
+namespace Gewu.Domain.Tests.Rooms;
 
 public class RoomJoinLeaveTests
 {

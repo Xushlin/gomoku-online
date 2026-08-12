@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Tests.Ai;
+namespace Gewu.Domain.Tests.Ai;
 
 public class GomokuAiFactoryTests
 {

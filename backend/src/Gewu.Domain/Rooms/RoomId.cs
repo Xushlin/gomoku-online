@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>
 /// 房间主键的强类型包装值对象。内部承载一个 <see cref="Guid"/>,

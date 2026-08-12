@@ -58,7 +58,8 @@ This change is deliberately **behaviour-preserving**. It renames identifiers and
 
 ### Modified Capabilities
 
-- `web-shell` — two ADDED requirements: the header brand link renders the new i18n key `header.brand` instead of a hardcoded literal, and `header.brand` joins the bilingual parity set. This is the only requirement-level change in the whole rename, and it exists because the brand name is now language-dependent (格物 / Gewu).
+- `web-shell` — two ADDED requirements: the header brand link renders the new i18n key `header.brand` instead of a hardcoded literal, and `header.brand` joins the bilingual parity set. The brand name is now language-dependent (格物 / Gewu), so it cannot stay a literal.
+- `web-lobby` — one MODIFIED requirement. Its "模板零硬编码" scenario explicitly exempted the brand literal `Gomoku` from the no-hardcoded-strings scan. That exemption is now dead — the brand goes through i18n — so it is removed, making the requirement strictly stronger. (The carve-out was also misplaced: the brand lives in `shell/header/header.html`, which was never inside the globs that scenario scans.)
 
 No other capability changes. In particular, twelve live spec files mention `Gomoku.*` namespaces, project paths, or `GomokuDbContext` inside otherwise unrelated requirement prose. Rewriting those identifiers changes **no** requirement semantics: no endpoint, wire contract, storage key, migration name, DB column, or observable behaviour moves. Authoring twelve delta spec files that are near-verbatim copies of the originals would bury the actual diff, so that sweep is applied directly to `openspec/specs/` as an identifier-only rewrite. `design.md` (D4) records this as a deliberate, bounded deviation from the delta flow, along with the mechanical check that keeps it honest.
 

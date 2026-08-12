@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Serilog.Context;
 
-namespace Gomoku.Api.Middleware;
+namespace Gewu.Api.Middleware;
 
 /// <summary>
 /// 为每个 HTTP 请求分配 Correlation Id,贯穿本次请求内所有 log scope:

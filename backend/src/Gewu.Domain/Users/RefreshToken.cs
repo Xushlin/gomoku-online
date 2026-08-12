@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Users;
+namespace Gewu.Domain.Users;
 
 /// <summary>
 /// <see cref="User"/> 聚合内的子实体,承载一枚 refresh token 的**哈希**(永远不存原文)、

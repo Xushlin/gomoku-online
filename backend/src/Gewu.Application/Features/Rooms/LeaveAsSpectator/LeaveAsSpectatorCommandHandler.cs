@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Rooms.LeaveAsSpectator;
+namespace Gewu.Application.Features.Rooms.LeaveAsSpectator;
 
 /// <summary>围观者离开 handler。广播 <c>SpectatorLeft</c> + <c>RoomStateChanged</c>(D18 对称)。</summary>
 public sealed class LeaveAsSpectatorCommandHandler : IRequestHandler<LeaveAsSpectatorCommand, Unit>

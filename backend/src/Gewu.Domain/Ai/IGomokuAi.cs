@@ -1,8 +1,8 @@
-using Gomoku.Domain.Entities;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Domain.Entities;
+using Gewu.Domain.Enums;
+using Gewu.Domain.ValueObjects;
 
-namespace Gomoku.Domain.Ai;
+namespace Gewu.Domain.Ai;
 
 /// <summary>
 /// 五子棋 AI 决策接口。实现 MUST 是纯函数式:

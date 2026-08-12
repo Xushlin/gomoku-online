@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Auth.RefreshToken;
+using Gewu.Application.Features.Auth.RefreshToken;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Tests.Features.Auth.RefreshToken;
+namespace Gewu.Application.Tests.Features.Auth.RefreshToken;
 
 public class RefreshTokenCommandHandlerTests
 {

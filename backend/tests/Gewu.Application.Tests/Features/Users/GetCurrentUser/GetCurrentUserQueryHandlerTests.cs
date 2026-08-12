@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Users.GetCurrentUser;
+using Gewu.Application.Features.Users.GetCurrentUser;
 
-namespace Gomoku.Application.Tests.Features.Users.GetCurrentUser;
+namespace Gewu.Application.Tests.Features.Users.GetCurrentUser;
 
 public class GetCurrentUserQueryHandlerTests
 {

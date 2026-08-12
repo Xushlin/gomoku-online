@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace Gomoku.Application.Features.Users.GetUserGames;
+namespace Gewu.Application.Features.Users.GetUserGames;
 
 /// <summary>
 /// <see cref="GetUserGamesPagedQuery"/> 的分页参数校验。
-/// Page ≥ 1;PageSize 在 [1, 100]。非法 → <see cref="Gomoku.Application.Common.Exceptions.ValidationException"/>
+/// Page ≥ 1;PageSize 在 [1, 100]。非法 → <see cref="Gewu.Application.Common.Exceptions.ValidationException"/>
 /// → HTTP 400。
 /// </summary>
 public sealed class GetUserGamesPagedQueryValidator : AbstractValidator<GetUserGamesPagedQuery>

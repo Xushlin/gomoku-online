@@ -4,22 +4,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-Multi-platform online Gomoku (五子棋) game. Players register, create/join rooms, play real-time matches (via SignalR) with room chat, spectator chat, and urge-opponent shortcuts. ELO-based ranking with special icons for the top three. Also supports human-vs-AI with multiple difficulties, plus game-record storage and replay.
+**格物 / Gewu** — a multi-platform online game hall. Planned games: idiom games (成语纵横 / 成语接龙 / 猜成语), 五子棋, 一字棋, 中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what they all have in common.
+
+The one game shipped so far is **gomoku (五子棋)**, and it establishes the platform kernel every later game reuses: players register, create/join rooms, play real-time matches (via SignalR) with room chat, spectator chat, and urge-opponent shortcuts; ELO-based ranking with special icons for the top three; human-vs-AI with multiple difficulties; game-record storage and replay.
+
+Games fall into three categories that deliberately do **not** share one aggregate — see the platform roadmap below:
+
+| Category | Games | Realtime | Core concepts |
+| --- | --- | --- | --- |
+| Turn-based adversarial | 五子棋, 一字棋, 中国象棋, 成语接龙 | SignalR | room, two seats, turn order, move sequence, ELO, spectators, replay |
+| Single-player levels | 成语纵横, 华容道, 猜成语 | none (REST) | level catalogue, progress, stars, hints, time leaderboard |
+| Single-player score-attack | 俄罗斯方块 | none (submit at end) | run record, score validation, periodic leaderboard |
 
 ## Current phase
 
-Backend MVP and web client v1 are both feature-complete. Detail:
+The platform rename to `Gewu.*` has landed. Gomoku (backend MVP + web client v1) is feature-complete; no second game exists yet. Detail:
 
-- [x] 4-layer Clean Architecture solution skeleton (`backend/Gomoku.slnx`)
+- [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
 - [x] **Backend MVP** — auth, rooms, gameplay, AI (Easy / Medium / Hard, with side-picker), ELO, replay, presence, observability, rate limiting. Live specs in `openspec/specs/`.
 - [x] **Web client v1** (`frontend-web/`) — Angular 21, Tailwind v4, Material/CDK, Transloco (`zh-CN` + `en`). Auth pages, lobby, real-time game board, replay player, public profiles, find-player search, AI room creation with side-picker, sound effects (Wood + Chiptune packs), board skins (Wood + Classic), themes (Material + System) × dark/light, presence dots.
 - [x] GitHub Actions CI runs on every push and PR (`backend` + `web` jobs in parallel).
 
-Not yet done:
+Not yet done — platform roadmap, in this order:
 
-- `frontend-desktop/` — empty. Phase 2: Electron wrap of the Angular app.
-- `frontend-mobile/` — empty. Phase 3: Flutter + Material 3.
+1. `add-platform-catalog` — game registry + lobby becomes a game catalogue + `/g/:gameKey/...` routes.
+2. Idiom vertical — `add-idiom-dictionary` (data import from [chinese-xinhua](https://github.com/pwxcoo/chinese-xinhua)), `add-puzzle-core` (single-player level context, server-authoritative validation), `add-idiom-crossword` (成语纵横). Purely additive; touches no gomoku code.
+3. Match generalization — `generalize-match-domain` / `migrate-match-persistence` / `generalize-match-contract`: de-gomoku-ify `Room`/`Game`/`Move` into two seats + JSON move payloads + an `IGameRules` registry, then `add-tictactoe` as the proof that a new board game is one class plus one registration.
+4. `add-per-game-rating` — `UserGameStats(UserId, GameKey, …)`; the three ladders (ELO / puzzle time+stars / score) stay separate on purpose.
+5. Then `add-idiom-chain`, `add-klotski`, `add-xiangqi-*`, `add-score-attack-core` + `add-tetris`.
+
+Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
+
+Deferred follow-ups from the rename, each with a reason:
+
+- `squash-migration-baseline` — squash the 6 migrations into one. Needs deltas because `ai-opponent` has requirements named after `AddBotSupport` / `AddHardBotAccount` and `room-and-gameplay` after `AddGameEndReason`.
+- `gomoku:*` → `gewu:*` localStorage keys — normative in five web specs, and renaming logs everyone out; needs a read-old/write-new shim.
+- `GomokuHub` → `MatchHub` and `/hubs/gomoku` → `/hubs/match` — rides along with `generalize-match-contract`, which must rewrite those four specs anyway.
+- `logs/gomoku-.log` Serilog filename and the `GOMOKU_*` env-var prefix — both normative in specs (`observability`, `api-ops`); the env-var prefix additionally appears to be unimplemented (see the open bug about `AddEnvironmentVariables`).
+
+Other platforms, unchanged from before:
+
+- `frontend-desktop/` — empty. Electron wrap of the Angular app.
+- `frontend-mobile/` — empty. Flutter + Material 3.
 
 ## Workflow — OpenSpec is mandatory
 
@@ -71,10 +98,10 @@ Domain  ← Application  ← Infrastructure
                        ← Api
 ```
 
-- **`Gomoku.Domain`** — entities, value objects, domain events. Zero outward dependencies.
-- **`Gomoku.Application`** — use cases (MediatR handlers), DTOs, interfaces for infrastructure concerns. Depends on `Domain` only.
-- **`Gomoku.Infrastructure`** — EF Core, persistence, external adapters. Implements `Application` interfaces.
-- **`Gomoku.Api`** — ASP.NET host, HTTP endpoints, SignalR hubs, DI composition root.
+- **`Gewu.Domain`** — entities, value objects, domain events. Zero outward dependencies.
+- **`Gewu.Application`** — use cases (MediatR handlers), DTOs, interfaces for infrastructure concerns. Depends on `Domain` only.
+- **`Gewu.Infrastructure`** — EF Core, persistence, external adapters. Implements `Application` interfaces.
+- **`Gewu.Api`** — ASP.NET host, HTTP endpoints, SignalR hubs, DI composition root.
 
 Preserve the direction when adding project references. **Never** have `Api` reference `Domain` directly; **never** put DB access outside `Infrastructure`.
 
@@ -107,7 +134,7 @@ Don't ship without unit tests for:
 - Every Application handler.
 - Frontend: components and services with real logic (pure display components can skip).
 
-`Gomoku.Domain.Tests` and `Gomoku.Application.Tests` exist. If an Api-level integration test project is added, name it `Gomoku.Api.Tests` and register it in `Gomoku.slnx`. The test csprojs declare `Xunit` as a global using — don't add `using Xunit;` in test files.
+`Gewu.Domain.Tests` and `Gewu.Application.Tests` exist. If an Api-level integration test project is added, name it `Gewu.Api.Tests` and register it in `Gewu.slnx`. The test csprojs declare `Xunit` as a global using — don't add `using Xunit;` in test files.
 
 ## Frontend conventions (Angular)
 
@@ -171,12 +198,12 @@ The same registry pattern applies to **board skins** (`BoardSkinService`, curren
 From `backend/`:
 
 ```bash
-dotnet build Gomoku.slnx                              # build all
-dotnet test  Gomoku.slnx                              # run all tests
-dotnet run   --project src/Gomoku.Api                 # http://localhost:5145, https://localhost:7082
+dotnet build Gewu.slnx                              # build all
+dotnet test  Gewu.slnx                              # run all tests
+dotnet run   --project src/Gewu.Api                 # http://localhost:5145, https://localhost:7082
 
-dotnet test tests/Gomoku.Domain.Tests                 # single project
-dotnet test tests/Gomoku.Domain.Tests \
+dotnet test tests/Gewu.Domain.Tests                 # single project
+dotnet test tests/Gewu.Domain.Tests \
   --filter "FullyQualifiedName~WinDetectionTests.Diagonal"   # single test
 ```
 
@@ -187,24 +214,24 @@ Install once: `dotnet tool install --global dotnet-ef`. Run from `backend/`:
 ```bash
 # Add a migration (name in PascalCase, describes the intent)
 dotnet ef migrations add AddUserAndRoom \
-  --project src/Gomoku.Infrastructure \
-  --startup-project src/Gomoku.Api \
+  --project src/Gewu.Infrastructure \
+  --startup-project src/Gewu.Api \
   --output-dir Persistence/Migrations
 
 # Apply to the configured DB
 dotnet ef database update \
-  --project src/Gomoku.Infrastructure \
-  --startup-project src/Gomoku.Api
+  --project src/Gewu.Infrastructure \
+  --startup-project src/Gewu.Api
 
 # Roll back the last migration (only before it has been merged / pushed)
 dotnet ef migrations remove \
-  --project src/Gomoku.Infrastructure \
-  --startup-project src/Gomoku.Api
+  --project src/Gewu.Infrastructure \
+  --startup-project src/Gewu.Api
 
 # Generate an idempotent SQL script for review / production apply
 dotnet ef migrations script --idempotent \
-  --project src/Gomoku.Infrastructure \
-  --startup-project src/Gomoku.Api \
+  --project src/Gewu.Infrastructure \
+  --startup-project src/Gewu.Api \
   -o migrations.sql
 ```
 

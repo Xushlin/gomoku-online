@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 对局层面的运行参数,绑定 <c>appsettings.json</c> 的 <c>"Game"</c> 段。

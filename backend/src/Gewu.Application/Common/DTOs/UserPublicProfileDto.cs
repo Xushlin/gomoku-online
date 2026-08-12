@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>
 /// 他人可见的用户资料快照。比 <see cref="UserSummaryDto"/>(仅 Id + Username)多战绩 + Rating +

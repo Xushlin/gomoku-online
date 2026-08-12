@@ -1,10 +1,10 @@
 using FluentValidation;
 using FluentValidation.Results;
-using Gomoku.Application.Common.Behaviors;
+using Gewu.Application.Common.Behaviors;
 using MediatR;
-using ValidationException = Gomoku.Application.Common.Exceptions.ValidationException;
+using ValidationException = Gewu.Application.Common.Exceptions.ValidationException;
 
-namespace Gomoku.Application.Tests.Common.Behaviors;
+namespace Gewu.Application.Tests.Common.Behaviors;
 
 public class ValidationBehaviorTests
 {

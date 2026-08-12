@@ -1,7 +1,7 @@
 using System.Net.Mail;
-using Gomoku.Domain.Exceptions;
+using Gewu.Domain.Exceptions;
 
-namespace Gomoku.Domain.Users;
+namespace Gewu.Domain.Users;
 
 /// <summary>
 /// 邮箱值对象。构造时用 <see cref="MailAddress"/> 做基本语法校验,长度 ≤ 254 字符(RFC 5321),

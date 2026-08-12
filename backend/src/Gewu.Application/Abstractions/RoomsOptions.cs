@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// Room / gameplay / chat 的可调参数。在 <c>appsettings.json</c> 的 <c>"Rooms"</c> 节绑定,

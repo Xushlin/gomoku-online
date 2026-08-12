@@ -1,7 +1,7 @@
-using Gomoku.Domain.Users;
+using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Gomoku.Infrastructure.Persistence.Converters;
+namespace Gewu.Infrastructure.Persistence.Converters;
 
 /// <summary><see cref="Username"/> ↔ <see cref="string"/> 的 EF 值转换器。</summary>
 public sealed class UsernameConverter : ValueConverter<Username, string>

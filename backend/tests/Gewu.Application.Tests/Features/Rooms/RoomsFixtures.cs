@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 /// <summary>Rooms handler 测试共用的 builder / mock 设置。</summary>
 internal static class RoomsFixtures

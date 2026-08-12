@@ -1,8 +1,8 @@
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Exceptions;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Exceptions;
+using Gewu.Domain.ValueObjects;
 
-namespace Gomoku.Domain.Entities;
+namespace Gewu.Domain.Entities;
 
 /// <summary>
 /// 15×15 五子棋棋盘聚合实体。维护棋格状态,提供落子、查询、判胜、克隆与重置。

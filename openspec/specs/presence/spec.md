@@ -11,16 +11,16 @@ compare-and-swap 循环原子递减,归零时 `TryRemove`。
 和 `GET /api/presence/users/{id}`(用户主页"在线"徽章)。**未知 UserId**返回 `IsOnline=false`
 (不 404)—— presence 端点语义是"在不在线",不检查用户存在性。
 
-实现位于 `backend/src/Gomoku.Application/Abstractions/IConnectionTracker.cs`(接口;从 Api 层
-迁移进来以符合 Clean Arch)、`backend/src/Gomoku.Api/Hubs/ConnectionTracker.cs`(实现;留在
+实现位于 `backend/src/Gewu.Application/Abstractions/IConnectionTracker.cs`(接口;从 Api 层
+迁移进来以符合 Clean Arch)、`backend/src/Gewu.Api/Hubs/ConnectionTracker.cs`(实现;留在
 Api 层作为 SignalR-adjacent infrastructure 单件)、`Features/Presence/GetOnlineCount/` 与
-`Features/Presence/IsUserOnline/`(MediatR 查询)、`backend/src/Gomoku.Api/Controllers/PresenceController.cs`。
+`Features/Presence/IsUserOnline/`(MediatR 查询)、`backend/src/Gewu.Api/Controllers/PresenceController.cs`。
 
 ## Requirements
 ### Requirement: `IConnectionTracker` 承担跨 SignalR 连接的用户在线状态追踪
 
-Application 层 SHALL 在 `Gomoku.Application/Abstractions/IConnectionTracker.cs` 定义接口
-`IConnectionTracker`,从 `Gomoku.Api.Hubs` 迁移(Clean Architecture:抽象靠内,实现靠外)。
+Application 层 SHALL 在 `Gewu.Application/Abstractions/IConnectionTracker.cs` 定义接口
+`IConnectionTracker`,从 `Gewu.Api.Hubs` 迁移(Clean Architecture:抽象靠内,实现靠外)。
 接口成员:
 
 - `ValueTask TrackAsync(string connectionId, UserId userId)` —— SignalR 连接建立时绑定。
@@ -30,7 +30,7 @@ Application 层 SHALL 在 `Gomoku.Application/Abstractions/IConnectionTracker.cs
 - **(本次新增)** `int GetOnlineUserCount()` —— 当前至少有一条活连接的不同 `UserId` 数。
 - **(本次新增)** `bool IsUserOnline(UserId userId)` —— 指定用户是否至少有一条活连接。
 
-实现 `ConnectionTracker` 留在 `Gomoku.Api.Hubs/ConnectionTracker.cs`(Infrastructure 侧),
+实现 `ConnectionTracker` 留在 `Gewu.Api.Hubs/ConnectionTracker.cs`(Infrastructure 侧),
 维护 `ConcurrentDictionary<UserId, int>` 引用计数:`TrackAsync` 递增,`UntrackAsync` 递减,
 计数为 0 时移除 key(原子 TryRemove / TryUpdate 避免竞态)。同用户多标签 / 多设备多连接
 算一个"在线",最后一条连接断开才变"离线"。
@@ -38,8 +38,8 @@ Application 层 SHALL 在 `Gomoku.Application/Abstractions/IConnectionTracker.cs
 现有 `GomokuHub` 调用点(`OnConnectedAsync` / `OnDisconnectedAsync`)无需改动,只改 `using`。
 
 #### Scenario: 接口位置
-- **WHEN** 审阅 `Gomoku.Application/Abstractions/IConnectionTracker.cs`
-- **THEN** 文件存在,含上述 6 个成员;`Gomoku.Api.Hubs/IConnectionTracker.cs` MUST NOT 存在
+- **WHEN** 审阅 `Gewu.Application/Abstractions/IConnectionTracker.cs`
+- **THEN** 文件存在,含上述 6 个成员;`Gewu.Api.Hubs/IConnectionTracker.cs` MUST NOT 存在
 
 #### Scenario: 多连接同用户只算一个 online
 - **WHEN** Alice 在浏览器标签 1 + 标签 2 + 手机 App 各建一条 SignalR 连接(3 个 connectionId,同一 Alice.UserId)

@@ -1,6 +1,6 @@
-using Gomoku.Domain.Ai;
+using Gewu.Domain.Ai;
 
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 机器人账号的固定主键集合。这两个 <see cref="Guid"/> 由 <c>AddBotSupport</c> migration 通过

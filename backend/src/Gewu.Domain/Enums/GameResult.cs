@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Enums;
+namespace Gewu.Domain.Enums;
 
 /// <summary>
 /// 一盘棋的终局状态。

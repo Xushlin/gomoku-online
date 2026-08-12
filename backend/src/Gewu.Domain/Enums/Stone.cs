@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Enums;
+namespace Gewu.Domain.Enums;
 
 /// <summary>
 /// 棋盘上一个格子的状态:空、黑子、白子。

@@ -16,20 +16,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Gomoku.Domain\Gomoku.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Gewu.Domain\Gewu.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="FluentAssertions" />
-    <Using Include="Gomoku.Domain" />
-    <Using Include="Gomoku.Domain.Enums" />
-    <Using Include="Gomoku.Domain.Entities" />
-    <Using Include="Gomoku.Domain.ValueObjects" />
-    <Using Include="Gomoku.Domain.Exceptions" />
-    <Using Include="Gomoku.Domain.Users" />
-    <Using Include="Gomoku.Domain.Rooms" />
-    <Using Include="Gomoku.Domain.Ai" />
+    <Using Include="Gewu.Domain" />
+    <Using Include="Gewu.Domain.Enums" />
+    <Using Include="Gewu.Domain.Entities" />
+    <Using Include="Gewu.Domain.ValueObjects" />
+    <Using Include="Gewu.Domain.Exceptions" />
+    <Using Include="Gewu.Domain.Users" />
+    <Using Include="Gewu.Domain.Rooms" />
+    <Using Include="Gewu.Domain.Ai" />
   </ItemGroup>
 
 </Project>

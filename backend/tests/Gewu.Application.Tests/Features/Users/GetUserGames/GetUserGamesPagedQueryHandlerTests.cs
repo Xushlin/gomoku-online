@@ -1,10 +1,10 @@
-using Gomoku.Application.Features.Users.GetUserGames;
-using Gomoku.Application.Tests.Features.Rooms;
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.ValueObjects;
-using Move = Gomoku.Domain.ValueObjects.Move;
+using Gewu.Application.Features.Users.GetUserGames;
+using Gewu.Application.Tests.Features.Rooms;
+using Gewu.Domain.Enums;
+using Gewu.Domain.ValueObjects;
+using Move = Gewu.Domain.ValueObjects.Move;
 
-namespace Gomoku.Application.Tests.Features.Users.GetUserGames;
+namespace Gewu.Application.Tests.Features.Users.GetUserGames;
 
 public class GetUserGamesPagedQueryHandlerTests
 {

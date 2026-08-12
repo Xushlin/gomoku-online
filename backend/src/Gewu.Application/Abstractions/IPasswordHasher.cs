@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 密码哈希与校验契约。Infrastructure 实现借用

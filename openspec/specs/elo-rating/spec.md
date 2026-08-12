@@ -8,7 +8,7 @@ TBD - created by archiving change add-elo-system. Update Purpose after archive.
 系统 SHALL 定义 `enum GameOutcome { Loss = 0, Win = 1, Draw = 2 }`,用于 `User.RecordGameResult` 的入参与 `EloRating.Calculate` 的结果计算。底层整数值 MUST 固定,用于未来可能的序列化稳定性。
 
 #### Scenario: 枚举值存在
-- **WHEN** 审阅 `Gomoku.Domain/Users/GameOutcome.cs`
+- **WHEN** 审阅 `Gewu.Domain/Users/GameOutcome.cs`
 - **THEN** 存在三个值 `Loss=0`、`Win=1`、`Draw=2`
 
 ---
@@ -48,7 +48,7 @@ TBD - created by archiving change add-elo-system. Update Purpose after archive.
 
 ### Requirement: `EloRating.Calculate` 是纯函数,实现标准 HS ELO 公式
 
-系统 SHALL 在 `Gomoku.Domain/EloRating/EloRating.cs` 定义静态类 `EloRating`,方法签名:
+系统 SHALL 在 `Gewu.Domain/EloRating/EloRating.cs` 定义静态类 `EloRating`,方法签名:
 
 ```
 public static (int NewRatingA, int NewRatingB) Calculate(

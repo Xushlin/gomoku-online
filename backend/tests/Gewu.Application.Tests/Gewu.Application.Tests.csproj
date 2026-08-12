@@ -17,19 +17,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Gomoku.Application\Gomoku.Application.csproj" />
+    <ProjectReference Include="..\..\src\Gewu.Application\Gewu.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="FluentAssertions" />
     <Using Include="Moq" />
-    <Using Include="Gomoku.Domain.Users" />
-    <Using Include="Gomoku.Domain.Rooms" />
-    <Using Include="Gomoku.Domain.Ai" />
-    <Using Include="Gomoku.Application.Abstractions" />
-    <Using Include="Gomoku.Application.Common.DTOs" />
-    <Using Include="Gomoku.Application.Common.Exceptions" />
+    <Using Include="Gewu.Domain.Users" />
+    <Using Include="Gewu.Domain.Rooms" />
+    <Using Include="Gewu.Domain.Ai" />
+    <Using Include="Gewu.Application.Abstractions" />
+    <Using Include="Gewu.Application.Common.DTOs" />
+    <Using Include="Gewu.Application.Common.Exceptions" />
   </ItemGroup>
 
 </Project>

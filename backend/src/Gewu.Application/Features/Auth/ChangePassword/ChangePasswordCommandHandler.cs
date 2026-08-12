@@ -1,8 +1,8 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.Exceptions;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.Exceptions;
 using MediatR;
 
-namespace Gomoku.Application.Features.Auth.ChangePassword;
+namespace Gewu.Application.Features.Auth.ChangePassword;
 
 /// <summary>
 /// 改密 handler。流程:Load → Verify 当前密码(错 → 401) → Hash 新密码 → User.ChangePassword

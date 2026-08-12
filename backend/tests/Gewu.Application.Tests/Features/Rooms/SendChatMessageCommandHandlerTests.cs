@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Rooms.SendChatMessage;
+using Gewu.Application.Features.Rooms.SendChatMessage;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class SendChatMessageCommandHandlerTests
 {
@@ -73,6 +73,6 @@ public class SendChatMessageCommandHandlerTests
             new SendChatMessageCommand(host.Id, room.Id, "hmm", ChatChannel.Spectator),
             default);
 
-        await act.Should().ThrowAsync<Gomoku.Domain.Exceptions.PlayerCannotPostSpectatorChannelException>();
+        await act.Should().ThrowAsync<Gewu.Domain.Exceptions.PlayerCannotPostSpectatorChannelException>();
     }
 }

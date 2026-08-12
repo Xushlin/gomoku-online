@@ -1,8 +1,8 @@
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// 房间相关事件的广播契约。Handler 在 <c>SaveChangesAsync</c> **之后** 调用本接口,

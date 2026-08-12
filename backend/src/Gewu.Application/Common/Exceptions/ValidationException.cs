@@ -1,6 +1,6 @@
 using FluentValidation.Results;
 
-namespace Gomoku.Application.Common.Exceptions;
+namespace Gewu.Application.Common.Exceptions;
 
 /// <summary>
 /// 应用级输入校验失败异常。由 <c>ValidationBehavior</c> 在 handler 执行前根据

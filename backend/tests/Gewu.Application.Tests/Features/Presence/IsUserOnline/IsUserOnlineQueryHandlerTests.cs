@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Presence.IsUserOnline;
+using Gewu.Application.Features.Presence.IsUserOnline;
 
-namespace Gomoku.Application.Tests.Features.Presence.IsUserOnline;
+namespace Gewu.Application.Tests.Features.Presence.IsUserOnline;
 
 public class IsUserOnlineQueryHandlerTests
 {

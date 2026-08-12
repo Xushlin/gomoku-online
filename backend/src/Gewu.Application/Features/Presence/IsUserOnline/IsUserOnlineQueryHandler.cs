@@ -1,8 +1,8 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
 using MediatR;
 
-namespace Gomoku.Application.Features.Presence.IsUserOnline;
+namespace Gewu.Application.Features.Presence.IsUserOnline;
 
 /// <summary>调 <see cref="IConnectionTracker.IsUserOnline"/> 组装 <see cref="PresenceDto"/>。</summary>
 public sealed class IsUserOnlineQueryHandler : IRequestHandler<IsUserOnlineQuery, PresenceDto>

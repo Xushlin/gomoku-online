@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Gomoku.Application.Abstractions;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Api.Hubs;
+namespace Gewu.Api.Hubs;
 
 /// <summary>
 /// 进程内 <see cref="IConnectionTracker"/> 实现。

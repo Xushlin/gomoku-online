@@ -1,7 +1,7 @@
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.ValueObjects;
+using Gewu.Domain.Enums;
+using Gewu.Domain.ValueObjects;
 
-namespace Gomoku.Domain.Rooms;
+namespace Gewu.Domain.Rooms;
 
 /// <summary>
 /// 对局中一步棋的持久化子实体。由 <see cref="Game"/> 在接受 <see cref="Room.PlayMove"/>

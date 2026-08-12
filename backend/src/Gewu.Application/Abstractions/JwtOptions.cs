@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>
 /// JWT 配置,在 Api 层通过 <c>appsettings.json</c> 的 <c>"Jwt"</c> 节绑定到 DI。

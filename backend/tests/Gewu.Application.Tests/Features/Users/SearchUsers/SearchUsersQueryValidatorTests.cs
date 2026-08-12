@@ -1,6 +1,6 @@
-using Gomoku.Application.Features.Users.SearchUsers;
+using Gewu.Application.Features.Users.SearchUsers;
 
-namespace Gomoku.Application.Tests.Features.Users.SearchUsers;
+namespace Gewu.Application.Tests.Features.Users.SearchUsers;
 
 public class SearchUsersQueryValidatorTests
 {

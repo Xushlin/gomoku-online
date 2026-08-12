@@ -1,12 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Threading.RateLimiting;
-using Gomoku.Api;
-using Gomoku.Api.Hubs;
-using Gomoku.Api.Middleware;
-using Gomoku.Application;
-using Gomoku.Application.Abstractions;
-using Gomoku.Infrastructure;
-using Gomoku.Infrastructure.Persistence;
+using Gewu.Api;
+using Gewu.Api.Hubs;
+using Gewu.Api.Middleware;
+using Gewu.Application;
+using Gewu.Application.Abstractions;
+using Gewu.Infrastructure;
+using Gewu.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
@@ -26,7 +26,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("Starting Gomoku.Api host");
+    Log.Information("Starting Gewu.Api host");
     await RunHostAsync(args);
 }
 catch (Exception ex)
@@ -53,7 +53,7 @@ builder.Host.UseSerilog((ctx, services, lc) => lc
     .Enrich.FromLogContext()
     .Enrich.WithMachineName()
     .Enrich.WithEnvironmentName()
-    .Enrich.WithProperty("ApplicationName", "Gomoku.Api"));
+    .Enrich.WithProperty("ApplicationName", "Gewu.Api"));
 
 // ---------- 服务注册 ----------
 
@@ -76,7 +76,7 @@ builder.Services.AddCors(options =>
 // Health checks:`/health` 是 liveness(纯 200,不检 DB);
 // `/health/ready` 是 readiness,带 DB ping(tags:"ready" 过滤)。
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<GomokuDbContext>("database", tags: new[] { "ready" });
+    .AddDbContextCheck<AppDbContext>("database", tags: new[] { "ready" });
 
 // Rate limiting:全局 100/min/IP 兜底;auth-strict 命名策略 5/min/IP 贴 login/register/refresh。
 // Health 端点 + SignalR Hub 豁免(下方 MapHealthChecks/MapHub 附加 DisableRateLimiting)。
@@ -247,7 +247,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<GomokuDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
 

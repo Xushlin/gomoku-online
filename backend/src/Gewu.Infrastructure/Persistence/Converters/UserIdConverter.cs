@@ -1,7 +1,7 @@
-using Gomoku.Domain.Users;
+using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Gomoku.Infrastructure.Persistence.Converters;
+namespace Gewu.Infrastructure.Persistence.Converters;
 
 /// <summary><see cref="UserId"/> ↔ <see cref="Guid"/> 的 EF 值转换器。</summary>
 public sealed class UserIdConverter : ValueConverter<UserId, Guid>

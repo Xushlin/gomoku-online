@@ -4,7 +4,7 @@
 
 五子棋核心领域能力:棋盘表达、落子合法性、五连判胜、对局结果。所有上层(Application / Api / 前端)对"一步棋是否合法、当前是否已分胜负"的判断,最终都通过这个能力来回答。
 
-实现位于 `backend/src/Gomoku.Domain/`,遵守 Clean Architecture 最内层铁律:零外部 NuGet 依赖、全同步(无 `async`/`Task`/`.Result`/`.Wait()`)、不与持久化/网络/UI 发生关系。
+实现位于 `backend/src/Gewu.Domain/`,遵守 Clean Architecture 最内层铁律:零外部 NuGet 依赖、全同步(无 `async`/`Task`/`.Result`/`.Wait()`)、不与持久化/网络/UI 发生关系。
 
 ## Requirements
 
@@ -213,10 +213,10 @@
 
 ### Requirement: Domain 项目零外部 NuGet 依赖
 
-`Gomoku.Domain.csproj` MUST NOT 引用任何第三方 NuGet 包,也 MUST NOT 引用其他项目。`Gomoku.Domain` 只能依赖 .NET 基类库。
+`Gewu.Domain.csproj` MUST NOT 引用任何第三方 NuGet 包,也 MUST NOT 引用其他项目。`Gewu.Domain` 只能依赖 .NET 基类库。
 
 #### Scenario: 依赖检查
-- **WHEN** 审阅 `Gomoku.Domain.csproj`
+- **WHEN** 审阅 `Gewu.Domain.csproj`
 - **THEN** `<PackageReference>` 与 `<ProjectReference>` 节点数量 MUST 为零
 
 ---

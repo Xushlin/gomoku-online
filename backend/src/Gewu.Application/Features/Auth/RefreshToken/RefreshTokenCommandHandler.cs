@@ -1,11 +1,11 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Application.Common.Exceptions;
-using Gomoku.Application.Common.Mapping;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Exceptions;
+using Gewu.Application.Common.Mapping;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Gomoku.Application.Features.Auth.RefreshToken;
+namespace Gewu.Application.Features.Auth.RefreshToken;
 
 /// <summary>
 /// Refresh Token 轮换流程:hash 入参 → 查用户 → 定位对应子实体并校验 <c>IsActive(now)</c> →

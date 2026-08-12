@@ -1,4 +1,4 @@
-namespace Gomoku.Application.Common.Exceptions;
+namespace Gewu.Application.Common.Exceptions;
 
 /// <summary>
 /// 登录时邮箱或密码错误。消息**故意模糊**,不指出是哪个字段错,避免通过此接口枚举已注册邮箱。

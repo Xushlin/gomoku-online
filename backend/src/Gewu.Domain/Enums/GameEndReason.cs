@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Enums;
+namespace Gewu.Domain.Enums;
 
 /// <summary>
 /// 对局结束原因。底层整数值 MUST 保持稳定,以便序列化 / 数据库 / 配置文件的兼容性。

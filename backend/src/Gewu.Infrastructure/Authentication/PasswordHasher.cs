@@ -1,9 +1,9 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Domain.Users;
-using IdentityPasswordHasher = Microsoft.AspNetCore.Identity.PasswordHasher<Gomoku.Domain.Users.User>;
+using Gewu.Application.Abstractions;
+using Gewu.Domain.Users;
+using IdentityPasswordHasher = Microsoft.AspNetCore.Identity.PasswordHasher<Gewu.Domain.Users.User>;
 using PasswordVerificationResult = Microsoft.AspNetCore.Identity.PasswordVerificationResult;
 
-namespace Gomoku.Infrastructure.Authentication;
+namespace Gewu.Infrastructure.Authentication;
 
 /// <summary>
 /// 基于 <c>Microsoft.AspNetCore.Identity.PasswordHasher&lt;User&gt;</c>(V3 格式:PBKDF2+HMACSHA512,

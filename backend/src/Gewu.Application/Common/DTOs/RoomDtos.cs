@@ -1,7 +1,7 @@
-using Gomoku.Domain.Enums;
-using Gomoku.Domain.Rooms;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Rooms;
 
-namespace Gomoku.Application.Common.DTOs;
+namespace Gewu.Application.Common.DTOs;
 
 /// <summary>用户在 Room 相关 DTO 里的精简表示(避免暴露 email / 战绩等无关字段)。</summary>
 public sealed record UserSummaryDto(Guid Id, string Username);

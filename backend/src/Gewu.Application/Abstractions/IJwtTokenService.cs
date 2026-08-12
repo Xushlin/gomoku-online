@@ -1,6 +1,6 @@
-using Gomoku.Domain.Users;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Abstractions;
+namespace Gewu.Application.Abstractions;
 
 /// <summary>签发的 Access Token 与其过期时间戳。</summary>
 public sealed record AccessToken(string Token, DateTime ExpiresAt);

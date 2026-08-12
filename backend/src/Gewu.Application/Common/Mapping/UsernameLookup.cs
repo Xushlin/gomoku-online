@@ -1,7 +1,7 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Domain.Users;
 
-namespace Gomoku.Application.Common.Mapping;
+namespace Gewu.Application.Common.Mapping;
 
 /// <summary>
 /// 按需把一组 <see cref="UserId"/> 解析为"Guid → Username"字典,供 <see cref="RoomMapping"/> 使用。

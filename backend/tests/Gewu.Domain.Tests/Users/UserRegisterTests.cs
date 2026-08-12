@@ -1,4 +1,4 @@
-namespace Gomoku.Domain.Tests.Users;
+namespace Gewu.Domain.Tests.Users;
 
 public class UserRegisterTests
 {

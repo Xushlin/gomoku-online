@@ -1,15 +1,15 @@
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
-using Move = Gomoku.Domain.Rooms.Move;
+using Move = Gewu.Domain.Rooms.Move;
 
-namespace Gomoku.Infrastructure.Persistence;
+namespace Gewu.Infrastructure.Persistence;
 
 /// <summary>
 /// 应用主 <see cref="DbContext"/>。Code-first 建模,配置通过
 /// <see cref="IEntityTypeConfiguration{TEntity}"/> 分拆到同目录 <c>Configurations/</c> 文件夹。
 /// </summary>
-public sealed class GomokuDbContext : DbContext
+public sealed class AppDbContext : DbContext
 {
     /// <summary>用户聚合根。</summary>
     public DbSet<User> Users => Set<User>();
@@ -33,14 +33,14 @@ public sealed class GomokuDbContext : DbContext
     public DbSet<RoomSpectator> RoomSpectators => Set<RoomSpectator>();
 
     /// <inheritdoc />
-    public GomokuDbContext(DbContextOptions<GomokuDbContext> options) : base(options)
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(GomokuDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
 }

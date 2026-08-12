@@ -1,7 +1,7 @@
-using Gomoku.Application.Features.Rooms.Dissolve;
-using Gomoku.Domain.Exceptions;
+using Gewu.Application.Features.Rooms.Dissolve;
+using Gewu.Domain.Exceptions;
 
-namespace Gomoku.Application.Tests.Features.Rooms;
+namespace Gewu.Application.Tests.Features.Rooms;
 
 public class DissolveRoomCommandHandlerTests
 {
@@ -34,7 +34,7 @@ public class DissolveRoomCommandHandlerTests
 
         var act = () => Build().Handle(new DissolveRoomCommand(host.Id, roomId), default);
 
-        await act.Should().ThrowAsync<Gomoku.Application.Common.Exceptions.RoomNotFoundException>();
+        await act.Should().ThrowAsync<Gewu.Application.Common.Exceptions.RoomNotFoundException>();
         _rooms.Verify(r => r.DeleteAsync(It.IsAny<Room>(), It.IsAny<CancellationToken>()), Times.Never);
         _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _notifier.Verify(n => n.RoomDissolvedAsync(It.IsAny<RoomId>(), It.IsAny<CancellationToken>()), Times.Never);

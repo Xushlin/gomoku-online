@@ -1,10 +1,10 @@
-using Gomoku.Application.Abstractions;
-using Gomoku.Application.Common.DTOs;
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Application.Abstractions;
+using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Gomoku.Api.Hubs;
+namespace Gewu.Api.Hubs;
 
 /// <summary>
 /// <see cref="IRoomNotifier"/> 的 SignalR 实现。按 design D7 / D15 的 group 命名规则推送,

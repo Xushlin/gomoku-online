@@ -1,8 +1,8 @@
-using Gomoku.Domain.Rooms;
-using Gomoku.Domain.Users;
+using Gewu.Domain.Rooms;
+using Gewu.Domain.Users;
 using MediatR;
 
-namespace Gomoku.Application.Features.Bots.ExecuteBotMove;
+namespace Gewu.Application.Features.Bots.ExecuteBotMove;
 
 /// <summary>
 /// AI 走子内部命令。**不经 REST / SignalR**,只由 <c>AiMoveWorker</c> 后台服务发出。
