@@ -19,6 +19,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The curated idiom artefact travels with the build so a clean checkout plus
+      `dotnet run` yields a populated dictionary with no network access. It is
+      produced by tools/IdiomImporter and committed; IdiomSeeder reads it from
+      `data/idioms.curated.json` relative to AppContext.BaseDirectory.
+    -->
+    <None Include="..\..\data\idioms.curated.json"
+          Link="data\idioms.curated.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\data\idioms.curated.json')" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">

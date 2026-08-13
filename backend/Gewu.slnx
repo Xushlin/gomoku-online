@@ -8,5 +8,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Gewu.Application.Tests/Gewu.Application.Tests.csproj" />
     <Project Path="tests/Gewu.Domain.Tests/Gewu.Domain.Tests.csproj" />
+    <Project Path="tests/Gewu.Infrastructure.Tests/Gewu.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

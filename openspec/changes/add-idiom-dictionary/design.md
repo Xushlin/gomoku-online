@@ -46,7 +46,26 @@ This mirrors what the project already does for bot accounts — except bot accou
 
 ### D3: Tier, plus a `TierOverride` the importer never writes
 
-`Tier` is computed from the four available signals: exactly four characters, non-empty `example`, non-empty `derivation`, and whether every character of the idiom appears in the common-character set derived from `word.json`. None of these is a frequency measure, and the design does not pretend otherwise — they are proxies, and the tier is a *hypothesis about difficulty*, not a fact.
+**Corrected against the real data during implementation.** Two of the four signals this section originally proposed turned out to be worthless, and both failures were invisible until the file was in hand:
+
+1. **"non-empty `example` / `derivation`" is nearly always true.** Upstream encodes absence as the string `"无"`, not as an empty value — 19,208 of 30,895 idioms have `example: "无"` and 6,850 have `derivation: "无"`. Testing for emptiness would have passed essentially every row and produced a signal with no information in it. The check must exclude `"无"` explicitly.
+2. **"every character is in `word.json`" is nearly always true.** `word.json` is a 16,142-character dictionary — effectively every character in the language, rare ones included. Intersecting idiom characters with it excludes almost nothing.
+
+So the third signal is now **`MinCharFrequency`**: the document frequency, across the 30,895-idiom corpus, of the *rarest* character in the idiom. Character frequency derived from the corpus itself is self-contained, needs no external list, and does discriminate — the corpus has 4,886 distinct characters with a median document frequency of 7 and a maximum of 2,369.
+
+Thresholds, chosen by sampling and eyeballing familiarity at each level rather than by picking round numbers:
+
+| Tier | Rule | Count |
+| --- | --- | --- |
+| 1 | 4 chars ∧ example ∧ derivation ∧ `MinCharFrequency >= 80` | 1,171 |
+| 2 | 4 chars ∧ (example ∨ derivation) ∧ `MinCharFrequency >= 20` | 11,409 |
+| 3 | everything else | 18,315 |
+
+`MinCharFrequency` is stored on the row, so "why is this one tier 3?" is answerable from a query instead of requiring a re-import.
+
+None of this is a frequency measure of the *idiom*, only of its characters, and the design does not pretend otherwise. At `>= 80` roughly a fifth of tier 1 still reads as obscure to a native speaker. That is the accepted residual: the convergence mechanism is `TierOverride` plus playtesting, not a cleverer heuristic.
+
+The tiering function lives in `Domain` (pure, table-tested) rather than in the importer, and takes `MinCharFrequency` as a parameter — so the importer computes the corpus statistic and the *same* tested function assigns the tier.
 
 `TierOverride` is nullable and the importer is forbidden from writing it. Every consumer reads `COALESCE(TierOverride, Tier)`. Hand-curation therefore survives re-imports permanently, which is the only way manual review effort compounds instead of evaporating.
 

@@ -1,3 +1,4 @@
+using Gewu.Domain.Idioms;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,12 @@ public sealed class AppDbContext : DbContext
 
     /// <summary>房间围观者联结记录。</summary>
     public DbSet<RoomSpectator> RoomSpectators => Set<RoomSpectator>();
+
+    /// <summary>成语词典(参考数据,游戏侧只读)。</summary>
+    public DbSet<Idiom> Idioms => Set<Idiom>();
+
+    /// <summary>成语的字级反查索引。</summary>
+    public DbSet<IdiomChar> IdiomChars => Set<IdiomChar>();
 
     /// <inheritdoc />
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)

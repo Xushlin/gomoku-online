@@ -21,7 +21,7 @@
 
 Infrastructure 层 SHALL 新增两张表:
 
-- `Idioms`:`Id`、`Word`(唯一)、`Pinyin`、`Explanation`、`Derivation`、`Example`、`CharCount`、`Tier`、`TierOverride`(可空)。
+- `Idioms`:`Id`、`Word`(唯一)、`Pinyin`、`Explanation`、`Derivation`、`Example`、`CharCount`、`MinCharFrequency`、`Tier`、`TierOverride`(可空)。`MinCharFrequency` 落库是为了让"这条为什么是 3 层"可以直接从数据回答,而不必重跑导入器。
 - `IdiomChars`:`IdiomId`(外键,级联删除)、`Position`(0 起)、`Char`。
 
 索引:`IdiomChars` MUST 同时建立 `(Char, Position)` 与 `(Position, Char)` 两个索引 —— 纵横生成按"某字出现在第 i 位"检索,接龙按"首位为某字"检索,两种访问模式偏好相反的列序。
@@ -42,9 +42,21 @@ Infrastructure 层 SHALL 新增两张表:
 
 ### Requirement: 难度分层由可得信号计算,`TierOverride` 永不被导入器覆盖
 
-`Tier` SHALL 取值 1(适合出题)/ 2(可用)/ 3(生僻),由导入器依据以下**四个**上游可得信号计算:字数恰为 4、`example` 非空、`derivation` 非空、成语每个字都属于由上游 `word.json` 推导出的常用字集合。
+`Tier` SHALL 取值 1(适合出题)/ 2(可用)/ 3(生僻),由**纯函数**依据以下三个信号计算:
 
-上游数据**不含词频**,因此 `Tier` 是难度假设而非事实 —— 规范不主张其准确性,只主张其可调。
+1. **字数恰为 4**。
+2. **`example` / `derivation` 是否真实存在。** 上游用字符串 `"无"` 表示缺失,而非空字符串 —— 30,895 条中 `example` 为 `"无"` 的有 19,208 条、`derivation` 有 6,850 条。因此判定 MUST 同时排除空串与 `"无"`;仅判空会让该信号恒真。
+3. **`MinCharFrequency`** —— 成语中最生僻那个字的语料文档频率(该字出现在多少条成语里),由导入器在全语料(30,895 条、4,886 个不同汉字)上统计后传入。
+
+阈值:
+
+- **Tier 1** = 4 字 **且** 有 example **且** 有 derivation **且** `MinCharFrequency >= 80`
+- **Tier 2** = 4 字 **且**(有 example **或** 有 derivation)**且** `MinCharFrequency >= 20`(且不满足 Tier 1)
+- **Tier 3** = 其余全部
+
+上游**不含任何词频数据**,`word.json` 的 16,142 字近乎涵盖全部汉字、无法用作常用字筛选,所以以上第 3 条用语料自身的字频作代理。`Tier` 因此是**难度假设而非事实** —— 规范不主张其准确性,只主张:它可调、可解释(`MinCharFrequency` 随行落库)、且可被人工覆盖。
+
+实测该阈值下 Tier 1 为 1,171 条,人工抽样仍有约两成偏生僻。这是已知且被接受的 —— 真正的收敛手段是 `TierOverride` 加实际试玩,不是更复杂的启发式。
 
 `TierOverride` MUST 由人工维护,导入器 MUST NOT 写入该列(包括重新导入时)。全部消费方 MUST 以 `COALESCE(TierOverride, Tier)` 作为生效层级,使人工校订跨多次重新导入永久留存。
 
@@ -59,8 +71,12 @@ Infrastructure 层 SHALL 新增两张表:
 - **THEN** 以 `maxTier = 1` 查询时该条 MUST 被返回
 
 #### Scenario: 分层为纯函数
-- **WHEN** 以相同的上游条目与相同的常用字集合两次计算 `Tier`
+- **WHEN** 以相同的上游条目与相同的 `MinCharFrequency` 两次计算 `Tier`
 - **THEN** 两次结果相同(不读时钟、不用随机)
+
+#### Scenario: `"无"` 被当作缺失而非内容
+- **WHEN** 某条 4 字成语的 `example` 为 `"无"`、`derivation` 有正文、`MinCharFrequency` 为 200
+- **THEN** 该条 MUST NOT 被判为 Tier 1(缺 example),而是 Tier 2
 
 ### Requirement: 种子载入幂等,以 `Word` 为键
 

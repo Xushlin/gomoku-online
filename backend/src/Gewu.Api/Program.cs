@@ -249,6 +249,10 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // 成语词典是参考数据,不放在 migration 里(3 万行 InsertData 没人 review 得动),
+    // 由种子载入器从提交进仓库的产物灌入。幂等:表非空即无操作。
+    await scope.ServiceProvider.GetRequiredService<IdiomSeeder>().SeedAsync();
 }
 
 await app.RunAsync();

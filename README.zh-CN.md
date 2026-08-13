@@ -161,3 +161,8 @@ Tailwind v4 + token 层(`tailwind.css` 里 `@theme` 块 + `tokens.css` 里
 ## License
 
 [MIT](LICENSE) — 随便用,保留版权声明就行。
+
+### 第三方数据
+
+成语词典取自 [chinese-xinhua](https://github.com/pwxcoo/chinese-xinhua)(MIT)。
+完整署名与加工方式见 [NOTICE](NOTICE)。

@@ -172,3 +172,8 @@ history and `openspec/specs/` for current behaviour:
 ## License
 
 [MIT](LICENSE) — do whatever, just keep the copyright notice.
+
+### Third-party data
+
+The idiom dictionary is derived from [chinese-xinhua](https://github.com/pwxcoo/chinese-xinhua)
+(MIT). Full attribution and the derivation details are in [NOTICE](NOTICE).
