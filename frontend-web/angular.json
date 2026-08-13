@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "gomoku-web": {
+    "gewu-web": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:class": {
@@ -90,10 +90,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "gomoku-web:build:production"
+              "buildTarget": "gewu-web:build:production"
             },
             "development": {
-              "buildTarget": "gomoku-web:build:development"
+              "buildTarget": "gewu-web:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -101,7 +101,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "buildTarget": "gomoku-web:build:development",
+            "buildTarget": "gewu-web:build:development",
             "tsConfig": "tsconfig.spec.json",
             "runner": "vitest"
           }

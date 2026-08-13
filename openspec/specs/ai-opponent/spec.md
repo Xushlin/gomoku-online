@@ -13,24 +13,24 @@
 端点 `POST /api/rooms/ai`、内部命令 `ExecuteBotMoveCommand` 与 worker 的轮询 / 思考延迟语义,以及
 bot 账号的固定主键集合 `BotAccountIds`。
 
-实现位于 `backend/src/Gomoku.Domain/Ai/`(纯领域算法)、`backend/src/Gomoku.Application/Features/Rooms/CreateAiRoom/`
-与 `Features/Bots/ExecuteBotMove/`(应用层 handlers)、`backend/src/Gomoku.Infrastructure/BackgroundServices/`
-(`AiMoveWorker`)、`backend/src/Gomoku.Infrastructure/Ai/`(`AiRandomProvider`),以及 `AddBotSupport`
+实现位于 `backend/src/Gewu.Domain/Ai/`(纯领域算法)、`backend/src/Gewu.Application/Features/Rooms/CreateAiRoom/`
+与 `Features/Bots/ExecuteBotMove/`(应用层 handlers)、`backend/src/Gewu.Infrastructure/BackgroundServices/`
+(`AiMoveWorker`)、`backend/src/Gewu.Infrastructure/Ai/`(`AiRandomProvider`),以及 `AddBotSupport`
 migration(`Users.IsBot` 列 + 两行 bot seed)。
 ## Requirements
 ### Requirement: `BotDifficulty` 枚举表达 AI 难度
 
-系统 SHALL 在 `Gomoku.Domain/Ai/BotDifficulty.cs` 定义 `enum BotDifficulty { Easy = 0, Medium = 1, Hard = 2 }`(**本次追加 `Hard`**)。底层整数值固定,以便序列化稳定性与未来加 `Master=3` 等扩展。
+系统 SHALL 在 `Gewu.Domain/Ai/BotDifficulty.cs` 定义 `enum BotDifficulty { Easy = 0, Medium = 1, Hard = 2 }`(**本次追加 `Hard`**)。底层整数值固定,以便序列化稳定性与未来加 `Master=3` 等扩展。
 
 #### Scenario: 枚举值存在
-- **WHEN** 审阅 `Gomoku.Domain/Ai/BotDifficulty.cs`
+- **WHEN** 审阅 `Gewu.Domain/Ai/BotDifficulty.cs`
 - **THEN** 存在三个值 `Easy=0`、`Medium=1`、**`Hard=2`**
 
 ---
 
 ### Requirement: `IGomokuAi` 是纯函数式 AI 决策接口
 
-系统 SHALL 在 `Gomoku.Domain/Ai/IGomokuAi.cs` 定义:
+系统 SHALL 在 `Gewu.Domain/Ai/IGomokuAi.cs` 定义:
 
 ```
 Position SelectMove(Board board, Stone myStone);
@@ -60,7 +60,7 @@ Position SelectMove(Board board, Stone myStone);
 
 ### Requirement: `EasyAi` 在空格集合里均匀随机选点
 
-系统 SHALL 在 `Gomoku.Domain/Ai/EasyAi.cs` 实现 `IGomokuAi`。构造函数接收 `Random random`,所有随机性 MUST 通过该 `Random` 产生;不得创建隐式 `new Random()`。策略:枚举当前 `board` 所有空格,`random.Next(count)` 选一个。
+系统 SHALL 在 `Gewu.Domain/Ai/EasyAi.cs` 实现 `IGomokuAi`。构造函数接收 `Random random`,所有随机性 MUST 通过该 `Random` 产生;不得创建隐式 `new Random()`。策略:枚举当前 `board` 所有空格,`random.Next(count)` 选一个。
 
 #### Scenario: 固定种子可复现
 - **WHEN** 用 `new Random(42)` 构造两次 `EasyAi`,对同一个空棋盘和 `Stone.Black` 各调一次 `SelectMove`
@@ -78,7 +78,7 @@ Position SelectMove(Board board, Stone myStone);
 
 ### Requirement: `MediumAi` 按"自赢 → 堵五 → 启发分"三层优先级选点
 
-系统 SHALL 在 `Gomoku.Domain/Ai/MediumAi.cs` 实现 `IGomokuAi`,按下列顺序选点:
+系统 SHALL 在 `Gewu.Domain/Ai/MediumAi.cs` 实现 `IGomokuAi`,按下列顺序选点:
 
 1. **自赢**:枚举所有空格 `p`,若 `board.Clone()` 后 `PlaceStone(Move(p, myStone))` 的 `GameResult` 对应己方胜(连五),直接返回 `p`。若存在多个,在这些点里用注入的 `Random` 随机选一个。
 2. **堵五**:若 1 无命中,枚举所有空格 `p`,若 `board.Clone()` 后 `PlaceStone(Move(p, opponentStone))` 的 `GameResult` 对应对手胜,直接返回 `p`(对这样的点自己落子即堵住对手的连五)。多个时同样随机选一个。
@@ -112,7 +112,7 @@ Position SelectMove(Board board, Stone myStone);
 
 ### Requirement: `GomokuAiFactory` 按难度返回 `IGomokuAi` 实例
 
-系统 SHALL 在 `Gomoku.Domain/Ai/GomokuAiFactory.cs` 定义:
+系统 SHALL 在 `Gewu.Domain/Ai/GomokuAiFactory.cs` 定义:
 
 ```
 public static IGomokuAi Create(BotDifficulty difficulty, Random random);
@@ -146,7 +146,7 @@ public static IGomokuAi Create(BotDifficulty difficulty, Random random);
 
 ### Requirement: `BotAccountIds` 固定机器人账号主键
 
-Application 层 SHALL 在 `Gomoku.Application/Abstractions/BotAccountIds.cs` 暴露静态只读字段(**本次追加 `Hard`**):
+Application 层 SHALL 在 `Gewu.Application/Abstractions/BotAccountIds.cs` 暴露静态只读字段(**本次追加 `Hard`**):
 
 ```
 public static readonly Guid Easy   = Guid.Parse("00000000-0000-0000-0000-00000000ea51");
@@ -431,7 +431,7 @@ MUST NOT 在任何真实运行时路径创建 bot(禁止"ensure-exists"的惰性
 
 ### Requirement: `HardAi` 实现 Minimax + α-β 的两层前瞻搜索
 
-系统 SHALL 在 `Gomoku.Domain/Ai/HardAi.cs` 实现 `IGomokuAi`,代表"Hard"难度。构造签名:
+系统 SHALL 在 `Gewu.Domain/Ai/HardAi.cs` 实现 `IGomokuAi`,代表"Hard"难度。构造签名:
 
 ```
 public HardAi(Random random, int searchDepth = 2);
@@ -541,7 +541,7 @@ MUST 为纯函数:不修改入参 `board`,不读时钟 / 磁盘 / 网络 / 静�
 
 ### Requirement: `BotDifficulty.Hard = 2` 作为新难度枚举值
 
-`Gomoku.Domain/Ai/BotDifficulty.cs` MUST 追加 `Hard = 2`。现有 `Easy = 0` / `Medium = 1` 的底层整数值 MUST 保持不变,以维持 `add-ai-opponent` 定下的序列化稳定性。
+`Gewu.Domain/Ai/BotDifficulty.cs` MUST 追加 `Hard = 2`。现有 `Easy = 0` / `Medium = 1` 的底层整数值 MUST 保持不变,以维持 `add-ai-opponent` 定下的序列化稳定性。
 
 `GomokuAiFactory.Create(BotDifficulty difficulty, Random random)` MUST 支持新分支:
 
@@ -561,7 +561,7 @@ MUST 为纯函数:不修改入参 `board`,不读时钟 / 磁盘 / 网络 / 静�
 
 ### Requirement: `BotAccountIds.Hard` 固定 Guid + 数据库 seed
 
-Application 层 `Gomoku.Application/Abstractions/BotAccountIds.cs` MUST 追加:
+Application 层 `Gewu.Application/Abstractions/BotAccountIds.cs` MUST 追加:
 
 ```
 public static readonly Guid Hard = Guid.Parse("00000000-0000-0000-0000-0000000000ad");

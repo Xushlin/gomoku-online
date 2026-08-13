@@ -1,6 +1,6 @@
 /**
  * Room DTO shapes — mirror the backend's
- * `Gomoku.Application.Common.DTOs.RoomDtos`.
+ * `Gewu.Application.Common.DTOs.RoomDtos`.
  * JSON serialiser: System.Text.Json with default camelCase naming,
  * enums as strings via JsonStringEnumConverter.
  */

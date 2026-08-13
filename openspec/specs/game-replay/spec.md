@@ -18,10 +18,10 @@
 两个端点 MUST 都要求 `[Authorize]`,但**不**再做"访问者 == 参与者"检查 —— gomoku 对局记录公开
 (类比 GitHub 公开仓库的 commit 历史)。若将来要私密对局,由独立变更 `add-game-privacy` 覆盖。
 
-实现位于 `backend/src/Gomoku.Application/Common/DTOs/`(3 DTOs)、`Common/Exceptions/GameNotFinishedException.cs`、
-`Features/Rooms/GetGameReplay/`、`Features/Users/GetUserGames/`、`backend/src/Gomoku.Infrastructure/Persistence/Repositories/RoomRepository.cs`
-(仓储实现)、`backend/src/Gomoku.Api/Controllers/RoomsController.cs` + `UsersController.cs`(HTTP 端点)、
-`backend/src/Gomoku.Api/Middleware/ExceptionHandlingMiddleware.cs`(409 映射)。
+实现位于 `backend/src/Gewu.Application/Common/DTOs/`(3 DTOs)、`Common/Exceptions/GameNotFinishedException.cs`、
+`Features/Rooms/GetGameReplay/`、`Features/Users/GetUserGames/`、`backend/src/Gewu.Infrastructure/Persistence/Repositories/RoomRepository.cs`
+(仓储实现)、`backend/src/Gewu.Api/Controllers/RoomsController.cs` + `UsersController.cs`(HTTP 端点)、
+`backend/src/Gewu.Api/Middleware/ExceptionHandlingMiddleware.cs`(409 映射)。
 
 ## Requirements
 ### Requirement: `GET /api/rooms/{id}/replay` 返回 Finished 房间的完整对局回放

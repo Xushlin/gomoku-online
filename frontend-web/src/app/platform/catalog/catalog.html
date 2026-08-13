@@ -1,0 +1,75 @@
+<div class="flex flex-col gap-4">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-text text-2xl font-semibold tracking-tight">
+      {{ 'catalog.title' | transloco }}
+    </h1>
+    <p class="text-muted text-sm">{{ 'catalog.subtitle' | transloco }}</p>
+  </header>
+
+  <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    @for (game of games(); track game.key) {
+      <li class="flex">
+        <!--
+          Available games are links; planned games are inert elements with
+          aria-disabled. A focusable control that goes nowhere is worse for
+          keyboard and screen-reader users than one that never claims to be
+          interactive, so the two branches use different elements.
+        -->
+        @if (game.status === 'available') {
+          <a
+            [routerLink]="game.launchRoute"
+            class="bg-surface text-text border-border rounded-card shadow-elevated hover:bg-bg focus-visible:outline-primary flex w-full flex-col gap-3 border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <span class="flex items-center gap-3">
+              <span class="text-primary text-2xl leading-none" aria-hidden="true">{{
+                game.icon
+              }}</span>
+              <span class="text-base font-semibold tracking-tight">{{
+                game.titleKey | transloco
+              }}</span>
+            </span>
+            <span class="text-muted text-sm">{{ game.descriptionKey | transloco }}</span>
+            <span class="mt-auto flex flex-wrap items-center gap-2">
+              <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+                categoryKey(game) | transloco
+              }}</span>
+              @if (showsContentWarning(game)) {
+                <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+                  'catalog.chinese-only' | transloco
+                }}</span>
+              }
+            </span>
+          </a>
+        } @else {
+          <div
+            aria-disabled="true"
+            class="bg-surface text-text border-border rounded-card flex w-full flex-col gap-3 border border-dashed p-4 opacity-70"
+          >
+            <span class="flex items-center gap-3">
+              <span class="text-muted text-2xl leading-none" aria-hidden="true">{{
+                game.icon
+              }}</span>
+              <span class="text-base font-semibold tracking-tight">{{
+                game.titleKey | transloco
+              }}</span>
+            </span>
+            <span class="text-muted text-sm">{{ game.descriptionKey | transloco }}</span>
+            <span class="mt-auto flex flex-wrap items-center gap-2">
+              <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+                categoryKey(game) | transloco
+              }}</span>
+              <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+                'catalog.coming-soon' | transloco
+              }}</span>
+              @if (showsContentWarning(game)) {
+                <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+                  'catalog.chinese-only' | transloco
+                }}</span>
+              }
+            </span>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+</div>

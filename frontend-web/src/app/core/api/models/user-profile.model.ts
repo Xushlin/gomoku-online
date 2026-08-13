@@ -1,5 +1,5 @@
 /**
- * Public user profile DTOs — mirror the backend's `Gomoku.Application.Common.DTOs`
+ * Public user profile DTOs — mirror the backend's `Gewu.Application.Common.DTOs`
  * shapes from `add-public-profile-and-search` and `add-game-replay`. JSON
  * serialiser is System.Text.Json with default camelCase + JsonStringEnumConverter
  * for enums.

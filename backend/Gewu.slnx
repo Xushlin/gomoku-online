@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Gewu.Api/Gewu.Api.csproj" />
+    <Project Path="src/Gewu.Application/Gewu.Application.csproj" />
+    <Project Path="src/Gewu.Domain/Gewu.Domain.csproj" />
+    <Project Path="src/Gewu.Infrastructure/Gewu.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Gewu.Application.Tests/Gewu.Application.Tests.csproj" />
+    <Project Path="tests/Gewu.Domain.Tests/Gewu.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

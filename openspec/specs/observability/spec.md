@@ -15,10 +15,10 @@ MUST NOT 出现在任何日志输出里,由 code review 在 handler 演进时把
 Application / Domain 层严格**不依赖** Serilog 包,只通过 `Microsoft.Extensions.Logging.Abstractions`
 的 `ILogger<T>` 抽象使用;Serilog 实现只在 Api 层(`Program.cs`)接入,保持清洁架构分层。
 
-实现位于 `backend/src/Gomoku.Application/Common/Behaviors/LoggingBehavior.cs`(MediatR 管道行为)、
-`backend/src/Gomoku.Api/Middleware/CorrelationIdMiddleware.cs`、`backend/src/Gomoku.Api/Program.cs`
-(`Host.UseSerilog` + `UseSerilogRequestLogging` + 管道注册)、`backend/src/Gomoku.Api/Hubs/GomokuHub.cs`
-(连接日志 scope)、`backend/src/Gomoku.Api/appsettings.json` 的 `"Serilog"` 段。
+实现位于 `backend/src/Gewu.Application/Common/Behaviors/LoggingBehavior.cs`(MediatR 管道行为)、
+`backend/src/Gewu.Api/Middleware/CorrelationIdMiddleware.cs`、`backend/src/Gewu.Api/Program.cs`
+(`Host.UseSerilog` + `UseSerilogRequestLogging` + 管道注册)、`backend/src/Gewu.Api/Hubs/GomokuHub.cs`
+(连接日志 scope)、`backend/src/Gewu.Api/appsettings.json` 的 `"Serilog"` 段。
 
 ## Requirements
 ### Requirement: Serilog 作为日志后端,与 `ILogger<T>` 兼容
@@ -76,7 +76,7 @@ Api 层 SHALL 新增 `CorrelationIdMiddleware`,负责每个进入 HTTP 请求的
 
 ### Requirement: `LoggingBehavior<,>` 为每个 MediatR 请求自动 log enter/exit/duration
 
-Application 层 SHALL 在 `Gomoku.Application/Features/Common/Behaviors/LoggingBehavior.cs` 实现 `IPipelineBehavior<TRequest, TResponse>`:
+Application 层 SHALL 在 `Gewu.Application/Features/Common/Behaviors/LoggingBehavior.cs` 实现 `IPipelineBehavior<TRequest, TResponse>`:
 
 - Handle 开始时 `LogInformation("Handling {RequestName}", typeof(TRequest).Name)`。
 - next() 成功返回时 `LogInformation("Handled {RequestName} in {DurationMs} ms", name, stopwatch.ElapsedMilliseconds)`。
@@ -154,7 +154,7 @@ Api 的 `appsettings.json` `"Serilog"` 段 MUST 至少配置:
   - 路径 `logs/gomoku-.log`(按 `RollingInterval.Day`)
   - `retainedFileCountLimit: 7`(保留最近 7 天)
   - `formatter: CompactJsonFormatter`(生产 grep / 导入 ELK 可直接解析)
-- **Enrichers**:`FromLogContext`(必须,否则 CorrelationId / UserId 不会出现)、`WithMachineName`、`WithEnvironmentName`、以及 `.Enrich.WithProperty("ApplicationName", "Gomoku.Api")`。
+- **Enrichers**:`FromLogContext`(必须,否则 CorrelationId / UserId 不会出现)、`WithMachineName`、`WithEnvironmentName`、以及 `.Enrich.WithProperty("ApplicationName", "Gewu.Api")`。
 - **Minimum level**:默认 `Information`;override `Microsoft.AspNetCore` / `Microsoft.EntityFrameworkCore` 为 `Warning`。
 
 `appsettings.Development.json` MAY override MinimumLevel 为 `Debug`。
@@ -177,17 +177,17 @@ Api 的 `appsettings.json` `"Serilog"` 段 MUST 至少配置:
 
 ### Requirement: Application 层不新增 Serilog 依赖
 
-`Gomoku.Application.csproj` MUST NOT 添加对 `Serilog` / `Serilog.*` 的任何 PackageReference。LoggingBehavior 及其它需要 log 的代码都通过 `Microsoft.Extensions.Logging.Abstractions` 的 `ILogger<T>` 间接使用,保持"Application 依赖抽象,Infrastructure / Api 提供实现"的分层铁律。
+`Gewu.Application.csproj` MUST NOT 添加对 `Serilog` / `Serilog.*` 的任何 PackageReference。LoggingBehavior 及其它需要 log 的代码都通过 `Microsoft.Extensions.Logging.Abstractions` 的 `ILogger<T>` 间接使用,保持"Application 依赖抽象,Infrastructure / Api 提供实现"的分层铁律。
 
-只有 `Gomoku.Api.csproj` 允许 `Serilog.AspNetCore` / `Serilog.Sinks.File` / `Serilog.Enrichers.Environment` / `Serilog.Formatting.Compact` 这些包。
+只有 `Gewu.Api.csproj` 允许 `Serilog.AspNetCore` / `Serilog.Sinks.File` / `Serilog.Enrichers.Environment` / `Serilog.Formatting.Compact` 这些包。
 
-`Gomoku.Domain.csproj` 维持 0 PackageReference / 0 ProjectReference —— 本变更零影响。
+`Gewu.Domain.csproj` 维持 0 PackageReference / 0 ProjectReference —— 本变更零影响。
 
 #### Scenario: Application 依赖检查
-- **WHEN** 审阅 `Gomoku.Application.csproj`
+- **WHEN** 审阅 `Gewu.Application.csproj`
 - **THEN** `<PackageReference>` 列表 MUST NOT 含 "Serilog" 前缀的包
 
 #### Scenario: Domain 依赖检查
-- **WHEN** 审阅 `Gomoku.Domain.csproj`
+- **WHEN** 审阅 `Gewu.Domain.csproj`
 - **THEN** 仍 0 PackageReference / 0 ProjectReference
 

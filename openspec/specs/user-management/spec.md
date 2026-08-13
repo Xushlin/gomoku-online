@@ -4,7 +4,7 @@
 
 用户身份与账号生命周期能力:`UserId` / `Email` / `Username` 值对象的不变量,`User` 聚合根(含战绩字段 `Rating` / `GamesPlayed` / `Wins` / `Losses` / `Draws` 与启用状态 `IsActive`),`RefreshToken` 子实体,以及按 Id / Email / Username 查、按 token hash 追溯聚合、邮箱与用户名全局唯一这组规则。本能力**不**负责登录流程的凭据校验与 token 签发 —— 那些归 `authentication` 能力。
 
-实现位于 `backend/src/Gomoku.Domain/Users/`(Domain)与 `backend/src/Gomoku.Infrastructure/Persistence/`(持久化适配)。
+实现位于 `backend/src/Gewu.Domain/Users/`(Domain)与 `backend/src/Gewu.Infrastructure/Persistence/`(持久化适配)。
 ## Requirements
 ### Requirement: `UserId` 是 `Guid` 的强类型包装值对象
 
@@ -238,10 +238,10 @@ Api 层 SHALL 暴露 `GET /api/users/me`,仅接受持合法 Access Token 的请�
 
 ### Requirement: 新增领域异常 `InvalidEmailException` / `InvalidUsernameException`
 
-系统 SHALL 在 `Gomoku.Domain.Exceptions` 命名空间下新增 `InvalidEmailException` 与 `InvalidUsernameException`,均继承 `System.Exception`,提供 `(string message)` 与 `(string message, Exception innerException)` 两个构造函数。异常消息 MUST 清晰指出违反的具体规则(例如 "length" / "character set" / "all digits"),以便日志定位与前端展示。
+系统 SHALL 在 `Gewu.Domain.Exceptions` 命名空间下新增 `InvalidEmailException` 与 `InvalidUsernameException`,均继承 `System.Exception`,提供 `(string message)` 与 `(string message, Exception innerException)` 两个构造函数。异常消息 MUST 清晰指出违反的具体规则(例如 "length" / "character set" / "all digits"),以便日志定位与前端展示。
 
 #### Scenario: 类型存在
-- **WHEN** 审阅 `Gomoku.Domain/Exceptions/`
+- **WHEN** 审阅 `Gewu.Domain/Exceptions/`
 - **THEN** MUST 存在 `InvalidEmailException.cs` 与 `InvalidUsernameException.cs`,两类型均继承 `Exception`
 
 #### Scenario: 异常消息可读

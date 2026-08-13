@@ -31,13 +31,13 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore Gomoku.slnx
+        run: dotnet restore Gewu.slnx
 
       - name: Build (no restore)
-        run: dotnet build Gomoku.slnx --configuration Release --no-restore
+        run: dotnet build Gewu.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Gomoku.slnx --configuration Release --no-build --verbosity normal
+        run: dotnet test Gewu.slnx --configuration Release --no-build --verbosity normal
 
   web:
     name: web (Angular 21)

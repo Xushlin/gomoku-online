@@ -6,7 +6,7 @@
 
 HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id}/{join,leave}`、`POST/DELETE /api/rooms/{id}/spectate`。SignalR 表面:`/hubs/gomoku` 的五个客户端方法(`JoinRoom` / `LeaveRoom` / `MakeMove` / `SendChat` / `Urge`)与服务端事件(`RoomState` / `PlayerJoined` / `PlayerLeft` / `SpectatorJoined` / `SpectatorLeft` / `MoveMade` / `GameEnded` / `ChatMessage` / `UrgeReceived`)。
 
-实现位于 `backend/src/Gomoku.Domain/Rooms/`(聚合)、`backend/src/Gomoku.Application/Features/Rooms/`(CQRS handlers)、`backend/src/Gomoku.Infrastructure/Persistence/`(EF 映射与仓储)、`backend/src/Gomoku.Api/Hubs/`(SignalR Hub 与 IRoomNotifier 实现)。
+实现位于 `backend/src/Gewu.Domain/Rooms/`(聚合)、`backend/src/Gewu.Application/Features/Rooms/`(CQRS handlers)、`backend/src/Gewu.Infrastructure/Persistence/`(EF 映射与仓储)、`backend/src/Gewu.Api/Hubs/`(SignalR Hub 与 IRoomNotifier 实现)。
 ## Requirements
 ### Requirement: `RoomId` 是 `Guid` 的强类型包装值对象
 
@@ -500,7 +500,7 @@ MUST NOT 接受 body;MUST NOT 接受 query 参数。
 
 ### Requirement: 新增异常 `NotRoomHostException` 与其 HTTP 映射
 
-系统 SHALL 在 `Gomoku.Domain/Exceptions/RoomExceptions.cs` 新增 `NotRoomHostException`(sealed,继承 `Exception`,提供 `(string message)` 构造器)。
+系统 SHALL 在 `Gewu.Domain/Exceptions/RoomExceptions.cs` 新增 `NotRoomHostException`(sealed,继承 `Exception`,提供 `(string message)` 构造器)。
 
 Api 层全局异常中间件 MUST 映射:
 
@@ -516,10 +516,10 @@ Api 层全局异常中间件 MUST 映射:
 
 ### Requirement: `GameEndReason` 枚举表达对局结束原因
 
-系统 SHALL 在 `Gomoku.Domain/Enums/GameEndReason.cs` 定义 `enum GameEndReason { Connected5 = 0, Resigned = 1, TurnTimeout = 2 }`。底层整数值固定,以便序列化稳定性与未来追加(如 `Disconnected = 3`)。
+系统 SHALL 在 `Gewu.Domain/Enums/GameEndReason.cs` 定义 `enum GameEndReason { Connected5 = 0, Resigned = 1, TurnTimeout = 2 }`。底层整数值固定,以便序列化稳定性与未来追加(如 `Disconnected = 3`)。
 
 #### Scenario: 枚举值存在
-- **WHEN** 审阅 `Gomoku.Domain/Enums/GameEndReason.cs`
+- **WHEN** 审阅 `Gewu.Domain/Enums/GameEndReason.cs`
 - **THEN** 存在三个值 `Connected5=0`、`Resigned=1`、`TurnTimeout=2`
 
 ---
@@ -560,7 +560,7 @@ Api 层全局异常中间件 MUST 映射:
 - 推导对手棋色与 UserId;`Game.FinishWith(opponentResult, opponentUserId, GameEndReason.Resigned, now)`;`Status` 转换为 `Finished`
 - 返回 `GameEndOutcome(opponentResult, opponentUserId)`
 
-新 record `GameEndOutcome(GameResult Result, UserId? WinnerUserId)` MUST 定义在 `Gomoku.Domain.Rooms` 命名空间,与现有 `MoveOutcome` 同文件,是 `Resign` / `TimeOutCurrentTurn` 的通用返回类型。
+新 record `GameEndOutcome(GameResult Result, UserId? WinnerUserId)` MUST 定义在 `Gewu.Domain.Rooms` 命名空间,与现有 `MoveOutcome` 同文件,是 `Resign` / `TimeOutCurrentTurn` 的通用返回类型。
 
 #### Scenario: 黑方认输
 - **WHEN** Black 玩家(含 Host)在 Playing 状态调 `Resign(hostId, now)`
@@ -627,7 +627,7 @@ Api 层全局异常中间件 MUST 映射:
 
 ### Requirement: 新增异常 `TurnNotTimedOutException` 与其 HTTP 映射
 
-系统 SHALL 在 `Gomoku.Domain/Exceptions/RoomExceptions.cs` 新增 `TurnNotTimedOutException`(sealed,继承 `Exception`,`(string message)` 构造)。
+系统 SHALL 在 `Gewu.Domain/Exceptions/RoomExceptions.cs` 新增 `TurnNotTimedOutException`(sealed,继承 `Exception`,`(string message)` 构造)。
 
 Api 层全局异常中间件 MUST 映射:
 

@@ -231,7 +231,7 @@ DTO 文件 SHALL 独立于 service 文件,放在 `src/app/core/api/models/`:
   }
   ```
 
-字段名 MUST 对齐后端实际 wire 形态(camelCase);实施时 MUST 通过读 `backend/src/Gomoku.Api/Common/DTOs/*.cs`(或等价)确认 `RoomSummaryDto` 的真实字段名后再 ship。
+字段名 MUST 对齐后端实际 wire 形态(camelCase);实施时 MUST 通过读 `backend/src/Gewu.Api/Common/DTOs/*.cs`(或等价)确认 `RoomSummaryDto` 的真实字段名后再 ship。
 
 #### Scenario: 类型收敛到后端
 - **WHEN** 实施期对比 `backend/` 下的 DTO 源文件
@@ -316,9 +316,7 @@ Active rooms / My active rooms 卡片的操作按钮 SHALL 执行如下流程:
 
 #### Scenario: 模板零硬编码
 - **WHEN** 在 `src/app/pages/lobby/**/*.html` 与 `src/app/pages/rooms/**/*.html` 中搜索 CJK 字符或 ≥ 3 字母的显示英文字符串
-- **THEN** 0 匹配(brand 名 `Gomoku`、技术 test-id 等非展示字符串除外)
-
----
+- **THEN** 0 匹配(技术 test-id 等非展示字符串除外)
 
 ### Requirement: 色彩 / 组件 / 交互规则继承 scaffold 与 auth
 

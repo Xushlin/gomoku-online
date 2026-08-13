@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    让测试项目能访问 internal helpers(例如 HardAi.GenerateCandidates / Evaluate),
+    避免为单元测试把它们升级为 public。Domain 仍保持 0 NuGet 的铁律,这只是测试工具。
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Gewu.Domain.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,5 +1,6 @@
 {
   "header": {
+    "brand": "Gewu",
     "language": {
       "label": "Language",
       "en": "English",
@@ -311,6 +312,49 @@
     "back-to-lobby": "Back to lobby",
     "errors": {
       "generic": "Couldn't load this profile. Please try again."
+    }
+  },
+  "catalog": {
+    "title": "Games",
+    "subtitle": "Chinese classics on a grid — word puzzles, board games, and a falling-block detour.",
+    "coming-soon": "Coming soon",
+    "chinese-only": "Chinese content",
+    "category-match": "Versus",
+    "category-puzzle": "Puzzle",
+    "category-score": "Score attack"
+  },
+  "games": {
+    "gomoku": {
+      "title": "Gomoku",
+      "description": "Five in a row on 15×15. Play a human or the AI, with chat, spectators, and replays."
+    },
+    "idiom-crossword": {
+      "title": "Idiom Crossword",
+      "description": "Fill a grid with four-character idioms, one shared character at a time."
+    },
+    "idiom-chain": {
+      "title": "Idiom Chain",
+      "description": "Answer with an idiom starting on the character your opponent ended with."
+    },
+    "idiom-guess": {
+      "title": "Guess the Idiom",
+      "description": "Read the definition, name the idiom."
+    },
+    "tictactoe": {
+      "title": "Tic-tac-toe",
+      "description": "Three in a row on 3×3. Quick, and solved — but a fair fight against a careless opponent."
+    },
+    "xiangqi": {
+      "title": "Chinese Chess",
+      "description": "Xiangqi across the river: cannons, horses, and a general who cannot face his rival."
+    },
+    "klotski": {
+      "title": "Klotski",
+      "description": "Slide the blocks aside and escort Cao Cao out of the board."
+    },
+    "tetris": {
+      "title": "Tetris",
+      "description": "Stack the falling blocks, clear the lines, chase the leaderboard."
     }
   }
 }

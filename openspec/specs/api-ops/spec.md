@@ -12,7 +12,7 @@ CORS:`FrontendPolicy` 从 `appsettings.json` 的 `"Cors:AllowedOrigins"` 数组�
 Health:`/health` 是 liveness,纯 200 不检 DB;`/health/ready` 是 readiness,通过
 `AddDbContextCheck` 带一次 DB ping(tag `"ready"`)。两者都无 `[Authorize]`,运维探针可直访。
 
-实现位于 `backend/src/Gomoku.Api/CorsOptions.cs`(策略名常量 + 白名单 POCO)、
+实现位于 `backend/src/Gewu.Api/CorsOptions.cs`(策略名常量 + 白名单 POCO)、
 `Program.cs`(服务注册 + 中间件顺序:`UseCors` 排在 `UseAuthentication` 之前)、
 `appsettings.json` 的 `"Cors"` 段。
 ## Requirements
@@ -72,14 +72,14 @@ k8s / Docker 会用此端点做 livenessProbe。
 
 Api 层 SHALL 在 `/health/ready` 暴露**包含 DB 检查**的健康检查端点:
 
-- 服务注册:`AddHealthChecks().AddDbContextCheck<GomokuDbContext>("database", tags: new[] { "ready" })`。
+- 服务注册:`AddHealthChecks().AddDbContextCheck<AppDbContext>("database", tags: new[] { "ready" })`。
 - 端点映射:`MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") })`。
 - 无 `[Authorize]`。
 
 DB 不可达(文件缺失 / 锁死)时返回 503;k8s readinessProbe 据此从服务负载均衡中摘除本实例。
 
 #### Scenario: DB 正常
-- **WHEN** `GomokuDbContext` 能执行轻量探测查询
+- **WHEN** `AppDbContext` 能执行轻量探测查询
 - **THEN** HTTP 200 + `"Healthy"`;响应描述可选含 `checks: [ { name: "database", status: "Healthy" } ]`
 
 #### Scenario: DB 不可达

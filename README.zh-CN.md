@@ -1,12 +1,16 @@
-# Gomoku Online
+# 格物 · Gewu
 
 [English](README.md) · **简体中文**
 
 [![CI](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml/badge.svg)](https://github.com/Xushlin/gomoku-online/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-实时多人五子棋。可以跟真人在 SignalR 上联机对战,也可以跟内置 AI(三档难度)单打。
-Web 客户端是 Angular 21 + Tailwind,后端是 .NET 10 + Clean Architecture + CQRS。
+一个中式经典小游戏的在线游戏厅 —— 成语纵横、成语接龙、五子棋、一字棋、中国象棋、
+华容道、俄罗斯方块。取名「格物」,因为这些游戏都发生在方格里。
+
+目前上线的第一个游戏是**五子棋**:可以跟真人在 SignalR 上联机对战,也可以跟内置
+AI(三档难度)单打。Web 客户端是 Angular 21 + Tailwind,后端是 .NET 10 +
+Clean Architecture + CQRS。
 
 ## 状态
 
@@ -45,8 +49,8 @@ start-dev.cmd
 
 ```bash
 cd backend
-dotnet restore Gomoku.slnx
-dotnet run --project src/Gomoku.Api --launch-profile http
+dotnet restore Gewu.slnx
+dotnet run --project src/Gewu.Api --launch-profile http
 ```
 
 Web(推荐 Node 20+):
@@ -61,7 +65,7 @@ npm start
 
 ```bash
 # 后端 — Domain + Application 单测(约 390 个)
-cd backend && dotnet test Gomoku.slnx
+cd backend && dotnet test Gewu.slnx
 
 # 前端 — Vitest(约 178 个)
 cd frontend-web && npm test
@@ -71,15 +75,15 @@ cd frontend-web && npm test
 
 ```
 backend/
-  Gomoku.slnx                       (XML 解决方案文件 — 所有项目目标 net10.0)
+  Gewu.slnx                       (XML 解决方案文件 — 所有项目目标 net10.0)
   src/
-    Gomoku.Domain/                  (实体、值对象、聚合;零外部依赖)
-    Gomoku.Application/             (MediatR handler、DTO、基础设施接口)
-    Gomoku.Infrastructure/          (EF Core、持久化;实现 Application 的接口)
-    Gomoku.Api/                     (ASP.NET 宿主、Controller、SignalR Hub、DI 装配点)
+    Gewu.Domain/                  (实体、值对象、聚合;零外部依赖)
+    Gewu.Application/             (MediatR handler、DTO、基础设施接口)
+    Gewu.Infrastructure/          (EF Core、持久化;实现 Application 的接口)
+    Gewu.Api/                     (ASP.NET 宿主、Controller、SignalR Hub、DI 装配点)
   tests/
-    Gomoku.Domain.Tests/
-    Gomoku.Application.Tests/
+    Gewu.Domain.Tests/
+    Gewu.Application.Tests/
 
 frontend-web/
   src/app/
@@ -122,7 +126,7 @@ MediatR 跑 CQRS — 每个写操作是一个 `Command`,每个读操作是一个
 一文件一 handler。SignalR Hub 只做消息路由,把请求派发给 MediatR,再把结果推回去,
 不写业务逻辑。
 
-本地开发用 SQLite(`backend/src/Gomoku.Api/gomoku.db`,首次启动自动迁移);
+本地开发用 SQLite(`backend/src/Gewu.Api/gewu.db`,首次启动自动迁移);
 需要扩展时切 SQL Server 即可。
 
 JWT 鉴权用 HS256 —— `appsettings.Development.json` 里有 dev-only 密钥。

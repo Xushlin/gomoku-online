@@ -1,6 +1,6 @@
 /**
  * Leaderboard DTO shapes — mirror the backend's
- * `Gomoku.Application.Common.DTOs.LeaderboardEntryDto` + `PagedResult<T>`.
+ * `Gewu.Application.Common.DTOs.LeaderboardEntryDto` + `PagedResult<T>`.
  */
 
 export interface LeaderboardEntry {

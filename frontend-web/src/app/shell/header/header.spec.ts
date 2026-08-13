@@ -6,10 +6,20 @@ import { of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
+import type { SupportedLocale } from '../../core/i18n/supported-locales';
 import { SoundService } from '../../core/sound/sound.service';
 import { BoardSkinService } from '../../core/theme/board-skin.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { Header } from './header';
+
+// Only `header.brand` carries a real translation. Every other key the header
+// renders falls through to transloco's missing-key behaviour, which returns the
+// key itself — the volume-slider tests below depend on that, since they select
+// controls by `aria-label="header.sound-pack.label"` and friends.
+const langs = {
+  en: { header: { brand: 'Gewu' } },
+  'zh-CN': { header: { brand: '格物' } },
+};
 
 function soundStub(opts: { muted?: boolean } = {}) {
   return {
@@ -25,15 +35,16 @@ function soundStub(opts: { muted?: boolean } = {}) {
   };
 }
 
-function mount(opts: { muted?: boolean } = {}) {
+function mount(opts: { muted?: boolean; lang?: SupportedLocale } = {}) {
+  const lang = opts.lang ?? 'en';
   const sound = soundStub(opts);
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [
       Header,
       TranslocoTestingModule.forRoot({
-        langs: { en: {} },
-        translocoConfig: { availableLangs: ['en'], defaultLang: 'en' },
+        langs,
+        translocoConfig: { availableLangs: ['en', 'zh-CN'], defaultLang: lang },
         preloadLangs: true,
       }),
     ],
@@ -42,7 +53,7 @@ function mount(opts: { muted?: boolean } = {}) {
       { provide: SoundService, useValue: sound },
       {
         provide: LanguageService,
-        useValue: { current: signal('en'), use: vi.fn() },
+        useValue: { current: signal(lang), use: vi.fn() },
       },
       {
         provide: ThemeService,
@@ -99,6 +110,12 @@ function openVolumeSlider(fixture: ReturnType<typeof TestBed.createComponent>) {
   ) as HTMLInputElement | null;
 }
 
+function brandLink(fixture: ReturnType<typeof mount>['fixture']): HTMLAnchorElement {
+  const el = (fixture.nativeElement as HTMLElement).querySelector('a');
+  expect(el).not.toBeNull();
+  return el as HTMLAnchorElement;
+}
+
 describe('Header volume slider', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
@@ -143,5 +160,42 @@ describe('Header volume slider', () => {
     slider.dispatchEvent(new Event('change'));
     expect(sound.setVolume).toHaveBeenCalledWith(40);
     expect(sound.play).not.toHaveBeenCalled();
+  });
+});
+
+describe('Header brand', () => {
+  afterEach(() => {
+    document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove());
+  });
+
+  it('renders the Chinese brand name under zh-CN', () => {
+    const { fixture } = mount({ lang: 'zh-CN' });
+    expect(brandLink(fixture).textContent?.trim()).toBe('格物');
+  });
+
+  it('renders the English brand name under en', () => {
+    const { fixture } = mount({ lang: 'en' });
+    expect(brandLink(fixture).textContent?.trim()).toBe('Gewu');
+  });
+
+  it('keeps the brand link pointing at /home', () => {
+    const { fixture } = mount({ lang: 'en' });
+    expect(brandLink(fixture).getAttribute('href')).toBe('/home');
+  });
+
+  it('exposes the game catalogue entry point', () => {
+    const { fixture } = mount({ lang: 'en' });
+    const links = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+    expect(links.some((a) => a.getAttribute('href') === '/games')).toBe(true);
+  });
+
+  it('resolves the brand from i18n rather than a hardcoded literal', () => {
+    // The same element yielding two different strings is the behavioural proof
+    // that no display literal survives in the template.
+    const en = brandLink(mount({ lang: 'en' }).fixture).textContent?.trim();
+    const zh = brandLink(mount({ lang: 'zh-CN' }).fixture).textContent?.trim();
+    expect(en).not.toBe(zh);
   });
 });

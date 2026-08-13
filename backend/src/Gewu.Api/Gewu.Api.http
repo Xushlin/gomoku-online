@@ -1,0 +1,6 @@
+@Gewu.Api_HostAddress = http://localhost:5145
+
+GET {{Gewu.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

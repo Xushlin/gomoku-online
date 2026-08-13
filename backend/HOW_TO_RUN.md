@@ -12,11 +12,11 @@
 
 ```bash
 cd backend
-dotnet restore Gomoku.slnx
-dotnet run --project src/Gomoku.Api --launch-profile http
+dotnet restore Gewu.slnx
+dotnet run --project src/Gewu.Api --launch-profile http
 ```
 
-On first launch the app automatically runs the `InitialIdentity` EF Core migration against `gomoku.db` (SQLite) in the `src/Gomoku.Api/` working directory. Listens on `http://localhost:5145`.
+On first launch the app automatically runs the `InitialIdentity` EF Core migration against `gewu.db` (SQLite) in the `src/Gewu.Api/` working directory. Listens on `http://localhost:5145`.
 
 `appsettings.Development.json` already contains a local-only base64 JWT signing key — **never use it in production**. For production, set the environment variable `GOMOKU_JWT__SIGNINGKEY` (`__` is ASP.NET Core's config section separator); the app refuses to start in production with an empty key.
 
@@ -24,10 +24,10 @@ On first launch the app automatically runs the `InitialIdentity` EF Core migrati
 
 ```bash
 cd backend
-dotnet test Gomoku.slnx
+dotnet test Gewu.slnx
 ```
 
-Expect ~190 tests across `Gomoku.Domain.Tests` and `Gomoku.Application.Tests`.
+Expect ~390 tests across `Gewu.Domain.Tests` and `Gewu.Application.Tests`.
 
 ## End-to-end smoke walk
 
@@ -75,18 +75,18 @@ Error-path spot checks (HTTP codes, not bodies):
 ```bash
 # Add a new migration (name in PascalCase)
 dotnet ef migrations add <Name> \
-  --project src/Gomoku.Infrastructure \
-  --startup-project src/Gomoku.Api \
+  --project src/Gewu.Infrastructure \
+  --startup-project src/Gewu.Api \
   --output-dir Persistence/Migrations
 
 # Apply pending migrations
 dotnet ef database update \
-  --project src/Gomoku.Infrastructure \
-  --startup-project src/Gomoku.Api
+  --project src/Gewu.Infrastructure \
+  --startup-project src/Gewu.Api
 ```
 
 **Rule**: never edit a migration once merged to `main` — add a new one instead.
 
 ## Known advisory
 
-`Gomoku.Infrastructure.csproj` has `<NoWarn>NU1903</NoWarn>` to suppress the `System.Security.Cryptography.Xml` advisory (`GHSA-w3x6-4m5h-cxqf`). We do **not** use XML signatures; our JWTs are HS256 via `Microsoft.IdentityModel.JsonWebTokens`. Remove the suppression once a patched `.NET 10` SDK ships.
+`Gewu.Infrastructure.csproj` has `<NoWarn>NU1903</NoWarn>` to suppress the `System.Security.Cryptography.Xml` advisory (`GHSA-w3x6-4m5h-cxqf`). We do **not** use XML signatures; our JWTs are HS256 via `Microsoft.IdentityModel.JsonWebTokens`. Remove the suppression once a patched `.NET 10` SDK ships.

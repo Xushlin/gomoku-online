@@ -6,7 +6,7 @@
 
 SignalR 事件:`ChatMessage`(按频道广播)与 `UrgeReceived`(仅被催方)。持久化:`ChatMessages` 表 `(RoomId, SentAt)` 索引便于分页;催促事件 **不入库**,仅推送。
 
-实现位于 `backend/src/Gomoku.Domain/Rooms/`(`Room.PostChatMessage` / `Room.UrgeOpponent` 领域方法、`ChatMessage` 子实体、`ChatChannel` 枚举)、`backend/src/Gomoku.Application/Features/Rooms/SendChatMessage` 与 `UrgeOpponent`(CQRS handlers)、`backend/src/Gomoku.Api/Hubs/`(SignalR 路由)。
+实现位于 `backend/src/Gewu.Domain/Rooms/`(`Room.PostChatMessage` / `Room.UrgeOpponent` 领域方法、`ChatMessage` 子实体、`ChatChannel` 枚举)、`backend/src/Gewu.Application/Features/Rooms/SendChatMessage` 与 `UrgeOpponent`(CQRS handlers)、`backend/src/Gewu.Api/Hubs/`(SignalR 路由)。
 
 ## Requirements
 
