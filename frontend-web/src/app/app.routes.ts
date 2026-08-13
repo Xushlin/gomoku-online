@@ -11,6 +11,11 @@ import { Lobby } from './pages/lobby/lobby';
 export const routes: Routes = [
   { path: 'home', component: Lobby, canMatch: [authGuard] },
   {
+    path: 'games',
+    canMatch: [authGuard],
+    loadComponent: () => import('./platform/catalog/catalog').then((m) => m.Catalog),
+  },
+  {
     path: 'login',
     canMatch: [guestGuard],
     loadComponent: () => import('./pages/auth/login/login').then((m) => m.Login),

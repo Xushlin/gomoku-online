@@ -96,6 +96,14 @@ describe('Header brand', () => {
     expect(brandLink(fixture).getAttribute('href')).toBe('/home');
   });
 
+  it('exposes the game catalogue entry point', () => {
+    const fixture = renderHeader('en');
+    const links = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+    expect(links.some((a) => a.getAttribute('href') === '/games')).toBe(true);
+  });
+
   it('resolves the brand from i18n rather than a hardcoded literal', () => {
     // The same element yielding two different strings is the behavioural proof
     // that no display literal survives in the template.

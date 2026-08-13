@@ -310,5 +310,48 @@
     "errors": {
       "generic": "资料加载失败,请重试。"
     }
+  },
+  "catalog": {
+    "title": "游戏",
+    "subtitle": "方格里的中式经典 —— 成语、棋类,和一点方块。",
+    "coming-soon": "即将上线",
+    "chinese-only": "中文内容",
+    "category-match": "对战",
+    "category-puzzle": "闯关",
+    "category-score": "计分"
+  },
+  "games": {
+    "gomoku": {
+      "title": "五子棋",
+      "description": "15×15 连五。可跟真人或 AI 对局,带聊天、观战与回放。"
+    },
+    "idiom-crossword": {
+      "title": "成语纵横",
+      "description": "把四字成语填进纵横交错的方格,一个共用的字连起两条成语。"
+    },
+    "idiom-chain": {
+      "title": "成语接龙",
+      "description": "用对手末字开头的成语接下去,接不上就输。"
+    },
+    "idiom-guess": {
+      "title": "猜成语",
+      "description": "看释义,猜成语。"
+    },
+    "tictactoe": {
+      "title": "一字棋",
+      "description": "3×3 连三。规则一分钟学会,对手一走神就有机会。"
+    },
+    "xiangqi": {
+      "title": "中国象棋",
+      "description": "楚河汉界:炮打隔子,马走日,将帅不可照面。"
+    },
+    "klotski": {
+      "title": "华容道",
+      "description": "挪开挡路的棋块,把曹操送出华容道。"
+    },
+    "tetris": {
+      "title": "俄罗斯方块",
+      "description": "堆好落下的方块,消行,冲榜。"
+    }
   }
 }
