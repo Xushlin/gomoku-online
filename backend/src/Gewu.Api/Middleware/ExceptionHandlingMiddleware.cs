@@ -116,6 +116,7 @@ public sealed class ExceptionHandlingMiddleware
         UserNotFoundException or
         RoomNotFoundException or
         NotInRoomException or
+        PuzzleNotFoundException or
         NotSpectatingException => (
             (int)HttpStatusCode.NotFound,
             "Not found.",
@@ -132,6 +133,8 @@ public sealed class ExceptionHandlingMiddleware
         NotYourTurnException or
         NotOpponentsTurnException or
         TurnNotTimedOutException or
+        AttemptAlreadyFinishedException or
+        InvalidStarRatingException or
         GameNotFinishedException => (
             (int)HttpStatusCode.Conflict,
             "Conflict.",

@@ -1,9 +1,11 @@
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Puzzles;
 using Gewu.Infrastructure.Ai;
 using Gewu.Infrastructure.Authentication;
 using Gewu.Infrastructure.BackgroundServices;
 using Gewu.Infrastructure.Common;
 using Gewu.Infrastructure.Persistence;
+using Gewu.Infrastructure.Puzzles;
 using Gewu.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,6 +34,11 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IIdiomRepository, IdiomRepository>();
         services.AddScoped<IdiomSeeder>();
+        services.AddScoped<IPuzzleRepository, PuzzleRepository>();
+
+        // puzzle-core 刻意不注册任何 IPuzzleRules —— 关卡类游戏各自注册自己的规则。
+        // 在 成语纵横 落地前,注册表对任何 gameKey 都返回 null,handler 映射为 404。
+        services.AddSingleton<IPuzzleRulesRegistry, PuzzleRulesRegistry>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();

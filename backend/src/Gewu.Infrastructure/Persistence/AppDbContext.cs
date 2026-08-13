@@ -1,4 +1,5 @@
 using Gewu.Domain.Idioms;
+using Gewu.Domain.Puzzles;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,15 @@ public sealed class AppDbContext : DbContext
 
     /// <summary>成语的字级反查索引。</summary>
     public DbSet<IdiomChar> IdiomChars => Set<IdiomChar>();
+
+    /// <summary>单人关卡。<c>SolutionJson</c> 永不下发客户端。</summary>
+    public DbSet<PuzzleLevel> PuzzleLevels => Set<PuzzleLevel>();
+
+    /// <summary>闯关尝试 —— puzzle-core 的权威单位。</summary>
+    public DbSet<PuzzleAttempt> PuzzleAttempts => Set<PuzzleAttempt>();
+
+    /// <summary>每人每关的最好成绩。</summary>
+    public DbSet<PuzzleLevelProgress> PuzzleLevelProgress => Set<PuzzleLevelProgress>();
 
     /// <inheritdoc />
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
