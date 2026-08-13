@@ -1,4 +1,5 @@
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Games.IdiomCrossword;
 using Gewu.Domain.Puzzles;
 using Gewu.Infrastructure.Ai;
 using Gewu.Infrastructure.Authentication;
@@ -39,6 +40,11 @@ public static class DependencyInjection
         // puzzle-core 刻意不注册任何 IPuzzleRules —— 关卡类游戏各自注册自己的规则。
         // 在 成语纵横 落地前,注册表对任何 gameKey 都返回 null,handler 映射为 404。
         services.AddSingleton<IPuzzleRulesRegistry, PuzzleRulesRegistry>();
+
+        // 成语纵横 —— 平台的第一个关卡类游戏。加一个关卡游戏就是这两行:
+        // 一个 IPuzzleRules 实现 + 一处注册。
+        services.AddSingleton<IPuzzleRules, IdiomCrosswordRules>();
+        services.AddScoped<CrosswordLevelSeeder>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();

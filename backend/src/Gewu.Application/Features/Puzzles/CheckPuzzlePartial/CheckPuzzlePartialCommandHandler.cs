@@ -41,8 +41,11 @@ public sealed class CheckPuzzlePartialCommandHandler
         {
             attempt.RecordMistake();
             await _uow.SaveChangesAsync(cancellationToken);
+
+            // 答错时**不**转发载荷,即便规则实现填了 —— 否则错误路径就成了泄题通道。
+            return new PuzzleCheckResultDto(false, attempt.Mistakes, PayloadJson: null);
         }
 
-        return new PuzzleCheckResultDto(result.IsCorrect, attempt.Mistakes);
+        return new PuzzleCheckResultDto(true, attempt.Mistakes, result.PayloadJson);
     }
 }

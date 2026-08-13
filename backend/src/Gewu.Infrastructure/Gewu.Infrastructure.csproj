@@ -29,6 +29,16 @@
           Link="data\idioms.curated.json"
           CopyToOutputDirectory="PreserveNewest"
           Condition="Exists('..\..\data\idioms.curated.json')" />
+
+    <!--
+      Same posture for the crossword level set: produced by tools/CrosswordGenerator,
+      committed, and read by CrosswordLevelSeeder from `data/levels/idiom-crossword.json`
+      relative to AppContext.BaseDirectory.
+    -->
+    <None Include="..\..\data\levels\idiom-crossword.json"
+          Link="data\levels\idiom-crossword.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\data\levels\idiom-crossword.json')" />
   </ItemGroup>
 
   <ItemGroup>

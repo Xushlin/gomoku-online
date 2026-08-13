@@ -43,7 +43,10 @@ public sealed record PuzzleAttemptStartedDto(
 /// <summary>部分校验的结果。</summary>
 /// <param name="IsCorrect">这一部分是否正确。</param>
 /// <param name="Mistakes">服务端记录的累计错误数 —— 权威值,客户端应以此为准。</param>
-public sealed record PuzzleCheckResultDto(bool IsCorrect, int Mistakes);
+/// <param name="PayloadJson">
+/// 答对时由游戏规则附带的自定义载荷(成语纵横在此返回该成语与其释义);答错时为 <c>null</c>。
+/// </param>
+public sealed record PuzzleCheckResultDto(bool IsCorrect, int Mistakes, string? PayloadJson = null);
 
 /// <summary>一次提示的结果。</summary>
 /// <param name="RevealedJson">被揭示的**单个**片段。</param>
