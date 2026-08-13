@@ -316,9 +316,7 @@ Active rooms / My active rooms 卡片的操作按钮 SHALL 执行如下流程:
 
 #### Scenario: 模板零硬编码
 - **WHEN** 在 `src/app/pages/lobby/**/*.html` 与 `src/app/pages/rooms/**/*.html` 中搜索 CJK 字符或 ≥ 3 字母的显示英文字符串
-- **THEN** 0 匹配(brand 名 `Gomoku`、技术 test-id 等非展示字符串除外)
-
----
+- **THEN** 0 匹配(技术 test-id 等非展示字符串除外)
 
 ### Requirement: 色彩 / 组件 / 交互规则继承 scaffold 与 auth
 
