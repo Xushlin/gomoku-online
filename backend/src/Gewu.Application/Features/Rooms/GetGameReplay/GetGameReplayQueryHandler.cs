@@ -51,6 +51,7 @@ public sealed class GetGameReplayQueryHandler : IRequestHandler<GetGameReplayQue
         return new GameReplayDto(
             RoomId: room.Id.Value,
             Name: room.Name,
+            GameKey: room.GameKey,
             Host: new UserSummaryDto(room.HostUserId.Value, UserName(room.HostUserId.Value)),
             Black: new UserSummaryDto(room.BlackPlayerId.Value, UserName(room.BlackPlayerId.Value)),
             White: new UserSummaryDto(whiteId.Value, UserName(whiteId.Value)),

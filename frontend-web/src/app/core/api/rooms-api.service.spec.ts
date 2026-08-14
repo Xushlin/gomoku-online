@@ -24,6 +24,7 @@ function sampleRoom(overrides: Partial<RoomSummary> = {}): RoomSummary {
   return {
     id: 'r-1',
     name: 'Sample',
+    gameKey: 'gomoku',
     status: 'Waiting',
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
@@ -99,6 +100,32 @@ describe('RoomsApiService', () => {
     http.verify();
   });
 
+  it('createAiRoom() POSTs gameKey when one is given', () => {
+    const { svc, http } = setup();
+    svc.createAiRoom('ttt', 'Hard', 'Black', 'tictactoe').subscribe();
+    const req = http.expectOne('/api/rooms/ai');
+    expect(req.request.body).toEqual({
+      name: 'ttt',
+      difficulty: 'Hard',
+      humanSide: 'Black',
+      gameKey: 'tictactoe',
+    });
+    req.flush({});
+    http.verify();
+  });
+
+  it('createAiRoom() omits gameKey entirely rather than sending null', () => {
+    // Sending an explicit undefined serialises as null, which would override the
+    // backend's gomoku default instead of letting it apply. The key must be absent.
+    const { svc, http } = setup();
+    svc.createAiRoom('legacy', 'Easy').subscribe();
+    const req = http.expectOne('/api/rooms/ai');
+    expect('gameKey' in (req.request.body as object)).toBe(false);
+    expect('humanSide' in (req.request.body as object)).toBe(false);
+    req.flush({});
+    http.verify();
+  });
+
   it('join() POSTs to /api/rooms/{id}/join', () => {
     const { svc, http } = setup();
     svc.join('r-1').subscribe();
@@ -158,6 +185,7 @@ describe('RoomsApiService', () => {
     req.flush({
       roomId: 'abc 123',
       name: 'Room',
+      gameKey: 'gomoku',
       host: { id: 'u-1', username: 'alice' },
       black: { id: 'u-1', username: 'alice' },
       white: { id: 'u-2', username: 'bob' },

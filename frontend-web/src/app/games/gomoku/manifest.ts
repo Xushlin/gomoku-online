@@ -18,4 +18,5 @@ export const gomokuManifest: GameManifest = {
   icon: '⬤',
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/home',
+  board: { rows: 15, cols: 15 },
 };

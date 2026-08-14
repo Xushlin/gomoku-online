@@ -1,9 +1,14 @@
-<div class="board-grid">
+<div
+  class="board-grid"
+  [class.board-grid--no-stars]="!showStars()"
+  [style.--board-rows]="rows()"
+  [style.--board-cols]="cols()"
+>
   <span id="board-last-move-label" class="sr-only">
     {{ 'game.board.last-move-label' | transloco }}
   </span>
-  @for (r of rows; track r) {
-    @for (c of cols; track c) {
+  @for (r of rowIndices(); track r) {
+    @for (c of colIndices(); track c) {
       <button
         type="button"
         class="board-cell focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default"

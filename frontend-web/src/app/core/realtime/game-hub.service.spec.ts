@@ -48,6 +48,7 @@ function makeSnapshot(overrides: Partial<RoomState> = {}): RoomState {
   return {
     id: 'r-1',
     name: 'Alice room',
+    gameKey: 'gomoku',
     status: 'Playing',
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },

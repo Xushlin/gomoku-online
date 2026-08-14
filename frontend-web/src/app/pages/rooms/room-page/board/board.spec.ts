@@ -15,6 +15,8 @@ import { Board } from './board';
       [mySide]="mySide()"
       [submitting]="submitting()"
       [readonly]="readonly()"
+      [rows]="rows()"
+      [cols]="cols()"
       (cellClick)="last = $event"
     />
   `,
@@ -24,6 +26,8 @@ class Host {
   readonly mySide = signal<'black' | 'white' | 'spectator'>('spectator');
   readonly submitting = signal(false);
   readonly readonly = signal(false);
+  readonly rows = signal(15);
+  readonly cols = signal(15);
   last: { row: number; col: number } | null = null;
 }
 
@@ -31,6 +35,7 @@ function makeState(overrides: Partial<RoomState> = {}): RoomState {
   return {
     id: 'r-1',
     name: 'r',
+    gameKey: 'gomoku',
     status: 'Playing',
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
@@ -161,5 +166,67 @@ describe('Board', () => {
     fixture.componentInstance.mySide.set('black');
     fixture.detectChanges();
     expect(allButtons(fixture).every((b) => b.disabled)).toBe(true);
+  });
+
+  // ---- 尺寸参数化 ----
+
+  it('renders 9 cells at 3x3', () => {
+    const fixture = mount();
+    fixture.componentInstance.rows.set(3);
+    fixture.componentInstance.cols.set(3);
+    fixture.componentInstance.state.set(makeState({ gameKey: 'tictactoe' }));
+    fixture.detectChanges();
+    expect(allButtons(fixture).length).toBe(9);
+  });
+
+  it('drives the CSS grid through custom properties, not Tailwind classes', () => {
+    // A class like grid-cols-3 is not knowable at compile time, so Tailwind never
+    // emits it and the grid silently collapses to one column. The size has to ride
+    // on inline custom properties.
+    const fixture = mount();
+    fixture.componentInstance.rows.set(3);
+    fixture.componentInstance.cols.set(3);
+    fixture.detectChanges();
+    const grid = fixture.nativeElement.querySelector('.board-grid') as HTMLElement;
+    expect(grid.style.getPropertyValue('--board-rows')).toBe('3');
+    expect(grid.style.getPropertyValue('--board-cols')).toBe('3');
+  });
+
+  it('hides the 15x15 star points on other sizes', () => {
+    const fixture = mount();
+    const grid = () => fixture.nativeElement.querySelector('.board-grid') as HTMLElement;
+
+    fixture.detectChanges();
+    expect(grid().classList.contains('board-grid--no-stars')).toBe(false);
+
+    fixture.componentInstance.rows.set(3);
+    fixture.componentInstance.cols.set(3);
+    fixture.detectChanges();
+    expect(grid().classList.contains('board-grid--no-stars')).toBe(true);
+  });
+
+  it('ignores plies outside the board instead of throwing', () => {
+    // If the client's idea of the size ever disagrees with the server's, the board
+    // should look wrong — not blank the page.
+    const fixture = mount();
+    fixture.componentInstance.rows.set(3);
+    fixture.componentInstance.cols.set(3);
+    fixture.componentInstance.state.set(
+      makeState({
+        gameKey: 'tictactoe',
+        game: {
+          ...makeState().game!,
+          moves: [
+            { ply: 1, row: 0, col: 0, stone: 'Black', playedAt: 'x' },
+            { ply: 2, row: 7, col: 7, stone: 'White', playedAt: 'x' },
+          ],
+        },
+      }),
+    );
+
+    expect(() => fixture.detectChanges()).not.toThrow();
+    const buttons = allButtons(fixture);
+    expect(buttons.length).toBe(9);
+    expect(buttons[0].querySelector('.board-stone--black')).not.toBeNull();
   });
 });

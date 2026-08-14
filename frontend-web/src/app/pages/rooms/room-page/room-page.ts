@@ -8,6 +8,8 @@ import { firstValueFrom } from 'rxjs';
 import type { GameEndedDto } from '../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { boardSizeFor } from '../../../games/board-size';
+import { GameCatalogService } from '../../../games/game-catalog.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
 import { Board } from './board/board';
@@ -36,6 +38,7 @@ export class RoomPage implements OnInit, OnDestroy {
   private readonly hub = inject(GameHubService);
   private readonly sound = inject(SoundService);
   private readonly dialog = inject(Dialog);
+  private readonly catalog = inject(GameCatalogService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly state = this.hub.state;
@@ -57,6 +60,18 @@ export class RoomPage implements OnInit, OnDestroy {
   /** Sentinel `-1` means "no observation yet" — first state hydration sets the
    * count without firing a sound. Subsequent increments fire `move-place`. */
   private previousMoveCount = -1;
+
+  /**
+   * Board dimensions for this room's game.
+   *
+   * Resolving a game key into a size is the container's job — `Board` stays a
+   * pure presentational component and never learns what `gameKey` means. The
+   * key comes from the room DTO rather than the route, because three of the four
+   * ways a player reaches this page carry no game in the URL.
+   */
+  protected readonly boardSize = computed(() =>
+    boardSizeFor(this.catalog, this.state()?.gameKey),
+  );
 
   protected readonly mySide = computed<'black' | 'white' | 'spectator'>(() => {
     const s = this.state();

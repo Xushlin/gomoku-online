@@ -19,6 +19,7 @@ export abstract class RoomsApiService {
     name: string,
     difficulty: BotDifficulty,
     humanSide?: BotSide,
+    gameKey?: string,
   ): Observable<RoomState>;
   abstract join(roomId: string): Observable<RoomState>;
   abstract leave(roomId: string): Observable<void>;
@@ -52,14 +53,19 @@ export class DefaultRoomsApiService extends RoomsApiService {
     name: string,
     difficulty: BotDifficulty,
     humanSide?: BotSide,
+    gameKey?: string,
   ): Observable<RoomState> {
-    // Build body conditionally so old callers (no humanSide arg) keep
-    // their existing 2-field POST body — backend defaults to Black.
-    const body: { name: string; difficulty: BotDifficulty; humanSide?: BotSide } = {
-      name,
-      difficulty,
-    };
+    // Build body conditionally so old callers keep their existing POST body —
+    // the backend defaults humanSide to Black and gameKey to gomoku. Sending
+    // an explicit undefined would serialise as a null and defeat that.
+    const body: {
+      name: string;
+      difficulty: BotDifficulty;
+      humanSide?: BotSide;
+      gameKey?: string;
+    } = { name, difficulty };
     if (humanSide !== undefined) body.humanSide = humanSide;
+    if (gameKey !== undefined) body.gameKey = gameKey;
     return this.http.post<RoomState>('/api/rooms/ai', body);
   }
 

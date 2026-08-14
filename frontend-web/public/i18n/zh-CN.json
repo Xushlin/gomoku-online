@@ -250,7 +250,7 @@
       "title-win": "你赢了!",
       "title-lose": "你输了。",
       "title-draw": "平局。",
-      "reason-connected-5": "五子连珠。",
+      "reason-connected-5": "连成一线。",
       "reason-resigned": "对手认输。",
       "reason-timeout": "超时判负。",
       "back-to-lobby": "返回大厅",
@@ -399,5 +399,21 @@
       "load-levels": "关卡加载失败。",
       "load-level": "这一关没能开始。"
     }
+  },
+  "tictactoe": {
+    "back": "返回游戏列表",
+    "difficulty-easy": "简单",
+    "difficulty-hard": "困难",
+    "difficulty-legend": "选难度",
+    "difficulty-medium": "普通",
+    "error-create-failed": "创建对局失败，请重试。",
+    "notice-unbeatable": "困难档穷举整棵博弈树 —— 一字棋是已解游戏，你打不赢它，下得最好是和棋。想赢就选简单或普通。",
+    "notice-unrated": "本棋种不计 ELO，输赢不影响你的积分与战绩。",
+    "side-black": "执黑先走",
+    "side-legend": "选先后手",
+    "side-white": "执白后走",
+    "start": "开始对局",
+    "starting": "正在创建…",
+    "subtitle": "3×3 连三。跟机器下一局 —— 不计积分。"
   }
 }
