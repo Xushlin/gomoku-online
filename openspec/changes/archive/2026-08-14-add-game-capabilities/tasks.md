@@ -31,4 +31,4 @@
 - [x] 4.1 `dotnet build` 干净。
 - [x] 4.2 `dotnet test` 全绿。**核对既有断言无一需要修改** —— 若有，说明本变更越界了，停下来看为什么。
 - [x] 4.3 `openspec validate add-game-capabilities --strict`。
-- [ ] 4.4 PR 描述写明：这是 `add-per-game-rating` 的前置一半，为什么要拆，以及那个错承诺的来龙去脉。
+- [x] 4.4 PR 描述写明：这是 `add-per-game-rating` 的前置一半，为什么要拆，以及那个错承诺的来龙去脉。
