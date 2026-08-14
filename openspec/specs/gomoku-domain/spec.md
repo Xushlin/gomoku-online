@@ -5,31 +5,36 @@
 五子棋核心领域能力:棋盘表达、落子合法性、五连判胜、对局结果。所有上层(Application / Api / 前端)对"一步棋是否合法、当前是否已分胜负"的判断,最终都通过这个能力来回答。
 
 实现位于 `backend/src/Gewu.Domain/`,遵守 Clean Architecture 最内层铁律:零外部 NuGet 依赖、全同步(无 `async`/`Task`/`.Result`/`.Wait()`)、不与持久化/网络/UI 发生关系。
-
 ## Requirements
-
-
 ### Requirement: 棋盘尺寸是 15×15 的 `Position` 坐标系
 
-系统 SHALL 以行 `Row` 和列 `Col` 表示棋盘坐标,两者皆为 0 至 14(含)的整数。`Position` 是不可变值对象,构造时 MUST 对行列范围进行校验;超出范围 MUST 抛出 `InvalidMoveException`。
+系统 SHALL 以行 `Row` 和列 `Col` 表示棋盘坐标,两者皆为非负整数。`Position` 是不可变值对象。
+
+构造时 MUST 拒绝**负**坐标并抛出 `InvalidMoveException` —— 负的行列在任何棋盘上都无意义。
+
+构造时 MUST NOT 再校验上界:上界取决于棋种(五子棋 15×15、一字棋 3×3),因此 SHALL 由 `IGameRules.IsInBounds` 判定,并在 `Room.PlayMove` 触碰棋盘之前执行。
+
+越界仍 SHALL 抛出 `InvalidMoveException`,异常类型保持不变 —— 因此 HTTP 409 的对外契约不动,变的只是抛出它的那一行。
 
 #### Scenario: 合法坐标
-- **WHEN** 以 `(Row=0, Col=0)`、`(Row=14, Col=14)`、`(Row=7, Col=7)` 等在 `[0..14]` 范围内的值构造 `Position`
+- **WHEN** 以 `(Row=0, Col=0)`、`(Row=14, Col=14)`、`(Row=7, Col=7)` 等非负值构造 `Position`
 - **THEN** 返回有效的 `Position` 值对象,`Row` / `Col` 与入参一致
 
-#### Scenario: 行越界
-- **WHEN** 以 `Row = -1` 或 `Row = 15` 构造 `Position`
-- **THEN** 抛出 `InvalidMoveException`,异常消息 MUST 指出是哪个维度越界以及传入的值
+#### Scenario: 负坐标在构造时即被拒绝
+- **WHEN** 以 `Row = -1` 或 `Col = -1` 构造 `Position`
+- **THEN** 抛出 `InvalidMoveException`,异常消息 MUST 指出是哪个维度以及传入的值
 
-#### Scenario: 列越界
-- **WHEN** 以 `Col = -1` 或 `Col = 15` 构造 `Position`
-- **THEN** 抛出 `InvalidMoveException`,异常消息 MUST 指出是哪个维度越界以及传入的值
+#### Scenario: 超出棋种上界由规则拒绝
+- **WHEN** 在五子棋房间以 `(Row=15, Col=0)` 落子
+- **THEN** `Room.PlayMove` 在触碰棋盘前抛出 `InvalidMoveException`,棋盘状态不变
+
+#### Scenario: 同一坐标在不同棋种下界限不同
+- **WHEN** 以 `(Row=5, Col=5)` 分别询问 15×15 与 3×3 的规则
+- **THEN** 前者判定在界内,后者判定越界
 
 #### Scenario: 值相等
 - **WHEN** 两个 `Position` 的 `Row` 与 `Col` 都相等
 - **THEN** `==`、`.Equals()`、`.GetHashCode()` 都 MUST 认定它们相等
-
----
 
 ### Requirement: `Stone` 枚举有三种状态,`Empty` 是默认值
 
@@ -57,17 +62,27 @@
 
 ### Requirement: `Board` 维护 15×15 的 `Stone` 网格
 
-系统 SHALL 提供 `Board` 实体,内部维护一个 15×15 的 `Stone` 网格。新建的 `Board` 中所有位置 MUST 为 `Stone.Empty`。`Board` SHALL 支持按 `Position` 查询该位置的 `Stone`。
+系统 SHALL 提供 `Board` 实体,内部维护一个 `Stone` 网格。棋盘的**行数、列数与连子长度是构造参数**,不再是编译期常量 —— 这三个数是棋种属性,由 `IGameRules` 提供。
+
+新建的 `Board` 中所有位置 MUST 为 `Stone.Empty`。`Board` SHALL 支持按 `Position` 查询该位置的 `Stone`。
+
+五子棋 SHALL 由 `(rows: 15, cols: 15, winLength: 5)` 构造 —— 与本要求原先写死的常量完全一致,因此既有对局的行为逐位不变。
 
 #### Scenario: 新建棋盘全为空
-- **WHEN** 调用 `new Board()`
-- **THEN** 对任意合法 `Position`,查询结果 MUST 是 `Stone.Empty`
+- **WHEN** 以任意合法尺寸构造 `Board`
+- **THEN** 对任意界内 `Position`,查询结果 MUST 是 `Stone.Empty`
+
+#### Scenario: 五子棋仍是 15×15 连五
+- **WHEN** 以五子棋规则构造棋盘
+- **THEN** `Rows == 15`、`Cols == 15`、`WinLength == 5`
 
 #### Scenario: 查询越界位置
-- **WHEN** 用 `Row` 或 `Col` 不在 `[0..14]` 的 `Position` 查询 `Board`
-- **THEN** 抛出 `InvalidMoveException`(也可能是 `Position` 本身构造时就已抛出 —— 行为等效即可)
+- **WHEN** 用超出该棋盘行列范围的 `Position` 查询 `Board`
+- **THEN** 抛出 `InvalidMoveException`
 
----
+#### Scenario: 非方形棋盘也成立
+- **WHEN** 以 `(rows: 3, cols: 5, winLength: 3)` 构造棋盘并在 `(2, 4)` 落子
+- **THEN** 落子成功 —— 索引换算 MUST 用列数而非"边长",方形假设不得残留
 
 ### Requirement: `Board.PlaceStone` 原子化地放子、判胜并返回结果
 
@@ -89,45 +104,37 @@
 
 ### Requirement: 同色棋子连成 5 颗或以上即获胜(基础规则,长连算赢)
 
-系统 SHALL 在每次 `PlaceStone` 之后,沿**水平、垂直、主对角、反对角**四个方向检测通过该落子的最长同色连续段。若该长度 ≥ 5,对应棋色获胜,返回 `GameResult.BlackWin` 或 `GameResult.WhiteWin`。
+系统 SHALL 在每次落子后,以该落子为中心沿水平、竖直、主对角、反对角四个方向做增量判胜:任一方向上同色连续子数(含中心)达到该棋盘的 `WinLength` 即判该色获胜。
 
-#### Scenario: 水平方向连五
-- **WHEN** 依次放黑子于 `(7,3) (7,4) (7,5) (7,6)`,再放黑子于 `(7,7)`
-- **THEN** 最后一步返回 `GameResult.BlackWin`
+连子长度 SHALL 取自棋盘构造参数而非常量 `5`。五子棋为 5,一字棋为 3。超过 `WinLength` 的长连仍然算赢(不实现禁手)。
 
-#### Scenario: 垂直方向连五
-- **WHEN** 依次放白子于 `(3,7) (4,7) (5,7) (6,7)`,再放白子于 `(7,7)`
-- **THEN** 最后一步返回 `GameResult.WhiteWin`
+#### Scenario: 横向连五获胜
+- **WHEN** 黑子在同一行连续占据 5 个相邻位置
+- **THEN** 最后一手返回 `GameResult.BlackWin`
 
-#### Scenario: 主对角线(↘)方向连五
-- **WHEN** 依次放黑子于 `(3,3) (4,4) (5,5) (6,6)`,再放黑子于 `(7,7)`
-- **THEN** 最后一步返回 `GameResult.BlackWin`
+#### Scenario: 竖向连五获胜
+- **WHEN** 白子在同一列连续占据 5 个相邻位置
+- **THEN** 最后一手返回 `GameResult.WhiteWin`
 
-#### Scenario: 反对角线(↗)方向连五
-- **WHEN** 依次放白子于 `(7,3) (6,4) (5,5) (4,6)`,再放白子于 `(3,7)`
-- **THEN** 最后一步返回 `GameResult.WhiteWin`
+#### Scenario: 主对角连五获胜
+- **WHEN** 黑子沿 ↘ 方向连续占据 5 个位置
+- **THEN** 最后一手返回 `GameResult.BlackWin`
 
-#### Scenario: 连子超过 5(长连)也判胜
-- **WHEN** 某方形成连续 6 颗同色子(例如黑子占据 `(7,2)..(7,7)`)
-- **THEN** 形成该长连的最后一步 MUST 返回该方获胜的 `GameResult`
+#### Scenario: 反对角连五获胜
+- **WHEN** 白子沿 ↗ 方向连续占据 5 个位置
+- **THEN** 最后一手返回 `GameResult.WhiteWin`
 
-#### Scenario: 在棋盘边缘形成连五
-- **WHEN** 依次放黑子于 `(0,0) (0,1) (0,2) (0,3) (0,4)`
-- **THEN** 最后一步返回 `GameResult.BlackWin`
+#### Scenario: 长连算赢
+- **WHEN** 黑子连成 6 子
+- **THEN** 判 `GameResult.BlackWin`,MUST NOT 因超长而判负或判无效
 
-#### Scenario: 在棋盘另一条边形成连五
-- **WHEN** 依次放白子于 `(14,10) (14,11) (14,12) (14,13) (14,14)`
-- **THEN** 最后一步返回 `GameResult.WhiteWin`
+#### Scenario: 四子不算赢
+- **WHEN** 黑子任一方向最多连成 4 子
+- **THEN** 返回 `GameResult.Ongoing`
 
-#### Scenario: 四子而已,尚未连五
-- **WHEN** 黑子形成 `(7,3) (7,4) (7,5) (7,6)` 但第 5 子未落
-- **THEN** 每一步都返回 `GameResult.Ongoing`
-
-#### Scenario: 被对方子打断的"四连"不算胜
-- **WHEN** 棋盘上出现 `(7,3)=Black (7,4)=Black (7,5)=White (7,6)=Black (7,7)=Black`
-- **THEN** 放下 `(7,7)` 那一步 MUST 返回 `GameResult.Ongoing`
-
----
+#### Scenario: 连子长度随棋种变化
+- **WHEN** 在 `winLength = 3` 的棋盘上黑子连成 3 子
+- **THEN** 判 `GameResult.BlackWin`;同样的 3 子在 `winLength = 5` 的棋盘上返回 `GameResult.Ongoing`
 
 ### Requirement: 棋盘下满且无人连五时判定为平局
 
@@ -232,3 +239,4 @@
 #### Scenario: AI 搜索遵循该约定
 - **WHEN** AI 枚举候选走法
 - **THEN** AI MUST 从已知的空格集合选择候选走法,而非对每个 `(row, col)` 尝试 `PlaceStone` 并捕获异常
+
