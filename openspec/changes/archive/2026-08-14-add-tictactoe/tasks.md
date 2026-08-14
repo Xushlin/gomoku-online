@@ -102,4 +102,4 @@
   - Resign the tic-tac-toe game → `result: BlackWin`, `endReason: Resigned`, replay returns 1 move; `GET /api/users/me` → **rating 1200, gamesPlayed 0** (unchanged).
   - Control: resign a gomoku game → **rating 1180, gamesPlayed 1**. The guard is conditional, not an unconditional early return.
 - [x] 8.4 `openspec validate add-tictactoe --strict`.
-- [ ] 8.5 PR description links this change, states the §7 numbers, and calls out the two deliberate temporary decisions (`IsRated`, the `"gomoku"` HTTP defaults) with their removal conditions.
+- [x] 8.5 PR description links this change, states the §7 numbers, and calls out the two deliberate temporary decisions (`IsRated`, the `"gomoku"` HTTP defaults) with their removal conditions.

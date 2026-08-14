@@ -1,3 +1,14 @@
+## RENAMED Requirements
+
+两条 requirement 连**标题**一起改了,所以先 RENAMED 再 MODIFIED —— archive 的应用顺序是
+RENAMED → REMOVED → MODIFIED → ADDED,只写 MODIFIED 会因为在现行 spec 里找不到新标题而失败。
+
+- FROM: ### Requirement: `IGomokuAi` 是纯函数式 AI 决策接口
+- TO: ### Requirement: `IBoardGameAi` 是纯函数式 AI 决策接口
+
+- FROM: ### Requirement: `GomokuAiFactory` 按难度返回 `IGomokuAi` 实例
+- TO: ### Requirement: AI 工厂按棋种注册,再按难度构造实例
+
 ## MODIFIED Requirements
 
 ### Requirement: `IBoardGameAi` 是纯函数式 AI 决策接口
