@@ -168,15 +168,16 @@ public class IdiomCrosswordRulesTests
     // ---- Hint ----
 
     [Fact]
-    public void Hint_reveals_reading_order_cells_skipping_the_pre_filled_ones()
+    public void Hint_walks_forward_as_the_player_fills_cells()
     {
-        // 预填 (0,0);阅读顺序下的可揭示格依次是 (0,1)、(0,2)、(0,3)、(1,0)…
+        // 预填 (0,0)。每次请求都带上此刻已填的格,所以提示依次落在下一个真正空着的格 ——
+        // 揭示位置由**玩家的进度**决定,不再由请求次数决定。
         var layout = LayoutJson((0, 0, "合"));
         var solution = SolutionJson();
 
-        var first = Reveal(Rules.Hint(solution, layout, 0));
-        var second = Reveal(Rules.Hint(solution, layout, 1));
-        var third = Reveal(Rules.Hint(solution, layout, 2));
+        var first = Reveal(Rules.Hint(solution, layout, null));
+        var second = Reveal(Rules.Hint(solution, layout, "{\"filled\":[\"0,1\"]}"));
+        var third = Reveal(Rules.Hint(solution, layout, "{\"filled\":[\"0,1\",\"0,2\"]}"));
 
         (first.Row, first.Col, first.Char).Should().Be((0, 1, "而"));
         (second.Row, second.Col, second.Char).Should().Be((0, 2, "为"));
@@ -184,12 +185,12 @@ public class IdiomCrosswordRulesTests
     }
 
     [Fact]
-    public void Hint_clamps_instead_of_throwing_when_exhausted()
+    public void Hint_still_returns_a_cell_when_no_state_is_reported()
     {
-        // 多要一次提示只是浪费,不该是个错误。
-        var act = () => Rules.Hint(SolutionJson(), LayoutJson(), 999);
+        // 一个没上报盘面状态的客户端(比如旧版本)仍然应该拿到提示,而不是 400。
+        var act = () => Rules.Hint(SolutionJson(), LayoutJson(), null);
         act.Should().NotThrow();
-        Reveal(Rules.Hint(SolutionJson(), LayoutJson(), 999)).Char.Should().NotBeEmpty();
+        Reveal(Rules.Hint(SolutionJson(), LayoutJson(), null)).Char.Should().NotBeEmpty();
     }
 
     private static CrosswordRevealedCell Reveal(Gewu.Domain.Puzzles.PuzzleHintResult hint)

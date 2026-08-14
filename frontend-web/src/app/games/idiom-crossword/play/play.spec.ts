@@ -61,6 +61,7 @@ const langs = { en: { 'idiom-crossword': {}, games: { 'idiom-crossword': { title
 
 function setup(layout: CrosswordLayout, check: (n: number) => PuzzleCheckResult) {
   const calls: { slotIndex: number; word: string }[] = [];
+  const hintCalls: { id: string; state?: unknown }[] = [];
   let checkCount = 0;
 
   const api = {
@@ -71,7 +72,12 @@ function setup(layout: CrosswordLayout, check: (n: number) => PuzzleCheckResult)
       calls.push(partial);
       return of(check(checkCount++));
     }),
-    hint: vi.fn(),
+    // Params are declared so vitest infers the call-arg tuple; the board state
+    // the component sends is what the hint-targeting tests assert on.
+    hint: vi.fn((id: string, state?: unknown) => {
+      hintCalls.push({ id, state });
+      return of({ revealed: { row: 0, col: 0, char: '合' }, hintsUsed: 1 });
+    }),
     submit: vi.fn(() =>
       of({ isCorrect: false, stars: null, durationMs: null, mistakes: 0, hintsUsed: 0, newBest: false }),
     ),
@@ -100,14 +106,16 @@ function setup(layout: CrosswordLayout, check: (n: number) => PuzzleCheckResult)
   fixture.componentRef.setInput('index', '0');
   fixture.detectChanges();
 
-  return { fixture, api, calls, cmp: fixture.componentInstance as unknown as PlayInternals };
+  return { fixture, api, calls, hintCalls, cmp: fixture.componentInstance as unknown as PlayInternals };
 }
 
 /** The bits of `Play` these tests drive — protected members, reached deliberately. */
 interface PlayInternals {
+  hint(): void;
   onTileTap(index: number): void;
   onCellTap(key: string): void;
   mistakes(): number;
+  hintsUsed(): number;
   board: {
     locked(): ReadonlySet<string>;
     chars(): ReadonlyMap<string, string>;
@@ -229,5 +237,30 @@ describe('Play — verdict handling', () => {
 
     expect(cmp.board.locked().size).toBe(0);
     vi.useRealTimers();
+  });
+});
+
+describe('Play — hint targeting', () => {
+  it('sends the board state so the server can aim the hint', () => {
+    const { cmp, api, hintCalls } = setup(SINGLE_SLOT_LAYOUT, () => CORRECT);
+
+    cmp.onTileTap(0); // fills 0,0
+    cmp.hint();
+
+    expect(api.hint).toHaveBeenCalledTimes(1);
+    const state = hintCalls[0].state as { filled: string[]; selected: string | null };
+    // The whole point of the fix: the server is told what is already filled, so
+    // it does not spend the hint re-revealing a cell the player has solved.
+    expect(state.filled).toContain('0,0');
+    expect(state.selected).toBe('0,1');
+  });
+
+  it('takes hintsUsed from the response rather than counting locally', () => {
+    const { cmp, api } = setup(SINGLE_SLOT_LAYOUT, () => CORRECT);
+    api.hint.mockReturnValue(of({ revealed: { row: 0, col: 2, char: '为' }, hintsUsed: 7 }));
+
+    cmp.hint();
+
+    expect(cmp.hintsUsed()).toBe(7);
   });
 });

@@ -186,7 +186,7 @@ export class Play {
     if (!attemptId || this.busy()) return;
 
     this.busy.set(true);
-    this.api.hint(attemptId).subscribe({
+    this.api.hint(attemptId, this.board.hintState()).subscribe({
       next: (result) => {
         this.hintsUsed.set(result.hintsUsed);
         if (result.revealed) {

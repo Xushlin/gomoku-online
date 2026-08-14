@@ -19,6 +19,13 @@ namespace Gewu.Api.Controllers;
 public sealed record CheckPuzzlePartialRequest(string PartialJson);
 
 /// <summary>
+/// 提示请求体。可选 —— 不带请求体时规则退化到默认揭示,而不是 400,
+/// 这样一个没更新的客户端仍然拿得到提示。
+/// </summary>
+/// <param name="StateJson">客户端上报的盘面状态(不透明)。</param>
+public sealed record UsePuzzleHintRequest(string? StateJson);
+
+/// <summary>
 /// 提交请求体。
 /// <para>
 /// 刻意**只有**答案一个字段:用时、错误数、提示数都是服务端事实,客户端上报的自评数值
@@ -93,12 +100,15 @@ public sealed class PuzzlesController : ControllerBase
 
     /// <summary>要一个提示。服务端揭示一个片段并计费。</summary>
     /// <param name="attemptId">尝试 id。</param>
+    /// <param name="body">可选的盘面状态;缺省时退化到默认揭示。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("puzzle-attempts/{attemptId:guid}/hint")]
     public async Task<ActionResult<PuzzleHintDto>> Hint(
-        Guid attemptId, CancellationToken cancellationToken)
+        Guid attemptId,
+        [FromBody] UsePuzzleHintRequest? body,
+        CancellationToken cancellationToken)
         => Ok(await _mediator.Send(
-            new UsePuzzleHintCommand(CurrentUserId(), attemptId), cancellationToken));
+            new UsePuzzleHintCommand(CurrentUserId(), attemptId, body?.StateJson), cancellationToken));
 
     /// <summary>提交完整答案。</summary>
     /// <param name="attemptId">尝试 id。</param>

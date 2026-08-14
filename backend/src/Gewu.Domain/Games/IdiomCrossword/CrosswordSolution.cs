@@ -48,3 +48,16 @@ public sealed record CrosswordPartialSubmission(int SlotIndex, string Word);
 /// <param name="Col">列。</param>
 /// <param name="Char">该格的字。</param>
 public sealed record CrosswordRevealedCell(int Row, int Col, string Char);
+
+/// <summary>
+/// 客户端上报的盘面状态,给提示定位用。
+/// <para>
+/// 里面没有答案 —— 只有"哪些格已经有字"和"光标在哪",都是客户端自己看得见的东西。
+/// 服务端据此决定揭哪一格,答案本身从不离开服务端。
+/// </para>
+/// </summary>
+/// <param name="Filled">已填入字符的格位键(<c>"行,列"</c>)。</param>
+/// <param name="Selected">当前选中的格位键;无选中则 <c>null</c>。</param>
+public sealed record CrosswordHintState(
+    IReadOnlyList<string>? Filled,
+    string? Selected);

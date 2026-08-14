@@ -31,7 +31,7 @@ export abstract class PuzzleApiService {
   abstract getProgress(gameKey: string): Observable<PuzzleProgress>;
   abstract startAttempt(gameKey: string, levelIndex: number): Observable<PuzzleAttemptStarted>;
   abstract check(attemptId: string, partial: unknown): Observable<PuzzleCheckResult>;
-  abstract hint(attemptId: string): Observable<PuzzleHint>;
+  abstract hint(attemptId: string, state?: unknown): Observable<PuzzleHint>;
   abstract submit(attemptId: string, submission: unknown): Observable<PuzzleSubmitResult>;
 
   /** Parse a level's opaque `layoutJson` into the crossword layout. */
@@ -95,9 +95,13 @@ export class DefaultPuzzleApiService extends PuzzleApiService {
       );
   }
 
-  hint(attemptId: string): Observable<PuzzleHint> {
+  hint(attemptId: string, state?: unknown): Observable<PuzzleHint> {
     return this.http
-      .post<PuzzleHintDto>(`/api/puzzle-attempts/${encodeURIComponent(attemptId)}/hint`, {})
+      .post<PuzzleHintDto>(`/api/puzzle-attempts/${encodeURIComponent(attemptId)}/hint`, {
+        // Same string-inside-JSON shape as check / submit: the platform does not
+        // understand game payloads, so it cannot embed them as objects.
+        stateJson: state === undefined ? null : JSON.stringify(state),
+      })
       .pipe(
         map((dto) => ({
           revealed: parseNested<CrosswordRevealedCell>(dto.revealedJson),
