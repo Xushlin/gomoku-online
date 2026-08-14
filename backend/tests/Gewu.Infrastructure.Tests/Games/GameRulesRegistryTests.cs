@@ -51,11 +51,34 @@ public class GameRulesRegistryTests
     [Fact]
     public void Adding_a_game_is_one_more_registration()
     {
-        // 一字棋将来的全部代价:一行注册,连规则类都不用写。
-        var ticTacToe = new NInARowRules("tictactoe", 3, 3, 3);
-        var registry = Registry(BuiltInGameRules.Gomoku, ticTacToe);
+        // 一字棋的全部代价:一行注册,连规则类都不用写。
+        var registry = Registry(BuiltInGameRules.Gomoku, BuiltInGameRules.TicTacToe);
 
         registry.For("gomoku")!.Rows.Should().Be(15);
         registry.For("tictactoe")!.Rows.Should().Be(3);
+    }
+
+    [Fact]
+    public void Resolves_tictactoe_with_its_registered_parameters()
+    {
+        var registry = Registry(BuiltInGameRules.Gomoku, BuiltInGameRules.TicTacToe);
+
+        var rules = registry.For("tictactoe");
+
+        rules.Should().NotBeNull();
+        rules!.Rows.Should().Be(3);
+        rules.Cols.Should().Be(3);
+        rules.WinLength.Should().Be(3);
+        rules.IsRated.Should().BeFalse();
+    }
+
+    [Fact]
+    public void An_unregistered_game_stays_unresolvable()
+    {
+        // 一字棋落地之后 "For 返回 null" 这条路径仍然必须存在 —— 落子 handler
+        // 的 404 分支全靠它,而那是"房间指向本构建不认识的棋种"的唯一出口。
+        var registry = Registry(BuiltInGameRules.Gomoku, BuiltInGameRules.TicTacToe);
+
+        registry.For("xiangqi").Should().BeNull();
     }
 }

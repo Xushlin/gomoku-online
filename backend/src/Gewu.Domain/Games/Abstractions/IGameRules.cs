@@ -29,6 +29,20 @@ public interface IGameRules
     /// <summary>判胜所需的同色连续子数。</summary>
     int WinLength { get; }
 
+    /// <summary>
+    /// 本棋种的对局结束时是否结算 ELO。
+    /// <para>
+    /// **这是限期存在的脚手架,不是长期设计。** 平台当前只有一个评分池,它实际上就是
+    /// 五子棋排行榜;本开关唯一的作用,是让第二个棋种能在不污染那份排行榜的前提下先上线。
+    /// </para>
+    /// <para>
+    /// <c>add-per-game-rating</c> 会给每个棋种发一份 <c>UserGameStats</c>,届时"哪个棋种
+    /// 算分"不再是一个布尔,而是"每个棋种各算各的",本属性 MUST 随之删除。
+    /// 那个变更的 tasks 里写着这件事 —— 加标志的变更从来不会是删标志的那个。
+    /// </para>
+    /// </summary>
+    bool IsRated { get; }
+
     /// <summary>造一块本棋种的空棋盘。</summary>
     Board CreateBoard();
 
@@ -57,4 +71,7 @@ public static class GameKeys
 {
     /// <summary>五子棋。</summary>
     public const string Gomoku = "gomoku";
+
+    /// <summary>一字棋。</summary>
+    public const string TicTacToe = "tictactoe";
 }

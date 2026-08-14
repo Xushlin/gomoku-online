@@ -45,7 +45,9 @@ public static class DependencyInjection
         services.AddSingleton<IPuzzleRulesRegistry, PuzzleRulesRegistry>();
 
         // 棋盘对抗棋种。加一个连 N 子棋种就是下面再来一行 —— 连规则类都不用写。
+        // 一字棋是这句话的第一次兑现:它整个棋种就是 (3, 3, 3) 这三个数。
         services.AddSingleton<IGameRules>(BuiltInGameRules.Gomoku);
+        services.AddSingleton<IGameRules>(BuiltInGameRules.TicTacToe);
         services.AddSingleton<IGameRulesRegistry, GameRulesRegistry>();
 
         // 成语纵横 —— 平台的第一个关卡类游戏。加一个关卡游戏就是这两行:

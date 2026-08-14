@@ -1,6 +1,7 @@
 using Gewu.Application.Features.Rooms.GetMyActiveRooms;
 using Gewu.Application.Tests.Features.Rooms;
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Tests.Features.Rooms.GetMyActiveRooms;
 
@@ -29,6 +30,26 @@ public class GetMyActiveRoomsQueryHandlerTests
         result[1].Status.Should().Be(RoomStatus.Waiting);
         // 相关 usernames 都填上
         result[0].White!.Username.Should().Be("Bob");
+    }
+
+    [Fact]
+    public async Task My_Active_Rooms_Span_Games_On_Purpose()
+    {
+        // 这条测试钉住的是一个**刻意的**不一致:大厅按棋种过滤,"我的对局"不过滤。
+        // 将来有人为了"和大厅一致"给这个查询加棋种参数时,应该先被这条测试拦住,
+        // 再去读 GetMyActiveRoomsQuery 的文档注释 —— 那里写着为什么。
+        var alice = RoomsFixtures.NewUser("Alice");
+        var bob = RoomsFixtures.NewUser("Bob", "bob@example.com");
+        var gomoku = RoomsFixtures.PlayingRoom(alice, bob, "Gomoku game", GameKeys.Gomoku);
+        var ttt = RoomsFixtures.PlayingRoom(alice, bob, "TicTacToe game", GameKeys.TicTacToe);
+        _rooms.Setup(r => r.GetActiveRoomsByUserAsync(alice.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<Room>)new[] { gomoku, ttt });
+        RoomsFixtures.SetupUserLookup(_users, alice, bob);
+
+        var result = await Build().Handle(new GetMyActiveRoomsQuery(alice.Id), default);
+
+        result.Should().HaveCount(2);
+        result.Select(r => r.Name).Should().BeEquivalentTo("Gomoku game", "TicTacToe game");
     }
 
     [Fact]

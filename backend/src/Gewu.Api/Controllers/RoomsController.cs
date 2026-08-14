@@ -13,6 +13,7 @@ using Gewu.Application.Features.Rooms.LeaveAsSpectator;
 using Gewu.Application.Features.Rooms.LeaveRoom;
 using Gewu.Domain.Ai;
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 using MediatR;
@@ -42,7 +43,7 @@ public sealed class RoomsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var summary = await _mediator.Send(
-            new CreateRoomCommand(GetUserId(), body.Name),
+            new CreateRoomCommand(GetUserId(), body.Name, body.GameKey ?? GameKeys.Gomoku),
             cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = summary.Id }, summary);
     }
@@ -61,16 +62,27 @@ public sealed class RoomsController : ControllerBase
                 GetUserId(),
                 body.Name,
                 body.Difficulty,
-                body.HumanSide ?? Stone.Black),
+                body.HumanSide ?? Stone.Black,
+                body.GameKey ?? GameKeys.Gomoku),
             cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = state.Id }, state);
     }
 
-    /// <summary>列出所有活跃(Waiting / Playing)房间。</summary>
+    /// <summary>
+    /// 列出某个棋种下所有活跃(Waiting / Playing)房间。
+    /// <para>
+    /// <c>gameKey</c> 可省略,缺省 <c>gomoku</c>(向后兼容,见 <see cref="CreateRoomRequest"/>)。
+    /// 未登记的棋种返回空列表 + 200,不是错误 —— 集合端点上"没有这种房间"与"没有这个
+    /// 棋种"对调用方无从分辨。
+    /// </para>
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<RoomSummaryDto>>> List(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<RoomSummaryDto>>> List(
+        [FromQuery] string? gameKey,
+        CancellationToken cancellationToken)
     {
-        var rooms = await _mediator.Send(new GetRoomListQuery(), cancellationToken);
+        var rooms = await _mediator.Send(
+            new GetRoomListQuery(gameKey ?? GameKeys.Gomoku), cancellationToken);
         return Ok(rooms);
     }
 
@@ -157,15 +169,31 @@ public sealed class RoomsController : ControllerBase
 }
 
 /// <summary>POST /api/rooms 的请求体。</summary>
-public sealed record CreateRoomRequest(string Name);
+/// <summary>
+/// POST /api/rooms 的请求体。
+/// <para>
+/// <c>GameKey</c> 可空 —— 缺省 / null 时 controller 填 <c>gomoku</c>。这是本变更**唯一**
+/// 的缺省值妥协,理由见 <c>add-tictactoe</c> design D3:本变更不含 Web 客户端,已发布的
+/// 客户端不会送这个字段,让它们从此建不出房是不可接受的回归。缺省只活在这一层,
+/// <c>CreateRoomCommand.GameKey</c> 是必填的非空字段。
+/// </para>
+/// <para>
+/// 未登记的棋种由 application validator 拒绝(HTTP 400)。
+/// </para>
+/// </summary>
+public sealed record CreateRoomRequest(string Name, string? GameKey = null);
 
 /// <summary>
 /// POST /api/rooms/ai 的请求体。<c>Difficulty</c> 以字符串形式(JsonStringEnumConverter)。
 /// <c>HumanSide</c> 可空 —— 缺省 / null 时 controller 默认填 <c>Stone.Black</c>(向后兼容,
 /// 旧客户端继续工作)。显式 <c>"Black"</c> / <c>"White"</c> 让真人选边;<c>"Empty"</c> 等其它
 /// 值由 application validator 拒绝(HTTP 400)。
+/// <para>
+/// <c>GameKey</c> 同样可空,缺省填 <c>gomoku</c> —— 同一个理由,见 <see cref="CreateRoomRequest"/>。
+/// </para>
 /// </summary>
 public sealed record CreateAiRoomRequest(
     string Name,
     BotDifficulty Difficulty,
-    Stone? HumanSide = null);
+    Stone? HumanSide = null,
+    string? GameKey = null);

@@ -14,8 +14,17 @@ public interface IRoomRepository
     /// <summary>按主键加载房间及其所有子实体;不存在返回 <c>null</c>。</summary>
     Task<Room?> FindByIdAsync(RoomId id, CancellationToken cancellationToken);
 
-    /// <summary>返回所有 Waiting / Playing 状态的房间,不含 Finished。</summary>
-    Task<IReadOnlyList<Room>> GetActiveRoomsAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// 返回指定棋种所有 Waiting / Playing 状态的房间,不含 Finished。
+    /// <para>
+    /// 棋种是**查询条件而不是事后筛选**:本查询会连带加载每个房间的 <c>Game</c> 与全部
+    /// <c>Moves</c>,在内存里过滤等于为了显示一字棋大厅而把所有五子棋对局的走子历史
+    /// 全读出来 —— 随房间数与棋种数一起增长的白读。
+    /// </para>
+    /// </summary>
+    /// <param name="gameKey">棋种键。未登记的键返回空列表,不报错。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task<IReadOnlyList<Room>> GetActiveRoomsAsync(string gameKey, CancellationToken cancellationToken);
 
     /// <summary>新增一个房间(未提交,需 <see cref="IUnitOfWork.SaveChangesAsync"/>)。</summary>
     Task AddAsync(Room room, CancellationToken cancellationToken);

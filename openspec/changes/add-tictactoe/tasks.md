@@ -10,30 +10,30 @@
 
 ## 1. Rules — the part that should be one line
 
-- [ ] 1.1 `IGameRules` gains `bool IsRated { get; }`. XML doc names `add-per-game-rating` as the change that deletes it.
-- [ ] 1.2 `NInARowRules` ctor gains `bool isRated = true`; existing gomoku registration unchanged (defaults to `true`).
-- [ ] 1.3 `BuiltInGameRules.TicTacToe = new NInARowRules("tictactoe", 3, 3, 3, isRated: false)`.
-- [ ] 1.4 Register it in `Gewu.Infrastructure/DependencyInjection.cs` (one `AddSingleton<IGameRules>` line).
-- [ ] 1.5 `GameKeys.TicTacToe = "tictactoe"`.
-- [ ] 1.6 Tests: registry resolves `"tictactoe"` with `3/3/3`, `IsRated == false`; gomoku still `15/15/5`, `IsRated == true`; win detection on 3×3 for row / column / both diagonals; a full 3×3 board with no line is a draw.
+- [x] 1.1 `IGameRules` gains `bool IsRated { get; }`. XML doc names `add-per-game-rating` as the change that deletes it.
+- [x] 1.2 `NInARowRules` ctor gains `bool isRated = true`; existing gomoku registration unchanged (defaults to `true`).
+- [x] 1.3 `BuiltInGameRules.TicTacToe = new NInARowRules("tictactoe", 3, 3, 3, isRated: false)`.
+- [x] 1.4 Register it in `Gewu.Infrastructure/DependencyInjection.cs` (one `AddSingleton<IGameRules>` line).
+- [x] 1.5 `GameKeys.TicTacToe = "tictactoe"`.
+- [x] 1.6 Tests: registry resolves `"tictactoe"` with `3/3/3`, `IsRated == false`; gomoku still `15/15/5`, `IsRated == true`; win detection on 3×3 for row / column / both diagonals; a full 3×3 board with no line is a draw.
 
 ## 2. Room creation learns a game key
 
-- [ ] 2.1 `Room.Create(..., string gameKey)` — non-empty guard, sets `GameKey`.
-- [ ] 2.2 `CreateRoomCommand(HostUserId, Name, GameKey)` — `GameKey` required, non-nullable.
-- [ ] 2.3 `CreateAiRoomCommand(..., string GameKey)` — same.
-- [ ] 2.4 Both handlers pass it through instead of hard-coding `GameKeys.Gomoku`.
-- [ ] 2.5 Both validators inject `IGameRulesRegistry` and reject unresolvable keys → 400. **No inline whitelist** — two lists of game keys will disagree eventually and nobody will notice the day they do.
-- [ ] 2.6 `CreateRoomRequest` / `CreateAiRoomRequest` gain optional `gameKey`, defaulting to `"gomoku"` **in the controller only**.
-- [ ] 2.7 Tests: valid key accepted; unknown key → validation failure; absent key in the request body → `"gomoku"`; `Room.Create` with blank key throws.
+- [x] 2.1 `Room.Create(..., string gameKey)` — non-empty guard, sets `GameKey`. **Already done by `add-game-rules-registry`** — cost zero here.
+- [x] 2.2 `CreateRoomCommand(HostUserId, Name, GameKey)` — `GameKey` required, non-nullable.
+- [x] 2.3 `CreateAiRoomCommand(..., string GameKey)` — same.
+- [x] 2.4 Both handlers pass it through instead of hard-coding `GameKeys.Gomoku`.
+- [x] 2.5 Both validators inject `IGameRulesRegistry` and reject unresolvable keys → 400. **No inline whitelist** — two lists of game keys will disagree eventually and nobody will notice the day they do.
+- [x] 2.6 `CreateRoomRequest` / `CreateAiRoomRequest` gain optional `gameKey`, defaulting to `"gomoku"` **in the controller only**.
+- [x] 2.7 Tests: valid key accepted; unknown key → validation failure; absent key in the request body → `"gomoku"`; `Room.Create` with blank key throws.
 
 ## 3. Lobby filters by game
 
-- [ ] 3.1 `GetRoomListQuery(string GameKey)` — required.
-- [ ] 3.2 Handler filters on `Room.GameKey`. Check whether the repository query needs the predicate pushed down to EF rather than filtering in memory; if the current shape loads all active rooms, push it down.
-- [ ] 3.3 `GET /api/rooms?gameKey=` — optional query param, defaults to `"gomoku"`.
-- [ ] 3.4 Confirm `GetMyActiveRoomsQuery` is **not** filtered, and add a test that pins that on purpose (a future reader will otherwise "fix" the inconsistency).
-- [ ] 3.5 Tests: mixed-game DB returns only the requested game; unknown key returns empty list + 200, not an error; no query string → gomoku only.
+- [x] 3.1 `GetRoomListQuery(string GameKey)` — required.
+- [x] 3.2 Handler filters on `Room.GameKey`. Check whether the repository query needs the predicate pushed down to EF rather than filtering in memory; if the current shape loads all active rooms, push it down.
+- [x] 3.3 `GET /api/rooms?gameKey=` — optional query param, defaults to `"gomoku"`.
+- [x] 3.4 Confirm `GetMyActiveRoomsQuery` is **not** filtered, and add a test that pins that on purpose (a future reader will otherwise "fix" the inconsistency).
+- [x] 3.5 Tests: mixed-game DB returns only the requested game; unknown key returns empty list + 200, not an error; no query string → gomoku only.
 
 ## 4. AI registry
 

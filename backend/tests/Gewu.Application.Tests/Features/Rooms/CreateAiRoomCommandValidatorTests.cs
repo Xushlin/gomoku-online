@@ -1,11 +1,12 @@
 using Gewu.Application.Features.Rooms.CreateAiRoom;
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Tests.Features.Rooms;
 
 public class CreateAiRoomCommandValidatorTests
 {
-    private readonly CreateAiRoomCommandValidator _validator = new();
+    private readonly CreateAiRoomCommandValidator _validator = new(GomokuRules.Registry);
 
     [Theory]
     [InlineData("")]
@@ -15,7 +16,7 @@ public class CreateAiRoomCommandValidatorTests
     public void Invalid_Name_Fails(string name)
     {
         var result = _validator.Validate(
-            new CreateAiRoomCommand(UserId.NewId(), name, BotDifficulty.Easy, Stone.Black));
+            new CreateAiRoomCommand(UserId.NewId(), name, BotDifficulty.Easy, Stone.Black, GameKeys.Gomoku));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateAiRoomCommand.Name));
@@ -28,7 +29,7 @@ public class CreateAiRoomCommandValidatorTests
     public void Valid_Name_Passes_If_Length_OK(string name)
     {
         var result = _validator.Validate(
-            new CreateAiRoomCommand(UserId.NewId(), name, BotDifficulty.Medium, Stone.Black));
+            new CreateAiRoomCommand(UserId.NewId(), name, BotDifficulty.Medium, Stone.Black, GameKeys.Gomoku));
 
         // 先计算 trim 后长度判断真假;短于 3 或超 50 的字符串应失败。
         var trimmedLen = name.Trim().Length;
@@ -42,7 +43,7 @@ public class CreateAiRoomCommandValidatorTests
     public void Valid_HumanSide_Passes(Stone side)
     {
         var result = _validator.Validate(
-            new CreateAiRoomCommand(UserId.NewId(), "ok name", BotDifficulty.Easy, side));
+            new CreateAiRoomCommand(UserId.NewId(), "ok name", BotDifficulty.Easy, side, GameKeys.Gomoku));
 
         result.IsValid.Should().BeTrue();
     }
@@ -51,7 +52,7 @@ public class CreateAiRoomCommandValidatorTests
     public void Empty_HumanSide_Fails()
     {
         var result = _validator.Validate(
-            new CreateAiRoomCommand(UserId.NewId(), "ok name", BotDifficulty.Easy, Stone.Empty));
+            new CreateAiRoomCommand(UserId.NewId(), "ok name", BotDifficulty.Easy, Stone.Empty, GameKeys.Gomoku));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateAiRoomCommand.HumanSide));
