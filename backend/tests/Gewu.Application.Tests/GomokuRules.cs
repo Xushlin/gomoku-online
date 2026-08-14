@@ -1,5 +1,7 @@
+using Gewu.Domain.Ai;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.TicTacToe;
 
 namespace Gewu.Application.Tests;
 
@@ -31,12 +33,29 @@ internal static class GomokuRules
     internal static readonly IGameRulesRegistry GomokuOnly =
         new StaticRegistry(BuiltInGameRules.Gomoku);
 
+    /// <summary>与生产 DI 一致的 AI 注册表:五子棋 + 一字棋,用的是真工厂。</summary>
+    internal static readonly IGameAiRegistry AiRegistry =
+        new StaticAiRegistry(new GomokuAiFactory(), new TicTacToeAiFactory());
+
+    /// <summary>只登记五子棋 AI 的注册表 —— 给"这个棋种没有 AI"那条 404 路径用。</summary>
+    internal static readonly IGameAiRegistry GomokuAiOnly =
+        new StaticAiRegistry(new GomokuAiFactory());
+
     private sealed class StaticRegistry(params IGameRules[] rules) : IGameRulesRegistry
     {
         private readonly Dictionary<string, IGameRules> _byKey =
             rules.ToDictionary(r => r.GameKey, StringComparer.Ordinal);
 
         public IGameRules? For(string gameKey)
+            => _byKey.TryGetValue(gameKey, out var found) ? found : null;
+    }
+
+    private sealed class StaticAiRegistry(params IGameAiFactory[] factories) : IGameAiRegistry
+    {
+        private readonly Dictionary<string, IGameAiFactory> _byKey =
+            factories.ToDictionary(f => f.GameKey, StringComparer.Ordinal);
+
+        public IGameAiFactory? For(string gameKey)
             => _byKey.TryGetValue(gameKey, out var found) ? found : null;
     }
 }

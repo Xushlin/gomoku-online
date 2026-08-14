@@ -17,10 +17,10 @@ namespace Gewu.Application.Features.Bots.ExecuteBotMove;
 /// 执行 AI 一步走子。由 <c>AiMoveWorker</c> 发,不对外暴露。Handler 做三件事:
 /// <list type="number">
 /// <item>防御式校验:Room 存在 / 处于 Playing / Bot 是玩家之一 / 轮到 Bot。</item>
-/// <item>按 <see cref="BotAccountIds.TryGetDifficulty"/> 反推难度,用 <see cref="GomokuAiFactory"/>
-///     构造 AI 实例。</item>
+/// <item>按 <see cref="BotAccountIds.TryGetDifficulty"/> 反推难度,经
+///     <see cref="IGameAiRegistry"/> 取该房间棋种的工厂,构造 AI 实例。</item>
 /// <item>从 Room.Game.Moves 的历史 replay 出当前 <see cref="Board"/>,
-///     调 <see cref="IGomokuAi.SelectMove"/>,再 <c>ISender.Send(new MakeMoveCommand(...))</c>。</item>
+///     调 <see cref="IBoardGameAi.SelectMove"/>,再 <c>ISender.Send(new MakeMoveCommand(...))</c>。</item>
 /// </list>
 /// <para>
 /// Handler 自己 **不** 调 <c>Room.PlayMove</c> 或 <c>IRoomNotifier</c>;所有副作用都走嵌套
@@ -31,6 +31,7 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
 {
     private readonly IRoomRepository _rooms;
     private readonly IGameRulesRegistry _rules;
+    private readonly IGameAiRegistry _ai;
     private readonly IAiRandomProvider _random;
     private readonly ISender _sender;
 
@@ -38,11 +39,13 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
     public ExecuteBotMoveCommandHandler(
         IRoomRepository rooms,
         IGameRulesRegistry rules,
+        IGameAiRegistry ai,
         IAiRandomProvider random,
         ISender sender)
     {
         _rooms = rooms;
         _rules = rules;
+        _ai = ai;
         _random = random;
         _sender = sender;
     }
@@ -88,11 +91,19 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
 
+        // AI 与规则各有一份注册表,两处都可能解析不出来,且都映射成同一个 404。
+        // 分两个注册表是因为它们的注册单位不同:规则是"这个棋种怎么判胜",AI 是"这个棋种
+        // 怎么思考" —— 一个棋种可以先有规则(人人对战)、后有 AI。这里的失败模式相同:
+        // 房间指向一个本构建不认识的棋种。
+        var aiFactory = _ai.For(room.GameKey)
+            ?? throw new RoomNotFoundException(
+                $"Room '{room.Id.Value}' declares game '{room.GameKey}', which has no AI.");
+
         // 用聚合自己的 replay —— 这里原先是它的一份手抄副本,注释甚至写明了"逻辑一致",
         // 两份就是两个会各自漂移的真源。
         var board = room.Game.ReplayBoard(rules);
 
-        var ai = GomokuAiFactory.Create(difficulty, _random.Get());
+        var ai = aiFactory.Create(difficulty, _random.Get());
         var pick = ai.SelectMove(board, botStone);
 
         await _sender.Send(

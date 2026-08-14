@@ -34,7 +34,7 @@ public class ExecuteBotMoveCommandHandlerTests
         _sender.Setup(s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoveDto(2, 0, 0, Stone.White, RoomsFixtures.Now));
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);
         await sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
         _sender.Verify(
@@ -54,7 +54,7 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
         await act.Should().ThrowAsync<Gewu.Domain.Exceptions.NotYourTurnException>();
@@ -69,7 +69,7 @@ public class ExecuteBotMoveCommandHandlerTests
         _rooms.Setup(r => r.FindByIdAsync(missingRoomId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Room?)null);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, missingRoomId), default);
 
         await act.Should().ThrowAsync<RoomNotFoundException>();
@@ -84,7 +84,7 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
         await act.Should().ThrowAsync<Gewu.Domain.Exceptions.RoomNotInPlayException>();
@@ -101,9 +101,64 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(orphanBot.Id, room.Id), default);
 
         await act.Should().ThrowAsync<Gewu.Domain.Exceptions.NotAPlayerException>();
+    }
+
+    [Fact]
+    public async Task Plays_A_TicTacToe_Room_With_The_TicTacToe_AI()
+    {
+        // 同一个 bot 账号,不同棋种 —— 走哪套算法由 (GameKey, Difficulty) 经注册表解析。
+        // 这是"bot 账号是身份而不是策略"那句话的可执行版本。
+        var host = RoomsFixtures.NewUser("Alice");
+        var bot = RoomsFixtures.NewBot(BotDifficulty.Hard);
+        var room = RoomsFixtures.PlayingRoom(host, bot, "ttt", GameKeys.TicTacToe);
+        room.PlayMove(
+            host.Id,
+            new Gewu.Domain.ValueObjects.Position(0, 0),
+            RoomsFixtures.Now.AddSeconds(2),
+            BuiltInGameRules.TicTacToe);
+
+        _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
+        _sender.Setup(s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MoveDto(2, 1, 1, Stone.White, RoomsFixtures.Now));
+
+        var sut = new ExecuteBotMoveCommandHandler(
+            _rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);
+        await sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
+
+        // 落点必须在 3×3 界内 —— 若它拿到了五子棋的 AI,选点会落在 15×15 的某处。
+        _sender.Verify(
+            s => s.Send(
+                It.Is<MakeMoveCommand>(c => c.Row >= 0 && c.Row < 3 && c.Col >= 0 && c.Col < 3),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task A_Game_Without_An_AI_Is_A_404_Not_A_Crash()
+    {
+        // 规则解析得出、AI 解析不出 —— 一个只支持人人对战的棋种。两条解析路径
+        // 都可能失败,都映射成同一个 404,都 MUST NOT 变成未处理异常。
+        var host = RoomsFixtures.NewUser("Alice");
+        var bot = RoomsFixtures.NewBot(BotDifficulty.Easy);
+        var room = RoomsFixtures.PlayingRoom(host, bot, "ttt", GameKeys.TicTacToe);
+        room.PlayMove(
+            host.Id,
+            new Gewu.Domain.ValueObjects.Position(0, 0),
+            RoomsFixtures.Now.AddSeconds(2),
+            BuiltInGameRules.TicTacToe);
+
+        _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
+
+        var sut = new ExecuteBotMoveCommandHandler(
+            _rooms.Object, GomokuRules.Registry, GomokuRules.GomokuAiOnly, _random.Object, _sender.Object);
+        var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
+
+        await act.Should().ThrowAsync<Gewu.Application.Common.Exceptions.RoomNotFoundException>();
+        _sender.Verify(
+            s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

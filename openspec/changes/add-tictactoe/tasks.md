@@ -37,23 +37,23 @@
 
 ## 4. AI registry
 
-- [ ] 4.1 Rename `IGomokuAi` → `IBoardGameAi` (file + all references). Mechanical.
-- [ ] 4.2 Fix the "board is full" check to use `board.Rows * board.Cols` rather than the literal 225. Grep for `225` across `Domain/Ai` — the interface doc comment says it too.
-- [ ] 4.3 `IGameAiFactory { GameKey; Create(difficulty, random) }` + `IGameAiRegistry { For(gameKey) }` in `Domain/Ai`; `GameAiRegistry` implementation in `Infrastructure/Games` next to `GameRulesRegistry`.
-- [ ] 4.4 `GomokuAiFactory` static class → `IGameAiFactory` instance. Branches unchanged.
-- [ ] 4.5 `ExecuteBotMoveCommandHandler` resolves the factory via `IGameAiRegistry.For(room.GameKey)`; unresolvable → 404, matching the rules-resolution path.
-- [ ] 4.6 Register both factories in DI.
-- [ ] 4.7 Tests: registry resolves both keys, returns `null` for unknown; each difficulty yields the right runtime type; `ExecuteBotMove` against a room with an unknown game key returns 404 without an unhandled exception.
+- [x] 4.1 Rename `IGomokuAi` → `IBoardGameAi` (file + all references). Mechanical.
+- [x] 4.2 Fix the "board is full" check to use `board.Rows * board.Cols` rather than the literal 225. **Code was already correct** (`EasyAi` uses `board.CellCount`); only the interface's doc comment claimed 225. Fixed the comment.
+- [x] 4.3 `IGameAiFactory { GameKey; Create(difficulty, random) }` + `IGameAiRegistry { For(gameKey) }` in `Domain/Ai`; `GameAiRegistry` implementation in `Infrastructure/Games` next to `GameRulesRegistry`.
+- [x] 4.4 `GomokuAiFactory` static class → `IGameAiFactory` instance. Branches unchanged.
+- [x] 4.5 `ExecuteBotMoveCommandHandler` resolves the factory via `IGameAiRegistry.For(room.GameKey)`; unresolvable → 404, matching the rules-resolution path.
+- [x] 4.6 Register both factories in DI.
+- [x] 4.7 Tests: registry resolves both keys, returns `null` for unknown; each difficulty yields the right runtime type; `ExecuteBotMove` against a room with an unknown game key returns 404 without an unhandled exception.
 
 ## 5. Tic-tac-toe AI
 
-- [ ] 5.1 `TicTacToeAiFactory : IGameAiFactory` — `Easy` returns `EasyAi` (**reused unchanged**), `Medium` / `Hard` return the new classes.
-- [ ] 5.2 `TicTacToeMediumAi` — win → block → centre → corner → random, `Random` injected for tie-breaks.
-- [ ] 5.3 `TicTacToeHardAi` — exhaustive minimax, no depth limit, no evaluation function, no heuristic candidate generation.
-- [ ] 5.4 Tests for Medium: takes the win when both a win and a block exist; blocks when there is no win; opens at centre.
-- [ ] 5.5 **Property test for Hard: it never loses.** Walk the entire game tree with Hard on one side and an exhaustive opponent on the other, both as X and as O; assert the result multiset contains only wins and draws. This is the test the whole change is for — a solved game is the only place a bot's optimality is *provable* rather than merely plausible.
-- [ ] 5.6 Test: Hard vs Hard is a draw.
-- [ ] 5.7 Verify `MediumAi.cs` / `HardAi.cs` have no behavioural diff — only the `IGomokuAi` → `IBoardGameAi` rename.
+- [x] 5.1 `TicTacToeAiFactory : IGameAiFactory` — `Easy` returns `EasyAi` (**reused unchanged**), `Medium` / `Hard` return the new classes.
+- [x] 5.2 `TicTacToeMediumAi` — win → block → centre → corner → random, `Random` injected for tie-breaks.
+- [x] 5.3 `TicTacToeHardAi` — exhaustive minimax, no depth limit, no evaluation function, no heuristic candidate generation.
+- [x] 5.4 Tests for Medium: takes the win when both a win and a block exist; blocks when there is no win; opens at centre.
+- [x] 5.5 **Property test for Hard.** Reformulated during implementation: "never loses from any legal position" is **false** — a position can be lost before Hard moves (double-threat reachable only via opponent blunders). The test now asserts Hard lands exactly on each position's game-theoretic value, checked against an independently written negamax. Spec corrected to match. Original wording: Walk the entire game tree with Hard on one side and an exhaustive opponent on the other, both as X and as O; assert the result multiset contains only wins and draws. This is the test the whole change is for — a solved game is the only place a bot's optimality is *provable* rather than merely plausible.
+- [x] 5.6 Test: Hard vs Hard is a draw.
+- [x] 5.7 Verify `MediumAi.cs` / `HardAi.cs` have no behavioural diff — only the `IGomokuAi` → `IBoardGameAi` rename.
 
 ## 6. Unrated games
 

@@ -1,7 +1,9 @@
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Ai;
 using Gewu.Domain.Games.IdiomCrossword;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.TicTacToe;
 using Gewu.Infrastructure.Games;
 using Gewu.Domain.Puzzles;
 using Gewu.Infrastructure.Ai;
@@ -49,6 +51,12 @@ public static class DependencyInjection
         services.AddSingleton<IGameRules>(BuiltInGameRules.Gomoku);
         services.AddSingleton<IGameRules>(BuiltInGameRules.TicTacToe);
         services.AddSingleton<IGameRulesRegistry, GameRulesRegistry>();
+
+        // 棋种 AI。与规则分开注册,因为注册单位不同:规则是"怎么判胜",AI 是"怎么思考"
+        // —— 一个棋种可以先有规则(人人对战)、后有 AI。
+        services.AddSingleton<IGameAiFactory, GomokuAiFactory>();
+        services.AddSingleton<IGameAiFactory, TicTacToeAiFactory>();
+        services.AddSingleton<IGameAiRegistry, GameAiRegistry>();
 
         // 成语纵横 —— 平台的第一个关卡类游戏。加一个关卡游戏就是这两行:
         // 一个 IPuzzleRules 实现 + 一处注册。

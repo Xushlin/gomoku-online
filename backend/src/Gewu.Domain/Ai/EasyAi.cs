@@ -9,7 +9,7 @@ namespace Gewu.Domain.Ai;
 /// 所有随机性 MUST 通过构造时注入的 <see cref="Random"/> 产生;不得隐式 <c>new Random()</c>,
 /// 以保证测试可用固定种子复现。
 /// </summary>
-public sealed class EasyAi : IGomokuAi
+public sealed class EasyAi : IBoardGameAi
 {
     private readonly Random _random;
 
