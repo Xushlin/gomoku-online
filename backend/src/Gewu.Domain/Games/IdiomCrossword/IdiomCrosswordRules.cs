@@ -84,7 +84,7 @@ public sealed class IdiomCrosswordRules : IPuzzleRules
     }
 
     /// <inheritdoc />
-    public PuzzleHintResult Hint(string solutionJson, string layoutJson, int alreadyRevealedCount)
+    public PuzzleHintResult Hint(string solutionJson, string layoutJson, string? stateJson)
     {
         var solution = Deserialize<CrosswordSolution>(solutionJson);
         var layout = Deserialize<CrosswordLayout>(layoutJson);
@@ -93,12 +93,11 @@ public sealed class IdiomCrosswordRules : IPuzzleRules
             return new PuzzleHintResult("{}");
         }
 
-        // 按阅读顺序(行优先)揭示第 N 个非预填格。不接收玩家的光标位置 —— 那要靠客户端
-        // 自述并被信任,对一个上排行榜的游戏是反方向的取舍。
         var given = layout.Given
             .Select(g => CrosswordSolution.Key(g.Row, g.Col))
             .ToHashSet(StringComparer.Ordinal);
 
+        // 阅读顺序(行优先)下所有可揭示的格 —— 预填格永远不在其中。
         var revealable = layout.Cells
             .OrderBy(c => c.Row)
             .ThenBy(c => c.Col)
@@ -110,13 +109,44 @@ public sealed class IdiomCrosswordRules : IPuzzleRules
             return new PuzzleHintResult("{}");
         }
 
-        // 提示用尽后夹到最后一格,而不是抛错 —— 多要一次提示只是浪费,不该是个错误。
-        var index = Math.Clamp(alreadyRevealedCount, 0, revealable.Count - 1);
-        var cell = revealable[index];
-        var ch = solution.CharAt(cell) ?? string.Empty;
+        var state = TryDeserialize<CrosswordHintState>(stateJson ?? string.Empty);
+        var filled = state?.Filled is null
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : state.Filled.ToHashSet(StringComparer.Ordinal);
+
+        // 注意 CrosswordCell 是 record struct —— `default` 就是合法的 (0,0),所以
+        // "找到了没"必须用可空表达,不能拿 `!= default` 当哨兵。
+        CrosswordCell? Find(Func<CrosswordCell, bool> match)
+        {
+            foreach (var c in revealable)
+            {
+                if (match(c))
+                {
+                    return c;
+                }
+            }
+            return null;
+        }
+
+        // ① 玩家指着哪一格就揭哪一格 —— 与原型一致。即使那格已经有字也照揭:
+        //    盯着一个填错的格子要提示,想解的正是那一格,客户端会先把错字块退回字盘。
+        //    选中格不存在或是预填格时忽略(它不在 revealable 里),退到 ② ——
+        //    重开后残留的光标应该降级成一个合理的提示,而不是一个错误。
+        var cell = state?.Selected is { } key
+            ? Find(c => CrosswordSolution.Key(c.Row, c.Col) == key)
+            : null;
+
+        // ② 否则揭阅读顺序上第一个玩家还没填的格 —— 这正是修掉"提示总是揭已解开的格"的地方。
+        cell ??= Find(c => !filled.Contains(CrosswordSolution.Key(c.Row, c.Col)));
+
+        // ③ 满盘皆填(通常是填错了)时退到第一个可揭示格 —— 用正确字覆盖它,
+        //    这正是满盘时最有用的一步。
+        var target = cell ?? revealable[0];
+
+        var ch = solution.CharAt(target) ?? string.Empty;
 
         return new PuzzleHintResult(
-            JsonSerializer.Serialize(new CrosswordRevealedCell(cell.Row, cell.Col, ch), Json));
+            JsonSerializer.Serialize(new CrosswordRevealedCell(target.Row, target.Col, ch), Json));
     }
 
     /// <inheritdoc />

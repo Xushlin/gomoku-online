@@ -53,12 +53,27 @@ public interface IPuzzleRules
     PuzzlePartialResult CheckPartial(string solutionJson, string partialJson);
 
     /// <summary>
-    /// 决定下一个要揭示的片段。
+    /// 决定要揭示的片段。
+    /// <para>
+    /// <paramref name="stateJson"/> 是客户端上报的盘面状态,对平台**不透明** —— 与
+    /// <c>CheckPartial</c> / <c>Validate</c> 的载荷同一性质,由各游戏自行解析。
+    /// 成语纵横传的是"哪些格已有字 + 光标在哪"。
+    /// </para>
+    /// <para>
+    /// 它决定的是**揭哪一格**,MUST NOT 影响计分:提示次数由服务端在每次调用时递增,
+    /// 是唯一算数的那个数字。采信这份上报不构成漏洞 —— 客户端报告的是自己可见的盘面,
+    /// 不是答案;答案始终只在服务端,响应也始终只有一格。客户端确实能借此指定揭哪一格,
+    /// 那是特性:原型本来就让玩家点着某格要提示,而且每次照样扣一颗星。
+    /// </para>
+    /// <para>
+    /// 缺省或无法解析时,实现 MUST 退化到一个合理的默认揭示,MUST NOT 抛错 ——
+    /// 一个没更新的客户端应该拿到提示,而不是 400。
+    /// </para>
     /// </summary>
     /// <param name="solutionJson">服务端答案。</param>
     /// <param name="layoutJson">关卡布局。</param>
-    /// <param name="alreadyRevealedCount">此前已揭示的片段数。</param>
-    PuzzleHintResult Hint(string solutionJson, string layoutJson, int alreadyRevealedCount);
+    /// <param name="stateJson">客户端上报的盘面状态;可为 <c>null</c>。</param>
+    PuzzleHintResult Hint(string solutionJson, string layoutJson, string? stateJson);
 
     /// <summary>
     /// 计算星级(1–3)。三个入参**全部是服务端事实**:提示由服务端发放并计数、

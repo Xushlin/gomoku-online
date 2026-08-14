@@ -128,3 +128,15 @@ export interface PuzzleHint {
   readonly revealed: CrosswordRevealedCell | null;
   readonly hintsUsed: number;
 }
+
+/**
+ * What the client tells the server about its own board when asking for a hint.
+ *
+ * Contains no answers — only which cells hold a character and where the cursor
+ * is, both of which the player can already see. The server keeps the only copy
+ * of the solution and still returns exactly one cell.
+ */
+export interface CrosswordHintState {
+  readonly filled: readonly string[];
+  readonly selected: string | null;
+}

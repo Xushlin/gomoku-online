@@ -211,6 +211,35 @@ describe('CrosswordState', () => {
     expect(Object.keys(submission)).toHaveLength(2);
   });
 
+  it('reports given and placed cells as filled, plus the cursor', () => {
+    const state = loaded();
+    placeChar(state, '而'); // lands in 0,1
+
+    const hint = state.hintState();
+
+    // 0,0 is given, 0,1 was just placed — both count as "has a character".
+    expect(hint.filled.sort()).toEqual(['0,0', '0,1']);
+    expect(hint.selected).toBe('0,2');
+  });
+
+  it('reports no answers in the hint state', () => {
+    const state = loaded();
+    for (const char of ['而', '为', '一']) placeChar(state, char);
+
+    const serialised = JSON.stringify(state.hintState());
+
+    // Cell keys and the cursor only — the client has no solution to leak.
+    expect(serialised).not.toContain('合而为一');
+    expect(serialised).not.toContain('合情合理');
+  });
+
+  it('reports every cell as filled once the grid is complete', () => {
+    const state = loaded();
+    for (const char of ['而', '为', '一', '情', '合', '理']) placeChar(state, char);
+
+    expect(state.hintState().filled).toHaveLength(7);
+  });
+
   it('holds no score — mistakes and hints are the server’s business', () => {
     const state = loaded() as unknown as Record<string, unknown>;
 

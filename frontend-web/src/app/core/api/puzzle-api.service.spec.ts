@@ -94,6 +94,27 @@ describe('DefaultPuzzleApiService', () => {
     expect(result?.solved).toBeNull();
   });
 
+  it('sends the board state with a hint request', () => {
+    api.hint('att-1', { filled: ['0,0'], selected: '1,0' }).subscribe();
+
+    const req = http.expectOne('/api/puzzle-attempts/att-1/hint');
+    expect(req.request.body).toEqual({
+      stateJson: JSON.stringify({ filled: ['0,0'], selected: '1,0' }),
+    });
+    req.flush({ revealedJson: '{}', hintsUsed: 1 });
+    http.verify();
+  });
+
+  it('sends a null state when the caller supplies none', () => {
+    // An older client that never learned to report its board must still get a hint.
+    api.hint('att-1').subscribe();
+
+    const req = http.expectOne('/api/puzzle-attempts/att-1/hint');
+    expect(req.request.body).toEqual({ stateJson: null });
+    req.flush({ revealedJson: '{}', hintsUsed: 1 });
+    http.verify();
+  });
+
   it('parses the revealed cell of a hint', () => {
     let hint: { revealed: unknown; hintsUsed: number } | undefined;
     api.hint('att-1').subscribe((h) => (hint = h));
