@@ -32,6 +32,12 @@ export const routes: Routes = [
       import('./pages/auth/change-password/change-password').then((m) => m.ChangePassword),
   },
   {
+    path: 'g/tictactoe',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./games/tictactoe/ai-game/ai-game').then((m) => m.TicTacToeAiGame),
+  },
+  {
     path: 'g/idiom-crossword',
     canMatch: [authGuard],
     loadComponent: () =>

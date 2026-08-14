@@ -250,7 +250,7 @@
       "title-win": "You won!",
       "title-lose": "You lost.",
       "title-draw": "Draw.",
-      "reason-connected-5": "Five in a row.",
+      "reason-connected-5": "A line was completed.",
       "reason-resigned": "Opponent resigned.",
       "reason-timeout": "Turn timed out.",
       "back-to-lobby": "Back to lobby",
@@ -399,5 +399,21 @@
       "load-levels": "Couldn't load the levels.",
       "load-level": "Couldn't start this level."
     }
+  },
+  "tictactoe": {
+    "back": "Back to games",
+    "difficulty-easy": "Easy",
+    "difficulty-hard": "Hard",
+    "difficulty-legend": "Difficulty",
+    "difficulty-medium": "Medium",
+    "error-create-failed": "Could not create the game. Please try again.",
+    "notice-unbeatable": "Hard searches the entire game tree. Tic-tac-toe is a solved game, so you cannot beat it — a draw is the best result available. Pick Easy or Medium if you want to win.",
+    "notice-unrated": "This game is unrated: results do not affect your rating or record.",
+    "side-black": "Black (first)",
+    "side-legend": "Your side",
+    "side-white": "White (second)",
+    "start": "Start game",
+    "starting": "Creating…",
+    "subtitle": "Three in a row on 3×3. A quick game against the machine — unrated."
   }
 }

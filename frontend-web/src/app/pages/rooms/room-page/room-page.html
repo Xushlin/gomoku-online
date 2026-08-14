@@ -75,6 +75,8 @@
       <div class="flex min-w-0 flex-col items-center gap-4">
         <app-board
           [state]="room"
+          [rows]="boardSize().rows"
+          [cols]="boardSize().cols"
           [mySide]="mySide()"
           [submitting]="submittingMove()"
           (cellClick)="handleCellClick($event)"

@@ -9,6 +9,7 @@ namespace Gewu.Application.Common.DTOs;
 public sealed record GameReplayDto(
     Guid RoomId,
     string Name,
+    string GameKey,
     UserSummaryDto Host,
     UserSummaryDto Black,
     UserSummaryDto White,

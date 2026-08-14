@@ -50,4 +50,21 @@ export interface GameManifest {
    * `'available'`, and is never read when `status` is `'planned'`.
    */
   readonly launchRoute?: string;
+
+  /**
+   * Board dimensions. Only meaningful for `category: 'match'`, and required once
+   * such a game is `'available'`.
+   *
+   * This is a **deliberate copy of server-authoritative data**. The real source is
+   * the backend's `IGameRules`; this exists only because the room DTO carries the
+   * game key but not the size — threading the rules registry through nine
+   * `ToState`/`ToSummary` call sites was not worth two integers (see
+   * add-web-tictactoe-ai design D1).
+   *
+   * The cost of drift is bounded twice over: the symptom is a visibly wrong number
+   * of cells rather than a silent error, and the server's `rules.IsInBounds` rejects
+   * out-of-range moves, so an oversized client board cannot corrupt a game. Delete
+   * this field when `generalize-match-contract` puts dimensions on the wire.
+   */
+  readonly board?: { readonly rows: number; readonly cols: number };
 }

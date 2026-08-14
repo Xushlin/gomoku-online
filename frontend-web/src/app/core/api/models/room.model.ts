@@ -26,6 +26,8 @@ export interface UserSummary {
 export interface RoomSummary {
   readonly id: string;
   readonly name: string;
+  /** Which game this room plays. See RoomState.gameKey for why it is on the wire. */
+  readonly gameKey: string;
   readonly status: RoomStatus;
   readonly host: UserSummary;
   readonly black: UserSummary | null;
@@ -81,6 +83,8 @@ export interface GameEndedDto {
 export interface GameReplayDto {
   readonly roomId: string;
   readonly name: string;
+  /** Which game was played — the replay board needs it for the same reason the live board does. */
+  readonly gameKey: string;
   readonly host: UserSummary;
   readonly black: UserSummary;
   readonly white: UserSummary;
@@ -106,6 +110,20 @@ export interface UrgeDto {
 export interface RoomState {
   readonly id: string;
   readonly name: string;
+  /**
+   * Which game this room plays — the only thing that tells the client how big the
+   * board is.
+   *
+   * A player reaches a room by four routes: from the create page, by refreshing,
+   * from a bookmarked link, or from the "my games" card. Only the first one leaves
+   * the client knowing the game; the other three give it nothing but a room id. So
+   * "carry the size in the route" is a shortcut that works on one route out of four
+   * and renders 3x3 as 15x15 on the other three.
+   *
+   * Dimensions themselves are not on the wire — the client resolves them from its
+   * own game registry using this key. See add-web-tictactoe-ai design D1.
+   */
+  readonly gameKey: string;
   readonly status: RoomStatus;
   readonly host: UserSummary;
   readonly black: UserSummary | null;

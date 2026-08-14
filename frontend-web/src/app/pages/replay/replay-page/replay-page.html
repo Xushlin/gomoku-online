@@ -75,6 +75,8 @@
 
     <app-board
       [state]="boardState()"
+      [rows]="boardSize().rows"
+      [cols]="boardSize().cols"
       [mySide]="'spectator'"
       [submitting]="false"
       [readonly]="true"

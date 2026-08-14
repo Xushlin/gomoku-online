@@ -17,6 +17,7 @@ public static class RoomMapping
         return new RoomSummaryDto(
             Id: room.Id.Value,
             Name: room.Name,
+            GameKey: room.GameKey,
             Status: room.Status,
             Host: UserSummary(room.HostUserId, usernames),
             Black: UserSummary(room.BlackPlayerId, usernames),
@@ -72,6 +73,7 @@ public static class RoomMapping
         return new RoomStateDto(
             Id: room.Id.Value,
             Name: room.Name,
+            GameKey: room.GameKey,
             Status: room.Status,
             Host: UserSummary(room.HostUserId, usernames),
             Black: UserSummary(room.BlackPlayerId, usernames),

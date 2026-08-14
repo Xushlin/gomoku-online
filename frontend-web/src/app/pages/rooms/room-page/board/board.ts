@@ -8,7 +8,13 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { MoveDto, RoomState, Stone } from '../../../../core/api/models/room.model';
 
-const BOARD_SIZE = 15;
+/**
+ * Gomoku's size, kept as the default so the two existing call sites (room page,
+ * replay page) need no change. It used to be a file-level constant and therefore
+ * the front-end twin of the backend's hardcoded `Board(15, 15, 5)` — which
+ * `add-game-rules-registry` already turned into parameters.
+ */
+const DEFAULT_SIZE = 15;
 
 interface CellCoord {
   readonly row: number;
@@ -30,16 +36,40 @@ export class Board {
   readonly = input<boolean>(false);
   readonly cellClick = output<CellCoord>();
 
-  protected readonly rows = Array.from({ length: BOARD_SIZE }, (_, i) => i);
-  protected readonly cols = Array.from({ length: BOARD_SIZE }, (_, i) => i);
+  /**
+   * Board dimensions, supplied by the container.
+   *
+   * This component stays purely presentational: it does NOT know about `gameKey`
+   * and does NOT inject `GameCatalogService`. Resolving a game key into a size is
+   * the container's job — same split the rest of the app already follows.
+   */
+  readonly rows = input<number>(DEFAULT_SIZE);
+  readonly cols = input<number>(DEFAULT_SIZE);
+
+  protected readonly rowIndices = computed(() =>
+    Array.from({ length: this.rows() }, (_, i) => i),
+  );
+  protected readonly colIndices = computed(() =>
+    Array.from({ length: this.cols() }, (_, i) => i),
+  );
+
+  /** Star points are placed for a 15×15 board; on anything else they are noise. */
+  protected readonly showStars = computed(
+    () => this.rows() === DEFAULT_SIZE && this.cols() === DEFAULT_SIZE,
+  );
 
   private readonly grid = computed<Stone[][]>(() => {
-    const board: Stone[][] = Array.from({ length: BOARD_SIZE }, () =>
-      Array.from<Stone>({ length: BOARD_SIZE }).fill('Empty'),
+    const rowCount = this.rows();
+    const colCount = this.cols();
+    const board: Stone[][] = Array.from({ length: rowCount }, () =>
+      Array.from<Stone>({ length: colCount }).fill('Empty'),
     );
     const moves = this.state()?.game?.moves ?? [];
     for (const move of moves) {
-      if (move.row >= 0 && move.row < BOARD_SIZE && move.col >= 0 && move.col < BOARD_SIZE) {
+      // Out-of-range plies are dropped rather than thrown on. If the client's
+      // idea of the size ever disagrees with the server's, the board should look
+      // wrong — not blank the page.
+      if (move.row >= 0 && move.row < rowCount && move.col >= 0 && move.col < colCount) {
         board[move.row][move.col] = move.stone;
       }
     }
@@ -58,7 +88,7 @@ export class Board {
   });
 
   protected stoneAt(row: number, col: number): Stone {
-    return this.grid()[row][col];
+    return this.grid()[row]?.[col] ?? 'Empty';
   }
 
   protected cellDisabled(row: number, col: number): boolean {

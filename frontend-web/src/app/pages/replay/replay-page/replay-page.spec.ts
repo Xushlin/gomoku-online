@@ -9,11 +9,13 @@ import type { GameReplayDto } from '../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ReplayPage } from './replay-page';
+import { DefaultGameCatalogService, GameCatalogService } from '../../../games/game-catalog.service';
 
 function makeReplay(overrides: Partial<GameReplayDto> = {}): GameReplayDto {
   return {
     roomId: 'r-1',
     name: 'Replay',
+    gameKey: 'gomoku',
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
     white: { id: 'u-2', username: 'bob' },
@@ -68,6 +70,7 @@ function mount(opts: { id?: string | null; getReplay?: ReturnType<typeof vi.fn> 
       }),
     ],
     providers: [
+      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
       { provide: RoomsApiService, useValue: rooms },
       { provide: Router, useValue: router },
       { provide: ActivatedRoute, useValue: activatedRoute(id) },

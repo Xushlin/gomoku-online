@@ -29,6 +29,7 @@ function baseState(): RoomState {
   return {
     id: 'r-1',
     name: 'r',
+    gameKey: 'gomoku',
     status: 'Playing',
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },

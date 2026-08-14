@@ -12,6 +12,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
 import { RoomPage } from './room-page';
+import { DefaultGameCatalogService, GameCatalogService } from '../../../games/game-catalog.service';
 
 function makeRoomState() {
   return {
@@ -103,6 +104,7 @@ function mount(id = 'r-1') {
       }),
     ],
     providers: [
+      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: GameHubService, useValue: hub },

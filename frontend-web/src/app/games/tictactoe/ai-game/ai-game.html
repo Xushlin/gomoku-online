@@ -1,0 +1,87 @@
+<div class="mx-auto flex w-full max-w-lg flex-col gap-5">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-text text-2xl font-semibold tracking-tight">
+      {{ 'games.tictactoe.title' | transloco }}
+    </h1>
+    <p class="text-muted text-sm">{{ 'tictactoe.subtitle' | transloco }}</p>
+  </header>
+
+  <!--
+    Both notices sit above the choices on purpose. "You cannot beat Hard" and
+    "this game is unrated" are things a player is entitled to know before they
+    start, not after losing three games and wondering why their rank held still.
+  -->
+  <p
+    class="border-border bg-surface text-muted rounded-card border px-3 py-2 text-xs leading-relaxed"
+  >
+    {{ 'tictactoe.notice-unbeatable' | transloco }}
+    <span class="block">{{ 'tictactoe.notice-unrated' | transloco }}</span>
+  </p>
+
+  <fieldset class="flex flex-col gap-2">
+    <legend class="text-text mb-1 text-sm font-medium">
+      {{ 'tictactoe.difficulty-legend' | transloco }}
+    </legend>
+    <div class="grid grid-cols-3 gap-2">
+      @for (d of difficulties; track d) {
+        <button
+          type="button"
+          class="rounded-card focus-visible:outline-primary border px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          [class.border-primary]="difficulty() === d"
+          [class.text-primary]="difficulty() === d"
+          [class.border-border]="difficulty() !== d"
+          [class.text-text]="difficulty() !== d"
+          [attr.aria-pressed]="difficulty() === d"
+          (click)="pickDifficulty(d)"
+        >
+          {{ difficultyKey(d) | transloco }}
+        </button>
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="flex flex-col gap-2">
+    <legend class="text-text mb-1 text-sm font-medium">
+      {{ 'tictactoe.side-legend' | transloco }}
+    </legend>
+    <div class="grid grid-cols-2 gap-2">
+      @for (s of sides; track s) {
+        <button
+          type="button"
+          class="rounded-card focus-visible:outline-primary border px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          [class.border-primary]="side() === s"
+          [class.text-primary]="side() === s"
+          [class.border-border]="side() !== s"
+          [class.text-text]="side() !== s"
+          [attr.aria-pressed]="side() === s"
+          (click)="pickSide(s)"
+        >
+          {{ sideKey(s) | transloco }}
+        </button>
+      }
+    </div>
+  </fieldset>
+
+  @if (errorKey()) {
+    <p class="text-danger border-danger rounded-card border px-3 py-2 text-sm" role="alert">
+      {{ errorKey()! | transloco }}
+    </p>
+  }
+
+  <div class="flex items-center gap-3">
+    <button
+      type="button"
+      class="bg-primary rounded-card focus-visible:outline-primary flex-1 px-4 py-2.5 text-sm font-medium text-white transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+      [disabled]="submitting()"
+      (click)="start()"
+    >
+      {{ (submitting() ? 'tictactoe.starting' : 'tictactoe.start') | transloco }}
+    </button>
+    <a
+      routerLink="/games"
+      class="border-border text-text rounded-card hover:bg-bg focus-visible:outline-primary border px-4 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      {{ 'tictactoe.back' | transloco }}
+    </a>
+  </div>
+</div>

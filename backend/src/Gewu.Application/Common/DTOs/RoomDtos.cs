@@ -23,9 +23,14 @@ public sealed record GameEndedDto(
 /// 房间摘要,用于 <c>GET /api/rooms</c> 列表。不含 Moves / ChatMessages / Spectators 列表,
 /// 只含观众数量。
 /// </summary>
+/// <param name="GameKey">
+/// 该房间玩的是哪个棋种。客户端据此决定盘面尺寸等与棋种有关的呈现 ——
+/// 详见 <see cref="RoomStateDto"/> 上的说明。
+/// </param>
 public sealed record RoomSummaryDto(
     Guid Id,
     string Name,
+    string GameKey,
     RoomStatus Status,
     UserSummaryDto Host,
     UserSummaryDto? Black,
@@ -67,10 +72,25 @@ public sealed record ChatMessageDto(
 /// <summary>催促事件的 payload(仅推给被催方)。</summary>
 public sealed record UrgeDto(Guid FromUserId, string FromUsername, DateTime SentAt);
 
-/// <summary>房间的完整状态,用于 <c>GET /api/rooms/{id}</c> 和 <c>RoomStateChanged</c> 事件。</summary>
+/// <summary>
+/// 房间的完整状态,用于 <c>GET /api/rooms/{id}</c> 和 <c>RoomStateChanged</c> 事件。
+/// <para>
+/// <paramref name="GameKey"/> 不是装饰性字段 —— 客户端**画不出棋盘就得靠它**。玩家进入
+/// 一个房间有四条路:从建房页跳转、刷新页面、点收藏链接、从"我的对局"进入。只有第一条路上
+/// 客户端知道棋种(是它自己刚选的);另外三条它手上只有一个房间 id。所以"棋种从路由参数
+/// 带过来"这条捷径只在四条路里的一条上成立,另外三条会把 3×3 画成 15×15。
+/// </para>
+/// <para>
+/// 盘面尺寸(行列数)本 DTO **不**下发:那需要把 <c>IGameRulesRegistry</c> 穿过九处
+/// <c>ToState</c> / <c>ToSummary</c> 调用点。客户端从自己的游戏注册表按本键解析尺寸 ——
+/// 见 <c>add-web-tictactoe-ai</c> design D1。<c>generalize-match-contract</c> 反正要重写
+/// 本 DTO(座位、JSON 载荷),届时改为服务端下发。
+/// </para>
+/// </summary>
 public sealed record RoomStateDto(
     Guid Id,
     string Name,
+    string GameKey,
     RoomStatus Status,
     UserSummaryDto Host,
     UserSummaryDto? Black,
