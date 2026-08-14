@@ -97,10 +97,10 @@ public sealed class MediumAi : IGomokuAi
 
     private static List<Position> EnumerateEmpties(Board board)
     {
-        var list = new List<Position>(Position.BoardSize * Position.BoardSize);
-        for (var r = 0; r <= Position.MaxIndex; r++)
+        var list = new List<Position>(board.CellCount);
+        for (var r = 0; r < board.Rows; r++)
         {
-            for (var c = 0; c <= Position.MaxIndex; c++)
+            for (var c = 0; c < board.Cols; c++)
             {
                 var p = new Position(r, c);
                 if (board.GetStone(p) == Stone.Empty)
@@ -130,7 +130,7 @@ public sealed class MediumAi : IGomokuAi
                 if (dr == 0 && dc == 0) continue;
                 var nr = p.Row + dr;
                 var nc = p.Col + dc;
-                if (nr < 0 || nr > Position.MaxIndex || nc < 0 || nc > Position.MaxIndex) continue;
+                if (nr < 0 || nr >= board.Rows || nc < 0 || nc >= board.Cols) continue;
                 if (board.GetStone(new Position(nr, nc)) == myStone)
                 {
                     adjacency++;

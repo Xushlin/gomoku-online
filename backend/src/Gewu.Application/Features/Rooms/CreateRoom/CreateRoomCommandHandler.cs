@@ -1,4 +1,5 @@
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Common.Exceptions;
 using Gewu.Application.Common.Mapping;
@@ -34,7 +35,7 @@ public sealed class CreateRoomCommandHandler : IRequestHandler<CreateRoomCommand
         var host = await _users.FindByIdAsync(request.HostUserId, cancellationToken)
             ?? throw new UserNotFoundException($"User '{request.HostUserId.Value}' was not found.");
 
-        var room = Room.Create(RoomId.NewId(), request.Name, request.HostUserId, _clock.UtcNow);
+        var room = Room.Create(RoomId.NewId(), request.Name, request.HostUserId, _clock.UtcNow, GameKeys.Gomoku);
 
         await _rooms.AddAsync(room, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);

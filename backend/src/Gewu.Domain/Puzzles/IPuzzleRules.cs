@@ -4,9 +4,22 @@ namespace Gewu.Domain.Puzzles;
 /// <param name="IsCorrect">是否通关。</param>
 public sealed record PuzzleValidationResult(bool IsCorrect);
 
-/// <summary>一次部分答案校验的结果。</summary>
+/// <summary>
+/// 一次部分答案校验的结果。
+/// <para>
+/// <paramref name="PayloadJson"/> 是给"答对之后要说点什么"用的:成语纵横要在一条成语
+/// 填满的瞬间显示它的释义,而释义在数据库里、词典没有 HTTP 面,客户端凭自己拼不出来。
+/// 华容道要说"这一步把曹操挪出来了"、猜成语要给出处,都是同一个需求。
+/// </para>
+/// <para>
+/// 它对答案封闭规则**没有**削弱:载荷描述的是玩家刚刚已经解开的那部分,不透露网格
+/// 未解部分的任何信息。因此实现 MUST 只在 <paramref name="IsCorrect"/> 为 <c>true</c>
+/// 时填充它 —— 答错时附带任何内容都等于借错误路径泄题。
+/// </para>
+/// </summary>
 /// <param name="IsCorrect">这一部分是否正确 —— 为 <c>false</c> 时调用方会给该尝试记一次错。</param>
-public sealed record PuzzlePartialResult(bool IsCorrect);
+/// <param name="PayloadJson">答对时的游戏自定义载荷;答错时 MUST 为 <c>null</c>。</param>
+public sealed record PuzzlePartialResult(bool IsCorrect, string? PayloadJson = null);
 
 /// <summary>一次提示的结果:只含被揭示的那一个片段。</summary>
 /// <param name="RevealedJson">被揭示片段的 JSON。MUST NOT 包含答案的其余部分。</param>

@@ -48,7 +48,15 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
             => new(submissionJson == solutionJson);
 
         public PuzzlePartialResult CheckPartial(string solutionJson, string partialJson)
-            => new(partialJson.StartsWith("OK-", StringComparison.Ordinal));
+        {
+            var correct = partialJson.StartsWith("OK-", StringComparison.Ordinal);
+
+            // 答对时附带载荷,答错时故意也塞一个 —— 用来证明 handler 会把答错路径上的
+            // 载荷丢掉,而不是原样转发(否则错误路径就成了泄题通道)。
+            return correct
+                ? new PuzzlePartialResult(true, "{\"note\":\"solved\"}")
+                : new PuzzlePartialResult(false, "{\"leak\":\"must-not-reach-client\"}");
+        }
 
         public PuzzleHintResult Hint(string solutionJson, string layoutJson, int alreadyRevealedCount)
             => new($"{{\"position\":{alreadyRevealedCount}}}");
@@ -137,6 +145,10 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
         var right = await Check(started.AttemptId, "OK-word");
         right.IsCorrect.Should().BeTrue();
         right.Mistakes.Should().Be(1, "正确的部分校验不该计错");
+        right.PayloadJson.Should().Be("{\"note\":\"solved\"}", "答对时载荷原样转发");
+
+        // 答错路径 MUST NOT 转发载荷,即便规则实现填了 —— 否则未解开的部分会借错误路径泄漏。
+        wrong.PayloadJson.Should().BeNull();
 
         var hint = await Hint(started.AttemptId);
         hint.HintsUsed.Should().Be(1);

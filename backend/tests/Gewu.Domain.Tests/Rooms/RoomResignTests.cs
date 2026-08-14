@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Exceptions;
 using Move = Gewu.Domain.ValueObjects.Move;
 
@@ -11,7 +13,7 @@ public class RoomResignTests
     {
         var host = UserId.NewId();
         var white = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "test", host, Now);
+        var room = Room.Create(RoomId.NewId(), "test", host, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(white, Now.AddSeconds(1));
         return (room, host, white);
     }
@@ -50,7 +52,7 @@ public class RoomResignTests
     {
         var (room, black, white) = PlayingRoom();
         // Black 走一手,现在轮到 White
-        room.PlayMove(black, new Position(7, 7), Now.AddSeconds(2));
+        room.PlayMove(black, new Position(7, 7), Now.AddSeconds(2), BuiltInGameRules.Gomoku);
         room.Game!.CurrentTurn.Should().Be(Stone.White);
 
         // Black 在 White 回合认输也成功
@@ -64,7 +66,7 @@ public class RoomResignTests
     public void Resign_In_Waiting_Room_Throws()
     {
         var host = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "waiting", host, Now);
+        var room = Room.Create(RoomId.NewId(), "waiting", host, Now, GameKeys.Gomoku);
 
         var act = () => room.Resign(host, Now);
 

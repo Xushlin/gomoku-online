@@ -32,6 +32,17 @@ export const routes: Routes = [
       import('./pages/auth/change-password/change-password').then((m) => m.ChangePassword),
   },
   {
+    path: 'g/idiom-crossword',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./games/idiom-crossword/level-list/level-list').then((m) => m.LevelList),
+  },
+  {
+    path: 'g/idiom-crossword/levels/:index',
+    canMatch: [authGuard],
+    loadComponent: () => import('./games/idiom-crossword/play/play').then((m) => m.Play),
+  },
+  {
     path: 'rooms/:id',
     canMatch: [authGuard],
     loadComponent: () =>

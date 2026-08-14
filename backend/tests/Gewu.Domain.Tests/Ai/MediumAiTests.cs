@@ -8,7 +8,7 @@ public class MediumAiTests
     public void Prefers_Winning_Move_When_Own_Four_In_A_Row_Present()
     {
         // 黑方在 (7,3)..(7,6) 已有 4 连;连五空点是 (7,2) 或 (7,7)。
-        var board = new Board();
+        var board = GomokuBoards.New();
         board.PlaceStone(new Move(new Position(7, 3), Stone.Black));
         board.PlaceStone(new Move(new Position(7, 4), Stone.Black));
         board.PlaceStone(new Move(new Position(7, 5), Stone.Black));
@@ -25,7 +25,7 @@ public class MediumAiTests
     {
         // 白方在 (7,3)..(7,6) 已有 4 连;黑方必须堵 (7,2) 或 (7,7)。
         // 黑方在盘上另处有一子,不足以自赢。
-        var board = new Board();
+        var board = GomokuBoards.New();
         board.PlaceStone(new Move(new Position(7, 3), Stone.White));
         board.PlaceStone(new Move(new Position(7, 4), Stone.White));
         board.PlaceStone(new Move(new Position(7, 5), Stone.White));
@@ -43,7 +43,7 @@ public class MediumAiTests
     {
         // 黑方能连五 (7,3)..(7,7);同时白方也摆了一个即将连五(6,3)..(6,6),
         // 需要堵 (6,2) 或 (6,7)。按策略应选自赢,而非堵白。
-        var board = new Board();
+        var board = GomokuBoards.New();
         // 黑 (7,3)(7,4)(7,5)(7,6) 等待 (7,7) 连五
         board.PlaceStone(new Move(new Position(7, 3), Stone.Black));
         board.PlaceStone(new Move(new Position(7, 4), Stone.Black));
@@ -68,7 +68,7 @@ public class MediumAiTests
         // 空盘上,第一层第二层都不命中;启发分选最高。
         // centerPenalty 在 (7,7) 为 0(最优),其他所有点 centerPenalty < 0;
         // adjacency 对空盘恒为 0。故 (7,7) 唯一最高分。
-        var board = new Board();
+        var board = GomokuBoards.New();
         var ai = new MediumAi(new Random(1));
 
         var pick = ai.SelectMove(board, Stone.Black);
@@ -80,31 +80,31 @@ public class MediumAiTests
     public void Does_Not_Mutate_Input_Board()
     {
         // AI 只能通过 board.Clone() 试走;入参 Board 调用前后完全一致。
-        var board = new Board();
+        var board = GomokuBoards.New();
         board.PlaceStone(new Move(new Position(7, 3), Stone.Black));
         board.PlaceStone(new Move(new Position(7, 4), Stone.Black));
         board.PlaceStone(new Move(new Position(7, 5), Stone.Black));
 
         // 拍照
-        var snapshot = new Stone[Position.BoardSize * Position.BoardSize];
-        for (var r = 0; r <= Position.MaxIndex; r++)
-            for (var c = 0; c <= Position.MaxIndex; c++)
-                snapshot[r * Position.BoardSize + c] = board.GetStone(new Position(r, c));
+        var snapshot = new Stone[GomokuBoards.Size * GomokuBoards.Size];
+        for (var r = 0; r <= GomokuBoards.MaxIndex; r++)
+            for (var c = 0; c <= GomokuBoards.MaxIndex; c++)
+                snapshot[r * GomokuBoards.Size + c] = board.GetStone(new Position(r, c));
 
         var ai = new MediumAi(new Random(1));
         _ = ai.SelectMove(board, Stone.Black);
 
-        for (var r = 0; r <= Position.MaxIndex; r++)
-            for (var c = 0; c <= Position.MaxIndex; c++)
+        for (var r = 0; r <= GomokuBoards.MaxIndex; r++)
+            for (var c = 0; c <= GomokuBoards.MaxIndex; c++)
                 board.GetStone(new Position(r, c))
-                    .Should().Be(snapshot[r * Position.BoardSize + c], $"at ({r},{c})");
+                    .Should().Be(snapshot[r * GomokuBoards.Size + c], $"at ({r},{c})");
     }
 
     [Fact]
     public void Empty_Stone_Throws()
     {
         var ai = new MediumAi(new Random(1));
-        var board = new Board();
+        var board = GomokuBoards.New();
 
         var act = () => ai.SelectMove(board, Stone.Empty);
 
@@ -115,7 +115,7 @@ public class MediumAiTests
     public void Never_Selects_Occupied_Cell()
     {
         // 放一些子,然后让 MediumAi 走;结果必为空格。
-        var board = new Board();
+        var board = GomokuBoards.New();
         var placed = new (int, int, Stone)[]
         {
             (7, 7, Stone.Black),
@@ -141,7 +141,7 @@ public class MediumAiTests
         //   (7,6)/(7,8)/(6,7)/(8,7) 等相邻格 centerPenalty=-1、adjacency=1 → 总 0
         //   远处格子 centerPenalty 更低(更负)、adjacency=0 → 更低
         // 故 AI 应选与 (7,7) 相邻的 8 格之一。
-        var board = new Board();
+        var board = GomokuBoards.New();
         board.PlaceStone(new Move(new Position(7, 7), Stone.Black));
 
         var ai = new MediumAi(new Random(1));

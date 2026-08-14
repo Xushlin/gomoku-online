@@ -1,5 +1,6 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
 import { materialTokens } from './themes/material';
+import { inkTokens } from './themes/ink';
 import { systemTokens } from './themes/system';
 import type { ThemeTokens } from './theme.tokens';
 
@@ -43,6 +44,7 @@ export class DefaultThemeService extends ThemeService {
     super();
     this.register('material', materialTokens);
     this.register('system', systemTokens);
+    this.register('ink', inkTokens);
 
     const initialTheme = this.resolveInitialTheme();
     const initialDark = this.resolveInitialDark();

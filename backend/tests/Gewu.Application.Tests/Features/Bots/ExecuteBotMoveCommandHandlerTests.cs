@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Features.Bots.ExecuteBotMove;
 using Gewu.Application.Features.Rooms.MakeMove;
 using Gewu.Application.Tests.Features.Rooms;
@@ -25,14 +27,14 @@ public class ExecuteBotMoveCommandHandlerTests
         var bot = RoomsFixtures.NewBot(BotDifficulty.Easy);
         var room = RoomsFixtures.PlayingRoom(host, bot); // host=Black, bot=White
         // 当前回合 == Black(host)—— bot 不该走。先让 host 走一步,回合变成 White。
-        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 7), RoomsFixtures.Now.AddSeconds(2));
+        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 7), RoomsFixtures.Now.AddSeconds(2), BuiltInGameRules.Gomoku);
         room.Game!.CurrentTurn.Should().Be(Stone.White); // 确认轮到白方(bot)
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         _sender.Setup(s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoveDto(2, 0, 0, Stone.White, RoomsFixtures.Now));
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
         await sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
         _sender.Verify(
@@ -52,7 +54,7 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
         await act.Should().ThrowAsync<Gewu.Domain.Exceptions.NotYourTurnException>();
@@ -67,7 +69,7 @@ public class ExecuteBotMoveCommandHandlerTests
         _rooms.Setup(r => r.FindByIdAsync(missingRoomId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Room?)null);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, missingRoomId), default);
 
         await act.Should().ThrowAsync<RoomNotFoundException>();
@@ -82,7 +84,7 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
 
         await act.Should().ThrowAsync<Gewu.Domain.Exceptions.RoomNotInPlayException>();
@@ -99,7 +101,7 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
-        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, _random.Object, _sender.Object);
+        var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, _random.Object, _sender.Object);
         var act = () => sut.Handle(new ExecuteBotMoveCommand(orphanBot.Id, room.Id), default);
 
         await act.Should().ThrowAsync<Gewu.Domain.Exceptions.NotAPlayerException>();

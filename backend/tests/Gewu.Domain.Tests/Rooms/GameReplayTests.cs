@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Enums;
 using Gewu.Domain.ValueObjects;
 
@@ -11,7 +13,7 @@ public class GameReplayTests
     {
         black = UserId.NewId();
         white = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "Replay", black, Now);
+        var room = Room.Create(RoomId.NewId(), "Replay", black, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(white, Now.AddMinutes(1));
         return room;
     }
@@ -20,7 +22,7 @@ public class GameReplayTests
     public void Empty_Moves_Yields_Empty_Board()
     {
         var room = PlayingRoom(out _, out _);
-        var board = room.Game!.ReplayBoard();
+        var board = room.Game!.ReplayBoard(BuiltInGameRules.Gomoku);
 
         board.GetStone(new Position(0, 0)).Should().Be(Stone.Empty);
         board.GetStone(new Position(7, 7)).Should().Be(Stone.Empty);
@@ -31,11 +33,11 @@ public class GameReplayTests
     public void Replay_Reflects_All_Moves()
     {
         var room = PlayingRoom(out var b, out var w);
-        room.PlayMove(b, new Position(7, 7), Now.AddSeconds(1));
-        room.PlayMove(w, new Position(8, 8), Now.AddSeconds(2));
-        room.PlayMove(b, new Position(7, 8), Now.AddSeconds(3));
+        room.PlayMove(b, new Position(7, 7), Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.PlayMove(w, new Position(8, 8), Now.AddSeconds(2), BuiltInGameRules.Gomoku);
+        room.PlayMove(b, new Position(7, 8), Now.AddSeconds(3), BuiltInGameRules.Gomoku);
 
-        var board = room.Game!.ReplayBoard();
+        var board = room.Game!.ReplayBoard(BuiltInGameRules.Gomoku);
 
         board.GetStone(new Position(7, 7)).Should().Be(Stone.Black);
         board.GetStone(new Position(8, 8)).Should().Be(Stone.White);

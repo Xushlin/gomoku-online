@@ -1,3 +1,4 @@
+using Gewu.Domain.Games.NInARow;
 namespace Gewu.Domain.Tests.ValueObjects;
 
 public class PositionTests
@@ -18,28 +19,55 @@ public class PositionTests
 
     [Theory]
     [InlineData(-1)]
-    [InlineData(15)]
-    [InlineData(100)]
-    public void Out_Of_Range_Row_Throws(int row)
+    [InlineData(-100)]
+    public void Negative_Row_Throws(int row)
     {
         var act = () => new Position(row, 0);
 
         act.Should()
             .Throw<InvalidMoveException>()
-            .WithMessage($"*row {row}*[0..14]*");
+            .WithMessage($"*row {row}*negative*");
+    }
+
+    [Theory]
+    [InlineData(15)]
+    [InlineData(100)]
+    public void Row_Beyond_A_Gomoku_Board_Is_Accepted_By_Position_Itself(int row)
+    {
+        // 上界搬到了棋种规则上:`Position` 只保证非负,15 在五子棋上越界、在假想的
+        // 21×21 棋种上合法,所以坐标类型本身不该有意见。真正的拒绝在下面那条测试。
+        var act = () => new Position(row, 0);
+
+        act.Should().NotThrow();
+    }
+
+    [Theory]
+    [InlineData(15)]
+    [InlineData(100)]
+    public void Row_Beyond_A_Gomoku_Board_Is_Rejected_By_The_Rules(int row)
+    {
+        BuiltInGameRules.Gomoku.IsInBounds(new Position(row, 0)).Should().BeFalse();
     }
 
     [Theory]
     [InlineData(-1)]
-    [InlineData(15)]
-    [InlineData(100)]
-    public void Out_Of_Range_Col_Throws(int col)
+    [InlineData(-100)]
+    public void Negative_Col_Throws(int col)
     {
         var act = () => new Position(0, col);
 
         act.Should()
             .Throw<InvalidMoveException>()
-            .WithMessage($"*col {col}*[0..14]*");
+            .WithMessage($"*col {col}*negative*");
+    }
+
+    [Theory]
+    [InlineData(15)]
+    [InlineData(100)]
+    public void Col_Beyond_A_Gomoku_Board_Is_Rejected_By_The_Rules(int col)
+    {
+        new Position(0, col).Col.Should().Be(col);
+        BuiltInGameRules.Gomoku.IsInBounds(new Position(0, col)).Should().BeFalse();
     }
 
     [Fact]
@@ -66,7 +94,7 @@ public class PositionTests
     [Fact]
     public void Board_Size_Constant_Is_15()
     {
-        Position.BoardSize.Should().Be(15);
-        Position.MaxIndex.Should().Be(14);
+        GomokuBoards.Size.Should().Be(15);
+        GomokuBoards.MaxIndex.Should().Be(14);
     }
 }

@@ -1,4 +1,5 @@
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Common.Exceptions;
 using Gewu.Application.Features.Rooms.MakeMove;
 using Gewu.Domain.Ai;
@@ -29,16 +30,19 @@ namespace Gewu.Application.Features.Bots.ExecuteBotMove;
 public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMoveCommand, Unit>
 {
     private readonly IRoomRepository _rooms;
+    private readonly IGameRulesRegistry _rules;
     private readonly IAiRandomProvider _random;
     private readonly ISender _sender;
 
     /// <inheritdoc />
     public ExecuteBotMoveCommandHandler(
         IRoomRepository rooms,
+        IGameRulesRegistry rules,
         IAiRandomProvider random,
         ISender sender)
     {
         _rooms = rooms;
+        _rules = rules;
         _random = random;
         _sender = sender;
     }
@@ -80,12 +84,13 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
                 $"User {request.BotUserId.Value} is not a seeded bot account.",
                 nameof(request));
 
-        // Replay Board from Moves 历史(与 Room.PlayMove 内部的 ReplayBoard 一致逻辑)
-        var board = new Board();
-        foreach (var m in room.Game.Moves.OrderBy(mv => mv.Ply))
-        {
-            board.PlaceStone(new DomainMove(new Position(m.Row, m.Col), m.Stone));
-        }
+        var rules = _rules.For(room.GameKey)
+            ?? throw new RoomNotFoundException(
+                $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
+
+        // 用聚合自己的 replay —— 这里原先是它的一份手抄副本,注释甚至写明了"逻辑一致",
+        // 两份就是两个会各自漂移的真源。
+        var board = room.Game.ReplayBoard(rules);
 
         var ai = GomokuAiFactory.Create(difficulty, _random.Get());
         var pick = ai.SelectMove(board, botStone);

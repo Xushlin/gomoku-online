@@ -1,0 +1,18 @@
+<div
+  class="flex flex-wrap justify-center gap-2"
+  role="group"
+  [attr.aria-label]="'idiom-crossword.board.tray-aria' | transloco"
+>
+  @for (tile of tiles(); track $index) {
+    <button
+      type="button"
+      class="crossword-tile font-serif text-xl font-bold"
+      [class.crossword-tile--used]="used().has($index)"
+      [disabled]="used().has($index)"
+      [attr.aria-hidden]="used().has($index) ? 'true' : null"
+      (click)="onTap($index)"
+    >
+      {{ tile }}
+    </button>
+  }
+</div>

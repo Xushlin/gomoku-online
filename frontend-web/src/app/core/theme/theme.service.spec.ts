@@ -1,3 +1,4 @@
+import { inkTokens } from './themes/ink';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DefaultThemeService, ThemeService } from './theme.service';
@@ -80,4 +81,27 @@ describe('DefaultThemeService', () => {
     const svc = createService();
     expect(svc.availableThemes()).toEqual(expect.arrayContaining(['material', 'system']));
   });
+
+  it('registers the ink theme alongside material and system', () => {
+    const svc = createService();
+
+    expect(svc.availableThemes()).toEqual(
+      expect.arrayContaining(['material', 'system', 'ink']),
+    );
+  });
+
+  it('defines every token in both ink modes', () => {
+    // A theme's contract is a matched pair. The 成语纵横 prototype is dark-only;
+    // shipping ink without a light set would break the light/dark axis for
+    // anyone who picks it.
+    for (const mode of ['light', 'dark'] as const) {
+      const set = inkTokens[mode];
+      expect(Object.keys(set.colors).sort()).toEqual(
+        Object.keys(inkTokens.light.colors).sort(),
+      );
+      expect(set.radii.card).toBeTruthy();
+      expect(set.shadows.elevated).toBeTruthy();
+    }
+  });
+
 });

@@ -1,0 +1,91 @@
+<div class="flex flex-col gap-4">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-text text-2xl font-semibold tracking-tight">
+      {{ 'games.idiom-crossword.title' | transloco }}
+    </h1>
+    <p class="text-muted text-sm">{{ 'idiom-crossword.levels.subtitle' | transloco }}</p>
+  </header>
+
+  @if (loading()) {
+    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-hidden="true">
+      @for (i of skeletons; track i) {
+        <li class="border-border bg-surface rounded-card h-24 animate-pulse border"></li>
+      }
+    </ul>
+  } @else if (failed()) {
+    <div class="flex flex-col items-center gap-3 py-8 text-sm">
+      <p class="text-danger">{{ 'idiom-crossword.errors.load-levels' | transloco }}</p>
+      <button
+        type="button"
+        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5"
+        (click)="load()"
+      >
+        {{ 'idiom-crossword.actions.retry' | transloco }}
+      </button>
+    </div>
+  } @else {
+    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      @for (level of levels(); track level.levelIndex) {
+        <li class="flex">
+          <!--
+            Unlocked levels are links; locked ones are inert. Same rule as the
+            catalogue's planned cards: a focusable control that goes nowhere is
+            worse than one that never claims to be interactive.
+          -->
+          @if (level.unlocked) {
+            <a
+              [routerLink]="routeFor(level)"
+              class="bg-surface text-text border-border rounded-card shadow-elevated hover:bg-bg focus-visible:outline-primary flex w-full flex-col gap-2 border p-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <span class="flex items-baseline justify-between">
+                <span class="text-base font-semibold">
+                  {{ 'idiom-crossword.levels.number' | transloco: { number: level.levelIndex + 1 } }}
+                </span>
+                <span class="text-muted text-xs">
+                  {{ 'idiom-crossword.levels.difficulty' | transloco: { value: level.difficulty } }}
+                </span>
+              </span>
+
+              <span class="text-primary text-lg leading-none tracking-widest">
+                @for (filled of stars(level); track $index) {
+                  <span [class.opacity-30]="!filled" aria-hidden="true">★</span>
+                }
+              </span>
+              <span class="sr-only">
+                {{ 'idiom-crossword.levels.stars-label' | transloco: { count: level.bestStars ?? 0 } }}
+              </span>
+
+              @if (duration(level); as best) {
+                <span class="text-muted mt-auto text-xs">
+                  {{ 'idiom-crossword.levels.best-time' | transloco: { time: best } }}
+                </span>
+              } @else {
+                <span class="text-muted mt-auto text-xs">
+                  {{ 'idiom-crossword.levels.unplayed' | transloco }}
+                </span>
+              }
+            </a>
+          } @else {
+            <div
+              aria-disabled="true"
+              class="bg-surface text-text border-border rounded-card flex w-full flex-col gap-2 border border-dashed p-3 opacity-60"
+            >
+              <span class="flex items-baseline justify-between">
+                <span class="text-base font-semibold">
+                  {{ 'idiom-crossword.levels.number' | transloco: { number: level.levelIndex + 1 } }}
+                </span>
+                <span class="text-muted text-xs">
+                  {{ 'idiom-crossword.levels.difficulty' | transloco: { value: level.difficulty } }}
+                </span>
+              </span>
+              <!-- State carried by text, not colour alone. -->
+              <span class="text-muted mt-auto text-xs">
+                {{ 'idiom-crossword.levels.locked' | transloco }}
+              </span>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</div>

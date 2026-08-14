@@ -31,6 +31,16 @@ describe('GAME_REGISTRY', () => {
     }
   });
 
+  it('has 成语纵横 available at its own route', () => {
+    const crossword = GAME_REGISTRY.find((g) => g.key === 'idiom-crossword');
+
+    expect(crossword?.status).toBe('available');
+    expect(crossword?.category).toBe('puzzle');
+    expect(crossword?.launchRoute).toBe('/g/idiom-crossword');
+    // Chinese-content game: the UI translates, the 成语 do not.
+    expect(crossword?.contentLocales).toEqual(['zh-CN']);
+  });
+
   it('uses kebab-case keys', () => {
     for (const game of GAME_REGISTRY) {
       expect(game.key).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);

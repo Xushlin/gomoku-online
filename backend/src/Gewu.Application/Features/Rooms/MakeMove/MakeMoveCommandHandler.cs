@@ -1,4 +1,5 @@
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Common.Exceptions;
 using Gewu.Application.Common.Mapping;
@@ -20,6 +21,7 @@ namespace Gewu.Application.Features.Rooms.MakeMove;
 public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, MoveDto>
 {
     private readonly IRoomRepository _rooms;
+    private readonly IGameRulesRegistry _rules;
     private readonly IUserRepository _users;
     private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
@@ -29,6 +31,7 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
     /// <inheritdoc />
     public MakeMoveCommandHandler(
         IRoomRepository rooms,
+        IGameRulesRegistry rules,
         IUserRepository users,
         IDateTimeProvider clock,
         IUnitOfWork uow,
@@ -36,6 +39,7 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
         IOptions<GameOptions> gameOptions)
     {
         _rooms = rooms;
+        _rules = rules;
         _users = users;
         _clock = clock;
         _uow = uow;
@@ -49,7 +53,12 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
         var room = await _rooms.FindByIdAsync(request.RoomId, cancellationToken)
             ?? throw new RoomNotFoundException($"Room '{request.RoomId.Value}' was not found.");
 
-        var outcome = room.PlayMove(request.UserId, new Position(request.Row, request.Col), _clock.UtcNow);
+        var rules = _rules.For(room.GameKey)
+            ?? throw new RoomNotFoundException(
+                $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
+
+        var outcome = room.PlayMove(
+            request.UserId, new Position(request.Row, request.Col), _clock.UtcNow, rules);
 
         if (outcome.Result != GameResult.Ongoing)
         {

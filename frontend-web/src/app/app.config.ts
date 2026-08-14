@@ -33,6 +33,7 @@ import {
   BoardSkinService,
   DefaultBoardSkinService,
 } from './core/theme/board-skin.service';
+import { DefaultPuzzleApiService, PuzzleApiService } from './core/api/puzzle-api.service';
 import { DefaultThemeService, ThemeService } from './core/theme/theme.service';
 import { DefaultGameCatalogService, GameCatalogService } from './games/game-catalog.service';
 
@@ -53,6 +54,7 @@ export const appConfig: ApplicationConfig = {
     { provide: LeaderboardApiService, useClass: DefaultLeaderboardApiService },
     { provide: GameHubService, useClass: DefaultGameHubService },
     { provide: GameCatalogService, useClass: DefaultGameCatalogService },
+    { provide: PuzzleApiService, useClass: DefaultPuzzleApiService },
     // Preload i18n + restore session before first paint so the UI boots with
     // the user logged in (if a valid refresh token is stored). Also eagerly
     // constructs ThemeService + BoardSkinService so their `<html>`-attribute

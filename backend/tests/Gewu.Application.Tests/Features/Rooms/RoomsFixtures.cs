@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Gewu.Application.Tests.Features.Rooms;
@@ -40,11 +42,11 @@ internal static class RoomsFixtures
     }
 
     public static Room WaitingRoom(User host, string name = "Test Room") =>
-        Room.Create(RoomId.NewId(), name, host.Id, Now);
+        Room.Create(RoomId.NewId(), name, host.Id, Now, GameKeys.Gomoku);
 
     public static Room PlayingRoom(User host, User challenger, string name = "Test Room")
     {
-        var room = Room.Create(RoomId.NewId(), name, host.Id, Now);
+        var room = Room.Create(RoomId.NewId(), name, host.Id, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(challenger.Id, Now.AddSeconds(1));
         return room;
     }

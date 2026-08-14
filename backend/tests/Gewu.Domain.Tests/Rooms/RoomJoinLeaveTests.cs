@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.Enums;
 
@@ -10,7 +12,7 @@ public class RoomJoinLeaveTests
     private static Room NewRoom(out UserId hostId)
     {
         hostId = UserId.NewId();
-        return Room.Create(RoomId.NewId(), "Test Room", hostId, Now);
+        return Room.Create(RoomId.NewId(), "Test Room", hostId, Now, GameKeys.Gomoku);
     }
 
     [Fact]

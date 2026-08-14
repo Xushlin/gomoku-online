@@ -32,6 +32,7 @@
     <Using Include="Gewu.Domain.Ai" />
     <Using Include="Gewu.Domain.Idioms" />
     <Using Include="Gewu.Domain.Puzzles" />
+    <Using Include="Gewu.Domain.Games.IdiomCrossword" />
   </ItemGroup>
 
 </Project>

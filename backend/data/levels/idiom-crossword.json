@@ -1,0 +1,3212 @@
+{
+  "game": "idiom-crossword",
+  "seed": 20260813,
+  "dictionaryCommit": "fe6d6c2e8baa82187f4c96bbe042e43f96c05666",
+  "generatedAt": "2026-08-13T00:00:00.0000000Z",
+  "maxTier": 1,
+  "dials": [
+    "idioms=2,given=2,distractors=0",
+    "idioms=3,given=2,distractors=0",
+    "idioms=4,given=2,distractors=0",
+    "idioms=5,given=2,distractors=2",
+    "idioms=6,given=2,distractors=3",
+    "idioms=7,given=3,distractors=4",
+    "idioms=8,given=3,distractors=5",
+    "idioms=9,given=3,distractors=6",
+    "idioms=10,given=3,distractors=6",
+    "idioms=11,given=4,distractors=7",
+    "idioms=12,given=4,distractors=8",
+    "idioms=12,given=3,distractors=10"
+  ],
+  "levels": [
+    {
+      "levelIndex": 0,
+      "difficulty": 1,
+      "layout": {
+        "rows": 4,
+        "cols": 4,
+        "cells": [
+          {
+            "row": 0,
+            "col": 0
+          },
+          {
+            "row": 0,
+            "col": 1
+          },
+          {
+            "row": 0,
+            "col": 2
+          },
+          {
+            "row": 0,
+            "col": 3
+          },
+          {
+            "row": 1,
+            "col": 0
+          },
+          {
+            "row": 2,
+            "col": 0
+          },
+          {
+            "row": 3,
+            "col": 0
+          }
+        ],
+        "given": [
+          {
+            "row": 0,
+            "col": 0,
+            "char": "合"
+          },
+          {
+            "row": 3,
+            "col": 0,
+            "char": "理"
+          }
+        ],
+        "tray": [
+          "为",
+          "情",
+          "而",
+          "合",
+          "一"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 0,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 0,
+            "col": 0,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "0,0": "合",
+          "0,1": "而",
+          "0,2": "为",
+          "0,3": "一",
+          "1,0": "情",
+          "2,0": "合",
+          "3,0": "理"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "合而为一",
+            "explanation": "把散乱的事物合在一起。"
+          },
+          {
+            "index": 1,
+            "word": "合情合理",
+            "explanation": "符合情理。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 1,
+      "difficulty": 2,
+      "layout": {
+        "rows": 6,
+        "cols": 4,
+        "cells": [
+          {
+            "row": 0,
+            "col": 1
+          },
+          {
+            "row": 1,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 0
+          },
+          {
+            "row": 2,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 2
+          },
+          {
+            "row": 2,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 1
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 4,
+            "col": 3
+          },
+          {
+            "row": 5,
+            "col": 3
+          }
+        ],
+        "given": [
+          {
+            "row": 2,
+            "col": 1,
+            "char": "知"
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "char": "出"
+          }
+        ],
+        "tray": [
+          "奇",
+          "所",
+          "观",
+          "穷",
+          "命",
+          "达",
+          "不",
+          "无"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 2,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 0,
+            "col": 1,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 2,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "2,0": "不",
+          "2,1": "知",
+          "2,2": "所",
+          "2,3": "出",
+          "0,1": "达",
+          "1,1": "观",
+          "3,1": "命",
+          "3,3": "奇",
+          "4,3": "无",
+          "5,3": "穷"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "不知所出",
+            "explanation": "①不知道从哪里来的。②不知道该怎么办。"
+          },
+          {
+            "index": 1,
+            "word": "达观知命",
+            "explanation": "达观指一切听其自然或看得开；命命运；知命指知天命。指对不如意的事情看得开，任凭命运摆布，无所烦恼。"
+          },
+          {
+            "index": 2,
+            "word": "出奇无穷",
+            "explanation": "指多出奇兵，多用奇计。比喻变化多端，使人难以捉摸。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 2,
+      "difficulty": 3,
+      "layout": {
+        "rows": 5,
+        "cols": 7,
+        "cells": [
+          {
+            "row": 0,
+            "col": 5
+          },
+          {
+            "row": 1,
+            "col": 3
+          },
+          {
+            "row": 1,
+            "col": 4
+          },
+          {
+            "row": 1,
+            "col": 5
+          },
+          {
+            "row": 1,
+            "col": 6
+          },
+          {
+            "row": 2,
+            "col": 0
+          },
+          {
+            "row": 2,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 2
+          },
+          {
+            "row": 2,
+            "col": 3
+          },
+          {
+            "row": 2,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 4,
+            "col": 3
+          }
+        ],
+        "given": [
+          {
+            "row": 1,
+            "col": 5,
+            "char": "文"
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "char": "名"
+          }
+        ],
+        "tray": [
+          "有",
+          "不",
+          "鼎",
+          "分",
+          "身",
+          "立",
+          "鼎",
+          "章",
+          "扬",
+          "大",
+          "取"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 1,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 0,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 1,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 2,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "1,3": "大",
+          "1,4": "有",
+          "1,5": "文",
+          "1,6": "章",
+          "0,5": "分",
+          "2,5": "不",
+          "3,5": "取",
+          "2,3": "名",
+          "3,3": "鼎",
+          "4,3": "鼎",
+          "2,0": "立",
+          "2,1": "身",
+          "2,2": "扬"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "大有文章",
+            "explanation": "指话语、文章、或已表露的现象之中，很有令人难以捉摸的意思或别的情况。"
+          },
+          {
+            "index": 1,
+            "word": "分文不取",
+            "explanation": "一个钱也不要。比喻不计报酬。"
+          },
+          {
+            "index": 2,
+            "word": "大名鼎鼎",
+            "explanation": "鼎鼎盛大的样子。形容名气很大。"
+          },
+          {
+            "index": 3,
+            "word": "立身扬名",
+            "explanation": "立身使自己在社会上有相当地位；扬传播。使自己立足于社会，名声远扬。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 3,
+      "difficulty": 4,
+      "layout": {
+        "rows": 6,
+        "cols": 7,
+        "cells": [
+          {
+            "row": 0,
+            "col": 3
+          },
+          {
+            "row": 0,
+            "col": 4
+          },
+          {
+            "row": 0,
+            "col": 5
+          },
+          {
+            "row": 0,
+            "col": 6
+          },
+          {
+            "row": 1,
+            "col": 3
+          },
+          {
+            "row": 1,
+            "col": 5
+          },
+          {
+            "row": 2,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 3
+          },
+          {
+            "row": 2,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 0
+          },
+          {
+            "row": 3,
+            "col": 1
+          },
+          {
+            "row": 3,
+            "col": 2
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 4,
+            "col": 1
+          },
+          {
+            "row": 5,
+            "col": 1
+          }
+        ],
+        "given": [
+          {
+            "row": 0,
+            "col": 5,
+            "char": "不"
+          },
+          {
+            "row": 3,
+            "col": 3,
+            "char": "章"
+          }
+        ],
+        "tray": [
+          "言",
+          "文",
+          "若",
+          "有",
+          "其",
+          "大",
+          "雨",
+          "若",
+          "意",
+          "无",
+          "辞",
+          "平",
+          "出",
+          "劳",
+          "成",
+          "苦"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 3,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 0,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 2,
+            "col": 1,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 0,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 0,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "3,0": "大",
+          "3,1": "有",
+          "3,2": "文",
+          "3,3": "章",
+          "0,3": "出",
+          "1,3": "言",
+          "2,3": "成",
+          "2,1": "若",
+          "4,1": "若",
+          "5,1": "无",
+          "0,4": "其",
+          "0,5": "不",
+          "0,6": "意",
+          "1,5": "辞",
+          "2,5": "劳",
+          "3,5": "苦"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "大有文章",
+            "explanation": "指话语、文章、或已表露的现象之中，很有令人难以捉摸的意思或别的情况。"
+          },
+          {
+            "index": 1,
+            "word": "出言成章",
+            "explanation": "本意是出言便成为规范，后多用以形容文思敏捷。"
+          },
+          {
+            "index": 2,
+            "word": "若有若无",
+            "explanation": "形容事物不清晰或关系不亲密。"
+          },
+          {
+            "index": 3,
+            "word": "出其不意",
+            "explanation": "其代词，对方；不意没有料到。趁对方没有意料到就采取行动。"
+          },
+          {
+            "index": 4,
+            "word": "不辞劳苦",
+            "explanation": "辞推托；劳苦劳累辛苦。不逃避劳累辛苦。形容人不怕吃苦，毅力强。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 4,
+      "difficulty": 5,
+      "layout": {
+        "rows": 7,
+        "cols": 7,
+        "cells": [
+          {
+            "row": 0,
+            "col": 4
+          },
+          {
+            "row": 1,
+            "col": 4
+          },
+          {
+            "row": 2,
+            "col": 4
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 4
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 6
+          },
+          {
+            "row": 4,
+            "col": 0
+          },
+          {
+            "row": 4,
+            "col": 1
+          },
+          {
+            "row": 4,
+            "col": 2
+          },
+          {
+            "row": 4,
+            "col": 3
+          },
+          {
+            "row": 5,
+            "col": 3
+          },
+          {
+            "row": 5,
+            "col": 4
+          },
+          {
+            "row": 5,
+            "col": 5
+          },
+          {
+            "row": 5,
+            "col": 6
+          },
+          {
+            "row": 6,
+            "col": 0
+          },
+          {
+            "row": 6,
+            "col": 1
+          },
+          {
+            "row": 6,
+            "col": 2
+          },
+          {
+            "row": 6,
+            "col": 3
+          }
+        ],
+        "given": [
+          {
+            "row": 3,
+            "col": 3,
+            "char": "无"
+          },
+          {
+            "row": 5,
+            "col": 3,
+            "char": "用"
+          }
+        ],
+        "tray": [
+          "心",
+          "失",
+          "其",
+          "尽",
+          "不",
+          "为",
+          "牛",
+          "心",
+          "石",
+          "人",
+          "鬼",
+          "机",
+          "神",
+          "所",
+          "得",
+          "木",
+          "流",
+          "所",
+          "死",
+          "离"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 5,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 3,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 4,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 6,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 3,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 0,
+            "col": 4,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "5,3": "用",
+          "5,4": "尽",
+          "5,5": "心",
+          "5,6": "机",
+          "3,3": "无",
+          "4,3": "所",
+          "6,3": "心",
+          "4,0": "死",
+          "4,1": "得",
+          "4,2": "其",
+          "6,0": "木",
+          "6,1": "人",
+          "6,2": "石",
+          "3,4": "所",
+          "3,5": "不",
+          "3,6": "为",
+          "0,4": "流",
+          "1,4": "离",
+          "2,4": "失"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "用尽心机",
+            "explanation": "心机心思。用尽了心思。"
+          },
+          {
+            "index": 1,
+            "word": "无所用心",
+            "explanation": "没有地方用他的心。指不动脑筋，什么事情都不关心。"
+          },
+          {
+            "index": 2,
+            "word": "死得其所",
+            "explanation": "所处所，地方；得其所得到合适的地方。指死得有价值，有意义。"
+          },
+          {
+            "index": 3,
+            "word": "木人石心",
+            "explanation": "形容意志坚定，任何诱惑都不动心。"
+          },
+          {
+            "index": 4,
+            "word": "无所不为",
+            "explanation": "没有不干的事情。指什么坏事都干。"
+          },
+          {
+            "index": 5,
+            "word": "流离失所",
+            "explanation": "流离转徒离散。无处安身，到处流浪。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 5,
+      "difficulty": 6,
+      "layout": {
+        "rows": 7,
+        "cols": 7,
+        "cells": [
+          {
+            "row": 0,
+            "col": 1
+          },
+          {
+            "row": 0,
+            "col": 3
+          },
+          {
+            "row": 0,
+            "col": 5
+          },
+          {
+            "row": 1,
+            "col": 0
+          },
+          {
+            "row": 1,
+            "col": 1
+          },
+          {
+            "row": 1,
+            "col": 2
+          },
+          {
+            "row": 1,
+            "col": 3
+          },
+          {
+            "row": 1,
+            "col": 5
+          },
+          {
+            "row": 2,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 3
+          },
+          {
+            "row": 2,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 1
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 4
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 6
+          },
+          {
+            "row": 4,
+            "col": 6
+          },
+          {
+            "row": 5,
+            "col": 3
+          },
+          {
+            "row": 5,
+            "col": 4
+          },
+          {
+            "row": 5,
+            "col": 5
+          },
+          {
+            "row": 5,
+            "col": 6
+          },
+          {
+            "row": 6,
+            "col": 6
+          }
+        ],
+        "given": [
+          {
+            "row": 1,
+            "col": 3,
+            "char": "口"
+          },
+          {
+            "row": 3,
+            "col": 5,
+            "char": "一"
+          },
+          {
+            "row": 3,
+            "col": 6,
+            "char": "声"
+          }
+        ],
+        "tray": [
+          "应",
+          "气",
+          "二",
+          "口",
+          "连",
+          "大",
+          "兵",
+          "家",
+          "合",
+          "子",
+          "如",
+          "不",
+          "一",
+          "心",
+          "口",
+          "言",
+          "为",
+          "一",
+          "谋",
+          "出",
+          "求",
+          "无",
+          "小"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 3,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 3,
+            "col": 6,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 0,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 5,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 0,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 1,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 6,
+            "row": 0,
+            "col": 1,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "3,3": "一",
+          "3,4": "口",
+          "3,5": "一",
+          "3,6": "声",
+          "4,6": "求",
+          "5,6": "气",
+          "6,6": "应",
+          "0,5": "合",
+          "1,5": "二",
+          "2,5": "为",
+          "5,3": "小",
+          "5,4": "家",
+          "5,5": "子",
+          "0,3": "心",
+          "1,3": "口",
+          "2,3": "不",
+          "1,0": "如",
+          "1,1": "出",
+          "1,2": "一",
+          "0,1": "口",
+          "2,1": "大",
+          "3,1": "言"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "一口一声",
+            "explanation": "犹口口声声。"
+          },
+          {
+            "index": 1,
+            "word": "声求气应",
+            "explanation": "应应和，共鸣；求寻找。同类的事物相互感应。比喻志趣相投的人自然地结合在一起。"
+          },
+          {
+            "index": 2,
+            "word": "合二为一",
+            "explanation": "指将两者合为一个整体。"
+          },
+          {
+            "index": 3,
+            "word": "小家子气",
+            "explanation": "小家子旧指出身低微的人。形容人的言谈举止及做事不大方。"
+          },
+          {
+            "index": 4,
+            "word": "心口不一",
+            "explanation": "心里想的和嘴上说的不一样。形容人的虚伪、诡诈。"
+          },
+          {
+            "index": 5,
+            "word": "如出一口",
+            "explanation": "象从一张嘴里说出来的。形容许多人说法一样。"
+          },
+          {
+            "index": 6,
+            "word": "口出大言",
+            "explanation": "说大话。形容说话狂妄。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 6,
+      "difficulty": 7,
+      "layout": {
+        "rows": 7,
+        "cols": 7,
+        "cells": [
+          {
+            "row": 0,
+            "col": 2
+          },
+          {
+            "row": 0,
+            "col": 3
+          },
+          {
+            "row": 0,
+            "col": 4
+          },
+          {
+            "row": 0,
+            "col": 5
+          },
+          {
+            "row": 1,
+            "col": 0
+          },
+          {
+            "row": 1,
+            "col": 4
+          },
+          {
+            "row": 2,
+            "col": 0
+          },
+          {
+            "row": 2,
+            "col": 4
+          },
+          {
+            "row": 3,
+            "col": 0
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 4
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 6
+          },
+          {
+            "row": 4,
+            "col": 0
+          },
+          {
+            "row": 4,
+            "col": 1
+          },
+          {
+            "row": 4,
+            "col": 2
+          },
+          {
+            "row": 4,
+            "col": 3
+          },
+          {
+            "row": 4,
+            "col": 5
+          },
+          {
+            "row": 5,
+            "col": 3
+          },
+          {
+            "row": 5,
+            "col": 5
+          },
+          {
+            "row": 6,
+            "col": 0
+          },
+          {
+            "row": 6,
+            "col": 1
+          },
+          {
+            "row": 6,
+            "col": 2
+          },
+          {
+            "row": 6,
+            "col": 3
+          },
+          {
+            "row": 6,
+            "col": 5
+          }
+        ],
+        "given": [
+          {
+            "row": 3,
+            "col": 3,
+            "char": "立"
+          },
+          {
+            "row": 3,
+            "col": 5,
+            "char": "安"
+          },
+          {
+            "row": 6,
+            "col": 3,
+            "char": "世"
+          }
+        ],
+        "tray": [
+          "家",
+          "人",
+          "身",
+          "义",
+          "辞",
+          "命",
+          "发",
+          "身",
+          "今",
+          "达",
+          "人",
+          "去",
+          "孤",
+          "今",
+          "百",
+          "十",
+          "知",
+          "其",
+          "远",
+          "命",
+          "立",
+          "生",
+          "寡",
+          "处",
+          "雨",
+          "身",
+          "不"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 4,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 3,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 3,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 0,
+            "col": 4,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 0,
+            "col": 2,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 3,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 6,
+            "row": 6,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 7,
+            "row": 1,
+            "col": 0,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "4,0": "人",
+          "4,1": "百",
+          "4,2": "其",
+          "4,3": "身",
+          "3,3": "立",
+          "5,3": "处",
+          "6,3": "世",
+          "3,4": "命",
+          "3,5": "安",
+          "3,6": "身",
+          "0,4": "达",
+          "1,4": "人",
+          "2,4": "知",
+          "0,2": "辞",
+          "0,3": "不",
+          "0,5": "义",
+          "4,5": "身",
+          "5,5": "立",
+          "6,5": "命",
+          "6,0": "今",
+          "6,1": "生",
+          "6,2": "今",
+          "1,0": "孤",
+          "2,0": "家",
+          "3,0": "寡"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "人百其身",
+            "explanation": "百其身自身死一百次。别人愿意死一百次来换取死者的复生。表示对死者极沉痛的悼念。"
+          },
+          {
+            "index": 1,
+            "word": "立身处世",
+            "explanation": "立身做人；处世在社会上活动，与人交往。指人在社会上待人接物的种种活动。"
+          },
+          {
+            "index": 2,
+            "word": "立命安身",
+            "explanation": "立命精神上安定；安身指得以容身。指精神上有寄托，生活上有着落。"
+          },
+          {
+            "index": 3,
+            "word": "达人知命",
+            "explanation": "达人通达事理的人。指心胸豁达的人，安于命运。"
+          },
+          {
+            "index": 4,
+            "word": "辞不达义",
+            "explanation": "指说话写文章不能确切地表达意思。"
+          },
+          {
+            "index": 5,
+            "word": "安身立命",
+            "explanation": "安身在某处安下身来；立命精神有所寄托。指生活有着落，精神有所寄托。"
+          },
+          {
+            "index": 6,
+            "word": "今生今世",
+            "explanation": "此生此世。指有生之年。"
+          },
+          {
+            "index": 7,
+            "word": "孤家寡人",
+            "explanation": "古代帝王的自称◇指脱离群众，孤立无助的人。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 7,
+      "difficulty": 8,
+      "layout": {
+        "rows": 9,
+        "cols": 11,
+        "cells": [
+          {
+            "row": 0,
+            "col": 5
+          },
+          {
+            "row": 0,
+            "col": 7
+          },
+          {
+            "row": 0,
+            "col": 8
+          },
+          {
+            "row": 0,
+            "col": 9
+          },
+          {
+            "row": 0,
+            "col": 10
+          },
+          {
+            "row": 1,
+            "col": 2
+          },
+          {
+            "row": 1,
+            "col": 3
+          },
+          {
+            "row": 1,
+            "col": 4
+          },
+          {
+            "row": 1,
+            "col": 5
+          },
+          {
+            "row": 1,
+            "col": 7
+          },
+          {
+            "row": 2,
+            "col": 5
+          },
+          {
+            "row": 2,
+            "col": 7
+          },
+          {
+            "row": 3,
+            "col": 4
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 6
+          },
+          {
+            "row": 3,
+            "col": 7
+          },
+          {
+            "row": 4,
+            "col": 4
+          },
+          {
+            "row": 5,
+            "col": 2
+          },
+          {
+            "row": 5,
+            "col": 3
+          },
+          {
+            "row": 5,
+            "col": 4
+          },
+          {
+            "row": 5,
+            "col": 5
+          },
+          {
+            "row": 6,
+            "col": 2
+          },
+          {
+            "row": 6,
+            "col": 4
+          },
+          {
+            "row": 7,
+            "col": 0
+          },
+          {
+            "row": 7,
+            "col": 1
+          },
+          {
+            "row": 7,
+            "col": 2
+          },
+          {
+            "row": 7,
+            "col": 3
+          },
+          {
+            "row": 8,
+            "col": 2
+          }
+        ],
+        "given": [
+          {
+            "row": 0,
+            "col": 7,
+            "char": "不"
+          },
+          {
+            "row": 5,
+            "col": 2,
+            "char": "花"
+          },
+          {
+            "row": 7,
+            "col": 2,
+            "char": "酒"
+          }
+        ],
+        "tray": [
+          "群",
+          "山",
+          "前",
+          "人",
+          "流",
+          "花",
+          "年",
+          "肉",
+          "月",
+          "公",
+          "经",
+          "秋",
+          "言",
+          "春",
+          "下",
+          "恶",
+          "朝",
+          "知",
+          "花",
+          "天",
+          "子",
+          "月",
+          "海",
+          "地",
+          "然",
+          "累",
+          "夜",
+          "所",
+          "理",
+          "当",
+          "急"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 5,
+            "col": 2,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 5,
+            "col": 2,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 3,
+            "col": 4,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 7,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 3,
+            "col": 4,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 0,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 6,
+            "row": 0,
+            "col": 7,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 7,
+            "row": 0,
+            "col": 7,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 8,
+            "row": 1,
+            "col": 2,
+            "direction": "Horizontal",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "5,2": "花",
+          "5,3": "前",
+          "5,4": "月",
+          "5,5": "下",
+          "6,2": "天",
+          "7,2": "酒",
+          "8,2": "地",
+          "3,4": "花",
+          "4,4": "朝",
+          "6,4": "夜",
+          "7,0": "肉",
+          "7,1": "山",
+          "7,3": "海",
+          "3,5": "花",
+          "3,6": "公",
+          "3,7": "子",
+          "0,5": "秋",
+          "1,5": "月",
+          "2,5": "春",
+          "0,7": "不",
+          "1,7": "当",
+          "2,7": "人",
+          "0,8": "知",
+          "0,9": "所",
+          "0,10": "言",
+          "1,2": "经",
+          "1,3": "年",
+          "1,4": "累"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "花前月下",
+            "explanation": "本指游乐休息的环境◇多指谈情说爱的处所。"
+          },
+          {
+            "index": 1,
+            "word": "花天酒地",
+            "explanation": "形容沉湎在酒色之中。花，指妓女。"
+          },
+          {
+            "index": 2,
+            "word": "花朝月夜",
+            "explanation": "有鲜花的早晨，有明月的夜晚。指美好的时光和景物。旧时也特指农历二月十五和八月十五。"
+          },
+          {
+            "index": 3,
+            "word": "肉山酒海",
+            "explanation": "极言酒肉饮食之丰。"
+          },
+          {
+            "index": 4,
+            "word": "花花公子",
+            "explanation": "指衣着华丽，只会吃喝玩乐，不务正业的、有钱有势人家的女弟。"
+          },
+          {
+            "index": 5,
+            "word": "秋月春花",
+            "explanation": "春天的花朵，秋天的月亮。泛指春秋美景。"
+          },
+          {
+            "index": 6,
+            "word": "不当人子",
+            "explanation": "表示歉意或感谢的话，意思是罪过，不敢当。"
+          },
+          {
+            "index": 7,
+            "word": "不知所言",
+            "explanation": "形容说话内容混乱，无法理解。同不知所云”。"
+          },
+          {
+            "index": 8,
+            "word": "经年累月",
+            "explanation": "经经历。指经过很久的时间；长时间。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 8,
+      "difficulty": 9,
+      "layout": {
+        "rows": 10,
+        "cols": 10,
+        "cells": [
+          {
+            "row": 0,
+            "col": 1
+          },
+          {
+            "row": 1,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 0
+          },
+          {
+            "row": 3,
+            "col": 1
+          },
+          {
+            "row": 3,
+            "col": 2
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 4,
+            "col": 3
+          },
+          {
+            "row": 4,
+            "col": 4
+          },
+          {
+            "row": 4,
+            "col": 5
+          },
+          {
+            "row": 4,
+            "col": 6
+          },
+          {
+            "row": 5,
+            "col": 0
+          },
+          {
+            "row": 5,
+            "col": 1
+          },
+          {
+            "row": 5,
+            "col": 2
+          },
+          {
+            "row": 5,
+            "col": 3
+          },
+          {
+            "row": 5,
+            "col": 5
+          },
+          {
+            "row": 6,
+            "col": 0
+          },
+          {
+            "row": 6,
+            "col": 4
+          },
+          {
+            "row": 6,
+            "col": 5
+          },
+          {
+            "row": 6,
+            "col": 6
+          },
+          {
+            "row": 6,
+            "col": 7
+          },
+          {
+            "row": 7,
+            "col": 0
+          },
+          {
+            "row": 7,
+            "col": 7
+          },
+          {
+            "row": 8,
+            "col": 0
+          },
+          {
+            "row": 8,
+            "col": 6
+          },
+          {
+            "row": 8,
+            "col": 7
+          },
+          {
+            "row": 8,
+            "col": 8
+          },
+          {
+            "row": 8,
+            "col": 9
+          },
+          {
+            "row": 9,
+            "col": 7
+          }
+        ],
+        "given": [
+          {
+            "row": 4,
+            "col": 5,
+            "char": "若"
+          },
+          {
+            "row": 6,
+            "col": 7,
+            "char": "日"
+          },
+          {
+            "row": 8,
+            "col": 7,
+            "char": "夜"
+          }
+        ],
+        "tray": [
+          "有",
+          "功",
+          "守",
+          "求",
+          "穷",
+          "举",
+          "一",
+          "出",
+          "无",
+          "人",
+          "河",
+          "日",
+          "退",
+          "可",
+          "长",
+          "是",
+          "路",
+          "饮",
+          "而",
+          "干",
+          "之",
+          "道",
+          "情",
+          "处",
+          "难",
+          "视",
+          "眉",
+          "退",
+          "黄",
+          "知",
+          "不",
+          "夜",
+          "可",
+          "进"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 8,
+            "col": 6,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 6,
+            "col": 7,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 6,
+            "col": 4,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 3,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 4,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 2,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 6,
+            "row": 3,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 7,
+            "row": 5,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 8,
+            "row": 5,
+            "col": 0,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 9,
+            "row": 0,
+            "col": 1,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "8,6": "长",
+          "8,7": "夜",
+          "8,8": "之",
+          "8,9": "饮",
+          "6,7": "日",
+          "7,7": "日",
+          "9,7": "夜",
+          "6,4": "黄",
+          "6,5": "人",
+          "6,6": "守",
+          "3,5": "视",
+          "4,5": "若",
+          "5,5": "路",
+          "4,3": "进",
+          "4,4": "道",
+          "4,6": "退",
+          "2,3": "出",
+          "3,3": "处",
+          "5,3": "退",
+          "3,0": "一",
+          "3,1": "无",
+          "3,2": "是",
+          "5,0": "知",
+          "5,1": "难",
+          "5,2": "而",
+          "6,0": "情",
+          "7,0": "不",
+          "8,0": "举",
+          "0,1": "可",
+          "1,1": "有",
+          "2,1": "可"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "长夜之饮",
+            "explanation": "指通宵宴饮。"
+          },
+          {
+            "index": 1,
+            "word": "日日夜夜",
+            "explanation": "每天每夜。形容延续的时间长。"
+          },
+          {
+            "index": 2,
+            "word": "黄人守日",
+            "explanation": "用以比喻朝政清明，国力强盛。"
+          },
+          {
+            "index": 3,
+            "word": "视若路人",
+            "explanation": "看做路上遇到的陌生人。指与亲人或熟人非常疏远。"
+          },
+          {
+            "index": 4,
+            "word": "进道若退",
+            "explanation": "指前进之道反若后退。"
+          },
+          {
+            "index": 5,
+            "word": "出处进退",
+            "explanation": "指出仕或隐退。"
+          },
+          {
+            "index": 6,
+            "word": "一无是处",
+            "explanation": "是对，正确。没有一点儿对的或好的地方。"
+          },
+          {
+            "index": 7,
+            "word": "知难而退",
+            "explanation": "原指作战要见机而行，不要做实际上无法办到的事◇泛指知道事情困难就后退。"
+          },
+          {
+            "index": 8,
+            "word": "知情不举",
+            "explanation": "举检举。了解情况而不揭发。"
+          },
+          {
+            "index": 9,
+            "word": "可有可无",
+            "explanation": "可以有，也可以没有。指有没有都无关紧要。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 9,
+      "difficulty": 10,
+      "layout": {
+        "rows": 12,
+        "cols": 12,
+        "cells": [
+          {
+            "row": 0,
+            "col": 11
+          },
+          {
+            "row": 1,
+            "col": 11
+          },
+          {
+            "row": 2,
+            "col": 11
+          },
+          {
+            "row": 3,
+            "col": 0
+          },
+          {
+            "row": 3,
+            "col": 8
+          },
+          {
+            "row": 3,
+            "col": 9
+          },
+          {
+            "row": 3,
+            "col": 10
+          },
+          {
+            "row": 3,
+            "col": 11
+          },
+          {
+            "row": 4,
+            "col": 0
+          },
+          {
+            "row": 4,
+            "col": 8
+          },
+          {
+            "row": 4,
+            "col": 10
+          },
+          {
+            "row": 5,
+            "col": 0
+          },
+          {
+            "row": 5,
+            "col": 6
+          },
+          {
+            "row": 5,
+            "col": 8
+          },
+          {
+            "row": 5,
+            "col": 10
+          },
+          {
+            "row": 6,
+            "col": 0
+          },
+          {
+            "row": 6,
+            "col": 1
+          },
+          {
+            "row": 6,
+            "col": 2
+          },
+          {
+            "row": 6,
+            "col": 3
+          },
+          {
+            "row": 6,
+            "col": 5
+          },
+          {
+            "row": 6,
+            "col": 6
+          },
+          {
+            "row": 6,
+            "col": 7
+          },
+          {
+            "row": 6,
+            "col": 8
+          },
+          {
+            "row": 6,
+            "col": 10
+          },
+          {
+            "row": 7,
+            "col": 3
+          },
+          {
+            "row": 7,
+            "col": 6
+          },
+          {
+            "row": 8,
+            "col": 3
+          },
+          {
+            "row": 8,
+            "col": 4
+          },
+          {
+            "row": 8,
+            "col": 5
+          },
+          {
+            "row": 8,
+            "col": 6
+          },
+          {
+            "row": 9,
+            "col": 3
+          },
+          {
+            "row": 9,
+            "col": 5
+          },
+          {
+            "row": 10,
+            "col": 5
+          },
+          {
+            "row": 11,
+            "col": 5
+          }
+        ],
+        "given": [
+          {
+            "row": 3,
+            "col": 8,
+            "char": "铁"
+          },
+          {
+            "row": 6,
+            "col": 0,
+            "char": "飞"
+          },
+          {
+            "row": 6,
+            "col": 8,
+            "char": "肝"
+          },
+          {
+            "row": 8,
+            "col": 3,
+            "char": "口"
+          }
+        ],
+        "tray": [
+          "方",
+          "铁",
+          "善",
+          "木",
+          "出",
+          "雪",
+          "横",
+          "来",
+          "言",
+          "起",
+          "如",
+          "马",
+          "胆",
+          "石",
+          "心",
+          "云",
+          "直",
+          "不",
+          "自",
+          "肠",
+          "金",
+          "石",
+          "之",
+          "从",
+          "动",
+          "狗",
+          "石",
+          "其",
+          "心",
+          "出",
+          "大",
+          "石",
+          "祸",
+          "食",
+          "心",
+          "高",
+          "家"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 8,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 5,
+            "col": 6,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 8,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 6,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 6,
+            "col": 5,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 3,
+            "col": 8,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 6,
+            "row": 3,
+            "col": 8,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 7,
+            "row": 0,
+            "col": 11,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 8,
+            "row": 6,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 9,
+            "row": 3,
+            "col": 10,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 10,
+            "row": 3,
+            "col": 0,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "8,3": "口",
+          "8,4": "出",
+          "8,5": "大",
+          "8,6": "言",
+          "5,6": "自",
+          "6,6": "食",
+          "7,6": "其",
+          "9,5": "方",
+          "10,5": "之",
+          "11,5": "家",
+          "6,3": "祸",
+          "7,3": "从",
+          "9,3": "出",
+          "6,5": "不",
+          "6,7": "马",
+          "6,8": "肝",
+          "3,8": "铁",
+          "4,8": "石",
+          "5,8": "心",
+          "3,9": "石",
+          "3,10": "心",
+          "3,11": "肠",
+          "0,11": "木",
+          "1,11": "石",
+          "2,11": "心",
+          "6,0": "飞",
+          "6,1": "来",
+          "6,2": "横",
+          "4,10": "如",
+          "5,10": "铁",
+          "6,10": "石",
+          "3,0": "云",
+          "4,0": "起",
+          "5,0": "雪"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "口出大言",
+            "explanation": "说大话。形容说话狂妄。"
+          },
+          {
+            "index": 1,
+            "word": "自食其言",
+            "explanation": "指说了话不算数。"
+          },
+          {
+            "index": 2,
+            "word": "大方之家",
+            "explanation": "大方大道理。原指懂得大道理的人◇泛指见识广博或学有专长的人。"
+          },
+          {
+            "index": 3,
+            "word": "祸从口出",
+            "explanation": "灾祸从口里产生出来。指说话不谨慎容易惹祸。"
+          },
+          {
+            "index": 4,
+            "word": "不食马肝",
+            "explanation": "相传马肝有毒，食之能致人于死。比喻不应研讨的事不去研讨。"
+          },
+          {
+            "index": 5,
+            "word": "铁石心肝",
+            "explanation": "犹言铁石心肠。形容人刚强的秉性。同铁石心肠”。"
+          },
+          {
+            "index": 6,
+            "word": "铁石心肠",
+            "explanation": "心肠硬得象铁和石头一样。形容心肠很硬，不为感情所动。"
+          },
+          {
+            "index": 7,
+            "word": "木石心肠",
+            "explanation": "形容人心肠硬，不为情感所动。"
+          },
+          {
+            "index": 8,
+            "word": "飞来横祸",
+            "explanation": "意外的灾祸。"
+          },
+          {
+            "index": 9,
+            "word": "心如铁石",
+            "explanation": "心象铁石一样坚硬。比喻心肠硬或意志十分坚决。"
+          },
+          {
+            "index": 10,
+            "word": "云起雪飞",
+            "explanation": "如云兴起，如雪飘飞。比喻乐曲悠扬，变化有致。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 10,
+      "difficulty": 11,
+      "layout": {
+        "rows": 11,
+        "cols": 10,
+        "cells": [
+          {
+            "row": 0,
+            "col": 0
+          },
+          {
+            "row": 0,
+            "col": 1
+          },
+          {
+            "row": 0,
+            "col": 2
+          },
+          {
+            "row": 0,
+            "col": 3
+          },
+          {
+            "row": 1,
+            "col": 3
+          },
+          {
+            "row": 2,
+            "col": 3
+          },
+          {
+            "row": 2,
+            "col": 4
+          },
+          {
+            "row": 2,
+            "col": 5
+          },
+          {
+            "row": 2,
+            "col": 6
+          },
+          {
+            "row": 3,
+            "col": 3
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 4,
+            "col": 2
+          },
+          {
+            "row": 4,
+            "col": 5
+          },
+          {
+            "row": 5,
+            "col": 2
+          },
+          {
+            "row": 5,
+            "col": 4
+          },
+          {
+            "row": 5,
+            "col": 5
+          },
+          {
+            "row": 5,
+            "col": 6
+          },
+          {
+            "row": 5,
+            "col": 7
+          },
+          {
+            "row": 6,
+            "col": 2
+          },
+          {
+            "row": 6,
+            "col": 4
+          },
+          {
+            "row": 6,
+            "col": 6
+          },
+          {
+            "row": 7,
+            "col": 1
+          },
+          {
+            "row": 7,
+            "col": 2
+          },
+          {
+            "row": 7,
+            "col": 3
+          },
+          {
+            "row": 7,
+            "col": 4
+          },
+          {
+            "row": 7,
+            "col": 6
+          },
+          {
+            "row": 7,
+            "col": 8
+          },
+          {
+            "row": 8,
+            "col": 1
+          },
+          {
+            "row": 8,
+            "col": 4
+          },
+          {
+            "row": 8,
+            "col": 6
+          },
+          {
+            "row": 8,
+            "col": 7
+          },
+          {
+            "row": 8,
+            "col": 8
+          },
+          {
+            "row": 8,
+            "col": 9
+          },
+          {
+            "row": 9,
+            "col": 1
+          },
+          {
+            "row": 9,
+            "col": 8
+          },
+          {
+            "row": 10,
+            "col": 1
+          },
+          {
+            "row": 10,
+            "col": 8
+          }
+        ],
+        "given": [
+          {
+            "row": 5,
+            "col": 4,
+            "char": "朝"
+          },
+          {
+            "row": 7,
+            "col": 1,
+            "char": "朝"
+          },
+          {
+            "row": 8,
+            "col": 6,
+            "char": "三"
+          },
+          {
+            "row": 8,
+            "col": 8,
+            "char": "五"
+          }
+        ],
+        "tray": [
+          "命",
+          "雨",
+          "微",
+          "半",
+          "学",
+          "道",
+          "发",
+          "以",
+          "至",
+          "四",
+          "言",
+          "万",
+          "众",
+          "死",
+          "一",
+          "生",
+          "朝",
+          "五",
+          "三",
+          "知",
+          "暮",
+          "先",
+          "就",
+          "云",
+          "暮",
+          "暮",
+          "破",
+          "暮",
+          "一",
+          "成",
+          "心",
+          "群",
+          "功",
+          "暮",
+          "声",
+          "暮",
+          "朝",
+          "语",
+          "三",
+          "朝",
+          "西"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 5,
+            "col": 4,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 2,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 5,
+            "col": 6,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 5,
+            "col": 4,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 7,
+            "col": 1,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 4,
+            "col": 2,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 6,
+            "row": 7,
+            "col": 1,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 7,
+            "row": 2,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 8,
+            "row": 8,
+            "col": 6,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 9,
+            "row": 7,
+            "col": 8,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 10,
+            "row": 0,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 11,
+            "row": 0,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "5,4": "朝",
+          "5,5": "生",
+          "5,6": "暮",
+          "5,7": "死",
+          "2,5": "道",
+          "3,5": "学",
+          "4,5": "先",
+          "6,6": "四",
+          "7,6": "朝",
+          "8,6": "三",
+          "6,4": "发",
+          "7,4": "暮",
+          "8,4": "至",
+          "7,1": "朝",
+          "7,2": "朝",
+          "7,3": "暮",
+          "4,2": "暮",
+          "5,2": "暮",
+          "6,2": "朝",
+          "8,1": "云",
+          "9,1": "暮",
+          "10,1": "雨",
+          "2,3": "一",
+          "2,4": "语",
+          "2,6": "破",
+          "8,7": "三",
+          "8,8": "五",
+          "8,9": "五",
+          "7,8": "三",
+          "9,8": "成",
+          "10,8": "群",
+          "0,3": "万",
+          "1,3": "众",
+          "3,3": "心",
+          "0,0": "以",
+          "0,1": "一",
+          "0,2": "知"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "朝生暮死",
+            "explanation": "①早晨刚生，晚上就死亡。②今亦形容事物生命短暂。"
+          },
+          {
+            "index": 1,
+            "word": "道学先生",
+            "explanation": "指思想、作风特别迂腐的读书人。"
+          },
+          {
+            "index": 2,
+            "word": "暮四朝三",
+            "explanation": "①原指说法、做法有所变换而实质不变。②比喻反复无常。"
+          },
+          {
+            "index": 3,
+            "word": "朝发暮至",
+            "explanation": "指早晨出发晚上就到达。形容路程很近或交通方便。"
+          },
+          {
+            "index": 4,
+            "word": "朝朝暮暮",
+            "explanation": "每天的早晨和黄昏，指短暂的时间。"
+          },
+          {
+            "index": 5,
+            "word": "暮暮朝朝",
+            "explanation": "犹言日日夜夜。形容延续的时间长。"
+          },
+          {
+            "index": 6,
+            "word": "朝云暮雨",
+            "explanation": "暮傍晚。早上是云，晚上是雨。原指神女的早晚变化，旧时用以喻指男女的欢会。"
+          },
+          {
+            "index": 7,
+            "word": "一语道破",
+            "explanation": "道说；破揭穿。一句话就说穿了。"
+          },
+          {
+            "index": 8,
+            "word": "三三五五",
+            "explanation": "三个一群，五个一伙。"
+          },
+          {
+            "index": 9,
+            "word": "三五成群",
+            "explanation": "几个人、几个人在一起。"
+          },
+          {
+            "index": 10,
+            "word": "万众一心",
+            "explanation": "千万人一条心。形容团结一致。"
+          },
+          {
+            "index": 11,
+            "word": "以一知万",
+            "explanation": "从了解一点到推知其他许多事物。"
+          }
+        ]
+      }
+    },
+    {
+      "levelIndex": 11,
+      "difficulty": 12,
+      "layout": {
+        "rows": 12,
+        "cols": 10,
+        "cells": [
+          {
+            "row": 0,
+            "col": 5
+          },
+          {
+            "row": 1,
+            "col": 5
+          },
+          {
+            "row": 2,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 2
+          },
+          {
+            "row": 3,
+            "col": 4
+          },
+          {
+            "row": 3,
+            "col": 5
+          },
+          {
+            "row": 3,
+            "col": 6
+          },
+          {
+            "row": 3,
+            "col": 7
+          },
+          {
+            "row": 4,
+            "col": 2
+          },
+          {
+            "row": 4,
+            "col": 4
+          },
+          {
+            "row": 5,
+            "col": 2
+          },
+          {
+            "row": 5,
+            "col": 4
+          },
+          {
+            "row": 5,
+            "col": 6
+          },
+          {
+            "row": 5,
+            "col": 7
+          },
+          {
+            "row": 5,
+            "col": 8
+          },
+          {
+            "row": 5,
+            "col": 9
+          },
+          {
+            "row": 6,
+            "col": 1
+          },
+          {
+            "row": 6,
+            "col": 2
+          },
+          {
+            "row": 6,
+            "col": 3
+          },
+          {
+            "row": 6,
+            "col": 4
+          },
+          {
+            "row": 6,
+            "col": 6
+          },
+          {
+            "row": 7,
+            "col": 3
+          },
+          {
+            "row": 7,
+            "col": 6
+          },
+          {
+            "row": 7,
+            "col": 7
+          },
+          {
+            "row": 7,
+            "col": 8
+          },
+          {
+            "row": 7,
+            "col": 9
+          },
+          {
+            "row": 8,
+            "col": 3
+          },
+          {
+            "row": 8,
+            "col": 4
+          },
+          {
+            "row": 8,
+            "col": 5
+          },
+          {
+            "row": 8,
+            "col": 6
+          },
+          {
+            "row": 9,
+            "col": 0
+          },
+          {
+            "row": 9,
+            "col": 1
+          },
+          {
+            "row": 9,
+            "col": 2
+          },
+          {
+            "row": 9,
+            "col": 3
+          },
+          {
+            "row": 9,
+            "col": 5
+          },
+          {
+            "row": 10,
+            "col": 5
+          },
+          {
+            "row": 11,
+            "col": 5
+          }
+        ],
+        "given": [
+          {
+            "row": 6,
+            "col": 3,
+            "char": "一"
+          },
+          {
+            "row": 7,
+            "col": 6,
+            "char": "六"
+          },
+          {
+            "row": 8,
+            "col": 6,
+            "char": "行"
+          }
+        ],
+        "tray": [
+          "容",
+          "一",
+          "新",
+          "四",
+          "孤",
+          "面",
+          "尺",
+          "暮",
+          "从",
+          "龙",
+          "三",
+          "之",
+          "马",
+          "牛",
+          "虎",
+          "情",
+          "行",
+          "月",
+          "见",
+          "而",
+          "黄",
+          "目",
+          "白",
+          "步",
+          "如",
+          "时",
+          "动",
+          "头",
+          "书",
+          "天",
+          "鬼",
+          "举",
+          "待",
+          "树",
+          "德",
+          "十",
+          "二",
+          "鼎",
+          "五",
+          "兵",
+          "顾",
+          "危",
+          "一",
+          "六"
+        ],
+        "slots": [
+          {
+            "index": 0,
+            "row": 8,
+            "col": 3,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 1,
+            "row": 6,
+            "col": 3,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 2,
+            "row": 6,
+            "col": 1,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 3,
+            "row": 5,
+            "col": 6,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 4,
+            "row": 9,
+            "col": 0,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 5,
+            "row": 7,
+            "col": 6,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 6,
+            "row": 3,
+            "col": 2,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 7,
+            "row": 3,
+            "col": 4,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 8,
+            "row": 3,
+            "col": 4,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 9,
+            "row": 5,
+            "col": 6,
+            "direction": "Horizontal",
+            "length": 4
+          },
+          {
+            "index": 10,
+            "row": 0,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          },
+          {
+            "index": 11,
+            "row": 8,
+            "col": 5,
+            "direction": "Vertical",
+            "length": 4
+          }
+        ]
+      },
+      "solution": {
+        "cells": {
+          "8,3": "一",
+          "8,4": "目",
+          "8,5": "五",
+          "8,6": "行",
+          "6,3": "一",
+          "7,3": "举",
+          "9,3": "动",
+          "6,1": "一",
+          "6,2": "步",
+          "6,4": "鬼",
+          "5,6": "三",
+          "6,6": "十",
+          "7,6": "六",
+          "9,0": "待",
+          "9,1": "时",
+          "9,2": "而",
+          "7,7": "尺",
+          "7,8": "之",
+          "7,9": "孤",
+          "3,2": "龙",
+          "4,2": "行",
+          "5,2": "虎",
+          "3,4": "白",
+          "4,4": "天",
+          "5,4": "见",
+          "3,5": "头",
+          "3,6": "如",
+          "3,7": "新",
+          "5,7": "从",
+          "5,8": "四",
+          "5,9": "德",
+          "0,5": "马",
+          "1,5": "面",
+          "2,5": "牛",
+          "9,5": "黄",
+          "10,5": "六",
+          "11,5": "月"
+        },
+        "words": [
+          {
+            "index": 0,
+            "word": "一目五行",
+            "explanation": "犹一目十行。形容看书非常快。"
+          },
+          {
+            "index": 1,
+            "word": "一举一动",
+            "explanation": "指人的每一个动作。"
+          },
+          {
+            "index": 2,
+            "word": "一步一鬼",
+            "explanation": "走一步路就好象碰到一个鬼。形容遇事多疑。"
+          },
+          {
+            "index": 3,
+            "word": "三十六行",
+            "explanation": "旧时对各行各业的通称。"
+          },
+          {
+            "index": 4,
+            "word": "待时而动",
+            "explanation": "时时机。等待时机然后行动。"
+          },
+          {
+            "index": 5,
+            "word": "六尺之孤",
+            "explanation": "六尺古代尺短，六尺”形容个子未长高；孤死去父亲的小孩。指没有成年的孤儿。"
+          },
+          {
+            "index": 6,
+            "word": "龙行虎步",
+            "explanation": "原形容帝王的仪态不同一般◇也形容将军的英武姿态。"
+          },
+          {
+            "index": 7,
+            "word": "白天见鬼",
+            "explanation": "比喻虚妄荒诞，不可能出现的事。同白日见鬼”。"
+          },
+          {
+            "index": 8,
+            "word": "白头如新",
+            "explanation": "白头头发白了；新新交。指交朋友彼此不能了解，时间虽久，仍跟刚认识一样。"
+          },
+          {
+            "index": 9,
+            "word": "三从四德",
+            "explanation": "封建礼教束缚妇女的道德标准之一。"
+          },
+          {
+            "index": 10,
+            "word": "马面牛头",
+            "explanation": "比喻各种各样凶恶的人。"
+          },
+          {
+            "index": 11,
+            "word": "五黄六月",
+            "explanation": "指阴历五、六月间天气最炎热的时候。"
+          }
+        ]
+      }
+    }
+  ]
+}

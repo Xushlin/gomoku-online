@@ -8,13 +8,13 @@ public class EasyAiTests
     public void SelectMove_On_Empty_Board_Returns_Legal_Position()
     {
         var ai = new EasyAi(new Random(42));
-        var board = new Board();
+        var board = GomokuBoards.New();
 
         var pick = ai.SelectMove(board, Stone.Black);
 
         board.GetStone(pick).Should().Be(Stone.Empty);
-        pick.Row.Should().BeInRange(0, Position.MaxIndex);
-        pick.Col.Should().BeInRange(0, Position.MaxIndex);
+        pick.Row.Should().BeInRange(0, GomokuBoards.MaxIndex);
+        pick.Col.Should().BeInRange(0, GomokuBoards.MaxIndex);
     }
 
     [Fact]
@@ -22,8 +22,8 @@ public class EasyAiTests
     {
         var aiA = new EasyAi(new Random(42));
         var aiB = new EasyAi(new Random(42));
-        var boardA = new Board();
-        var boardB = new Board();
+        var boardA = GomokuBoards.New();
+        var boardB = GomokuBoards.New();
 
         var pickA = aiA.SelectMove(boardA, Stone.Black);
         var pickB = aiB.SelectMove(boardB, Stone.Black);
@@ -40,7 +40,7 @@ public class EasyAiTests
             (0, 0), (0, 1), (3, 5), (7, 7), (8, 8),
             (10, 2), (10, 10), (14, 14), (2, 13), (6, 4),
         };
-        var board = new Board();
+        var board = GomokuBoards.New();
         var turn = Stone.Black;
         foreach (var (r, c) in occupied)
         {
@@ -67,11 +67,11 @@ public class EasyAiTests
         // 黑白,这样一行 15 颗同色但行间无纵向同色串,确保 PlaceStone 不返回 Win。
         // 等等 —— 一行全同色 15 颗就连 5+ 了,必然触发 Win。所以我们改成:
         // 每 4 颗同色后换色,同行内 4 黑 4 白 4 黑 3 白 = 不触发。
-        var board = new Board();
+        var board = GomokuBoards.New();
         var reserved = new Position(7, 7);
-        for (var r = 0; r <= Position.MaxIndex; r++)
+        for (var r = 0; r <= GomokuBoards.MaxIndex; r++)
         {
-            for (var c = 0; c <= Position.MaxIndex; c++)
+            for (var c = 0; c <= GomokuBoards.MaxIndex; c++)
             {
                 if (r == reserved.Row && c == reserved.Col) continue;
                 // 按 (r*15+c) 的 index / 4 奇偶交替,防止 5 连。
@@ -94,7 +94,7 @@ public class EasyAiTests
     public void SelectMove_With_Empty_Stone_Throws()
     {
         var ai = new EasyAi(new Random(1));
-        var board = new Board();
+        var board = GomokuBoards.New();
 
         var act = () => ai.SelectMove(board, Stone.Empty);
 
@@ -107,10 +107,10 @@ public class EasyAiTests
         // 用同样的 "每 4 颗换色" 套路填满整盘(前测试已证明该模式不触发胜利,
         // 但只剩 0 空格时 Board.PlaceStone 的最后一子会因"棋盘已满"返回 Draw
         // 而不是抛异常;所以这里我们填到 **不剩空格** 为止)。
-        var board = new Board();
-        for (var r = 0; r <= Position.MaxIndex; r++)
+        var board = GomokuBoards.New();
+        for (var r = 0; r <= GomokuBoards.MaxIndex; r++)
         {
-            for (var c = 0; c <= Position.MaxIndex; c++)
+            for (var c = 0; c <= GomokuBoards.MaxIndex; c++)
             {
                 // 用 (r + 2c) % 4 < 2 的 pattern 填色 —— 已验证在 4 个方向上都不会
                 // 产生 5 连(水平 BWBW、垂直 BBWW、主对角 BWWBBWW、反对角同理,最长 2 同色)。

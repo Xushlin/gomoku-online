@@ -1,0 +1,75 @@
+<div
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-[min(26rem,90vw)] max-h-[85dvh] flex-col gap-3 overflow-y-auto border p-6"
+>
+  <h2 class="text-center text-xl font-semibold tracking-widest">
+    {{ 'idiom-crossword.result.title' | transloco }}
+  </h2>
+
+  <p class="text-primary text-center text-2xl tracking-[0.3em]" aria-hidden="true">
+    @for (i of starSlots; track i) {
+      <span [class.opacity-25]="data.stars <= i">★</span>
+    }
+  </p>
+  <p class="sr-only">
+    {{ 'idiom-crossword.result.stars-label' | transloco: { count: data.stars } }}
+  </p>
+
+  <dl class="text-muted flex justify-center gap-4 text-xs">
+    @if (duration(); as time) {
+      <div class="flex gap-1">
+        <dt>{{ 'idiom-crossword.result.time' | transloco }}</dt>
+        <dd class="text-text">{{ time }}</dd>
+      </div>
+    }
+    <div class="flex gap-1">
+      <dt>{{ 'idiom-crossword.result.mistakes' | transloco }}</dt>
+      <dd class="text-text">{{ data.mistakes }}</dd>
+    </div>
+    <div class="flex gap-1">
+      <dt>{{ 'idiom-crossword.result.hints' | transloco }}</dt>
+      <dd class="text-text">{{ data.hintsUsed }}</dd>
+    </div>
+  </dl>
+
+  @if (data.newBest) {
+    <p class="text-success text-center text-xs">
+      {{ 'idiom-crossword.result.new-best' | transloco }}
+    </p>
+  }
+
+  <ul class="border-border flex flex-col gap-2 border-t pt-3">
+    @for (word of data.words; track word.index) {
+      <li class="text-sm leading-relaxed">
+        <b class="font-serif tracking-widest">{{ word.word }}</b>
+        <span class="text-muted"> {{ word.explanation }}</span>
+      </li>
+    }
+  </ul>
+
+  <div class="mt-2 flex justify-center gap-2">
+    <button
+      type="button"
+      class="border-border text-text hover:bg-bg rounded-card border px-4 py-2 text-sm"
+      (click)="close('replay')"
+    >
+      {{ 'idiom-crossword.result.replay' | transloco }}
+    </button>
+    @if (data.isLastLevel) {
+      <button
+        type="button"
+        class="bg-primary text-bg rounded-card px-4 py-2 text-sm font-semibold"
+        (click)="close('levels')"
+      >
+        {{ 'idiom-crossword.result.back-to-levels' | transloco }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="bg-primary text-bg rounded-card px-4 py-2 text-sm font-semibold"
+        (click)="close('next')"
+      >
+        {{ 'idiom-crossword.result.next-level' | transloco }}
+      </button>
+    }
+  </div>
+</div>

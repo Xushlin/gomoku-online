@@ -4,9 +4,10 @@ import type { GameManifest } from '../game-manifest';
 export const idiomCrosswordManifest: GameManifest = {
   key: 'idiom-crossword',
   category: 'puzzle',
-  status: 'planned',
+  status: 'available',
   titleKey: 'games.idiom-crossword.title',
   descriptionKey: 'games.idiom-crossword.description',
   icon: '田',
   contentLocales: ['zh-CN'],
+  launchRoute: '/g/idiom-crossword',
 };

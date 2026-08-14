@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.ValueObjects;
@@ -12,7 +14,7 @@ public class RoomPlayMoveTests
     {
         black = UserId.NewId();
         white = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "Match", black, Now);
+        var room = Room.Create(RoomId.NewId(), "Match", black, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(white, Now.AddMinutes(1));
         return room;
     }
@@ -22,7 +24,7 @@ public class RoomPlayMoveTests
     {
         var room = PlayingRoom(out var black, out _);
 
-        var outcome = room.PlayMove(black, new Position(7, 7), Now.AddMinutes(2));
+        var outcome = room.PlayMove(black, new Position(7, 7), Now.AddMinutes(2), BuiltInGameRules.Gomoku);
 
         outcome.Result.Should().Be(GameResult.Ongoing);
         outcome.Move.Ply.Should().Be(1);
@@ -37,9 +39,9 @@ public class RoomPlayMoveTests
     public void Ply_Strictly_Increments()
     {
         var room = PlayingRoom(out var b, out var w);
-        room.PlayMove(b, new Position(7, 7), Now.AddMinutes(2));
-        room.PlayMove(w, new Position(6, 6), Now.AddMinutes(3));
-        room.PlayMove(b, new Position(7, 8), Now.AddMinutes(4));
+        room.PlayMove(b, new Position(7, 7), Now.AddMinutes(2), BuiltInGameRules.Gomoku);
+        room.PlayMove(w, new Position(6, 6), Now.AddMinutes(3), BuiltInGameRules.Gomoku);
+        room.PlayMove(b, new Position(7, 8), Now.AddMinutes(4), BuiltInGameRules.Gomoku);
 
         room.Game!.Moves.Select(m => m.Ply).Should().ContainInOrder(1, 2, 3);
     }
@@ -47,8 +49,8 @@ public class RoomPlayMoveTests
     [Fact]
     public void Non_Playing_State_Throws()
     {
-        var room = Room.Create(RoomId.NewId(), "Room", UserId.NewId(), Now);
-        var act = () => room.PlayMove(UserId.NewId(), new Position(0, 0), Now);
+        var room = Room.Create(RoomId.NewId(), "Room", UserId.NewId(), Now, GameKeys.Gomoku);
+        var act = () => room.PlayMove(UserId.NewId(), new Position(0, 0), Now, BuiltInGameRules.Gomoku);
         act.Should().Throw<RoomNotInPlayException>();
     }
 
@@ -56,7 +58,7 @@ public class RoomPlayMoveTests
     public void Non_Player_Throws()
     {
         var room = PlayingRoom(out _, out _);
-        var act = () => room.PlayMove(UserId.NewId(), new Position(0, 0), Now);
+        var act = () => room.PlayMove(UserId.NewId(), new Position(0, 0), Now, BuiltInGameRules.Gomoku);
         act.Should().Throw<NotAPlayerException>();
     }
 
@@ -65,7 +67,7 @@ public class RoomPlayMoveTests
     {
         var room = PlayingRoom(out _, out var white);
         // 轮到黑方,白方调 → NotYourTurn
-        var act = () => room.PlayMove(white, new Position(0, 0), Now);
+        var act = () => room.PlayMove(white, new Position(0, 0), Now, BuiltInGameRules.Gomoku);
         act.Should().Throw<NotYourTurnException>();
     }
 
@@ -73,9 +75,9 @@ public class RoomPlayMoveTests
     public void Board_Violation_Bubbles_InvalidMove_And_State_Intact()
     {
         var room = PlayingRoom(out var b, out var w);
-        room.PlayMove(b, new Position(7, 7), Now.AddMinutes(2));
+        room.PlayMove(b, new Position(7, 7), Now.AddMinutes(2), BuiltInGameRules.Gomoku);
         // 白方在已有子的位置落子
-        var act = () => room.PlayMove(w, new Position(7, 7), Now.AddMinutes(3));
+        var act = () => room.PlayMove(w, new Position(7, 7), Now.AddMinutes(3), BuiltInGameRules.Gomoku);
         act.Should().Throw<InvalidMoveException>();
         room.Game!.Moves.Should().HaveCount(1); // 未追加
         room.Game.CurrentTurn.Should().Be(Stone.White); // 未翻转
@@ -87,16 +89,16 @@ public class RoomPlayMoveTests
         var room = PlayingRoom(out var b, out var w);
 
         // 黑在 (7,3..7,7) 连五;白任意下
-        room.PlayMove(b, new Position(7, 3), Now.AddSeconds(1));
-        room.PlayMove(w, new Position(0, 0), Now.AddSeconds(2));
-        room.PlayMove(b, new Position(7, 4), Now.AddSeconds(3));
-        room.PlayMove(w, new Position(0, 1), Now.AddSeconds(4));
-        room.PlayMove(b, new Position(7, 5), Now.AddSeconds(5));
-        room.PlayMove(w, new Position(0, 2), Now.AddSeconds(6));
-        room.PlayMove(b, new Position(7, 6), Now.AddSeconds(7));
-        room.PlayMove(w, new Position(0, 3), Now.AddSeconds(8));
+        room.PlayMove(b, new Position(7, 3), Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.PlayMove(w, new Position(0, 0), Now.AddSeconds(2), BuiltInGameRules.Gomoku);
+        room.PlayMove(b, new Position(7, 4), Now.AddSeconds(3), BuiltInGameRules.Gomoku);
+        room.PlayMove(w, new Position(0, 1), Now.AddSeconds(4), BuiltInGameRules.Gomoku);
+        room.PlayMove(b, new Position(7, 5), Now.AddSeconds(5), BuiltInGameRules.Gomoku);
+        room.PlayMove(w, new Position(0, 2), Now.AddSeconds(6), BuiltInGameRules.Gomoku);
+        room.PlayMove(b, new Position(7, 6), Now.AddSeconds(7), BuiltInGameRules.Gomoku);
+        room.PlayMove(w, new Position(0, 3), Now.AddSeconds(8), BuiltInGameRules.Gomoku);
 
-        var finalOutcome = room.PlayMove(b, new Position(7, 7), Now.AddSeconds(9));
+        var finalOutcome = room.PlayMove(b, new Position(7, 7), Now.AddSeconds(9), BuiltInGameRules.Gomoku);
 
         finalOutcome.Result.Should().Be(GameResult.BlackWin);
         room.Status.Should().Be(RoomStatus.Finished);
