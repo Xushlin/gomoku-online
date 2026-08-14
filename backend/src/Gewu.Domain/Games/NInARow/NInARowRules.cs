@@ -23,17 +23,41 @@ public sealed class NInARowRules : IGameRules
     /// <param name="rows">行数,必须为正。</param>
     /// <param name="cols">列数,必须为正。</param>
     /// <param name="winLength">连子长度,必须为正且不超过 <c>max(rows, cols)</c>。</param>
+    /// <param name="supportsHumanVsHuman">
+    /// 本棋种是否存在人类对手池。默认 <c>true</c> —— **没有**人类对手才是需要在调用处
+    /// 写出理由的那一侧。
+    /// </param>
     /// <param name="isRated">
     /// 本棋种是否结算 ELO。默认 <c>true</c> —— 一个棋种默认是算分的,
     /// **不**算分才是需要在调用处写出理由的那一侧。
     /// </param>
-    /// <exception cref="ArgumentException"><paramref name="gameKey"/> 为空。</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="gameKey"/> 为空,或违反不变量
+    /// <c>isRated ⇒ supportsHumanVsHuman</c>。
+    /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">尺寸或连子长度不合法。</exception>
-    public NInARowRules(string gameKey, int rows, int cols, int winLength, bool isRated = true)
+    public NInARowRules(
+        string gameKey,
+        int rows,
+        int cols,
+        int winLength,
+        bool supportsHumanVsHuman = true,
+        bool isRated = true)
     {
         if (string.IsNullOrWhiteSpace(gameKey))
         {
             throw new ArgumentException("Game key must be non-empty.", nameof(gameKey));
+        }
+
+        // 不变量:只能跟机器人下的棋种不存在有意义的评分 —— 机器人对局是计分的,
+        // 所以那种阶梯排出来的是"谁刷弱档刷得多"而不是棋力。在**构造处**失败,而不是等到
+        // 某个 handler 算出一个没人该看的分数。
+        if (isRated && !supportsHumanVsHuman)
+        {
+            throw new ArgumentException(
+                $"Game '{gameKey}' cannot be rated: it has no human-vs-human mode, so its only " +
+                "opponents are bots and a ladder over it would rank grinding, not skill.",
+                nameof(isRated));
         }
 
         // 尺寸与连子长度的合法性交给 Board 判 —— 那里已经有完整的校验,
@@ -44,6 +68,7 @@ public sealed class NInARowRules : IGameRules
         Rows = rows;
         Cols = cols;
         WinLength = winLength;
+        SupportsHumanVsHuman = supportsHumanVsHuman;
         IsRated = isRated;
     }
 
@@ -58,6 +83,9 @@ public sealed class NInARowRules : IGameRules
 
     /// <inheritdoc />
     public int WinLength { get; }
+
+    /// <inheritdoc />
+    public bool SupportsHumanVsHuman { get; }
 
     /// <inheritdoc />
     public bool IsRated { get; }
@@ -78,12 +106,18 @@ public static class BuiltInGameRules
         new NInARowRules(GameKeys.Gomoku, 15, 15, 5);
 
     /// <summary>
-    /// 一字棋:3×3 连三。**不计分** —— 见 <c>add-tictactoe</c> design D2。
+    /// 一字棋:3×3 连三。**没有人人对战,因此不计分。**
     /// <para>
-    /// 两个理由。其一,平台此刻只有一个评分池,它实质上就是五子棋排行榜,让一字棋结果
-    /// 推动它会无声地污染平台唯一的排行榜。其二更根本:一字棋是**已解游戏**,双方稍具
-    /// 水平即必和,<c>TicTacToeHardAi</c> 不可战胜 —— 在其上评分只是在量谁先犯错,
-    /// 结果收敛为噪声,没有可排的东西。
+    /// 不计分不是一个独立的选择,而是不变量的后果:平台没有为一字棋提供人人对战入口
+    /// (它只有 <c>/g/tictactoe</c> 这一个人机页面),于是它唯一的对手是机器人,而机器人
+    /// 对局是计分的 —— 一字棋阶梯的榜首会是刷 Easy 档最多的人。构造器会拒绝
+    /// <c>supportsHumanVsHuman: false, isRated: true</c> 的组合,所以这件事不靠谁记得。
+    /// </para>
+    /// <para>
+    /// 它将来获得人人对战时,翻 <c>supportsHumanVsHuman</c> 会把评分从"禁止"变成"允许";
+    /// 开不开是那时的一个独立决定。顺带一提,即便开了,一字棋是**已解游戏**(双方稍具水平
+    /// 即必和,<c>TicTacToeHardAi</c> 不可战胜),阶梯的分辨力也很有限 —— 但那时它至少
+    /// 量的是人,而不是刷机器人的次数。
     /// </para>
     /// <para>
     /// 这里没有第二份判胜实现,整个棋种就是这三个数 —— 这正是 <c>NInARowRules</c>
@@ -91,6 +125,6 @@ public static class BuiltInGameRules
     /// 第一次被真正验证。
     /// </para>
     /// </summary>
-    public static readonly IGameRules TicTacToe =
-        new NInARowRules(GameKeys.TicTacToe, 3, 3, 3, isRated: false);
+    public static readonly IGameRules TicTacToe = new NInARowRules(
+        GameKeys.TicTacToe, 3, 3, 3, supportsHumanVsHuman: false, isRated: false);
 }
