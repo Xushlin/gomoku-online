@@ -58,8 +58,8 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
                 : new PuzzlePartialResult(false, "{\"leak\":\"must-not-reach-client\"}");
         }
 
-        public PuzzleHintResult Hint(string solutionJson, string layoutJson, int alreadyRevealedCount)
-            => new($"{{\"position\":{alreadyRevealedCount}}}");
+        public PuzzleHintResult Hint(string solutionJson, string layoutJson, string? stateJson)
+            => new($"{{\"state\":{(stateJson is null ? "null" : "\"seen\"")}}}");
 
         // 与原型同构:cost = 错误 + 提示;0 → 3 星,≤2 → 2 星,否则 1 星。
         public int Score(int hintsUsed, int mistakes, TimeSpan duration)
@@ -152,7 +152,7 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
 
         var hint = await Hint(started.AttemptId);
         hint.HintsUsed.Should().Be(1);
-        hint.RevealedJson.Should().Be("{\"position\":0}");
+        hint.RevealedJson.Should().Be("{\"state\":null}", "未带盘面状态时规则收到 null");
 
         _clock.UtcNow = _clock.UtcNow.AddSeconds(45);
         var result = await Submit(started.AttemptId, "SOLVED");
@@ -350,7 +350,7 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
         public string GameKey => "marker-game";
         public PuzzleValidationResult Validate(string s, string x) => new(false);
         public PuzzlePartialResult CheckPartial(string s, string x) => new(false);
-        public PuzzleHintResult Hint(string s, string l, int n) => new("{}");
+        public PuzzleHintResult Hint(string s, string l, string? state) => new("{}");
         public int Score(int h, int m, TimeSpan d) => 1;
     }
 }

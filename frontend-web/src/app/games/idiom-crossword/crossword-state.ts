@@ -221,6 +221,21 @@ export class CrosswordState {
       .join('');
   }
 
+  /**
+   * What the server needs to aim a hint: which cells hold a character, and the
+   * cursor. No answers — the client does not have any.
+   */
+  hintState(): { filled: string[]; selected: string | null } {
+    const given = this.given();
+    const placed = this._placed();
+    const filled: string[] = [];
+    for (const cell of this.playableCells()) {
+      const key = cellKey(cell.row, cell.col);
+      if (given.has(key) || placed.has(key)) filled.push(key);
+    }
+    return { filled, selected: this._selected() };
+  }
+
   /** Every filled cell, as the submission payload shape. */
   submission(): Record<string, string> {
     const cells: Record<string, string> = {};

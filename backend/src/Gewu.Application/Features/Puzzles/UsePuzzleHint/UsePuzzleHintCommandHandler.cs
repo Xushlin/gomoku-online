@@ -38,7 +38,7 @@ public sealed class UsePuzzleHintCommandHandler : IRequestHandler<UsePuzzleHintC
 
         // 先记账再揭示:RecordHint 会拒绝一个已结束的尝试,所以提交之后要不到提示。
         attempt.RecordHint();
-        var hint = rules.Hint(level.SolutionJson, level.LayoutJson, attempt.HintsUsed - 1);
+        var hint = rules.Hint(level.SolutionJson, level.LayoutJson, request.StateJson);
 
         await _uow.SaveChangesAsync(cancellationToken);
 
