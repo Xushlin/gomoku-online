@@ -6,30 +6,14 @@
 
 现在有两个对战棋种了，所以 per-game 评分终于有第二个真实消费者可以验证 —— 这正是当初把它排在 `add-tictactoe` 之后的理由：一个只有一个 gameKey 的 `UserGameStats` 表，和一个只有一条记录的注册表一样没被验证过。
 
-## 我承诺过要删掉 `IsRated`。检查之后，那个承诺和那个字段本身都是错的
+## `IsRated` 的事已经在 `add-game-capabilities` 里解决了
 
-拆开来看，`IsRated` 当初有两个理由：
+那个变更把它从「手工维护的判断」换成了受不变量约束的声明(`IsRated ⇒ SupportsHumanVsHuman`,
+构造器 + 遍历注册表的测试双重强制)。**本变更因此不碰 `IsRated`** —— 一字棋不计分是它没有人类
+对手池的后果,而不是"共享评分池"的临时补丁,所以池子拆开之后那个开关照样成立。
 
-1. **污染**：一字棋结果会推动平台唯一的排行榜。
-2. **无意义**：一字棋是已解游戏，完美对弈必和，Hard 档不可战胜。
-
-本变更彻底解决 ①。② 没有解决，而且现在更尖锐：**一字棋没有人人对战**，唯一的对手是机器人，而机器人对局**是计分的**（`add-ai-opponent` D7 的反套利约束）。所以一字棋阶梯排出来的不是棋力，而是**谁刷 Easy 档刷得多** —— Hard 必和分不动，Easy 稳赢分单调涨。那不是噪声，是一个可见且可刷的错误信号。
-
-**但真正的问题是 `IsRated` 这个字段的形状。** 它是一个手工维护的布尔，语义是「要不要给这个棋种算分」—— 一个判断，不是一个事实。判断会过期：一字棋将来有了人人对战，得有人记得回来翻它；而没人记得的时候，代码里的判断和现实就分岔了，且没有任何东西会报错。
-
-所以本变更把它换成一个**结构性事实**加一条不变量：
-
-```
-IGameRules.SupportsHumanVsHuman : bool     ← 声明（结构性事实）
-IGameRules.IsRated              : bool     ← 判断，但被不变量约束
-不变量（测试强制）：IsRated ⇒ SupportsHumanVsHuman
-```
-
-于是：
-
-- **今天的一字棋**：`SupportsHumanVsHuman = false`，所以 `IsRated` **只能**是 false。这不再是一个我替你做的判断，是被不变量逼出来的。
-- **一字棋将来有了人人对战**：翻 `SupportsHumanVsHuman`，评分就从「禁止」变成「允许」。开不开是一个独立的、有理由可讲的产品决定 —— 而不是一件需要有人记得的事。
-- **`SupportsAi` 我不加。** `IGameAiRegistry.For(key)` 已经知道答案了；再加个字段就是第二份真源，而这个仓库已经为「两份真源迟早不一致」付过两次学费。
+那一刀也是为了让本变更能被审:删 `User` 上五个战绩列会强制所有读者在同一个 commit 里改,
+本变更没法再小,所以能力模型先走。
 
 ## 关于象棋、孔明棋、华容道：预留什么，不预留什么
 
@@ -46,12 +30,6 @@ IGameRules.IsRated              : bool     ← 判断，但被不变量约束
 孔明棋值得单独说一句：它是**单人**游戏，没有对手，所以连「评分」这个概念都不适用 —— 它属于 `category: 'puzzle'`，和华容道同一条路。目录注册表里现在还没有它，加它是一个 manifest 条目加两个 i18n 键。
 
 ## What Changes
-
-### `IGameRules` 增加 `SupportsHumanVsHuman`，`IsRated` 被不变量约束
-
-见上。`SupportsAi` 不加 —— 由 `IGameAiRegistry` 解析。
-
-五子棋：两者皆 true。一字棋：`SupportsHumanVsHuman = false`，因此 `IsRated` 强制为 false。
 
 ### `UserGameStats` 成为战绩的唯一真源
 
@@ -76,10 +54,22 @@ UserGameStats(UserId, GameKey, Rating, GamesPlayed, Wins, Losses, Draws, RowVers
 - 未登记或不计分的棋种返回**空列表 + 200**，与房间列表同一处理 —— 集合端点上「这个棋种没有榜」与「榜是空的」对调用方无区别。
 - 从没下过某棋种的人不出现在该棋种的榜上（没有 `UserGameStats` 行 = 不在榜上），而不是以 1200 分占位。
 
-### 公开资料与搜索
+### 三个 DTO 的**形状一个字节不变**，只多一个棋种选择器
 
-- `UserPublicProfileDto` 的战绩变成**按棋种的一组**，而不是一份。
-- `SearchUsers` 返回的 `Rating` 需要一个棋种上下文；本变更让它取 `gomoku`，并把「搜索按哪个棋种排序」记为缺口 —— 找人卡片是五子棋大厅的一部分，泛化它属于大厅泛化那一步。
+这是本变更刻意收窄的地方。`LeaderboardEntryDto` / `UserPublicProfileDto` / 搜索结果全部保持
+现有字段，只是数据来源从 `User` 换成 `UserGameStats`：
+
+- `GET /api/leaderboard?gameKey=`（缺省 `gomoku`）
+- `GET /api/users/{id}?gameKey=`（缺省 `gomoku`）
+- `GET /api/users?search=` —— **不加参数**，钉在 `gomoku`
+
+好处是已发布的 Web 客户端**零改动**，看到的数字与现在完全一致；而"资料页同时展示所有棋种的
+战绩"、"排行榜加棋种切换"变成纯前端工作，留给 `add-web-per-game-rating`。
+
+代价是资料页此刻只能看到一个棋种 —— 记为缺口，不是遗漏。
+
+搜索钉在 `gomoku` 的理由不是省事:找人卡片是**五子棋大厅**的一个组件
+(`pages/lobby/cards/find-player`),给它加棋种参数等于开始泛化大厅,而那是 roadmap 下一步。
 
 ## Scope
 
@@ -89,7 +79,7 @@ UserGameStats(UserId, GameKey, Rating, GamesPlayed, Wins, Losses, Draws, RowVers
 
 ## Impact
 
-- **Affected specs:** `elo-rating`（大改：MODIFIED ×4）、`user-management`（MODIFIED ×2）、`room-and-gameplay`（MODIFIED ×1，`GameEloApplier`）、`game-rules-registry`（MODIFIED ×1，`IsRated` 的理由与拆除条件）、`api-ops`（MODIFIED ×1，排行榜端点）。
+- **Affected specs:** `elo-rating`（RENAMED ×1 + MODIFIED ×5）、`user-management`（MODIFIED ×5）。`game-rules-registry` 不动 —— 能力声明已由 `add-game-capabilities` 处理。
 - **Affected code:** `Gewu.Domain/Users`（新 `UserGameStats`）、`Gewu.Application/Features/Users/{GetLeaderboard,GetUserProfile,SearchUsers}`、`Features/Rooms/Common/GameEloApplier`、`Common/Mapping/UserMapping`、`Common/DTOs/{UserDto,UserPublicProfileDto,LeaderboardEntryDto}`、`Gewu.Infrastructure/Persistence/{Configurations,Repositories,Migrations}`、`Gewu.Api/Controllers/LeaderboardController`。
 - **一条 migration，含数据搬迁。** 本地 SQLite 无生产数据，但迁移仍要写对 —— 它是唯一会被别人在自己的库上跑的东西。
 - **不做**：前端、`add-per-game-rating` 之外的排行榜（谜题的星数+用时榜、俄罗斯方块的分数榜仍各自独立，这是刻意的）、大厅泛化、搜索的棋种参数。
