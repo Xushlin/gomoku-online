@@ -5,6 +5,7 @@ using Gewu.Application.Common.Mapping;
 using Gewu.Application.Features.Rooms.Common;
 using MediatR;
 using Microsoft.Extensions.Options;
+using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Features.Rooms.Resign;
 
@@ -18,6 +19,7 @@ public sealed class ResignCommandHandler : IRequestHandler<ResignCommand, GameEn
 {
     private readonly IRoomRepository _rooms;
     private readonly IUserRepository _users;
+    private readonly IGameRulesRegistry _rules;
     private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
     private readonly IRoomNotifier _notifier;
@@ -27,6 +29,7 @@ public sealed class ResignCommandHandler : IRequestHandler<ResignCommand, GameEn
     public ResignCommandHandler(
         IRoomRepository rooms,
         IUserRepository users,
+        IGameRulesRegistry rules,
         IDateTimeProvider clock,
         IUnitOfWork uow,
         IRoomNotifier notifier,
@@ -34,6 +37,7 @@ public sealed class ResignCommandHandler : IRequestHandler<ResignCommand, GameEn
     {
         _rooms = rooms;
         _users = users;
+        _rules = rules;
         _clock = clock;
         _uow = uow;
         _notifier = notifier;
@@ -48,7 +52,7 @@ public sealed class ResignCommandHandler : IRequestHandler<ResignCommand, GameEn
 
         var outcome = room.Resign(request.UserId, _clock.UtcNow);
 
-        await GameEloApplier.ApplyAsync(room, outcome.Result, _users, cancellationToken);
+        await GameEloApplier.ApplyAsync(room, outcome.Result, _rules, _users, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
 
         var ended = new GameEndedDto(

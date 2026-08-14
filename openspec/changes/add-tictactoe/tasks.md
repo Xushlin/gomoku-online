@@ -57,9 +57,9 @@
 
 ## 6. Unrated games
 
-- [ ] 6.1 `MakeMoveCommandHandler` skips the ELO block when `rules.IsRated == false`. Reuse the `IGameRules` instance it already resolved for the move — do not resolve twice.
-- [ ] 6.2 Check `GameEloApplier` and the resign / timeout paths (`ResignCommand`, `TurnTimeoutCommand`) — they end games too, and each is a separate place ELO gets applied. All of them need the same guard. **This is the step most likely to be missed**: the proposal only names `MakeMoveCommandHandler` because that is where the spec's requirement lives, but a tic-tac-toe game that ends by resignation would otherwise still move ratings.
-- [ ] 6.3 Tests: an unrated game ending by win / draw / resignation / timeout leaves both users' `Rating`, `Wins`, `Losses`, `GamesPlayed` untouched; the room still reaches `Finished` with an `EndReason`; the replay endpoint still works; `GET /api/leaderboard` is unchanged.
+- [x] 6.1 The guard went **inside `GameEloApplier.ApplyAsync`**, not into `MakeMoveCommandHandler`. There are three end-of-game paths sharing that helper; guarding at the single exit means a fourth path added later is covered automatically, and no call site can forget. `ApplyAsync` takes `IGameRulesRegistry`; `MakeMove` passes the one it already has.
+- [x] 6.2 **Confirmed: three call sites** (`MakeMove:65`, `Resign:51`, `TurnTimeout:50`). This task note was right that it would be missed. `Resign` / `TurnTimeout` did not resolve rules at all and each gained an `IGameRulesRegistry`. Original note: Check `GameEloApplier` and the resign / timeout paths (`ResignCommand`, `TurnTimeoutCommand`) — they end games too, and each is a separate place ELO gets applied. All of them need the same guard. **This is the step most likely to be missed**: the proposal only names `MakeMoveCommandHandler` because that is where the spec's requirement lives, but a tic-tac-toe game that ends by resignation would otherwise still move ratings.
+- [x] 6.3 Tests: an unrated game ending by win / draw / resignation / timeout leaves both users' `Rating`, `Wins`, `Losses`, `GamesPlayed` untouched; the room still reaches `Finished` with an `EndReason`; the replay endpoint still works; `GET /api/leaderboard` is unchanged.
 
 ## 7. Registry-debt audit (fill in during implementation)
 

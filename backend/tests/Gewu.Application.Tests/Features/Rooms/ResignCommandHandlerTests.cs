@@ -13,7 +13,8 @@ public class ResignCommandHandlerTests
     private readonly Mock<IRoomNotifier> _notifier = new();
 
     private ResignCommandHandler Build() => new(
-        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object, RoomsFixtures.TestGameOptions());
+        _rooms.Object, _users.Object, GomokuRules.Registry, _clock.Object, _uow.Object,
+        _notifier.Object, RoomsFixtures.TestGameOptions());
 
     [Fact]
     public async Task Success_Black_Resigns_White_Wins_Elo_Applied_Events_Fired()
