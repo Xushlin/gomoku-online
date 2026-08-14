@@ -12,7 +12,8 @@
       "system": "System",
       "dark-toggle": "Dark mode",
       "dark-on": "On",
-      "dark-off": "Off"
+      "dark-off": "Off",
+      "ink": "Ink"
     },
     "board-skin": {
       "label": "Board",
@@ -355,6 +356,45 @@
     "tetris": {
       "title": "Tetris",
       "description": "Stack the falling blocks, clear the lines, chase the leaderboard."
+    }
+  },
+  "idiom-crossword": {
+    "levels": {
+      "subtitle": "Fill the grid with four-character idioms. One shared character links two of them.",
+      "number": "Level {{number}}",
+      "difficulty": "Tier {{value}}",
+      "best-time": "Best {{time}}",
+      "unplayed": "Not played",
+      "locked": "Locked",
+      "stars-label": "{{count}} of 3 stars"
+    },
+    "board": {
+      "cell-aria": "Row {{row}}, column {{col}}",
+      "tray-aria": "Character tray"
+    },
+    "play": {
+      "mistakes": "Mistakes",
+      "hints": "Hints"
+    },
+    "actions": {
+      "restart": "Restart",
+      "hint": "Hint",
+      "retry": "Retry"
+    },
+    "result": {
+      "title": "Level complete",
+      "stars-label": "{{count}} of 3 stars",
+      "time": "Time",
+      "mistakes": "Mistakes",
+      "hints": "Hints",
+      "new-best": "New personal best",
+      "replay": "Play again",
+      "next-level": "Next level",
+      "back-to-levels": "Back to levels"
+    },
+    "errors": {
+      "load-levels": "Couldn't load the levels.",
+      "load-level": "Couldn't start this level."
     }
   }
 }

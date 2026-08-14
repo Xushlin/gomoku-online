@@ -154,3 +154,112 @@ body {
   box-shadow: 0 0 0 2px var(--last-move-ring, #ffb000);
   pointer-events: none;
 }
+
+/*
+ * 成语纵横 — movable-type board.
+ *
+ * Every colour is a token, so the board follows whichever theme is active
+ * rather than hardcoding the prototype's ink palette. Under `ink` it looks
+ * like the prototype; under `material` it looks like the rest of that theme.
+ */
+.crossword-cell {
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.crossword-cell--empty {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  border: 1.5px solid var(--color-border);
+  cursor: pointer;
+}
+
+.crossword-cell--filled {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-bottom: 3px solid var(--color-border);
+  box-shadow: var(--shadow-elevated);
+  cursor: pointer;
+}
+
+/* Pre-filled cells read as printed rather than placed — seal red, not ink. */
+.crossword-cell--given {
+  color: var(--color-primary);
+  cursor: default;
+}
+
+/* Solved: jade in the ink theme, the theme's success colour elsewhere. */
+.crossword-cell--locked {
+  border-bottom-color: var(--color-success);
+  box-shadow:
+    0 0 0 1.5px var(--color-success),
+    var(--shadow-elevated);
+  cursor: default;
+}
+
+.crossword-cell--selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+.crossword-cell--shake {
+  animation: crossword-shake 0.45s ease-in-out;
+  box-shadow: 0 0 0 2px var(--color-danger);
+}
+
+@keyframes crossword-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+.crossword-tile {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-bottom: 3px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-elevated);
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    opacity 0.2s;
+}
+
+.crossword-tile:active {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+}
+
+.crossword-tile--used {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crossword-cell,
+  .crossword-tile {
+    transition: none;
+  }
+  .crossword-cell--shake {
+    animation: none;
+  }
+}

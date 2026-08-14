@@ -77,3 +77,39 @@
 
   --shadow-elevated: 0 1px 2px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.6);
 }
+
+/* --- Ink theme (活字印刷) --- */
+
+[data-theme='ink'] {
+  --color-bg: #f4ecdb;
+  --color-surface: #fbf6ea;
+  --color-primary: #a8301f;
+  --color-text: #26221c;
+  --color-muted: #6b5f4a;
+  --color-border: #cbbc9d;
+  --color-danger: #a8301f;
+  --color-success: #2f6b52;
+  --color-warning: #8a5a12;
+
+  --radius-card: 8px;
+  --shadow-elevated:
+    0 2px 6px rgb(38 34 28 / 0.14), 0 1px 2px rgb(38 34 28 / 0.1);
+}
+
+[data-theme='ink'].dark {
+  --color-bg: #171c26;
+  --color-surface: #1f2531;
+  --color-primary: #e4785f;
+  --color-text: #ece3cf;
+  --color-muted: #9aa0ab;
+  --color-border: #39404e;
+  --color-danger: #e4785f;
+  --color-success: #5fbf94;
+  --color-warning: #d9a95c;
+
+  --radius-card: 8px;
+  /* Heavier than the other themes — movable type has thickness, and the
+     shadow is that thickness. */
+  --shadow-elevated:
+    0 3px 10px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.35);
+}

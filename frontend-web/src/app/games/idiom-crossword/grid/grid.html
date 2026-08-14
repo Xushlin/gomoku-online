@@ -1,0 +1,51 @@
+<!--
+  The board scrolls inside its own container rather than widening the page, so
+  a 12-column level stays usable at 375 px.
+-->
+<div class="w-full overflow-x-auto">
+  <div
+    class="mx-auto flex w-fit flex-col"
+    [style.gap.px]="gap()"
+    role="grid"
+    [attr.aria-rowcount]="layout().rows"
+    [attr.aria-colcount]="layout().cols"
+  >
+    @for (row of rows(); track $index) {
+      <div class="flex" [style.gap.px]="gap()" role="row">
+        @for (cell of row; track cell.key) {
+          @if (!cell.present) {
+            <div
+              class="shrink-0"
+              [style.width.px]="cellSize()"
+              [style.height.px]="cellSize()"
+              aria-hidden="true"
+            ></div>
+          } @else {
+            <button
+              type="button"
+              role="gridcell"
+              class="crossword-cell shrink-0 rounded-[0.15em] font-serif font-bold transition-transform"
+              [class.crossword-cell--empty]="!charOf(cell.key)"
+              [class.crossword-cell--filled]="!!charOf(cell.key)"
+              [class.crossword-cell--given]="isGiven(cell.key)"
+              [class.crossword-cell--locked]="isLocked(cell.key) && !isGiven(cell.key)"
+              [class.crossword-cell--selected]="selected() === cell.key"
+              [class.crossword-cell--shake]="shaking().has(cell.key)"
+              [style.width.px]="cellSize()"
+              [style.height.px]="cellSize()"
+              [style.font-size.px]="cellSize() * 0.56"
+              [disabled]="isLocked(cell.key)"
+              [attr.aria-label]="
+                'idiom-crossword.board.cell-aria'
+                  | transloco: { row: cell.row + 1, col: cell.col + 1 }
+              "
+              (click)="onTap(cell.key, cell.present)"
+            >
+              {{ charOf(cell.key) }}
+            </button>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>

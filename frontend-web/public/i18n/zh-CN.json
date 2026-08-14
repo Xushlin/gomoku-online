@@ -12,7 +12,8 @@
       "system": "简约",
       "dark-toggle": "深色模式",
       "dark-on": "开",
-      "dark-off": "关"
+      "dark-off": "关",
+      "ink": "活字"
     },
     "board-skin": {
       "label": "棋盘",
@@ -355,6 +356,45 @@
     "tetris": {
       "title": "俄罗斯方块",
       "description": "堆好落下的方块,消行,冲榜。"
+    }
+  },
+  "idiom-crossword": {
+    "levels": {
+      "subtitle": "把四字成语填进纵横交错的方格,一个共用的字连起两条成语。",
+      "number": "第 {{number}} 关",
+      "difficulty": "难度 {{value}}",
+      "best-time": "最好 {{time}}",
+      "unplayed": "未通关",
+      "locked": "未解锁",
+      "stars-label": "3 星中的 {{count}} 星"
+    },
+    "board": {
+      "cell-aria": "第 {{row}} 行,第 {{col}} 列",
+      "tray-aria": "字盘"
+    },
+    "play": {
+      "mistakes": "错误",
+      "hints": "提示"
+    },
+    "actions": {
+      "restart": "重开",
+      "hint": "提示",
+      "retry": "重试"
+    },
+    "result": {
+      "title": "过关",
+      "stars-label": "3 星中的 {{count}} 星",
+      "time": "用时",
+      "mistakes": "错误",
+      "hints": "提示",
+      "new-best": "刷新了个人最好成绩",
+      "replay": "再玩一次",
+      "next-level": "下一关",
+      "back-to-levels": "返回关卡"
+    },
+    "errors": {
+      "load-levels": "关卡加载失败。",
+      "load-level": "这一关没能开始。"
     }
   }
 }
