@@ -1,18 +1,41 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { CdkMenu, CdkMenuItem, CdkMenuItemCheckbox, CdkMenuTrigger } from '@angular/cdk/menu';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
-import { SUPPORTED_LOCALES, type SupportedLocale } from '../../core/i18n/supported-locales';
+import { isSupportedLocale, SUPPORTED_LOCALES } from '../../core/i18n/supported-locales';
 import { SoundService } from '../../core/sound/sound.service';
 import { BoardSkinService } from '../../core/theme/board-skin.service';
 import { ThemeService } from '../../core/theme/theme.service';
 
+/**
+ * One dropdown appearance control. Every string derives from `prefix`: the
+ * control's name is `<prefix>.label` and the current value plus each option
+ * is `<prefix>.<option>`. Language, theme, board skin and sound pack are all
+ * this shape, so the template renders them from one loop.
+ */
+interface PickerControl {
+  readonly prefix: string;
+  readonly options: readonly string[];
+  readonly value: string;
+  /** The sound-pack menu carries the volume slider under its options. */
+  readonly hasVolume: boolean;
+  readonly apply: (option: string) => void;
+}
+
+/** One two-state appearance control — sound on/off, dark mode on/off. */
+interface ToggleControl {
+  readonly labelKey: string;
+  readonly stateKey: string;
+  readonly checked: boolean;
+  readonly toggle: () => void;
+}
+
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, TranslocoPipe],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuItemCheckbox, CdkMenuTrigger, RouterLink, TranslocoPipe],
   templateUrl: './header.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -24,63 +47,75 @@ export class Header {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  protected readonly locales = SUPPORTED_LOCALES;
-  protected readonly currentLocaleKey = computed(() => `header.language.${this.language.current()}`);
-  protected readonly currentThemeKey = computed(() => `header.theme.${this.theme.themeName()}`);
-  protected readonly currentBoardSkinKey = computed(
-    () => `header.board-skin.${this.boardSkin.skinName()}`,
-  );
-  protected readonly currentSoundPackKey = computed(
-    () => `header.sound-pack.${this.sound.packName()}`,
-  );
-  protected readonly darkStateKey = computed(() =>
-    this.theme.isDark() ? 'header.theme.dark-on' : 'header.theme.dark-off',
-  );
-  protected readonly soundStateKey = computed(() =>
-    this.sound.muted() ? 'header.sound.off' : 'header.sound.on',
-  );
-
-  protected get themes(): readonly string[] {
-    return this.theme.availableThemes();
+  /**
+   * The four dropdown controls, in the order the header shows them. Both
+   * placements — the inline row above `lg` and the Settings menu below it —
+   * loop over this list, so a fifth control is one entry here and no template
+   * edit. Options come straight from each service's registry, which is what
+   * keeps "register a skin, touch no template" true.
+   *
+   * A getter rather than a `computed` because the registries are plain methods,
+   * not signals: re-reading per change detection cannot go stale.
+   */
+  protected get pickers(): readonly PickerControl[] {
+    return [
+      {
+        prefix: 'header.language',
+        options: SUPPORTED_LOCALES,
+        value: this.language.current(),
+        hasVolume: false,
+        apply: (option) => this.selectLocale(option),
+      },
+      {
+        prefix: 'header.theme',
+        options: this.theme.availableThemes(),
+        value: this.theme.themeName(),
+        hasVolume: false,
+        apply: (option) => this.theme.activate(option),
+      },
+      {
+        prefix: 'header.board-skin',
+        options: this.boardSkin.availableSkins(),
+        value: this.boardSkin.skinName(),
+        hasVolume: false,
+        apply: (option) => this.boardSkin.activate(option),
+      },
+      {
+        prefix: 'header.sound-pack',
+        options: this.sound.availablePacks(),
+        value: this.sound.packName(),
+        hasVolume: true,
+        apply: (option) => this.selectSoundPack(option),
+      },
+    ];
   }
 
-  protected get boardSkins(): readonly string[] {
-    return this.boardSkin.availableSkins();
+  /** The two switch controls, rendered after the pickers in both placements. */
+  protected get toggles(): readonly ToggleControl[] {
+    return [
+      {
+        labelKey: 'header.sound.label',
+        // aria-checked tracks "has sound", i.e. the inverse of muted.
+        stateKey: this.sound.muted() ? 'header.sound.off' : 'header.sound.on',
+        checked: !this.sound.muted(),
+        toggle: () => this.sound.setMuted(!this.sound.muted()),
+      },
+      {
+        labelKey: 'header.theme.dark-toggle',
+        stateKey: this.theme.isDark() ? 'header.theme.dark-on' : 'header.theme.dark-off',
+        checked: this.theme.isDark(),
+        toggle: () => this.theme.setDark(!this.theme.isDark()),
+      },
+    ];
   }
 
-  protected get soundPacks(): readonly string[] {
-    return this.sound.availablePacks();
+  private selectLocale(locale: string): void {
+    // The picker list is generic over string registries, so narrow on the way
+    // back in rather than casting — an unknown tag is dropped, not applied.
+    if (isSupportedLocale(locale)) this.language.use(locale);
   }
 
-  protected localeKey(locale: SupportedLocale): string {
-    return `header.language.${locale}`;
-  }
-
-  protected themeKey(name: string): string {
-    return `header.theme.${name}`;
-  }
-
-  protected boardSkinKey(name: string): string {
-    return `header.board-skin.${name}`;
-  }
-
-  protected soundPackKey(name: string): string {
-    return `header.sound-pack.${name}`;
-  }
-
-  protected selectLocale(locale: SupportedLocale): void {
-    this.language.use(locale);
-  }
-
-  protected selectTheme(name: string): void {
-    this.theme.activate(name);
-  }
-
-  protected selectBoardSkin(name: string): void {
-    this.boardSkin.activate(name);
-  }
-
-  protected selectSoundPack(name: string): void {
+  private selectSoundPack(name: string): void {
     this.sound.activate(name);
     if (!this.sound.muted()) this.sound.play('move-place');
   }
@@ -90,14 +125,6 @@ export class Header {
     // Audition the new level on release so the user hears what they chose
     // (mirrors the pack-switch audition; silent when muted or at 0).
     if (!this.sound.muted()) this.sound.play('move-place');
-  }
-
-  protected toggleDark(): void {
-    this.theme.setDark(!this.theme.isDark());
-  }
-
-  protected toggleSound(): void {
-    this.sound.setMuted(!this.sound.muted());
   }
 
   protected logout(): void {

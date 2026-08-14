@@ -32,6 +32,9 @@
       "chiptune": "Chiptune",
       "minimal": "Minimal"
     },
+    "settings": {
+      "label": "Settings"
+    },
     "auth": {
       "login-cta": "Log in",
       "logout": "Log out",
