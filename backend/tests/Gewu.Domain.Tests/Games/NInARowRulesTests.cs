@@ -42,16 +42,72 @@ public class NInARowRulesTests
     [Fact]
     public void Gomoku_is_rated_and_tictactoe_is_not()
     {
-        // 一字棋不计分是刻意的、限期的 —— 见 add-tictactoe design D2。
-        // add-per-game-rating 删掉 IsRated 时,这条测试会跟着被删。
+        // 一字棋不计分不是一个独立的选择,而是不变量的后果:它没有人人对战入口,
+        // 唯一的对手是机器人,而机器人对局是计分的 —— 那种阶梯量的是刷的次数。
         BuiltInGameRules.Gomoku.IsRated.Should().BeTrue();
+        BuiltInGameRules.Gomoku.SupportsHumanVsHuman.Should().BeTrue();
+
         TicTacToe.IsRated.Should().BeFalse();
+        TicTacToe.SupportsHumanVsHuman.Should().BeFalse();
     }
 
     [Fact]
-    public void A_game_is_rated_unless_it_says_otherwise()
+    public void A_game_has_human_opponents_and_is_rated_unless_it_says_otherwise()
     {
-        new NInARowRules("some-new-game", 3, 3, 3).IsRated.Should().BeTrue();
+        var rules = new NInARowRules("some-new-game", 3, 3, 3);
+
+        rules.SupportsHumanVsHuman.Should().BeTrue();
+        rules.IsRated.Should().BeTrue();
+    }
+
+    [Theory]
+    [MemberData(nameof(AllBuiltInRules))]
+    public void Every_registered_game_satisfies_the_rating_invariant(IGameRules rules)
+    {
+        // 不变量:IsRated ⇒ SupportsHumanVsHuman。
+        //
+        // 遍历注册表而不是只测那两个已知的棋种 —— 将来加中国象棋、加一字棋的人人对战,
+        // 它自动被覆盖。一条只测已知值的断言在新棋种上是沉默的,而沉默正是这个不变量
+        // 要防的东西:原来的 IsRated 是个手工判断,靠有人记得回来翻它。
+        if (rules.IsRated)
+        {
+            rules.SupportsHumanVsHuman.Should().BeTrue(
+                $"'{rules.GameKey}' is rated, so it must have a human opponent pool");
+        }
+    }
+
+    public static TheoryData<IGameRules> AllBuiltInRules() =>
+        new() { BuiltInGameRules.Gomoku, BuiltInGameRules.TicTacToe };
+
+    [Fact]
+    public void Rejects_a_rated_game_with_no_human_opponents()
+    {
+        // 在构造处失败,而不是等到某个 handler 算出一个没人该看的分数。
+        var act = () => new NInARowRules(
+            "bot-only-ladder", 3, 3, 3, supportsHumanVsHuman: false, isRated: true);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*no human-vs-human*");
+    }
+
+    [Fact]
+    public void Allows_a_game_with_human_opponents_that_is_deliberately_unrated()
+    {
+        // 反方向不受约束:有人类对手却不计分是合法的(比如一个休闲棋种)。
+        var act = () => new NInARowRules(
+            "casual", 3, 3, 3, supportsHumanVsHuman: true, isRated: false);
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Support_for_ai_is_not_declared_here()
+    {
+        // "这个棋种有没有 AI"由 IGameAiRegistry.For 回答。加个 SupportsAi 字段就是
+        // 第二份真源 —— 光在文档里写"别加"挡不住下一个人,所以用反射钉住。
+        typeof(IGameRules).GetProperties()
+            .Select(p => p.Name)
+            .Should().NotContain(n => n.Contains("Ai") || n.Contains("Bot"));
     }
 
     [Theory]

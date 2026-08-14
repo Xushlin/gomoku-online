@@ -21,8 +21,19 @@ namespace Gewu.Application.Tests.Features.Rooms;
 /// EndReason 写入、GameEnded 照常广播。一局棋是否算分,不影响它是否是一局棋。
 /// </para>
 /// <para>
-/// 这组测试是限期的 —— <c>add-per-game-rating</c> 让每个棋种各算各的之后,
-/// <c>IsRated</c> 连同本文件一起删除。
+/// **这段注释此前是错的。** 原文写着"这组测试是限期的 —— <c>add-per-game-rating</c> 让每个
+/// 棋种各算各的之后,<c>IsRated</c> 连同本文件一起删除"。两处都错:
+/// </para>
+/// <para>
+/// 其一,本文件不会被删。"不计分棋种在每一条结束路径上都不动评分"这条行为在 per-game
+/// 评分之后依然存在 —— 只是那时"不计分"的原因从"怕污染共享池"变成"本棋种没有人类对手池"。
+/// 其二,拆除条件不是那个变更:一字棋没有人人对战,唯一的对手是机器人,而机器人对局是计分的,
+/// 所以它的阶梯排出来的是"谁刷 Easy 档刷得多"。池子分开解决不了这件事。
+/// </para>
+/// <para>
+/// 现在 <c>IsRated</c> 受不变量约束(<c>IsRated ⇒ SupportsHumanVsHuman</c>,由
+/// <c>NInARowRules</c> 构造器与一条遍历注册表的测试双重强制),所以一字棋的"不计分"不再是
+/// 一个需要有人记得回来翻的判断 —— 见 <c>add-game-capabilities</c>。
 /// </para>
 /// </summary>
 public class UnratedGameEloTests
