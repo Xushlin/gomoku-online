@@ -33,6 +33,9 @@
       "chiptune": "8-bit",
       "minimal": "极简"
     },
+    "settings": {
+      "label": "设置"
+    },
     "auth": {
       "login-cta": "登录",
       "logout": "退出登录",
