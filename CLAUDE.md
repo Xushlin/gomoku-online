@@ -6,10 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **格物 / Gewu** — a multi-platform online game hall. Planned games: idiom games (成语纵横 / 成语接龙 / 猜成语), 五子棋, 一字棋, 中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what they all have in common.
 
-Two games ship today, one per category, and between them they establish the two kernels every later game reuses:
+Three games ship today, and between them they establish the two kernels every later game reuses:
 
 - **五子棋 (gomoku)** — the *match* kernel: players register, create/join rooms, play real-time matches (via SignalR) with room chat, spectator chat, and urge-opponent shortcuts; ELO-based ranking with special icons for the top three; human-vs-AI with multiple difficulties; game-record storage and replay.
 - **成语纵横 (idiom-crossword)** — the *puzzle* kernel: a level catalogue, server-authoritative attempts (the answer key never leaves the server), server-counted mistakes and hints, star scoring, and per-level best records.
+- **一字棋 (tictactoe)** — the match kernel's **proof**, not an extension of it. Its entire rule set is `NInARowRules("tictactoe", 3, 3, 3)`; it contributed zero lines of win detection. Human-vs-AI only, and deliberately **unrated** — perfect play always draws, so a rating over it measures nothing. See the `add-tictactoe` audit for what adding it revealed about the registry.
 
 Games fall into three categories that deliberately do **not** share one aggregate — see the platform roadmap below:
 
@@ -21,7 +22,7 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
 ## Current phase
 
-The rename to `Gewu.*` has landed and **two games ship**: gomoku (the original) and 成语纵横 (the first puzzle game). Detail:
+**Three games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), and 一字棋 (the change that priced what a second board game costs). Detail:
 
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
@@ -30,13 +31,14 @@ The rename to `Gewu.*` has landed and **two games ship**: gomoku (the original) 
 - [x] GitHub Actions CI runs on every push and PR (`backend` + `web` jobs in parallel).
 - [x] **`add-platform-catalog`** — `GameManifest` registry (`src/app/games/index.ts`) + the `/games` catalogue page. Adding a game to the catalogue = one manifest entry + two i18n keys.
 - [x] **Idiom vertical** — `add-idiom-dictionary` (30,895 curated idioms committed at `backend/data/idioms.curated.json`), `add-puzzle-core` (`PuzzleLevel` / `PuzzleAttempt` / `PuzzleLevelProgress` + the `IPuzzleRules` registry, server-authoritative, answer key never leaves the server), `add-idiom-crossword` + `add-web-idiom-crossword` (成语纵横, 12 generated levels, playable at `/g/idiom-crossword`).
-- [x] **`add-game-rules-registry`** — `IGameRules` / `IGameRulesRegistry` / `NInARowRules(key, rows, cols, winLength)`; `Board` is now rows×cols rather than square; `Room` carries a `GameKey`. Deliberately **Domain-only** (see below).
+- [x] **`add-game-rules-registry`** — `IGameRules` / `IGameRulesRegistry` / `NInARowRules(key, rows, cols, winLength)`; `Board` is now rows×cols rather than square; `Room` carries a `GameKey`. Deliberately Domain-only at the time.
+- [x] **`add-tictactoe`** + **`add-web-tictactoe-ai`** — 一字棋, playable at `/g/tictactoe`. The rules cost **zero lines**; everything else was registry debt the previous change had left above the Domain layer, and paying it cost about as much as the game itself (~310 lines vs ~332). Read `openspec/changes/archive/2026-08-14-add-tictactoe/tasks.md` §7 before starting 中国象棋 — it is the priced list of what a new board game actually costs. Also added: an AI registry (`IGameAiFactory` / `IGameAiRegistry`), `GameKey` on the three room DTOs, and a board whose dimensions are inputs rather than a constant.
 
 Not yet done — platform roadmap, in this order:
 
-1. `add-tictactoe` — 一字棋 as `NInARowRules("tictactoe", 3, 3, 3)`. This is the change that *tests* the registry rather than extending it, so it is next regardless of how small the game is. It has to finish the job `add-game-rules-registry` stopped short of: `CreateRoomCommand` / `CreateAiRoomCommandHandler` still hard-code `GameKeys.Gomoku`, so no non-gomoku room can be created today, and `/home` is still a gomoku-only lobby. Generalize those **here**, driven by a real second consumer, not speculatively.
-2. `add-per-game-rating` — `UserGameStats(UserId, GameKey, …)`; the three ladders (ELO / puzzle time+stars / score) stay separate on purpose. Pointless before a second match game exists, which is why it follows step 1.
-3. Remaining match generalization — two seats + JSON move payloads (`generalize-match-domain` / `migrate-match-persistence` / `generalize-match-contract`). 一字棋 needs **none** of it (it is n-in-a-row on a smaller board); 中国象棋 needs all of it. Do it when 象棋 forces it, and fold the `GomokuHub` → `MatchHub` rename in then.
+1. `add-per-game-rating` — `UserGameStats(UserId, GameKey, …)`; the three ladders (ELO / puzzle time+stars / score) stay separate on purpose. **This change must delete `IGameRules.IsRated`**, the temporary flag `add-tictactoe` introduced so 一字棋 could ship without polluting the single (gomoku) rating pool. The flag's doc comment, its spec requirement, and `UnratedGameEloTests` all name this change as the one that removes them.
+2. Lobby generalization — `/home` is still gomoku's lobby, and 一字棋 therefore has human-vs-AI only, reachable only from `/games`. Parameterising it means rewriting `/home` as a normative path in five web specs, so it waits for the first game that genuinely needs human-vs-human: 中国象棋.
+3. Remaining match generalization — two seats + JSON move payloads (`generalize-match-domain` / `migrate-match-persistence` / `generalize-match-contract`). 一字棋 needed **none** of it (it is n-in-a-row on a smaller board); 中国象棋 needs all of it. Fold in then: the `GomokuHub` → `MatchHub` rename and `GameEndReason.Connected5` → a game-neutral name. Both are now *wrong* rather than merely stale, since tic-tac-toe routes through `/hubs/gomoku` and records "Connected5" for a three-in-a-row. (Its player-visible wording was already fixed in `add-web-tictactoe-ai`; the enum member was not.)
 4. Then `add-idiom-chain`, `add-klotski`, `add-xiangqi-*`, `add-score-attack-core` + `add-tetris`.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
@@ -45,7 +47,7 @@ Deferred follow-ups, each with a reason:
 
 - `squash-migration-baseline` — squash the 9 migrations into one. Needs deltas because `ai-opponent` has requirements named after `AddBotSupport` / `AddHardBotAccount` and `room-and-gameplay` after `AddGameEndReason`. Cheap while the DB is still local-only (no production data exists).
 - `gomoku:*` → `gewu:*` localStorage keys — normative in five web specs, and renaming logs everyone out; needs a read-old/write-new shim.
-- `GomokuHub` → `MatchHub` and `/hubs/gomoku` → `/hubs/match` — rides along with `generalize-match-contract` (roadmap step 3), which must rewrite those four specs anyway.
+- `GomokuHub` → `MatchHub` and `/hubs/gomoku` → `/hubs/match`, plus `GameEndReason.Connected5` — all ride along with `generalize-match-contract` (roadmap step 3), which must rewrite those specs anyway. Since 一字棋 shipped these are no longer cosmetic: tic-tac-toe rooms route through a hub named after gomoku and persist a win reason named after gomoku's win condition.
 - `logs/gomoku-.log` Serilog filename and the `GOMOKU_*` env-var prefix — both normative in specs (`observability`, `api-ops`). The env-var prefix is **not implemented**: `Program.cs` never calls `AddEnvironmentVariables("GOMOKU_")`, so the documented `GOMOKU_JWT__SIGNINGKEY` / `GOMOKU_CORS__ALLOWEDORIGINS__0` are silently ignored and only the unprefixed `JWT__SIGNINGKEY` works. That is a live ops trap, not just a naming wart — fix the code or the spec, but do not leave them disagreeing.
 
 Other platforms, unchanged from before:
