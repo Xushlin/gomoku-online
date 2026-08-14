@@ -1,5 +1,6 @@
 using Gewu.Domain.Enums;
 using Gewu.Domain.Exceptions;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Users;
 using Gewu.Domain.ValueObjects;
 using DomainMove = Gewu.Domain.ValueObjects.Move;
@@ -37,6 +38,12 @@ public sealed class Room
 
     /// <summary>房间名(trim 后 3–50 字符)。</summary>
     public string Name { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// 本房间玩的是哪个棋种。字符串而非枚举 —— 新增棋种的全部意义就在于不必修改一个
+    /// 共享类型,与游戏目录、<c>IPuzzleRules</c> 注册表的选择一致。
+    /// </summary>
+    public string GameKey { get; private set; } = string.Empty;
 
     /// <summary>创建者 / Host。当前规则下默认也是黑方玩家。</summary>
     public UserId HostUserId { get; private set; }
@@ -76,8 +83,14 @@ public sealed class Room
     /// 创建一个新房间。创建者默认成为 Host 与黑方;状态为 <see cref="RoomStatus.Waiting"/>。
     /// </summary>
     /// <exception cref="InvalidRoomNameException">名称为空 / 空白 / 长度不在 [3..50]。</exception>
-    public static Room Create(RoomId id, string name, UserId hostUserId, DateTime createdAt)
+    public static Room Create(
+        RoomId id, string name, UserId hostUserId, DateTime createdAt, string gameKey)
     {
+        if (string.IsNullOrWhiteSpace(gameKey))
+        {
+            throw new ArgumentException("Game key must be non-empty.", nameof(gameKey));
+        }
+
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new InvalidRoomNameException("Room name must not be null or whitespace.");
@@ -94,6 +107,7 @@ public sealed class Room
         {
             Id = id,
             Name = trimmed,
+            GameKey = gameKey,
             HostUserId = hostUserId,
             BlackPlayerId = hostUserId,
             WhitePlayerId = null,
@@ -255,7 +269,7 @@ public sealed class Room
     /// <see cref="Board"/> 合法性 → 记录 <see cref="SubMove"/> → 翻转回合 →
     /// 判胜 → 可能转入 Finished。
     /// </summary>
-    public MoveOutcome PlayMove(UserId userId, Position position, DateTime now)
+    public MoveOutcome PlayMove(UserId userId, Position position, DateTime now, IGameRules rules)
     {
         if (Status != RoomStatus.Playing)
         {
@@ -289,9 +303,17 @@ public sealed class Room
                 $"It is not {playerStone}'s turn; current turn is {Game.CurrentTurn}.");
         }
 
-        // 让 Board 做越界 / 重复落子判定;若非法抛 InvalidMoveException 向上冒泡,
+        // 上界属于棋种,所以在触碰棋盘之前先问规则。抛的仍是 InvalidMoveException,
+        // 对外的 409 契约不动。
+        if (!rules.IsInBounds(position))
+        {
+            throw new InvalidMoveException(
+                $"Position ({position.Row}, {position.Col}) is outside the bounds of '{rules.GameKey}'.");
+        }
+
+        // 让 Board 做重复落子判定;若非法抛 InvalidMoveException 向上冒泡,
         // Game 的 Moves 在此之前尚未追加,状态不变。
-        var board = Game.ReplayBoard();
+        var board = Game.ReplayBoard(rules);
         var result = board.PlaceStone(new DomainMove(position, playerStone));
 
         var appended = Game.RecordMove(position, playerStone, now);

@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 namespace Gewu.Domain.Tests.Rooms;
 
 public class RoomCreateTests
@@ -9,7 +11,7 @@ public class RoomCreateTests
     {
         var id = RoomId.NewId();
         var host = UserId.NewId();
-        var room = Room.Create(id, "  Alice's Room  ", host, Now);
+        var room = Room.Create(id, "  Alice's Room  ", host, Now, GameKeys.Gomoku);
 
         room.Id.Should().Be(id);
         room.Name.Should().Be("Alice's Room"); // trimmed
@@ -31,7 +33,7 @@ public class RoomCreateTests
     [InlineData("    ")]
     public void Create_Blank_Name_Throws(string? name)
     {
-        var act = () => Room.Create(RoomId.NewId(), name!, UserId.NewId(), Now);
+        var act = () => Room.Create(RoomId.NewId(), name!, UserId.NewId(), Now, GameKeys.Gomoku);
         act.Should().Throw<Gewu.Domain.Exceptions.InvalidRoomNameException>();
     }
 
@@ -40,7 +42,7 @@ public class RoomCreateTests
     [InlineData("a")]
     public void Create_Short_Name_Throws(string name)
     {
-        var act = () => Room.Create(RoomId.NewId(), name, UserId.NewId(), Now);
+        var act = () => Room.Create(RoomId.NewId(), name, UserId.NewId(), Now, GameKeys.Gomoku);
         act.Should().Throw<Gewu.Domain.Exceptions.InvalidRoomNameException>()
             .WithMessage("*out of range*");
     }
@@ -49,7 +51,7 @@ public class RoomCreateTests
     public void Create_Long_Name_Throws()
     {
         var long51 = new string('x', 51);
-        var act = () => Room.Create(RoomId.NewId(), long51, UserId.NewId(), Now);
+        var act = () => Room.Create(RoomId.NewId(), long51, UserId.NewId(), Now, GameKeys.Gomoku);
         act.Should().Throw<Gewu.Domain.Exceptions.InvalidRoomNameException>()
             .WithMessage("*out of range*");
     }

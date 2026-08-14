@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Exceptions;
 using Move = Gewu.Domain.ValueObjects.Move;
 
@@ -10,7 +12,7 @@ public class RoomDissolveTests
     private static Room NewWaitingRoom(out UserId hostId)
     {
         hostId = UserId.NewId();
-        return Room.Create(RoomId.NewId(), "Test Room", hostId, Now);
+        return Room.Create(RoomId.NewId(), "Test Room", hostId, Now, GameKeys.Gomoku);
     }
 
     [Fact]
@@ -62,10 +64,10 @@ public class RoomDissolveTests
         // 黑方横向连五结束对局
         for (var c = 0; c <= 3; c++)
         {
-            room.PlayMove(hostId, new Position(7, c), Now.AddMinutes(2).AddSeconds(c * 2));
-            room.PlayMove(whiteId, new Position(8, c), Now.AddMinutes(2).AddSeconds(c * 2 + 1));
+            room.PlayMove(hostId, new Position(7, c), Now.AddMinutes(2).AddSeconds(c * 2), BuiltInGameRules.Gomoku);
+            room.PlayMove(whiteId, new Position(8, c), Now.AddMinutes(2).AddSeconds(c * 2 + 1), BuiltInGameRules.Gomoku);
         }
-        room.PlayMove(hostId, new Position(7, 4), Now.AddMinutes(3));
+        room.PlayMove(hostId, new Position(7, 4), Now.AddMinutes(3), BuiltInGameRules.Gomoku);
         room.Status.Should().Be(RoomStatus.Finished);
 
         var act = () => room.Dissolve(hostId);

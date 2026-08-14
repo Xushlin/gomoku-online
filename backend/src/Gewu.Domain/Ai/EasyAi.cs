@@ -32,10 +32,10 @@ public sealed class EasyAi : IGomokuAi
             throw new ArgumentOutOfRangeException(nameof(myStone), myStone, "Bot stone must be Black or White, not Empty.");
         }
 
-        var empties = new List<Position>(Position.BoardSize * Position.BoardSize);
-        for (var r = 0; r <= Position.MaxIndex; r++)
+        var empties = new List<Position>(board.CellCount);
+        for (var r = 0; r < board.Rows; r++)
         {
-            for (var c = 0; c <= Position.MaxIndex; c++)
+            for (var c = 0; c < board.Cols; c++)
             {
                 var p = new Position(r, c);
                 if (board.GetStone(p) == Stone.Empty)

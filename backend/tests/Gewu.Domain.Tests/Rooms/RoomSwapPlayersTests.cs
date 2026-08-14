@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Enums;
 
 namespace Gewu.Domain.Tests.Rooms;
@@ -10,7 +12,7 @@ public class RoomSwapPlayersTests
     {
         hostId = UserId.NewId();
         opponentId = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "Swap Test", hostId, Now);
+        var room = Room.Create(RoomId.NewId(), "Swap Test", hostId, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(opponentId, Now.AddSeconds(1));
         return room;
     }
@@ -44,7 +46,7 @@ public class RoomSwapPlayersTests
     {
         var room = PlayingRoom(out _, out _);
         // Make any legal move (host = black, plays first).
-        room.PlayMove(room.BlackPlayerId, new Position(7, 7), Now.AddSeconds(2));
+        room.PlayMove(room.BlackPlayerId, new Position(7, 7), Now.AddSeconds(2), BuiltInGameRules.Gomoku);
 
         var act = () => room.SwapPlayers(Now.AddSeconds(3));
 
@@ -57,7 +59,7 @@ public class RoomSwapPlayersTests
     {
         // Status = Waiting (no opponent yet).
         var hostId = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "Waiting Room", hostId, Now);
+        var room = Room.Create(RoomId.NewId(), "Waiting Room", hostId, Now, GameKeys.Gomoku);
 
         var act = () => room.SwapPlayers(Now.AddSeconds(1));
 

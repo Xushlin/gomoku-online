@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Exceptions;
 using Move = Gewu.Domain.ValueObjects.Move;
 
@@ -11,7 +13,7 @@ public class RoomTimeOutTests
     {
         var host = UserId.NewId();
         var white = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "test", host, Now);
+        var room = Room.Create(RoomId.NewId(), "test", host, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(white, Now.AddSeconds(1));
         return (room, host, white);
     }
@@ -37,7 +39,7 @@ public class RoomTimeOutTests
     {
         var (room, black, _) = PlayingRoom();
         var blackMoveAt = Now.AddSeconds(2);
-        room.PlayMove(black, new Position(7, 7), blackMoveAt);
+        room.PlayMove(black, new Position(7, 7), blackMoveAt, BuiltInGameRules.Gomoku);
         // CurrentTurn 现在是 White,lastActivity = blackMoveAt
 
         var later = blackMoveAt.AddSeconds(61);
@@ -81,7 +83,7 @@ public class RoomTimeOutTests
     public void TimeOut_In_Waiting_Room_Throws()
     {
         var host = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "waiting", host, Now);
+        var room = Room.Create(RoomId.NewId(), "waiting", host, Now, GameKeys.Gomoku);
 
         var act = () => room.TimeOutCurrentTurn(Now.AddMinutes(10), turnTimeoutSeconds: 60);
 

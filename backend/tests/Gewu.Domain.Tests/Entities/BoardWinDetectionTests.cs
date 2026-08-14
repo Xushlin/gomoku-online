@@ -15,7 +15,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Horizontal_Five_In_A_Row_Yields_BlackWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(7, 3), Stone.Black),
@@ -32,7 +32,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Horizontal_Five_In_A_Row_Yields_WhiteWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(7, 3), Stone.White),
@@ -49,7 +49,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Vertical_Five_In_A_Row_Yields_BlackWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(3, 7), Stone.Black),
@@ -66,7 +66,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Main_Diagonal_Five_In_A_Row_Yields_BlackWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(3, 3), Stone.Black),
@@ -83,7 +83,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Anti_Diagonal_Five_In_A_Row_Yields_WhiteWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(7, 3), Stone.White),
@@ -100,7 +100,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Six_In_A_Row_Long_Connect_Still_Wins()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(7, 2), Stone.Black),
@@ -118,7 +118,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Five_On_Top_Edge_Yields_BlackWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(0, 0), Stone.Black),
@@ -135,7 +135,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Five_On_Bottom_Edge_Yields_WhiteWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(14, 10), Stone.White),
@@ -152,7 +152,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Five_On_Left_Edge_Yields_BlackWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(10, 0), Stone.Black),
@@ -169,7 +169,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Five_On_Right_Edge_Yields_WhiteWin()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(0, 14), Stone.White),
@@ -186,7 +186,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Four_In_A_Row_Without_Fifth_Stays_Ongoing()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
 
         var last = board.PlaceStone(new Move(new Position(7, 3), Stone.Black));
         last.Should().Be(GameResult.Ongoing);
@@ -201,7 +201,7 @@ public class BoardWinDetectionTests
     [Fact]
     public void Four_Plus_Four_Broken_By_Opponent_Is_Not_A_Win()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
         PlaceAll(board, new[]
         {
             new Move(new Position(7, 3), Stone.Black),
@@ -218,15 +218,15 @@ public class BoardWinDetectionTests
     [Fact]
     public void Full_Board_Without_Five_Yields_Draw()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
 
         // Pattern: color(r,c) = ((r + 2*c) % 4) < 2 ? Black : White
         // 保证水平、竖直、两对角方向的最长同色连子数均 ≤ 2 < 5。
         // 验证过程中没有任何一步会形成五连,所以每一步中途也不会提前判胜。
         GameResult last = GameResult.Ongoing;
-        for (var r = 0; r < Position.BoardSize; r++)
+        for (var r = 0; r < GomokuBoards.Size; r++)
         {
-            for (var c = 0; c < Position.BoardSize; c++)
+            for (var c = 0; c < GomokuBoards.Size; c++)
             {
                 var color = ((r + 2 * c) % 4) < 2 ? Stone.Black : Stone.White;
                 last = board.PlaceStone(new Move(new Position(r, c), color));
@@ -239,14 +239,14 @@ public class BoardWinDetectionTests
     [Fact]
     public void Ongoing_Before_Last_Cell_Is_Filled()
     {
-        var board = new Board();
+        var board = GomokuBoards.New();
 
         GameResult last = GameResult.Ongoing;
-        for (var r = 0; r < Position.BoardSize; r++)
+        for (var r = 0; r < GomokuBoards.Size; r++)
         {
-            for (var c = 0; c < Position.BoardSize; c++)
+            for (var c = 0; c < GomokuBoards.Size; c++)
             {
-                if (r == Position.MaxIndex && c == Position.MaxIndex)
+                if (r == GomokuBoards.MaxIndex && c == GomokuBoards.MaxIndex)
                 {
                     break;
                 }

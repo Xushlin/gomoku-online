@@ -1,5 +1,6 @@
 using FluentValidation.Results;
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Common.Exceptions;
 using Gewu.Application.Common.Mapping;
@@ -63,7 +64,7 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
                 "Did the AddBotSupport migration run?");
 
         var now = _clock.UtcNow;
-        var room = Room.Create(RoomId.NewId(), request.Name, request.HostUserId, now);
+        var room = Room.Create(RoomId.NewId(), request.Name, request.HostUserId, now, GameKeys.Gomoku);
         room.JoinAsPlayer(bot.Id, now);
         // Human picked White → seat the bot on Black so it plays first. Same
         // transaction as create + join, so the AI worker can't race with

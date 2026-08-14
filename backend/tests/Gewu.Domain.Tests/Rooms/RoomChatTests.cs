@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Exceptions;
 
 namespace Gewu.Domain.Tests.Rooms;
@@ -10,7 +12,7 @@ public class RoomChatTests
     {
         black = UserId.NewId();
         white = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "Chat Room", black, Now);
+        var room = Room.Create(RoomId.NewId(), "Chat Room", black, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(white, Now.AddMinutes(1));
         return room;
     }

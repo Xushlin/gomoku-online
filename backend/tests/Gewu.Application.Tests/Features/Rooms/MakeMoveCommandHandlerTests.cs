@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Features.Rooms.MakeMove;
 using Gewu.Domain.Enums;
 
@@ -12,7 +14,8 @@ public class MakeMoveCommandHandlerTests
     private readonly Mock<IRoomNotifier> _notifier = new();
 
     private MakeMoveCommandHandler Build() => new(
-        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object, RoomsFixtures.TestGameOptions());
+        _rooms.Object, GomokuRules.Registry, _users.Object, _clock.Object, _uow.Object, _notifier.Object,
+        RoomsFixtures.TestGameOptions());
 
     [Fact]
     public async Task Success_Non_Winning_Move_Fires_State_And_Move_Events()
@@ -48,14 +51,14 @@ public class MakeMoveCommandHandlerTests
         var room = RoomsFixtures.PlayingRoom(host, bob);
 
         // 预先让黑方连四,white 在边远处
-        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 3), RoomsFixtures.Now.AddSeconds(1));
-        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 0), RoomsFixtures.Now.AddSeconds(2));
-        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 4), RoomsFixtures.Now.AddSeconds(3));
-        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 1), RoomsFixtures.Now.AddSeconds(4));
-        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 5), RoomsFixtures.Now.AddSeconds(5));
-        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 2), RoomsFixtures.Now.AddSeconds(6));
-        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 6), RoomsFixtures.Now.AddSeconds(7));
-        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 3), RoomsFixtures.Now.AddSeconds(8));
+        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 3), RoomsFixtures.Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 0), RoomsFixtures.Now.AddSeconds(2), BuiltInGameRules.Gomoku);
+        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 4), RoomsFixtures.Now.AddSeconds(3), BuiltInGameRules.Gomoku);
+        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 1), RoomsFixtures.Now.AddSeconds(4), BuiltInGameRules.Gomoku);
+        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 5), RoomsFixtures.Now.AddSeconds(5), BuiltInGameRules.Gomoku);
+        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 2), RoomsFixtures.Now.AddSeconds(6), BuiltInGameRules.Gomoku);
+        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 6), RoomsFixtures.Now.AddSeconds(7), BuiltInGameRules.Gomoku);
+        room.PlayMove(bob.Id, new Gewu.Domain.ValueObjects.Position(0, 3), RoomsFixtures.Now.AddSeconds(8), BuiltInGameRules.Gomoku);
 
         RoomsFixtures.SetupClock(_clock, RoomsFixtures.Now.AddSeconds(9));
         RoomsFixtures.SetupUserLookup(_users, host, bob);

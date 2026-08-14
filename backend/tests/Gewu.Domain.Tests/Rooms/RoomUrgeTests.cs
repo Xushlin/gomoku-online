@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.ValueObjects;
 
@@ -12,7 +14,7 @@ public class RoomUrgeTests
     {
         black = UserId.NewId();
         white = UserId.NewId();
-        var room = Room.Create(RoomId.NewId(), "Urge Room", black, Now);
+        var room = Room.Create(RoomId.NewId(), "Urge Room", black, Now, GameKeys.Gomoku);
         room.JoinAsPlayer(white, Now.AddMinutes(1));
         return room;
     }
@@ -70,7 +72,7 @@ public class RoomUrgeTests
     [Fact]
     public void Non_Playing_State_Throws()
     {
-        var room = Room.Create(RoomId.NewId(), "Room", UserId.NewId(), Now);
+        var room = Room.Create(RoomId.NewId(), "Room", UserId.NewId(), Now, GameKeys.Gomoku);
         var act = () => room.UrgeOpponent(UserId.NewId(), Now, Cooldown);
         act.Should().Throw<RoomNotInPlayException>();
     }

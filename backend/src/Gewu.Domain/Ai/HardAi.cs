@@ -209,12 +209,12 @@ public sealed class HardAi : IGomokuAi
     internal static List<Position> GenerateCandidates(Board board)
     {
         // 先标记所有需要考察的空格(距离任一已有子 ≤ NeighbourRadius)
-        var seen = new bool[Position.BoardSize, Position.BoardSize];
+        var seen = new bool[board.Rows, board.Cols];
         var result = new List<Position>();
 
-        for (var r = 0; r <= Position.MaxIndex; r++)
+        for (var r = 0; r < board.Rows; r++)
         {
-            for (var c = 0; c <= Position.MaxIndex; c++)
+            for (var c = 0; c < board.Cols; c++)
             {
                 if (board.GetStone(new Position(r, c)) == Stone.Empty) continue;
 
@@ -224,7 +224,7 @@ public sealed class HardAi : IGomokuAi
                     {
                         var nr = r + dr;
                         var nc = c + dc;
-                        if (nr < 0 || nr > Position.MaxIndex || nc < 0 || nc > Position.MaxIndex) continue;
+                        if (nr < 0 || nr >= board.Rows || nc < 0 || nc >= board.Cols) continue;
                         if (seen[nr, nc]) continue;
                         var p = new Position(nr, nc);
                         if (board.GetStone(p) == Stone.Empty)
@@ -242,9 +242,9 @@ public sealed class HardAi : IGomokuAi
 
     private static bool IsBoardEmpty(Board board)
     {
-        for (var r = 0; r <= Position.MaxIndex; r++)
+        for (var r = 0; r < board.Rows; r++)
         {
-            for (var c = 0; c <= Position.MaxIndex; c++)
+            for (var c = 0; c < board.Cols; c++)
             {
                 if (board.GetStone(new Position(r, c)) != Stone.Empty) return false;
             }
@@ -284,16 +284,16 @@ public sealed class HardAi : IGomokuAi
         {
             var dr = dirs[d, 0];
             var dc = dirs[d, 1];
-            for (var r = 0; r <= Position.MaxIndex; r++)
+            for (var r = 0; r < board.Rows; r++)
             {
-                for (var c = 0; c <= Position.MaxIndex; c++)
+                for (var c = 0; c < board.Cols; c++)
                 {
                     if (board.GetStone(new Position(r, c)) != stone) continue;
 
                     // 只从"段起点"开始扫(前一格不是同色),避免重复计数
                     var pr = r - dr;
                     var pc = c - dc;
-                    if (pr >= 0 && pr <= Position.MaxIndex && pc >= 0 && pc <= Position.MaxIndex
+                    if (pr >= 0 && pr < board.Rows && pc >= 0 && pc < board.Cols
                         && board.GetStone(new Position(pr, pc)) == stone)
                     {
                         continue;
@@ -303,7 +303,7 @@ public sealed class HardAi : IGomokuAi
                     var len = 0;
                     var nr = r;
                     var nc = c;
-                    while (nr >= 0 && nr <= Position.MaxIndex && nc >= 0 && nc <= Position.MaxIndex
+                    while (nr >= 0 && nr < board.Rows && nc >= 0 && nc < board.Cols
                            && board.GetStone(new Position(nr, nc)) == stone)
                     {
                         len++;
@@ -329,7 +329,7 @@ public sealed class HardAi : IGomokuAi
     private static bool IsOpenEnd(Board board, int r, int c, Stone selfStone)
     {
         // 越界视为封闭
-        if (r < 0 || r > Position.MaxIndex || c < 0 || c > Position.MaxIndex) return false;
+        if (r < 0 || r >= board.Rows || c < 0 || c >= board.Cols) return false;
         // 空格视为活
         var s = board.GetStone(new Position(r, c));
         return s == Stone.Empty;

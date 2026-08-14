@@ -25,6 +25,8 @@ public sealed class RoomConfiguration : IEntityTypeConfiguration<Room>
 
         builder.Property(r => r.Name).HasMaxLength(50).IsRequired();
 
+        builder.Property(r => r.GameKey).IsRequired().HasMaxLength(64);
+
         builder.Property(r => r.HostUserId).HasConversion<UserIdConverter>().IsRequired();
         builder.Property(r => r.BlackPlayerId).HasConversion<UserIdConverter>().IsRequired();
         builder.Property(r => r.WhitePlayerId)

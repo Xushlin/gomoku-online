@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Features.Rooms.GetGameReplay;
 using Gewu.Domain.Enums;
 using Gewu.Domain.ValueObjects;
@@ -18,17 +20,17 @@ public class GetGameReplayQueryHandlerTests
     /// </summary>
     private static Room FinishedRoom(User alice, User bob)
     {
-        var room = Room.Create(RoomId.NewId(), "replay-test", alice.Id, RoomsFixtures.Now);
+        var room = Room.Create(RoomId.NewId(), "replay-test", alice.Id, RoomsFixtures.Now, GameKeys.Gomoku);
         room.JoinAsPlayer(bob.Id, RoomsFixtures.Now.AddSeconds(1));
 
         // Alice (黑) 在第 7 行连五,Bob 在第 0 行被动应对
         var start = RoomsFixtures.Now.AddSeconds(2);
         for (var i = 0; i < 4; i++)
         {
-            room.PlayMove(alice.Id, new Position(7, i), start.AddSeconds(i * 2));
-            room.PlayMove(bob.Id, new Position(0, i), start.AddSeconds(i * 2 + 1));
+            room.PlayMove(alice.Id, new Position(7, i), start.AddSeconds(i * 2), BuiltInGameRules.Gomoku);
+            room.PlayMove(bob.Id, new Position(0, i), start.AddSeconds(i * 2 + 1), BuiltInGameRules.Gomoku);
         }
-        room.PlayMove(alice.Id, new Position(7, 4), start.AddSeconds(9));
+        room.PlayMove(alice.Id, new Position(7, 4), start.AddSeconds(9), BuiltInGameRules.Gomoku);
         return room;
     }
 

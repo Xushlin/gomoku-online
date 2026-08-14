@@ -1,4 +1,5 @@
 using Gewu.Domain.Entities;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Users;
 using Gewu.Domain.ValueObjects;
@@ -73,11 +74,16 @@ public sealed class Game
 
     /// <summary>
     /// 从 <see cref="Moves"/> 按 Ply 升序 replay 得到当前 <see cref="Board"/>。
-    /// 最多 225 步,复杂度 O(n),耗时亚毫秒级。
+    /// 复杂度 O(n),耗时亚毫秒级。
+    /// <para>
+    /// 棋盘尺寸与连子长度取自传入的 <paramref name="rules"/> —— 同一段落子序列在不同
+    /// 棋种下重放出对应尺寸的棋盘。规则由调用方传入,理由与 <c>Room.PlayMove</c> 一致。
+    /// </para>
     /// </summary>
-    public Board ReplayBoard()
+    /// <param name="rules">本房间棋种的规则。</param>
+    public Board ReplayBoard(IGameRules rules)
     {
-        var board = new Board();
+        var board = rules.CreateBoard();
         foreach (var m in _moves.OrderBy(x => x.Ply))
         {
             board.PlaceStone(new ValueObjects.Move(m.ToPosition(), m.Stone));
