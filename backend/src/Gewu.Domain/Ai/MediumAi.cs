@@ -14,7 +14,7 @@ namespace Gewu.Domain.Ai;
 /// </list>
 /// 该 AI 不做博弈树,不识别活四 / 冲四 / 双三。纯函数,不修改入参 <c>board</c>。
 /// </summary>
-public sealed class MediumAi : IGomokuAi
+public sealed class MediumAi : IBoardGameAi
 {
     private const int BoardCenter = 7; // (7,7) 是 15×15 棋盘的几何中心
 

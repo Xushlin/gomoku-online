@@ -35,7 +35,8 @@ public sealed class CreateRoomCommandHandler : IRequestHandler<CreateRoomCommand
         var host = await _users.FindByIdAsync(request.HostUserId, cancellationToken)
             ?? throw new UserNotFoundException($"User '{request.HostUserId.Value}' was not found.");
 
-        var room = Room.Create(RoomId.NewId(), request.Name, request.HostUserId, _clock.UtcNow, GameKeys.Gomoku);
+        var room = Room.Create(
+            RoomId.NewId(), request.Name, request.HostUserId, _clock.UtcNow, request.GameKey);
 
         await _rooms.AddAsync(room, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);

@@ -1,4 +1,5 @@
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.ValueObjects;
 using DomainMove = Gewu.Domain.ValueObjects.Move;
@@ -14,7 +15,9 @@ namespace Gewu.Domain.Tests.Games;
 /// </summary>
 public class NInARowRulesTests
 {
-    private static readonly NInARowRules TicTacToe = new("tictactoe", 3, 3, 3);
+    // 用真正注册给一字棋的那套规则,而不是在测试里另 new 一个 (3,3,3)。
+    // 后者会在注册的参数被改掉时仍然全绿 —— 那正是这组测试要抓的东西。
+    private static readonly IGameRules TicTacToe = BuiltInGameRules.TicTacToe;
 
     // ---- 构造校验 ----
 
@@ -25,6 +28,30 @@ public class NInARowRulesTests
         BuiltInGameRules.Gomoku.Rows.Should().Be(15);
         BuiltInGameRules.Gomoku.Cols.Should().Be(15);
         BuiltInGameRules.Gomoku.WinLength.Should().Be(5);
+    }
+
+    [Fact]
+    public void TicTacToe_is_3_by_3_win_3()
+    {
+        TicTacToe.GameKey.Should().Be("tictactoe");
+        TicTacToe.Rows.Should().Be(3);
+        TicTacToe.Cols.Should().Be(3);
+        TicTacToe.WinLength.Should().Be(3);
+    }
+
+    [Fact]
+    public void Gomoku_is_rated_and_tictactoe_is_not()
+    {
+        // 一字棋不计分是刻意的、限期的 —— 见 add-tictactoe design D2。
+        // add-per-game-rating 删掉 IsRated 时,这条测试会跟着被删。
+        BuiltInGameRules.Gomoku.IsRated.Should().BeTrue();
+        TicTacToe.IsRated.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_game_is_rated_unless_it_says_otherwise()
+    {
+        new NInARowRules("some-new-game", 3, 3, 3).IsRated.Should().BeTrue();
     }
 
     [Theory]

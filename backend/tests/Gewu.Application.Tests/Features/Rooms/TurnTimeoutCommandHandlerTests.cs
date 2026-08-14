@@ -13,8 +13,8 @@ public class TurnTimeoutCommandHandlerTests
     private readonly Mock<IRoomNotifier> _notifier = new();
 
     private TurnTimeoutCommandHandler Build(int turnTimeoutSeconds = 60) => new(
-        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object,
-        RoomsFixtures.TestGameOptions(turnTimeoutSeconds));
+        _rooms.Object, _users.Object, GomokuRules.Registry, _clock.Object, _uow.Object,
+        _notifier.Object, RoomsFixtures.TestGameOptions(turnTimeoutSeconds));
 
     [Fact]
     public async Task Timeout_Expires_Black_Turn_White_Wins_Events_Fired()

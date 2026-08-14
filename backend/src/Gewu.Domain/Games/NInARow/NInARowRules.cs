@@ -23,9 +23,13 @@ public sealed class NInARowRules : IGameRules
     /// <param name="rows">行数,必须为正。</param>
     /// <param name="cols">列数,必须为正。</param>
     /// <param name="winLength">连子长度,必须为正且不超过 <c>max(rows, cols)</c>。</param>
+    /// <param name="isRated">
+    /// 本棋种是否结算 ELO。默认 <c>true</c> —— 一个棋种默认是算分的,
+    /// **不**算分才是需要在调用处写出理由的那一侧。
+    /// </param>
     /// <exception cref="ArgumentException"><paramref name="gameKey"/> 为空。</exception>
     /// <exception cref="ArgumentOutOfRangeException">尺寸或连子长度不合法。</exception>
-    public NInARowRules(string gameKey, int rows, int cols, int winLength)
+    public NInARowRules(string gameKey, int rows, int cols, int winLength, bool isRated = true)
     {
         if (string.IsNullOrWhiteSpace(gameKey))
         {
@@ -40,6 +44,7 @@ public sealed class NInARowRules : IGameRules
         Rows = rows;
         Cols = cols;
         WinLength = winLength;
+        IsRated = isRated;
     }
 
     /// <inheritdoc />
@@ -55,6 +60,9 @@ public sealed class NInARowRules : IGameRules
     public int WinLength { get; }
 
     /// <inheritdoc />
+    public bool IsRated { get; }
+
+    /// <inheritdoc />
     public Board CreateBoard() => new(Rows, Cols, WinLength);
 
     /// <inheritdoc />
@@ -66,5 +74,23 @@ public sealed class NInARowRules : IGameRules
 public static class BuiltInGameRules
 {
     /// <summary>五子棋:15×15 连五。与本变更前写死的常量完全一致。</summary>
-    public static readonly IGameRules Gomoku = new NInARowRules("gomoku", 15, 15, 5);
+    public static readonly IGameRules Gomoku =
+        new NInARowRules(GameKeys.Gomoku, 15, 15, 5);
+
+    /// <summary>
+    /// 一字棋:3×3 连三。**不计分** —— 见 <c>add-tictactoe</c> design D2。
+    /// <para>
+    /// 两个理由。其一,平台此刻只有一个评分池,它实质上就是五子棋排行榜,让一字棋结果
+    /// 推动它会无声地污染平台唯一的排行榜。其二更根本:一字棋是**已解游戏**,双方稍具
+    /// 水平即必和,<c>TicTacToeHardAi</c> 不可战胜 —— 在其上评分只是在量谁先犯错,
+    /// 结果收敛为噪声,没有可排的东西。
+    /// </para>
+    /// <para>
+    /// 这里没有第二份判胜实现,整个棋种就是这三个数 —— 这正是 <c>NInARowRules</c>
+    /// 存在的理由,也是 <c>add-game-rules-registry</c> 那句"一个类加一处注册"
+    /// 第一次被真正验证。
+    /// </para>
+    /// </summary>
+    public static readonly IGameRules TicTacToe =
+        new NInARowRules(GameKeys.TicTacToe, 3, 3, 3, isRated: false);
 }

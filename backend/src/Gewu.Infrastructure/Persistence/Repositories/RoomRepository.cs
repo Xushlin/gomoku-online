@@ -30,13 +30,14 @@ public sealed class RoomRepository : IRoomRepository
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Room>> GetActiveRoomsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Room>> GetActiveRoomsAsync(
+        string gameKey, CancellationToken cancellationToken)
     {
         var rooms = await _db.Rooms
             .Include(r => r.Game!)
                 .ThenInclude(g => g.Moves)
             .Include("_spectators")
-            .Where(r => r.Status != RoomStatus.Finished)
+            .Where(r => r.Status != RoomStatus.Finished && r.GameKey == gameKey)
             .ToListAsync(cancellationToken);
         return rooms;
     }

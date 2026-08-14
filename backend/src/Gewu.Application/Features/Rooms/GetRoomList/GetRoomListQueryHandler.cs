@@ -23,7 +23,7 @@ public sealed class GetRoomListQueryHandler : IRequestHandler<GetRoomListQuery, 
         GetRoomListQuery request,
         CancellationToken cancellationToken)
     {
-        var rooms = await _rooms.GetActiveRoomsAsync(cancellationToken);
+        var rooms = await _rooms.GetActiveRoomsAsync(request.GameKey, cancellationToken);
         if (rooms.Count == 0)
         {
             return Array.Empty<RoomSummaryDto>();

@@ -5,6 +5,7 @@ using Gewu.Application.Common.Mapping;
 using Gewu.Application.Features.Rooms.Common;
 using MediatR;
 using Microsoft.Extensions.Options;
+using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Features.Rooms.TurnTimeout;
 
@@ -17,6 +18,7 @@ public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutComma
 {
     private readonly IRoomRepository _rooms;
     private readonly IUserRepository _users;
+    private readonly IGameRulesRegistry _rules;
     private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
     private readonly IRoomNotifier _notifier;
@@ -26,6 +28,7 @@ public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutComma
     public TurnTimeoutCommandHandler(
         IRoomRepository rooms,
         IUserRepository users,
+        IGameRulesRegistry rules,
         IDateTimeProvider clock,
         IUnitOfWork uow,
         IRoomNotifier notifier,
@@ -33,6 +36,7 @@ public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutComma
     {
         _rooms = rooms;
         _users = users;
+        _rules = rules;
         _clock = clock;
         _uow = uow;
         _notifier = notifier;
@@ -47,7 +51,7 @@ public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutComma
 
         var outcome = room.TimeOutCurrentTurn(_clock.UtcNow, _gameOptions.TurnTimeoutSeconds);
 
-        await GameEloApplier.ApplyAsync(room, outcome.Result, _users, cancellationToken);
+        await GameEloApplier.ApplyAsync(room, outcome.Result, _rules, _users, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
 
         var ended = new GameEndedDto(

@@ -1,5 +1,6 @@
 using Gewu.Application.Features.Rooms.CreateAiRoom;
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Tests.Features.Rooms;
 
@@ -26,7 +27,7 @@ public class CreateAiRoomCommandHandlerTests
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
         var state = await sut.Handle(
-            new CreateAiRoomCommand(host.Id, "AI match", BotDifficulty.Medium, Stone.Black),
+            new CreateAiRoomCommand(host.Id, "AI match", BotDifficulty.Medium, Stone.Black, GameKeys.Gomoku),
             default);
 
         state.Name.Should().Be("AI match");
@@ -52,7 +53,7 @@ public class CreateAiRoomCommandHandlerTests
         RoomsFixtures.SetupClock(_clock);
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
-        var act = () => sut.Handle(new CreateAiRoomCommand(missingId, "AI", BotDifficulty.Easy, Stone.Black), default);
+        var act = () => sut.Handle(new CreateAiRoomCommand(missingId, "AI", BotDifficulty.Easy, Stone.Black, GameKeys.Gomoku), default);
 
         await act.Should().ThrowAsync<UserNotFoundException>();
     }
@@ -67,7 +68,7 @@ public class CreateAiRoomCommandHandlerTests
         RoomsFixtures.SetupClock(_clock);
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
-        var act = () => sut.Handle(new CreateAiRoomCommand(host.Id, "AI", BotDifficulty.Easy, Stone.Black), default);
+        var act = () => sut.Handle(new CreateAiRoomCommand(host.Id, "AI", BotDifficulty.Easy, Stone.Black, GameKeys.Gomoku), default);
 
         await act.Should().ThrowAsync<UserNotFoundException>();
     }
@@ -88,7 +89,7 @@ public class CreateAiRoomCommandHandlerTests
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
         var state = await sut.Handle(
-            new CreateAiRoomCommand(host.Id, "AI Hard match", BotDifficulty.Hard, Stone.Black),
+            new CreateAiRoomCommand(host.Id, "AI Hard match", BotDifficulty.Hard, Stone.Black, GameKeys.Gomoku),
             default);
 
         state.Status.Should().Be(RoomStatus.Playing);
@@ -112,7 +113,7 @@ public class CreateAiRoomCommandHandlerTests
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
         var state = await sut.Handle(
-            new CreateAiRoomCommand(host.Id, "Defense", BotDifficulty.Medium, Stone.White),
+            new CreateAiRoomCommand(host.Id, "Defense", BotDifficulty.Medium, Stone.White, GameKeys.Gomoku),
             default);
 
         // Seats swapped: bot on Black (plays first), human on White, host
@@ -134,7 +135,7 @@ public class CreateAiRoomCommandHandlerTests
 
         var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
         var act = () => sut.Handle(
-            new CreateAiRoomCommand(botHost.Id, "AI", BotDifficulty.Easy, Stone.Black),
+            new CreateAiRoomCommand(botHost.Id, "AI", BotDifficulty.Easy, Stone.Black, GameKeys.Gomoku),
             default);
 
         await act.Should().ThrowAsync<ValidationException>();

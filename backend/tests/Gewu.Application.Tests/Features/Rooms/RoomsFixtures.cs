@@ -41,12 +41,14 @@ internal static class RoomsFixtures
             Now);
     }
 
-    public static Room WaitingRoom(User host, string name = "Test Room") =>
-        Room.Create(RoomId.NewId(), name, host.Id, Now, GameKeys.Gomoku);
+    public static Room WaitingRoom(
+        User host, string name = "Test Room", string gameKey = GameKeys.Gomoku) =>
+        Room.Create(RoomId.NewId(), name, host.Id, Now, gameKey);
 
-    public static Room PlayingRoom(User host, User challenger, string name = "Test Room")
+    public static Room PlayingRoom(
+        User host, User challenger, string name = "Test Room", string gameKey = GameKeys.Gomoku)
     {
-        var room = Room.Create(RoomId.NewId(), name, host.Id, Now, GameKeys.Gomoku);
+        var room = Room.Create(RoomId.NewId(), name, host.Id, Now, gameKey);
         room.JoinAsPlayer(challenger.Id, Now.AddSeconds(1));
         return room;
     }

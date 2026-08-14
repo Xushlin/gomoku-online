@@ -1,4 +1,5 @@
 using Gewu.Application.Features.Rooms.CreateRoom;
+using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Tests.Features.Rooms;
 
@@ -20,7 +21,7 @@ public class CreateRoomCommandHandlerTests
         _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         var sut = new CreateRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object);
-        var summary = await sut.Handle(new CreateRoomCommand(host.Id, "My Room"), default);
+        var summary = await sut.Handle(new CreateRoomCommand(host.Id, "My Room", GameKeys.Gomoku), default);
 
         summary.Name.Should().Be("My Room");
         summary.Status.Should().Be(RoomStatus.Waiting);
@@ -42,7 +43,7 @@ public class CreateRoomCommandHandlerTests
         RoomsFixtures.SetupClock(_clock);
 
         var sut = new CreateRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object);
-        var act = () => sut.Handle(new CreateRoomCommand(missingId, "Name"), default);
+        var act = () => sut.Handle(new CreateRoomCommand(missingId, "Name", GameKeys.Gomoku), default);
 
         await act.Should().ThrowAsync<Application.Common.Exceptions.UserNotFoundException>();
     }
