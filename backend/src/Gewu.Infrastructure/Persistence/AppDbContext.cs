@@ -19,6 +19,12 @@ public sealed class AppDbContext : DbContext
     /// <summary>刷新令牌子实体。</summary>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    /// <summary>
+    /// 每个玩家在每个棋种上的战绩与 ELO。主键 <c>(UserId, GameKey)</c>。
+    /// 评分数据的唯一真源 —— 见 <see cref="UserGameStats"/> 上关于为什么 <c>User</c> 不留镜像的说明。
+    /// </summary>
+    public DbSet<UserGameStats> UserGameStats => Set<UserGameStats>();
+
     /// <summary>房间聚合根。</summary>
     public DbSet<Room> Rooms => Set<Room>();
 

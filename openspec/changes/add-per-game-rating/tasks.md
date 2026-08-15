@@ -1,5 +1,14 @@
 # Tasks — add-per-game-rating
 
+> **本变更拆成 expand / contract 两步实现。** 提案里我写过「它没法再小」—— 那句话是错的。
+> 删 `User` 那五列确实会强制所有读者同时改，但**建表 + 回填**这一半完全可以先走：它是纯增量，
+> 树保持绿，而且把风险最高的迁移单独暴露出来被测。这是 schema 变更的标准做法，我该一开始就想到。
+>
+> - **expand（已完成，见下方 §1a / §2a / §3）**：`UserGameStats` 实体 + EF 配置 + 迁移（建表 +
+>   回填到 `GameKey='gomoku'`，**不删列**）+ 6 条迁移测试。`User` 原封不动，读者原封不动。
+> - **contract（待做）**：切全部读者到 `UserGameStats`、从 `User` 删掉五个字段与
+>   `RecordGameResult`、删列的第二条迁移。§1 剩余 / §2 剩余 / §4 / §5 / §6 属于这一步。
+
 > 判据：**已发布的 Web 客户端零改动，且它看到的每个数字与本变更之前一分不差。**
 > 三个 DTO 的形状一个字节不变，只是数据来源从 `User` 换成 `UserGameStats`（§6）。
 > 若哪个前端文件需要改，说明范围跑偏了 —— 停下来看为什么。
@@ -7,18 +16,18 @@
 > 迁移是本仓库唯一会在别人机器上按原样跑一遍的东西。§3 是本变更风险最高的一节，
 > 它有一条专门的测试，不是可选项。
 
-## 1. Domain：`UserGameStats`
+## 1a. Domain：`UserGameStats`（expand，已完成）
 
-- [ ] 1.1 新实体 `UserGameStats`，复合主键 `(UserId, GameKey)`，字段 `Rating`(初始 1200) / `GamesPlayed` / `Wins` / `Losses` / `Draws` / `RowVersion`。
-- [ ] 1.2 `RecordGameResult(GameOutcome, int newRating)` 从 `User` **搬到** 这里，含 `TouchRowVersion()`。不变量 `Wins + Losses + Draws == GamesPlayed` 保留，现在每个棋种各自成立。
+- [x] 1.1 新实体 `UserGameStats`，复合主键 `(UserId, GameKey)`，字段 `Rating`(初始 1200) / `GamesPlayed` / `Wins` / `Losses` / `Draws` / `RowVersion`。
+- [x] 1.2 `RecordGameResult` 写在新实体上（含推进 `RowVersion`）。**此刻还没有生产调用方** —— 它在 contract 那步接管。从 `User` 上删掉旧的那个属于 contract。
 - [ ] 1.3 从 `User` **删除** `Rating` / `GamesPlayed` / `Wins` / `Losses` / `Draws` 与 `RecordGameResult`。**不留镜像字段**（design D2）。
 - [ ] 1.4 `User.Register` / `RegisterBot` 不再初始化战绩，也**不创建** `UserGameStats` 行。
 - [ ] 1.5 `User.RowVersion` 保留，但现在只由 `ChangePassword` 推动。
-- [ ] 1.6 测试：复合主键两行互不影响；初始值；反射断言 `User` 上已无那五个属性；`RecordGameResult` 只推自己那行的令牌。
+- [ ] 1.6 测试：复合主键两行互不影响；初始值；`RecordGameResult` 只推自己那行的令牌。（反射断言 `User` 上已无那五个属性 → contract 那步）
 
-## 2. Infrastructure：EF 配置与仓库
+## 2a. Infrastructure：EF 配置（expand，已完成）
 
-- [ ] 2.1 `UserGameStatsConfiguration`：复合主键、`RowVersion` 走 `.IsConcurrencyToken().IsRequired()`、索引 `(GameKey, Rating DESC)`。
+- [x] 2.1 `UserGameStatsConfiguration`：复合主键、`RowVersion` 走 `.IsConcurrencyToken().IsRequired()`、索引 `(GameKey, Rating DESC)`。
 - [ ] 2.2 `UserConfiguration` 删掉那五列的映射。
 - [ ] 2.3 `IUserRepository.GetOrCreateGameStatsAsync(userId, gameKey, ct)` —— 不存在则以初始值新建并加入跟踪，**不自行 SaveChanges**。
 - [ ] 2.4 `GetLeaderboardPagedAsync(gameKey, page, pageSize, ct)` 返回 `(IReadOnlyList<UserGameStats>, int)`；`GameKey` 谓词**下推到 EF**。
@@ -26,10 +35,10 @@
 
 ## 3. 迁移（本变更风险最高的一节）
 
-- [ ] 3.1 一条 migration，**同一个文件内**按序：建表 → **显式 SQL** 搬数据到 `GameKey='gomoku'` → 删列。
-- [ ] 3.2 **手工检查生成的 migration**。EF 不知道这三步有依赖关系，顺序反了数据就没了。`AddRoomGameKey` 那次 EF 生成的 `defaultValue: ""` 会让所有房间不可玩，是手工改对的 —— 同一类风险。
-- [ ] 3.3 测试：在一个"迁移前形状"、含非零战绩的库上跑迁移，断言每个用户得到 `gomoku` 那行且**五个数值逐一相等**；`Users` 表已无那五列；三个 bot 账号同样被搬迁。
-- [ ] 3.4 `dotnet ef migrations script` 能跑通（注意 `--idempotent` 在 SQLite 上不支持，那是另一条已记录的文档 bug）。
+- [x] 3.1 `AddUserGameStats`：建表 → **显式 SQL** 回填到 `GameKey='gomoku'`。**删列移到 contract 的第二条迁移** —— 于是 expand 这一半是可逆的（`Down` 只丢表，战绩仍在 `Users` 原处）。
+- [x] 3.2 **手工检查生成的 migration**。EF 不知道这三步有依赖关系，顺序反了数据就没了。`AddRoomGameKey` 那次 EF 生成的 `defaultValue: ""` 会让所有房间不可玩，是手工改对的 —— 同一类风险。
+- [x] 3.3 6 条测试，跑**真实 `Database.MigrateAsync`**（不是 `EnsureCreated` —— 后者按当前模型建库、完全跳过迁移脚本，那样等于什么也没测）：逐字段保真、bot 账号同样搬迁、`RowVersion` 互不相同、回填可重放不产生重复。「`Users` 已无那五列」改为断言**列还在**，并注明 contract 时该翻转。
+- [x] 3.4 `dotnet ef migrations script` 能跑通（注意 `--idempotent` 在 SQLite 上不支持，那是另一条已记录的文档 bug）。
 
 ## 4. ELO 应用路径
 
@@ -63,6 +72,8 @@
 - [ ] 7.6 PR 描述写明体积、§3 的迁移风险与它的测试、以及"资料页此刻只能看一个棋种"这个已知缺口。
 
 ## 8. 已知缺口（记录，不在本变更修）
+
+- [ ] 8.0 **回填包含 `GamesPlayed = 0` 的用户**，于是他们在五子棋榜上仍以 1200 分出现 —— 与 design D4（「没下过该棋种的人不上榜」）表面冲突。选保真是因为今天的排行榜查询只过滤 `!IsBot`，这些人**现在就在榜上**；只回填 `GamesPlayed > 0` 会让他们消失，那大概是个改进，但它是一个**产品决定**，不该作为一次迁移的副作用悄悄发生。要不要清出去，留给一个能被单独看见的变更。
 
 - [ ] 8.1 资料页只显示一个棋种的战绩（缺省五子棋）；排行榜没有棋种切换入口。两者都是纯前端工作 → `add-web-per-game-rating`。
 - [ ] 8.2 搜索排序钉在五子棋 → 随大厅泛化解决。
