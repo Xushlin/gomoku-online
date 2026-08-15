@@ -9,7 +9,7 @@ namespace Gewu.Application.Features.Rooms.Common;
 
 /// <summary>
 /// 共享的 ELO 应用 helper。`MakeMoveCommandHandler` / `ResignCommandHandler` /
-/// `TurnTimeoutCommandHandler` 在对局结束路径上共用这段"加载双方 User → 推导 outcome →
+/// `TurnTimeoutCommandHandler` 在对局结束路径上共用这段"取双方在该棋种上的战绩行 → 推导 outcome →
 /// 调 EloRating.Calculate → 各自 RecordGameResult"的 30 行逻辑,避免三遍复制。
 /// <para>
 /// MUST NOT 调 <c>SaveChangesAsync</c> —— 由外层 handler 合并到同一事务提交。
@@ -24,12 +24,18 @@ namespace Gewu.Application.Features.Rooms.Common;
 internal static class GameEloApplier
 {
     /// <summary>
-    /// 对对局 <paramref name="room"/> 的黑 / 白方应用 ELO 变更。
+    /// 对对局 <paramref name="room"/> 的黑 / 白方应用 ELO 变更 —— 改的是双方在
+    /// <c>room.GameKey</c> 这一个棋种上的 <see cref="UserGameStats"/> 行,其它棋种一个字段不动。
     /// <paramref name="result"/> 必须是结束态之一(BlackWin / WhiteWin / Draw)。
     /// <para>
-    /// 棋种 <c>IsRated == false</c> 时**直接返回**:不加载 User、不改评分与战绩。
+    /// 棋种 <c>IsRated == false</c> 时**直接返回**:不取战绩行、不建行、不改评分。
     /// 对局本身照常结束(<c>Room.Status</c> 进 Finished、<c>EndReason</c> 已写入、
     /// 事件照常广播、回放照常可查)—— 一局棋是否算分,不影响它是否是一局棋。
+    /// </para>
+    /// <para>
+    /// 战绩行在此**首次创建**(get-or-create):一个玩家的第一局某棋种,行还不存在。这也是
+    /// 行只能在对局**结束**时出现的原因 —— 排行榜的成员资格就是"有没有这一行",提前建行会把
+    /// "下过"的含义变成"点开过"。
     /// </para>
     /// </summary>
     /// <param name="room">已结束的房间。</param>
@@ -53,11 +59,11 @@ internal static class GameEloApplier
             return;
         }
 
-        var black = await users.FindByIdAsync(room.BlackPlayerId, cancellationToken)
-            ?? throw new UserNotFoundException($"User '{room.BlackPlayerId.Value}' was not found.");
         var whiteId = room.WhitePlayerId!.Value;
-        var white = await users.FindByIdAsync(whiteId, cancellationToken)
-            ?? throw new UserNotFoundException($"User '{whiteId.Value}' was not found.");
+        var blackStats = await users.GetOrCreateGameStatsAsync(
+            room.BlackPlayerId, room.GameKey, cancellationToken);
+        var whiteStats = await users.GetOrCreateGameStatsAsync(
+            whiteId, room.GameKey, cancellationToken);
 
         var outcomeForBlack = result switch
         {
@@ -74,12 +80,14 @@ internal static class GameEloApplier
             _ => GameOutcome.Draw,
         };
 
+        // 两个 GamesPlayed 都是**该棋种**的局数,所以 K 因子按该棋种的资历分段:一个五子棋老手
+        // 第一次下象棋按 K=40 起步 —— 他在象棋上确实是新手,而那正是分棋种评分要解决的问题。
         var (newBlackRating, newWhiteRating) = Gewu.Domain.EloRating.EloRating.Calculate(
-            black.Rating, black.GamesPlayed,
-            white.Rating, white.GamesPlayed,
+            blackStats.Rating, blackStats.GamesPlayed,
+            whiteStats.Rating, whiteStats.GamesPlayed,
             outcomeForBlack);
 
-        black.RecordGameResult(outcomeForBlack, newBlackRating);
-        white.RecordGameResult(outcomeForWhite, newWhiteRating);
+        blackStats.RecordGameResult(outcomeForBlack, newBlackRating);
+        whiteStats.RecordGameResult(outcomeForWhite, newWhiteRating);
     }
 }

@@ -5,6 +5,7 @@ using Gewu.Application.Features.Users.GetCurrentUser;
 using Gewu.Application.Features.Users.GetUserGames;
 using Gewu.Application.Features.Users.GetUserProfile;
 using Gewu.Application.Features.Users.SearchUsers;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -73,13 +74,21 @@ public sealed class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// 按 Id 返回他人公开主页(Rating / 战绩 / CreatedAt)。**不**含 Email。bot 账号也可查。
+    /// 按 Id 返回他人在某棋种上的公开主页(Rating / 战绩 / CreatedAt)。**不**含 Email。bot 账号也可查。
+    /// <para>
+    /// <paramref name="gameKey"/> 缺省 <c>gomoku</c>,**缺省只发生在这一层**。
+    /// 该用户在该棋种上没有战绩行时返回初始值(1200 / 全 0)而不是 404 ——
+    /// "这个人存在但没下过这个棋种"是正常答案。
+    /// </para>
     /// </summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<UserPublicProfileDto>> GetProfile(
-        Guid id, CancellationToken cancellationToken)
+        Guid id,
+        [FromQuery] string? gameKey = null,
+        CancellationToken cancellationToken = default)
     {
-        var dto = await _mediator.Send(new GetUserProfileQuery(new UserId(id)), cancellationToken);
+        var dto = await _mediator.Send(
+            new GetUserProfileQuery(new UserId(id), gameKey ?? GameKeys.Gomoku), cancellationToken);
         return Ok(dto);
     }
 

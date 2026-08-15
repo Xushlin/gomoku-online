@@ -85,19 +85,66 @@ public sealed class UserRepository : IUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<(IReadOnlyList<User> Users, int Total)> GetLeaderboardPagedAsync(
-        int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<UserGameStats> GetOrCreateGameStatsAsync(
+        UserId userId, string gameKey, CancellationToken cancellationToken)
     {
-        var baseQuery = _db.Users.Where(u => !u.IsBot); // 机器人不进排行榜(见 elo-rating spec)
+        var existing = await _db.UserGameStats
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.GameKey == gameKey, cancellationToken);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var created = UserGameStats.Start(userId, gameKey);
+        await _db.UserGameStats.AddAsync(created, cancellationToken);
+        // 刻意不 SaveChanges —— 新行要和对局结束的其它变更合并到同一事务。
+        return created;
+    }
+
+    /// <inheritdoc />
+    public Task<UserGameStats?> FindGameStatsAsync(
+        UserId userId, string gameKey, CancellationToken cancellationToken) =>
+        _db.UserGameStats
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.GameKey == gameKey, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<Guid, UserGameStats>> FindGameStatsForAsync(
+        IEnumerable<UserId> userIds, string gameKey, CancellationToken cancellationToken)
+    {
+        var ids = userIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return new Dictionary<Guid, UserGameStats>();
+        }
+
+        var rows = await _db.UserGameStats
+            .Where(s => s.GameKey == gameKey && ids.Contains(s.UserId))
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(s => s.UserId.Value);
+    }
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<UserGameStats> Entries, int Total)> GetLeaderboardPagedAsync(
+        string gameKey, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        // GameKey 谓词下推到 EF,不在内存里筛。bot 过滤靠 join 回 Users —— 机器人跟随 ELO 正常
+        // 更新(反套利),但不进排行榜(见 elo-rating spec)。
+        var baseQuery =
+            from s in _db.UserGameStats
+            join u in _db.Users on s.UserId equals u.Id
+            where s.GameKey == gameKey && !u.IsBot
+            select s;
+
         var total = await baseQuery.CountAsync(cancellationToken);
-        var users = await baseQuery
-            .OrderByDescending(u => u.Rating)
-            .ThenByDescending(u => u.Wins)
-            .ThenBy(u => u.GamesPlayed)
+        var entries = await baseQuery
+            .OrderByDescending(s => s.Rating)
+            .ThenByDescending(s => s.Wins)
+            .ThenBy(s => s.GamesPlayed)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
-        return (users, total);
+        return (entries, total);
     }
 
     /// <inheritdoc />

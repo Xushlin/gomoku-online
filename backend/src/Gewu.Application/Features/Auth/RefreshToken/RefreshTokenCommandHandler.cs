@@ -2,6 +2,7 @@ using Gewu.Application.Abstractions;
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Common.Exceptions;
 using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Games.Abstractions;
 using MediatR;
 using Microsoft.Extensions.Options;
 
@@ -71,10 +72,13 @@ public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCom
 
         var accessToken = _tokens.GenerateAccessToken(user);
 
+        // 同 Login:UserDto 没有棋种维度,战绩钉在五子棋。
+        var stats = await _users.FindGameStatsAsync(user.Id, GameKeys.Gomoku, cancellationToken);
+
         return new AuthResponse(
             AccessToken: accessToken.Token,
             RefreshToken: rawNew,
             AccessTokenExpiresAt: accessToken.ExpiresAt,
-            User: user.ToDto());
+            User: user.ToDto(stats));
     }
 }

@@ -26,6 +26,7 @@ public class TurnTimeoutCommandHandlerTests
         var pastTimeout = RoomsFixtures.Now.AddSeconds(1).AddSeconds(61);
         RoomsFixtures.SetupClock(_clock, pastTimeout);
         RoomsFixtures.SetupUserLookup(_users, alice, bob);
+        var stats = RoomsFixtures.SetupGameStats(_users);
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
         await Build(60).Handle(new TurnTimeoutCommand(room.Id), default);
@@ -34,11 +35,11 @@ public class TurnTimeoutCommandHandlerTests
         room.Game!.Result.Should().Be(GameResult.WhiteWin); // Black 超时 → White 胜
         room.Game.EndReason.Should().Be(GameEndReason.TurnTimeout);
 
-        // ELO 变动
-        alice.GamesPlayed.Should().Be(1);
-        alice.Losses.Should().Be(1);
-        bob.GamesPlayed.Should().Be(1);
-        bob.Wins.Should().Be(1);
+        // ELO 变动 —— 落在该棋种的战绩行上
+        stats.Of(alice).GamesPlayed.Should().Be(1);
+        stats.Of(alice).Losses.Should().Be(1);
+        stats.Of(bob).GamesPlayed.Should().Be(1);
+        stats.Of(bob).Wins.Should().Be(1);
 
         _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.GameEndedAsync(room.Id,

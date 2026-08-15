@@ -21,7 +21,7 @@
 - `Rating = newRating`
 - **`RowVersion` 通过 `TouchRowVersion()` 替换为新 16 字节值**(本次 `add-concurrency-hardening` 新增;保证乐观并发令牌推进,让并发 SaveChanges 能被 EF 捕获)
 
-`outcome` 传入未定义的枚举值时 MUST 抛 `ArgumentOutOfRangeException`,抛出时 User 状态 MUST 保持不变(包括 `RowVersion`)。
+`outcome` 传入未定义的枚举值时 MUST 抛 `ArgumentOutOfRangeException`,抛出时该行状态 MUST 保持不变(包括 `RowVersion`)。
 
 调用后 MUST 保持不变量:`Wins + Losses + Draws == GamesPlayed` —— 现在这条不变量
 **对每个棋种各自成立**。
@@ -49,7 +49,7 @@
 
 #### Scenario: 非法枚举值
 - **WHEN** 传入 `(GameOutcome)99` 或其他非定义值
-- **THEN** 抛 `ArgumentOutOfRangeException`;`User` 状态 MUST 保持不变,包括 `RowVersion`
+- **THEN** 抛 `ArgumentOutOfRangeException`;该 `UserGameStats` 行的状态 MUST 保持不变,包括 `RowVersion`
 
 ### Requirement: K 因子按 `gamesPlayed` 分段 `40 / 20 / 10`
 
@@ -95,34 +95,36 @@ Task<(IReadOnlyList<UserGameStats> Entries, int Total)> GetLeaderboardPagedAsync
 —— 榜的含义会从"这些人的棋力顺序"变成"这些人里谁碰巧下过"。一个新棋种刚上线时它的榜
 几乎是空的,那是**对的**。
 
-返回类型 MUST 是领域类型(`IReadOnlyList<User>` + `int`),不泄漏 `IQueryable` / `IOrderedEnumerable` 等 EF 细节。
+返回类型 MUST 是领域类型(`IReadOnlyList<UserGameStats>` + `int`),不泄漏 `IQueryable` /
+`IOrderedEnumerable` 等 EF 细节。**上一句此前写的是 `IReadOnlyList<User>`,与本 requirement 自己
+给出的签名矛盾** —— 顺手改正。
 
 返回 `UserGameStats` 而不是 `User`:排行榜要的是"某人在某棋种上的分",而那正是这个实体承载的东西。
 调用方另取用户名 —— 它已经在用 `LookupUsernamesAsync` 做这件事。
 
 #### Scenario: 排序正确(真人)
-- **WHEN** 数据库有三位真人:A(Rating=1500, Wins=2)、B(Rating=1500, Wins=5)、C(Rating=1400, Wins=10),调 `GetLeaderboardPagedAsync(1, 100, ct)`
-- **THEN** Users 顺序 `[B, A, C]`;Total = 3
+- **WHEN** 数据库有三位真人:A(Rating=1500, Wins=2)、B(Rating=1500, Wins=5)、C(Rating=1400, Wins=10),调 `GetLeaderboardPagedAsync("gomoku", 1, 100, ct)`
+- **THEN** Entries 顺序 `[B, A, C]`;Total = 3
 
 #### Scenario: 按 GamesPlayed ASC 作为三级排序
 - **WHEN** 两位真人 `(Rating=1500, Wins=3, GamesPlayed=10)` 与 `(Rating=1500, Wins=3, GamesPlayed=5)`
 - **THEN** 后者(场次少)排前
 
 #### Scenario: 分页跳过
-- **WHEN** 数据库有 5 位真人,调 `GetLeaderboardPagedAsync(2, 2, ct)`
-- **THEN** Users.Count == 2(第 3、4 名);Total == 5
+- **WHEN** 数据库有 5 位真人,调 `GetLeaderboardPagedAsync("gomoku", 2, 2, ct)`
+- **THEN** Entries.Count == 2(第 3、4 名);Total == 5
 
 #### Scenario: 过大 page 空结果
-- **WHEN** 数据库有 5 位真人,调 `GetLeaderboardPagedAsync(10, 2, ct)`
-- **THEN** Users.Count == 0;Total 仍然 == 5(客户端可按 Total 算"无更多"或回第 1 页)
+- **WHEN** 数据库有 5 位真人,调 `GetLeaderboardPagedAsync("gomoku", 10, 2, ct)`
+- **THEN** Entries.Count == 0;Total 仍然 == 5(客户端可按 Total 算"无更多"或回第 1 页)
 
 #### Scenario: Bot 被过滤
 - **WHEN** 数据库有 5 位真人和 3 位 bot
-- **THEN** Users.Count ≤ 5(视分页);Total == 5(仅真人)
+- **THEN** Entries.Count ≤ 5(视分页);Total == 5(仅真人)
 
 #### Scenario: 仅 bot 的极端情形
 - **WHEN** 数据库仅存在 bot 账号
-- **THEN** 返回空 Users 列表,Total == 0
+- **THEN** 返回空 Entries 列表,Total == 0
 
 #### Scenario: 榜按棋种隔离
 - **WHEN** Alice 在 `gomoku` 上有 1500 分、在 `xiangqi` 上有 1300 分,查 `xiangqi` 的榜
@@ -156,7 +158,9 @@ Task<(IReadOnlyList<UserGameStats> Entries, int Total)> GetLeaderboardPagedAsync
 `Result == Ongoing` 时 handler MUST NOT 查询 / 修改 `UserGameStats` —— 尤其 MUST NOT 为一局还没结束的
 棋**创建**战绩行,否则"下过这个棋种"的含义会从"下完过"变成"点开过",而排行榜的成员资格正是靠它。
 
-**棋种不计分时同样 MUST NOT 查询 / 修改 `User`**(本变更新增约束)。判定取自
+**棋种不计分时同样 MUST NOT 查询 / 修改 `UserGameStats`**(本变更新增约束)。尤其
+MUST NOT 调 `GetOrCreateGameStatsAsync` —— 它会**建行**,而建出来就等于把人登记进了那个棋种的
+排行榜。判定取自
 `IGameRules.IsRated`,规则实例已经由 handler 为落子解析出来,MUST NOT 为此再查一次注册表,
 更 MUST NOT 内联一份"哪些棋种算分"的清单。
 
@@ -173,9 +177,9 @@ Hard 档不可战胜,评分在其上收敛为噪声。这一条是限期约束,`
 
 Handler 调 `IRoomNotifier` 的时序保持原 Requirement(`RoomStateChangedAsync` → `MoveMadeAsync` → `GameEndedAsync`);Rating 变更不单独广播。
 
-#### Scenario: 非结束局不触动 User
+#### Scenario: 非结束局不触动战绩
 - **WHEN** `outcome.Result == Ongoing`
-- **THEN** Handler MUST NOT 调 `IUserRepository.FindByIdAsync` / `User.RecordGameResult`
+- **THEN** Handler MUST NOT 调 `IUserRepository.GetOrCreateGameStatsAsync` / `UserGameStats.RecordGameResult`
 
 #### Scenario: 真人 vs 真人 黑胜
 - **WHEN** `outcome.Result == BlackWin`,对局前黑方 `(Rating=1200, GamesPlayed=0)`,白方 `(Rating=1200, GamesPlayed=0)`,两人都是真人,棋种为 `gomoku`
@@ -191,7 +195,7 @@ Handler 调 `IRoomNotifier` 的时序保持原 Requirement(`RoomStateChangedAsyn
 
 #### Scenario: 不计分棋种结束对局不动评分
 - **WHEN** 一局 `tictactoe`(`IsRated == false`)以 `BlackWin` 结束
-- **THEN** `Room.Status == Finished`、`Game.EndReason` 已写入、`GameEndedAsync` 已广播;而 Handler MUST NOT 调 `IUserRepository.FindByIdAsync` / `User.RecordGameResult`,双方 `Rating`、`Wins`、`Losses`、`GamesPlayed` 全部不变
+- **THEN** `Room.Status == Finished`、`Game.EndReason` 已写入、`GameEndedAsync` 已广播;而 Handler MUST NOT 调 `IUserRepository.GetOrCreateGameStatsAsync` / `UserGameStats.RecordGameResult`,且 MUST NOT 有任何 `UserGameStats` 行被创建或修改
 
 #### Scenario: 不计分棋种的对局仍可回放
 - **WHEN** 上述一字棋对局结束后调 `GET /api/rooms/{id}/replay`

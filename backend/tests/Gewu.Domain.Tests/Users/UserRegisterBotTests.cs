@@ -17,11 +17,8 @@ public class UserRegisterBotTests
         bot.Email.Should().Be(email);
         bot.Username.Should().Be(username);
         bot.PasswordHash.Should().Be(User.BotPasswordHashMarker);
-        bot.Rating.Should().Be(1200);
-        bot.GamesPlayed.Should().Be(0);
-        bot.Wins.Should().Be(0);
-        bot.Losses.Should().Be(0);
-        bot.Draws.Should().Be(0);
+        // 战绩不在这里了。bot 的战绩行同样在它下完某棋种第一局时才出现 ——
+        // bot 对局是计分的(ai-opponent 的反套利约束)。
         bot.IsActive.Should().BeTrue();
         bot.IsBot.Should().BeTrue();
         bot.CreatedAt.Should().Be(FixedNow);

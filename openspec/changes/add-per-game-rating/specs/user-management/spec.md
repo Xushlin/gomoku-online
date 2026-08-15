@@ -67,29 +67,114 @@ Task<UserGameStats> GetOrCreateGameStatsAsync(
 - **WHEN** 调用后不执行 `SaveChangesAsync`
 - **THEN** 数据库中 MUST NOT 出现新行
 
+### Requirement: 只读路径用 `FindGameStatsAsync` / `FindGameStatsForAsync`,MUST NOT 建行
+
+Application 层 SHALL 在 `IUserRepository` 上再提供两个**只读**查询:
+
+```
+Task<UserGameStats?> FindGameStatsAsync(
+    UserId userId, string gameKey, CancellationToken cancellationToken);
+
+Task<IReadOnlyDictionary<Guid, UserGameStats>> FindGameStatsForAsync(
+    IEnumerable<UserId> userIds, string gameKey, CancellationToken cancellationToken);
+```
+
+查询路径(资料页 / 搜索 / `/me` / 登录响应)MUST 用它们,MUST NOT 用
+`GetOrCreateGameStatsAsync` —— 后者会**建行**,而"有行"就是"下完过这个棋种"、排行榜的成员资格
+正是靠它。一次 GET 请求把人凭空登记进某个棋种的榜,会把"下过"的含义变成"被人看过资料"。
+
+没有行时返回 `null`(单个)或不进字典(批量);调用方用初始值填 DTO。
+
+`FindGameStatsForAsync` 存在的理由是一页搜索结果 20 个人 —— 逐个查就是 20 次往返。
+
+#### Scenario: 读资料不建行
+- **WHEN** 反复 `GET /api/users/{id}?gameKey=xiangqi`,而该用户从未下过象棋
+- **THEN** 每次都返回初始值,且 `UserGameStats` 表中 MUST NOT 因此出现任何新行
+
+#### Scenario: 批量查只取指定棋种
+- **WHEN** 传入三个 id 查 `xiangqi`,其中只有一人有该棋种的行
+- **THEN** 字典只含那一人;另外两人不进字典,MUST NOT 以初始值占位
+
+### Requirement: `UserDto` 与登录 / 注册 / 刷新响应的战绩钉在五子棋
+
+`UserDto`(`/api/users/me` 与 `AuthResponse.User`)的形状 MUST 一个字节不变,其战绩四项与 `Rating`
+SHALL 取自该用户 `gomoku` 那一行的 `UserGameStats`。
+
+理由:这三个端点都没有 `gameKey` 参数,而已发布的客户端在这里读的就是五子棋的数字 ——
+换成别的(比如某种跨棋种聚合)会是一次无声的回归。给 `UserDto` 加棋种维度要改 DTO 形状,
+属于 `add-web-per-game-rating`。
+
+注册响应 MUST 用初始值填(`Rating = 1200`、战绩全 0)且 MUST NOT 创建战绩行 ——
+一个刚注册的用户在每个棋种上都还没下过。
+
+#### Scenario: 注册响应
+- **WHEN** `POST /api/auth/register` 成功
+- **THEN** `user.rating == 1200`、`user.gamesPlayed == 0`;`UserGameStats` 表中 MUST NOT 出现属于他的行
+
+#### Scenario: `/me` 缺省向后兼容
+- **WHEN** 一位有五子棋战绩的用户调 `GET /api/users/me`
+- **THEN** 返回的数字与本变更之前完全一致
+
+### Requirement: `SearchUsers` 的棋种钉在五子棋且不接受参数
+
+`SearchUsersQuery` 的形状 MUST 不变(`Search` / `Page` / `PageSize`),handler SHALL 用
+`FindGameStatsForAsync(..., "gomoku", ...)` 一次批量取这一页用户的战绩。
+
+**不加 `gameKey` 参数**,理由不是省事:找人卡片是**五子棋大厅**的一个组件
+(`pages/lobby/cards/find-player`),让它按棋种参数化等于开始泛化大厅 —— 那是 roadmap 上单独的
+一步,且会动到 `/home` 在五份 web spec 里的规范地位。一个变更做一件事。记为缺口,不是遗漏。
+
+没有五子棋战绩行的用户 MUST 仍然出现在搜索结果里(显示初始值)—— 搜索的是"人",
+不是"上过榜的人";找人卡片要能找到刚注册的人。这与排行榜的成员资格规则**刻意不同**。
+
+#### Scenario: 刚注册的人能被搜到
+- **WHEN** 搜索一位注册后从未下完过一局的用户
+- **THEN** 他出现在结果里,`Rating == 1200`、战绩全 0
+
+#### Scenario: 一页只查一次战绩
+- **WHEN** 一页返回 20 位用户
+- **THEN** handler MUST 只调一次 `FindGameStatsForAsync`,MUST NOT 逐个调 `FindGameStatsAsync`
+
 ### Requirement: 迁移把既有战绩归给五子棋,且顺序不可颠倒
 
-一条 EF migration SHALL 按此顺序完成三步,**在同一个 migration 内**:
+迁移 SHALL 按此顺序完成三步,分两条 EF migration(expand / contract):
 
-1. 建 `UserGameStats` 表(复合主键 + 索引 `(GameKey, Rating DESC)` 供排行榜使用)。
-2. 用**显式 SQL** 把每个 `Users` 行的五个战绩列搬成一行 `UserGameStats`,`GameKey = 'gomoku'`。
-3. 从 `Users` 删除那五列。
+1. `AddUserGameStats`(expand)——建 `UserGameStats` 表(复合主键 + 索引 `(GameKey, Rating DESC)` 供排行榜使用)。
+2. `AddUserGameStats`(同一条)——用**显式 SQL** 把每个 `Users` 行的五个战绩列搬成一行 `UserGameStats`,`GameKey = 'gomoku'`。
+3. `DropUserRatingColumns`(contract,时间戳更晚)——从 `Users` 删除那五列。
 
-顺序 MUST NOT 颠倒 —— 先删列再搬数据就把数据搬没了,而 EF 的自动生成不知道这三步有依赖关系。
+**拆成两条是有意的。** 提案原文要求三步"在同一个 migration 内",那多余:顺序的保证来自迁移
+时间戳,而不是来自它们挤在同一个文件里。拆开之后 expand 那一半是**可逆的**(`Down` 只丢表,
+战绩仍在 `Users` 原处),而且它是纯增量、可以在读者还没切过来时先落地、单独被审。
+
+顺序 MUST NOT 颠倒 —— 先删列再搬数据就把数据搬没了,而 EF 的自动生成不知道这几步有依赖关系。
 本仓库在同一处被咬过一次:`AddRoomGameKey` 那次 EF 生成了 `defaultValue: ""`,会让每个既有房间的
 `GameKey` 变成空串、进而解析不出规则、房间全部不可玩;那次是手工改成 `'gomoku'` 加一条显式
-`UPDATE` 才对的。
+`UPDATE` 才对的。将来若有人压缩迁移,这个先后同样 MUST NOT 颠倒。
 
-本 migration MUST 有一个针对"迁移前形状"的库跑一遍的测试,断言战绩一行不丢、数值一分不差。
+`DropUserRatingColumns` 的 `Down` MUST 显式把数据搬回来。EF 自动生成的版本只
+`AddColumn(defaultValue: 0)`,回滚之后每个人的分会变成 0 —— 与上面那次 `defaultValue: ""` 是同一类
+bug,而回滚这条路平时没人走,坏了不会有人立刻发现。
+
+两条 migration MUST 各有针对"迁移前形状"的库跑一遍的测试,断言战绩一行不丢、数值一分不差。
+断言 MUST 在 expand 之后、contract 之前取一次快照 —— 删完列源数据就不在了,再断言只是在跟自己核对。
 本地 SQLite 没有生产数据是事实,但迁移是本仓库**唯一会在别人机器上按原样跑一遍**的东西。
 
 #### Scenario: 既有战绩不丢
 - **WHEN** 在一个含若干 `Users` 行(各有非零战绩)的迁移前库上跑迁移
 - **THEN** 每个用户得到一行 `GameKey == 'gomoku'` 的 `UserGameStats`,五个数值与迁移前逐一相等
 
+#### Scenario: expand 之后源列还在
+- **WHEN** 只迁到 `AddUserGameStats` 为止
+- **THEN** `Users` 上那五列 MUST 仍然存在 —— 这一半是可逆的,回滚只需丢掉新表
+
 #### Scenario: 列已删除
-- **WHEN** 迁移完成后检视 `Users` 表结构
+- **WHEN** 迁到最新后检视 `Users` 表结构
 - **THEN** MUST NOT 再有 `Rating` / `GamesPlayed` / `Wins` / `Losses` / `Draws` 列
+
+#### Scenario: 回滚 contract 恢复真实数值而不是零
+- **WHEN** 迁到最新后再回滚到 `AddUserGameStats`
+- **THEN** `Users` 的五列 MUST 恢复成 `UserGameStats` 里 `gomoku` 那行的数值,MUST NOT 全是缺省值
 
 #### Scenario: bot 账号同样被搬迁
 - **WHEN** 迁移前库中含三个 seeded bot 账号

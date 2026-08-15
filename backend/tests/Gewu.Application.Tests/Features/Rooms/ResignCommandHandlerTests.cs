@@ -24,6 +24,7 @@ public class ResignCommandHandlerTests
         var room = RoomsFixtures.PlayingRoom(alice, bob);
         RoomsFixtures.SetupClock(_clock, RoomsFixtures.Now.AddMinutes(1));
         RoomsFixtures.SetupUserLookup(_users, alice, bob);
+        var stats = RoomsFixtures.SetupGameStats(_users);
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
         var ended = await Build().Handle(new ResignCommand(alice.Id, room.Id), default);
@@ -39,13 +40,13 @@ public class ResignCommandHandlerTests
         room.Game!.Result.Should().Be(GameResult.WhiteWin);
         room.Game.EndReason.Should().Be(GameEndReason.Resigned);
 
-        // ELO applied(双方被加载 + 战绩变动)
-        alice.GamesPlayed.Should().Be(1);
-        alice.Losses.Should().Be(1);
-        bob.GamesPlayed.Should().Be(1);
-        bob.Wins.Should().Be(1);
-        bob.Rating.Should().BeGreaterThan(1200);
-        alice.Rating.Should().BeLessThan(1200);
+        // ELO applied —— 写的是双方在该棋种上的战绩行
+        stats.Of(alice).GamesPlayed.Should().Be(1);
+        stats.Of(alice).Losses.Should().Be(1);
+        stats.Of(bob).GamesPlayed.Should().Be(1);
+        stats.Of(bob).Wins.Should().Be(1);
+        stats.Of(bob).Rating.Should().BeGreaterThan(1200);
+        stats.Of(alice).Rating.Should().BeLessThan(1200);
 
         // SaveChanges 一次
         _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -102,6 +103,9 @@ public class ResignCommandHandlerTests
         var room = RoomsFixtures.PlayingRoom(alice, bob);
         RoomsFixtures.SetupClock(_clock);
         RoomsFixtures.SetupUserLookup(_users, alice, bob);
+        // 第一次认输会走完整的计分路径,所以战绩账本要接上 —— 未接的 loose mock
+        // 会让 GetOrCreateGameStatsAsync 返回 null,错误就变成一个和本用例无关的 NRE。
+        RoomsFixtures.SetupGameStats(_users);
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         // First resign 把房间转到 Finished
         await Build().Handle(new ResignCommand(alice.Id, room.Id), default);

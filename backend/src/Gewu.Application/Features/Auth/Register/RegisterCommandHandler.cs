@@ -73,6 +73,8 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
             AccessToken: accessToken.Token,
             RefreshToken: rawRefreshToken,
             AccessTokenExpiresAt: accessToken.ExpiresAt,
-            User: user.ToDto());
+            // 刚注册的用户在每个棋种上都还没下过 —— 没有战绩行,DTO 用初始值填。
+            // 这里 MUST NOT 建行:"有行"就是"下完过",注册不该把人凭空登记进五子棋排行榜。
+            User: user.ToDto(stats: null));
     }
 }

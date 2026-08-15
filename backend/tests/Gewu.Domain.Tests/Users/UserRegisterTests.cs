@@ -17,11 +17,8 @@ public class UserRegisterTests
         user.Email.Should().Be(email);
         user.Username.Should().Be(username);
         user.PasswordHash.Should().Be("hashed-password");
-        user.Rating.Should().Be(1200);
-        user.GamesPlayed.Should().Be(0);
-        user.Wins.Should().Be(0);
-        user.Losses.Should().Be(0);
-        user.Draws.Should().Be(0);
+        // 战绩不在这里了 —— 见 UserGameStatsTests。注册也不建战绩行:
+        // 一个新用户在每个棋种上都还没下过,而"没有行"正是那个意思。
         user.IsActive.Should().BeTrue();
         user.IsBot.Should().BeFalse();
         user.CreatedAt.Should().Be(FixedNow);

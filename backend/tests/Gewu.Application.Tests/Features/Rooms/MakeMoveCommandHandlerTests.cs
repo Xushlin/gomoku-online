@@ -25,6 +25,7 @@ public class MakeMoveCommandHandlerTests
         var room = RoomsFixtures.PlayingRoom(host, bob);
         RoomsFixtures.SetupClock(_clock, RoomsFixtures.Now.AddMinutes(1));
         RoomsFixtures.SetupUserLookup(_users, host, bob);
+        var stats = RoomsFixtures.SetupGameStats(_users);
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
@@ -36,11 +37,9 @@ public class MakeMoveCommandHandlerTests
         _notifier.Verify(n => n.MoveMadeAsync(room.Id, It.IsAny<MoveDto>(), It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.GameEndedAsync(It.IsAny<RoomId>(), It.IsAny<GameEndedDto>(), It.IsAny<CancellationToken>()), Times.Never);
 
-        // 未结束局 MUST NOT 触发 ELO 计算 —— 双方 Rating / 战绩保持初始态
-        host.Rating.Should().Be(1200);
-        host.GamesPlayed.Should().Be(0);
-        bob.Rating.Should().Be(1200);
-        bob.GamesPlayed.Should().Be(0);
+        // 未结束局 MUST NOT 触发 ELO 计算,而且 MUST NOT 建战绩行 ——
+        // "有行"就是"下完过这个棋种",排行榜的成员资格靠它。
+        stats.Count.Should().Be(0);
     }
 
     [Fact]
@@ -62,6 +61,7 @@ public class MakeMoveCommandHandlerTests
 
         RoomsFixtures.SetupClock(_clock, RoomsFixtures.Now.AddSeconds(9));
         RoomsFixtures.SetupUserLookup(_users, host, bob);
+        var stats = RoomsFixtures.SetupGameStats(_users);
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
@@ -76,14 +76,15 @@ public class MakeMoveCommandHandlerTests
                 && p.WinnerUserId == host.Id.Value),
             It.IsAny<CancellationToken>()), Times.Once);
 
-        // ELO 在同事务落地:两位玩家初始均为 (1200, 0),BlackWin 后
-        // EloRating.Calculate(1200,0,1200,0,Win) = (1220, 1180)
-        host.Rating.Should().Be(1220);
-        host.GamesPlayed.Should().Be(1);
-        host.Wins.Should().Be(1);
-        bob.Rating.Should().Be(1180);
-        bob.GamesPlayed.Should().Be(1);
-        bob.Losses.Should().Be(1);
+        // ELO 在同事务落地,写的是**该棋种**那一行:两位玩家首局,行由 get-or-create 建出来,
+        // 初始均为 (1200, 0),BlackWin 后 EloRating.Calculate(1200,0,1200,0,Win) = (1220, 1180)
+        stats.Of(host).Rating.Should().Be(1220);
+        stats.Of(host).GamesPlayed.Should().Be(1);
+        stats.Of(host).Wins.Should().Be(1);
+        stats.Of(bob).Rating.Should().Be(1180);
+        stats.Of(bob).GamesPlayed.Should().Be(1);
+        stats.Of(bob).Losses.Should().Be(1);
+        stats.Count.Should().Be(2, "只该建这一局棋种的两行");
         _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
