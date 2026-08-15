@@ -6,6 +6,7 @@
 // 5. Play several moves, verify bot responds each turn.
 // 6. GET /api/rooms/{id} at the end to observe final state.
 // 7. GET /api/leaderboard -> Alice appears, bot does NOT.
+// 8. GET /api/games + per-game leaderboard / profile queries.
 
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -119,11 +120,36 @@ Console.WriteLine($"  status={finalState!.Status} moves={finalState.Game?.Moves.
 Assert(finalState.Game!.Moves.Count >= 4, "at least 4 moves played");
 
 Console.WriteLine("=== 7. Leaderboard excludes bots ===");
-var board = await http.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard");
-var hasBot = board!.Any(e => e.Username.StartsWith("AI_"));
+// PagedResult<T>, not a bare array: the endpoint gained paging in
+// add-leaderboard-pagination and this line kept deserialising into List<T>,
+// which throws. Nobody noticed for months because this project is not in
+// Gewu.slnx and CI never runs it — a smoke test outside CI rots silently and
+// then lies about coverage. Either wire it in or delete it.
+var board = await http.GetFromJsonAsync<PagedResult<LeaderboardEntry>>(
+    "/api/leaderboard?pageSize=100");
+var hasBot = board!.Items.Any(e => e.Username.StartsWith("AI_"));
 Assert(!hasBot, "no AI_* entries in leaderboard");
-var aliceEntry = board.FirstOrDefault(e => e.Username == aliceUsername);
+var aliceEntry = board.Items.FirstOrDefault(e => e.Username == aliceUsername);
 Assert(aliceEntry is not null, "Alice appears in leaderboard");
+
+Console.WriteLine("=== 8. Per-game rating ===");
+// add-per-game-rating moved ratings into UserGameStats, keyed by (user, game).
+// The wire shapes did not change, so the checks above still hold — these two
+// pin the parts that are new.
+var games = await http.GetFromJsonAsync<List<GameDescriptor>>("/api/games");
+Assert(games is not null && games.Any(g => g.GameKey == "gomoku" && g.IsRated), "gomoku is rated");
+Assert(games is not null && games.Any(g => g.GameKey == "tictactoe" && !g.IsRated), "tictactoe is not rated");
+
+var tttBoard = await http.GetFromJsonAsync<PagedResult<LeaderboardEntry>>(
+    "/api/leaderboard?gameKey=tictactoe");
+// Empty, not an error: tic-tac-toe settles no ELO, so it has no stats rows.
+Assert(tttBoard!.Total == 0, "tictactoe ladder is empty");
+
+var aliceXiangqi = await http.GetFromJsonAsync<UserPublicProfileDto>(
+    $"/api/users/{regBody.User.Id}?gameKey=xiangqi");
+// "Exists but has never played this game" answers 200 with initial values —
+// 404 would be mis-reported by clients as "user not found".
+Assert(aliceXiangqi!.GamesPlayed == 0, "Alice has no xiangqi record, and that is a 200");
 
 await hub.DisposeAsync();
 
@@ -141,3 +167,6 @@ record MoveDto(int Ply, int Row, int Col, string Stone, DateTime PlayedAt);
 record MoveMadePayload(int Ply, int Row, int Col, string Stone, DateTime PlayedAt);
 record GameEndedPayload(string Result, Guid? WinnerUserId, DateTime EndedAt);
 record LeaderboardEntry(int Rank, Guid UserId, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws);
+record PagedResult<T>(List<T> Items, int Total, int Page, int PageSize);
+record GameDescriptor(string GameKey, bool IsRated, bool SupportsHumanVsHuman, int Rows, int Cols);
+record UserPublicProfileDto(Guid Id, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws, DateTime CreatedAt);
