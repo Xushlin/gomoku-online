@@ -2,6 +2,7 @@ using Gewu.Application.Abstractions;
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Common.Exceptions;
 using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Users;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -88,10 +89,14 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
 
         var accessToken = _tokens.GenerateAccessToken(user);
 
+        // 登录响应里的战绩钉在五子棋 —— 与 `/api/users/me` 同一个理由:UserDto 没有棋种维度,
+        // 而已发布的客户端在这里读的就是五子棋的数字。
+        var stats = await _users.FindGameStatsAsync(user.Id, GameKeys.Gomoku, cancellationToken);
+
         return new AuthResponse(
             AccessToken: accessToken.Token,
             RefreshToken: rawRefreshToken,
             AccessTokenExpiresAt: accessToken.ExpiresAt,
-            User: user.ToDto());
+            User: user.ToDto(stats));
     }
 }

@@ -1,5 +1,6 @@
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Features.Users.GetLeaderboard;
+using Gewu.Domain.Games.Abstractions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,14 +28,21 @@ public sealed class LeaderboardController : ControllerBase
     /// <summary>
     /// 返回 <see cref="PagedResult{T}"/> 包装的排行榜;Rank 是**全局名次**
     /// (page=2 / pageSize=20 的第一个 entry Rank == 21),非页内序号。
+    /// <para>
+    /// <paramref name="gameKey"/> 缺省 <c>gomoku</c>。**缺省只发生在这一层** ——
+    /// <c>GetLeaderboardQuery.GameKey</c> 是必填的,Application 层不猜自己在被问哪个棋种。
+    /// 已发布的客户端不会送这个参数,而让它们从此看不到榜是不可接受的回归。
+    /// </para>
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<PagedResult<LeaderboardEntryDto>>> Get(
+        [FromQuery] string? gameKey = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var result = await _mediator.Send(new GetLeaderboardQuery(page, pageSize), cancellationToken);
+        var result = await _mediator.Send(
+            new GetLeaderboardQuery(gameKey ?? GameKeys.Gomoku, page, pageSize), cancellationToken);
         return Ok(result);
     }
 }

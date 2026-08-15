@@ -43,6 +43,13 @@ public class UnratedGameEloTests
     private readonly Mock<IDateTimeProvider> _clock = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IRoomNotifier> _notifier = new();
+    private readonly FakeGameStats _stats;
+
+    /// <inheritdoc />
+    public UnratedGameEloTests()
+    {
+        _stats = RoomsFixtures.SetupGameStats(_users);
+    }
 
     private static readonly IGameRules TicTacToe = BuiltInGameRules.TicTacToe;
 
@@ -59,17 +66,16 @@ public class UnratedGameEloTests
         return (host, guest, room);
     }
 
-    private static void AssertUntouched(params User[] users)
-    {
-        foreach (var u in users)
-        {
-            u.Rating.Should().Be(1200);
-            u.GamesPlayed.Should().Be(0);
-            u.Wins.Should().Be(0);
-            u.Losses.Should().Be(0);
-            u.Draws.Should().Be(0);
-        }
-    }
+    /// <summary>
+    /// 分棋种评分之后,"评分没被动过"最锋利的写法是**一行都没建**。
+    /// <para>
+    /// 此前这个断言是逐字段比对 <c>User.Rating == 1200</c> 等等,而那有个弱点:1200 恰好也是
+    /// 初始值,所以"没算分"与"算了一遍恰好回到 1200"看起来一样。行数不会有这个歧义 ——
+    /// 而且它顺带盯住了另一条约束:不计分棋种 MUST NOT 把人登记进任何排行榜。
+    /// </para>
+    /// </summary>
+    private void AssertNoStatsRowsExist() =>
+        _stats.Count.Should().Be(0, "不计分的棋种不该产生任何战绩行");
 
     private MakeMoveCommandHandler MakeMove() => new(
         _rooms.Object, GomokuRules.Registry, _users.Object, _clock.Object, _uow.Object,
@@ -112,7 +118,7 @@ public class UnratedGameEloTests
         room.Status.Should().Be(RoomStatus.Finished);
         room.Game!.Result.Should().Be(GameResult.BlackWin);
         room.Game.EndReason.Should().NotBeNull();
-        AssertUntouched(host, guest);
+        AssertNoStatsRowsExist();
     }
 
     [Fact]
@@ -133,15 +139,15 @@ public class UnratedGameEloTests
     }
 
     [Fact]
-    public async Task An_unrated_game_does_not_load_the_players_for_rating()
+    public async Task An_unrated_game_never_asks_for_a_stats_row()
     {
-        // 比"评分没变"更强:不计分时连加载 User 这一步都该省掉,不会出现
-        // "加载了、算了、又没写回去"的中间状态。
+        // 比"评分没变"更强:不计分时连**取战绩行**这一步都该省掉,不会出现
+        // "取了、算了、又没写回去"的中间状态。而且 GetOrCreate 会**建行**,
+        // 建出来就等于把人登记进了那个棋种 —— 所以这里 Times.Never 是真的 Never。
         //
-        // 断言的**不是** Times.Never:handler 无论计不计分都要为 DTO 拼用户名,而
-        // LookupUsernamesAsync 是 IUserRepository 上的扩展方法,内部逐个 FindByIdAsync。
-        // 所以基线是 2 次(黑 + 白)。计分路径会额外加载同样两个人,共 4 次 —— 差值才是
-        // 「有没有为了算分去读人」的证据。(第一版这条写成 Times.Never,直接挂了。)
+        // 这条断言此前钉的是 FindByIdAsync 的**次数差**(不计分 2 次 / 计分 4 次),因为
+        // 算分那时要加载 User,而 handler 无论如何都要为 DTO 拼两个用户名,基线抹不掉。
+        // 分棋种之后算分读的是另一个方法,信号干净了,不用再靠数差值。
         var (host, guest, room) = TicTacToeRoom();
         var winning = PlayToBlackWin(room, host, guest);
         RoomsFixtures.SetupClock(_clock, RoomsFixtures.Now.AddSeconds(5));
@@ -150,16 +156,16 @@ public class UnratedGameEloTests
             new MakeMoveCommand(host.Id, room.Id, winning.Row, winning.Col), default);
 
         _users.Verify(
-            u => u.FindByIdAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2));
+            u => u.GetOrCreateGameStatsAsync(
+                It.IsAny<UserId>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task A_rated_game_loads_the_players_twice_over()
+    public async Task A_rated_game_asks_for_exactly_two_stats_rows()
     {
-        // 上一条的对照组,把那个"差值"钉住:计分路径 = 2 次算分 + 2 次拼用户名。
-        // 若哪天用户名查询被换成一次批量往返,这两条会一起挂 —— 那时该一起更新,
-        // 而不是只改能过的那条。
+        // 上一条的对照组。恰好两次 = 黑白各一 —— 守卫写成无条件早返回时这条会挂,
+        // 而上面那几条都不会。
         var host = RoomsFixtures.NewUser("Alice");
         var guest = RoomsFixtures.NewUser("Bob", "bob@example.com");
         var room = RoomsFixtures.PlayingRoom(host, guest, "gomoku game", GameKeys.Gomoku);
@@ -171,8 +177,10 @@ public class UnratedGameEloTests
         await Resign().Handle(new ResignCommand(host.Id, room.Id), default);
 
         _users.Verify(
-            u => u.FindByIdAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(4));
+            u => u.GetOrCreateGameStatsAsync(
+                It.IsAny<UserId>(), GameKeys.Gomoku, It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+        _stats.Count.Should().Be(2);
     }
 
     // ---- 路径 ② 和棋 ----
@@ -207,7 +215,7 @@ public class UnratedGameEloTests
 
         room.Game!.Result.Should().Be(GameResult.Draw);
         room.Status.Should().Be(RoomStatus.Finished);
-        AssertUntouched(host, guest);
+        AssertNoStatsRowsExist();
     }
 
     // ---- 路径 ③ 认输 ----
@@ -225,7 +233,7 @@ public class UnratedGameEloTests
         room.Status.Should().Be(RoomStatus.Finished);
         room.Game!.Result.Should().Be(GameResult.WhiteWin);
         room.Game.EndReason.Should().Be(GameEndReason.Resigned);
-        AssertUntouched(host, guest);
+        AssertNoStatsRowsExist();
     }
 
     // ---- 路径 ④ 超时 ----
@@ -240,7 +248,7 @@ public class UnratedGameEloTests
 
         room.Status.Should().Be(RoomStatus.Finished);
         room.Game!.EndReason.Should().Be(GameEndReason.TurnTimeout);
-        AssertUntouched(host, guest);
+        AssertNoStatsRowsExist();
     }
 
     // ---- 不计分不削弱对局记录 ----
@@ -280,10 +288,40 @@ public class UnratedGameEloTests
 
         await Resign().Handle(new ResignCommand(host.Id, room.Id), default);
 
-        host.Rating.Should().BeLessThan(1200);
-        guest.Rating.Should().BeGreaterThan(1200);
-        host.Losses.Should().Be(1);
-        guest.Wins.Should().Be(1);
+        _stats.Of(host).Rating.Should().BeLessThan(1200);
+        _stats.Of(guest).Rating.Should().BeGreaterThan(1200);
+        _stats.Of(host).Losses.Should().Be(1);
+        _stats.Of(guest).Wins.Should().Be(1);
+    }
+
+    // ---- K 因子取的是**该棋种**的局数 ----
+
+    [Fact]
+    public async Task The_k_factor_comes_from_this_games_experience_not_a_global_counter()
+    {
+        // 这是分棋种评分要解决的那件事本身。K 按资历分段(<30 → 40,30..99 → 20),而资历
+        // MUST 取自该棋种那一行的 GamesPlayed。
+        //
+        // 断言写成"跌幅落在哪个区间"而不是钉死某个数:K=20 时 Alice 输一局跌约 17 分,
+        // K=40 时跌约 34。区间把两者分得清清楚楚,又不必把 ELO 的取整规则复制到测试里。
+        var host = RoomsFixtures.NewUser("Alice");
+        var guest = RoomsFixtures.NewUser("Bob", "bob@example.com");
+        _stats.Seed(host, GameKeys.Gomoku, rating: 1500, gamesPlayed: 30);
+
+        var room = RoomsFixtures.PlayingRoom(host, guest, "gomoku game", GameKeys.Gomoku);
+        RoomsFixtures.SetupUserLookup(_users, host, guest);
+        _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
+        _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        RoomsFixtures.SetupClock(_clock, RoomsFixtures.Now.AddMinutes(1));
+
+        await Resign().Handle(new ResignCommand(host.Id, room.Id), default);
+
+        var drop = 1500 - _stats.Of(host).Rating;
+        drop.Should().BeInRange(15, 20, "该棋种已 30 局 → K = 20;若误用 K = 40 会跌约 34");
+        _stats.Of(host).GamesPlayed.Should().Be(31);
+
+        // 对手是这个棋种上的新人,K = 40,涨幅明显更大 —— 两侧各自分段,互不牵连。
+        (_stats.Of(guest).Rating - 1200).Should().BeGreaterThan(drop);
     }
 
     [Fact]
@@ -303,6 +341,6 @@ public class UnratedGameEloTests
 
         await act.Should().NotThrowAsync();
         room.Status.Should().Be(RoomStatus.Finished);
-        AssertUntouched(host, guest);
+        AssertNoStatsRowsExist();
     }
 }

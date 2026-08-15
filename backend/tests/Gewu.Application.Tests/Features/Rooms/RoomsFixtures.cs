@@ -53,6 +53,26 @@ internal static class RoomsFixtures
         return room;
     }
 
+    /// <summary>
+    /// 让 mock 的 <c>GetOrCreateGameStatsAsync</c> 表现得像真仓库:同一 <c>(userId, gameKey)</c>
+    /// 每次返回同一实例,不存在则以初始值新建。返回那本账本,测试可以直接查行、数行。
+    /// <para>
+    /// 一个纯 <c>ReturnsAsync(UserGameStats.Start(...))</c> 的 stub 在这里是不够的:ELO 路径要
+    /// 连着取黑白两方、还要能观察到"这一局到底建了几行",而"不计分棋种一行都不该建"正是要断言的东西。
+    /// </para>
+    /// </summary>
+    public static FakeGameStats SetupGameStats(Mock<IUserRepository> mock)
+    {
+        var store = new FakeGameStats();
+        mock.Setup(r => r.GetOrCreateGameStatsAsync(
+                It.IsAny<UserId>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserId id, string gameKey, CancellationToken _) => store.GetOrCreate(id, gameKey));
+        mock.Setup(r => r.FindGameStatsAsync(
+                It.IsAny<UserId>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserId id, string gameKey, CancellationToken _) => store.Find(id, gameKey));
+        return store;
+    }
+
     public static void SetupUserLookup(Mock<IUserRepository> mock, params User[] users)
     {
         foreach (var u in users)

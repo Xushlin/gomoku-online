@@ -52,11 +52,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(512)
             .IsRequired();
 
-        builder.Property(u => u.Rating).IsRequired();
-        builder.Property(u => u.GamesPlayed).IsRequired();
-        builder.Property(u => u.Wins).IsRequired();
-        builder.Property(u => u.Losses).IsRequired();
-        builder.Property(u => u.Draws).IsRequired();
+        // 战绩五列已搬到 UserGameStats(见 UserGameStatsConfiguration),此处不再映射。
         builder.Property(u => u.IsActive).IsRequired();
         builder.Property(u => u.IsBot)
             .IsRequired()
@@ -66,6 +62,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // 乐观并发令牌。Domain 自管 16 字节 Guid(SQLite 无原生 rowversion)。
         // IsConcurrencyToken 让 EF 在 UPDATE Users 时自动加 WHERE RowVersion = @old;
         // 并发更新的后写者命中 0 行 → DbUpdateConcurrencyException。
+        // 现在它只保护改密码 —— 战绩写入推的是 UserGameStats 那一行自己的令牌。
         builder.Property(u => u.RowVersion)
             .IsConcurrencyToken()
             .IsRequired();
