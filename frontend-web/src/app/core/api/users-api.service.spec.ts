@@ -29,6 +29,27 @@ describe('UsersApiService', () => {
     http.verify();
   });
 
+  it('getProfile() omits gameKey entirely when none is given', () => {
+    // Omitting it is a meaningful value here — "use the server's gomoku
+    // default" — which is exactly how the profile page's first paint arrives.
+    // Sending an empty `gameKey=` instead would be a different request.
+    const { svc, http } = setup();
+    svc.getProfile('u-1').subscribe();
+    const req = http.expectOne((r) => r.url === '/api/users/u-1');
+    expect(req.request.params.keys()).toEqual([]);
+    req.flush({});
+    http.verify();
+  });
+
+  it('getProfile(id, gameKey) appends ?gameKey=', () => {
+    const { svc, http } = setup();
+    svc.getProfile('u-1', 'xiangqi').subscribe();
+    const req = http.expectOne((r) => r.url === '/api/users/u-1');
+    expect(req.request.params.get('gameKey')).toBe('xiangqi');
+    req.flush({});
+    http.verify();
+  });
+
   it('getGames() GETs /api/users/{id}/games?page=&pageSize=', () => {
     const { svc, http } = setup();
     svc.getGames('u-1', 2, 10).subscribe();

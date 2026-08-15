@@ -304,7 +304,7 @@
     "draws-label": "平",
     "win-rate-label": "胜率",
     "joined-label": "注册于",
-    "games-title": "对局记录",
+    "games-title": "对局记录（全部棋种）",
     "games-empty": "暂无已结束对局。",
     "result-win": "胜",
     "result-loss": "负",
@@ -316,7 +316,11 @@
     "back-to-lobby": "返回大厅",
     "errors": {
       "generic": "资料加载失败,请重试。"
-    }
+    },
+    "game-switcher": {
+      "label": "战绩棋种"
+    },
+    "no-games-in-game": "这个棋种还没有完成过对局。"
   },
   "catalog": {
     "title": "游戏",
@@ -325,7 +329,8 @@
     "chinese-only": "中文内容",
     "category-match": "对战",
     "category-puzzle": "闯关",
-    "category-score": "计分"
+    "category-score": "计分",
+    "leaderboard-link": "排行榜"
   },
   "games": {
     "gomoku": {
@@ -415,5 +420,23 @@
     "start": "开始对局",
     "starting": "正在创建…",
     "subtitle": "3×3 连三。跟机器下一局 —— 不计积分。"
+  },
+  "leaderboard": {
+    "title": "排行榜",
+    "title-for": "{{game}}排行榜",
+    "subtitle": "按积分排序，同分比胜场，再同则局数少者在前。",
+    "rank": "名次",
+    "player": "玩家",
+    "rating": "积分",
+    "record": "胜/负/平",
+    "empty-title": "还没有人下过这个棋种。",
+    "empty-hint": "榜单随对局结束逐渐填满 —— 新棋种刚上线时本来就是空的。",
+    "error": "排行榜加载失败。",
+    "retry": "重试",
+    "pagination": "排行榜分页",
+    "page-indicator": "第 {{page}} / {{total}} 页",
+    "prev-page": "上一页",
+    "next-page": "下一页",
+    "back-to-games": "← 全部游戏"
   }
 }

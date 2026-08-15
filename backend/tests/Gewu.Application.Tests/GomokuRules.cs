@@ -48,6 +48,8 @@ internal static class GomokuRules
 
         public IGameRules? For(string gameKey)
             => _byKey.TryGetValue(gameKey, out var found) ? found : null;
+
+        public IReadOnlyCollection<IGameRules> All => _byKey.Values;
     }
 
     private sealed class StaticAiRegistry(params IGameAiFactory[] factories) : IGameAiRegistry

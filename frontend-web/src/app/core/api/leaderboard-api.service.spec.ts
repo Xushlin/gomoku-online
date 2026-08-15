@@ -23,26 +23,42 @@ function setup() {
 }
 
 describe('LeaderboardApiService', () => {
-  it('getPage(page, pageSize) hits /api/leaderboard with query params', () => {
+  it('getPage(gameKey, page, pageSize) hits /api/leaderboard with query params', () => {
     const { svc, http } = setup();
-    svc.getPage(2, 20).subscribe();
+    svc.getPage('gomoku', 2, 20).subscribe();
     const req = http.expectOne((r) => r.url === '/api/leaderboard');
     expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('gameKey')).toBe('gomoku');
     expect(req.request.params.get('page')).toBe('2');
     expect(req.request.params.get('pageSize')).toBe('20');
     req.flush({ items: [], total: 0, page: 2, pageSize: 20 });
     http.verify();
   });
 
-  it('top(n) wraps getPage(1, n) and returns .items', () => {
+  it('sends whatever game key it is given, with no client-side default', () => {
+    // The service must not guess which game it is being asked about. The
+    // backend does default this to gomoku, but only at the controller, because
+    // that is the boundary published clients cross. Inside this app every call
+    // site knows its game, so a default here would only turn "forgot to pass
+    // it" into "silently showed gomoku" — a mistake invisible on screen.
+    const { svc, http } = setup();
+    svc.getPage('xiangqi', 1, 20).subscribe();
+    const req = http.expectOne((r) => r.url === '/api/leaderboard');
+    expect(req.request.params.get('gameKey')).toBe('xiangqi');
+    req.flush({ items: [], total: 0, page: 1, pageSize: 20 });
+    http.verify();
+  });
+
+  it('top(gameKey, n) wraps getPage(gameKey, 1, n) and returns .items', () => {
     const { svc, http } = setup();
     const entries = [
       { rank: 1, userId: 'u-1', username: 'alice', rating: 1500, gamesPlayed: 10, wins: 7, losses: 2, draws: 1 },
     ];
     let data: unknown;
-    svc.top(10).subscribe((v) => (data = v));
+    svc.top('gomoku', 10).subscribe((v) => (data = v));
 
     const req = http.expectOne((r) => r.url === '/api/leaderboard');
+    expect(req.request.params.get('gameKey')).toBe('gomoku');
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('pageSize')).toBe('10');
     req.flush({ items: entries, total: 1, page: 1, pageSize: 10 });

@@ -8,7 +8,7 @@
 
   <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
     @for (game of games(); track game.key) {
-      <li class="flex">
+      <li class="relative flex">
         <!--
           Available games are links; planned games are inert elements with
           aria-disabled. A focusable control that goes nowhere is worse for
@@ -16,18 +16,27 @@
           interactive, so the two branches use different elements.
         -->
         @if (game.status === 'available') {
-          <a
-            [routerLink]="game.launchRoute"
-            class="bg-surface text-text border-border rounded-card shadow-elevated hover:bg-bg focus-visible:outline-primary flex w-full flex-col gap-3 border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          <div
+            class="bg-surface text-text border-border rounded-card shadow-elevated hover:bg-bg flex w-full flex-col gap-3 border p-4 transition-colors"
           >
-            <span class="flex items-center gap-3">
+            <!--
+              The launch link stretches over the whole card via `after:inset-0`
+              (the `<li>` is the positioned ancestor), so the card stays fully
+              clickable without nesting one anchor inside another — which is
+              invalid HTML and breaks keyboard navigation. The ladder link below
+              sits on `z-10` so it wins the overlap.
+            -->
+            <a
+              [routerLink]="game.launchRoute"
+              class="focus-visible:outline-primary flex items-center gap-3 after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
               <span class="text-primary text-2xl leading-none" aria-hidden="true">{{
                 game.icon
               }}</span>
               <span class="text-base font-semibold tracking-tight">{{
                 game.titleKey | transloco
               }}</span>
-            </span>
+            </a>
             <span class="text-muted text-sm">{{ game.descriptionKey | transloco }}</span>
             <span class="mt-auto flex flex-wrap items-center gap-2">
               <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
@@ -38,8 +47,15 @@
                   'catalog.chinese-only' | transloco
                 }}</span>
               }
+              @if (hasLadder(game)) {
+                <a
+                  [routerLink]="['/g', game.key, 'leaderboard']"
+                  class="text-primary focus-visible:outline-primary relative z-10 ml-auto text-xs underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >{{ 'catalog.leaderboard-link' | transloco }}</a
+                >
+              }
             </span>
-          </a>
+          </div>
         } @else {
           <div
             aria-disabled="true"

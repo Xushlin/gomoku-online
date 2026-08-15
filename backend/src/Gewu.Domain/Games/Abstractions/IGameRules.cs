@@ -94,6 +94,20 @@ public interface IGameRulesRegistry
     /// <summary>取指定棋种的规则,未注册则 <c>null</c>。</summary>
     /// <param name="gameKey">棋种键。</param>
     IGameRules? For(string gameKey);
+
+    /// <summary>
+    /// 全部已登记的棋种规则。顺序不作保证 —— 需要稳定顺序的调用方自己排。
+    /// <para>
+    /// 加这个成员是为了 <c>GET /api/games</c>:客户端要知道哪些棋种计分,而在前端再维护一份
+    /// 副本会让失配变得**看不见**(症状是"一个永远空着的榜",与"新棋种还没人下过"一模一样)。
+    /// 把注册表投影出去,新棋种自动出现在端点上,没有第二份清单需要同步。
+    /// </para>
+    /// <para>
+    /// 它也让"遍历注册表"的不变量测试(<c>IsRated ⇒ SupportsHumanVsHuman</c>)能对着注册表本身
+    /// 跑,而不是对着一份手写的棋种清单 —— 后者会在加象棋时静静通过。
+    /// </para>
+    /// </summary>
+    IReadOnlyCollection<IGameRules> All { get; }
 }
 
 /// <summary>

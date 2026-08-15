@@ -38,6 +38,17 @@ export const routes: Routes = [
       import('./games/tictactoe/ai-game/ai-game').then((m) => m.TicTacToeAiGame),
   },
   {
+    // Per-game ladder. `/home`'s leaderboard card stays pinned to gomoku —
+    // it belongs to gomoku's lobby, and generalising it means rewriting
+    // `/home` as a normative path across five web specs.
+    path: 'g/:gameKey/leaderboard',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./pages/leaderboard/leaderboard-page/leaderboard-page').then(
+        (m) => m.LeaderboardPage,
+      ),
+  },
+  {
     path: 'g/idiom-crossword',
     canMatch: [authGuard],
     loadComponent: () =>

@@ -23,4 +23,7 @@ public sealed class GameRulesRegistry : IGameRulesRegistry
     /// <inheritdoc />
     public IGameRules? For(string gameKey)
         => _byKey.TryGetValue(gameKey, out var rules) ? rules : null;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<IGameRules> All => _byKey.Values;
 }

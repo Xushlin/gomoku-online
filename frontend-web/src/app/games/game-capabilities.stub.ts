@@ -1,0 +1,48 @@
+import type { GameDescriptor } from '../core/api/models/game-descriptor.model';
+import { GameCapabilitiesService } from './game-capabilities.service';
+
+/**
+ * Test double for {@link GameCapabilitiesService}: hand it the descriptors the
+ * case needs, synchronously.
+ *
+ * Lives in `src/` rather than a spec file because three suites need it, and a
+ * copy per suite is three chances for them to drift into disagreeing about what
+ * the server says.
+ */
+export class StubGameCapabilities extends GameCapabilitiesService {
+  private readonly byKey: Map<string, GameDescriptor>;
+
+  constructor(descriptors: readonly GameDescriptor[] = []) {
+    super();
+    this.byKey = new Map(descriptors.map((d) => [d.gameKey, d]));
+  }
+
+  /** Convenience: `rated('gomoku', 'xiangqi')` — 15×15 human-vs-human, rated. */
+  static rated(...keys: readonly string[]): StubGameCapabilities {
+    return new StubGameCapabilities(
+      keys.map((gameKey) => ({
+        gameKey,
+        isRated: true,
+        supportsHumanVsHuman: true,
+        rows: 15,
+        cols: 15,
+      })),
+    );
+  }
+
+  ensureLoaded(): void {
+    // Already loaded.
+  }
+
+  of(gameKey: string): GameDescriptor | undefined {
+    return this.byKey.get(gameKey);
+  }
+
+  ratedKeys(): readonly string[] {
+    return [...this.byKey.values()].filter((d) => d.isRated).map((d) => d.gameKey);
+  }
+
+  loaded(): boolean {
+    return true;
+  }
+}
