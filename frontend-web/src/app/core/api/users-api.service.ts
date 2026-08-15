@@ -19,7 +19,16 @@ import type {
  * directly, so tests can swap a stub.
  */
 export abstract class UsersApiService {
-  abstract getProfile(userId: string): Observable<UserPublicProfileDto>;
+  /**
+   * Public profile, optionally scoped to one game's record.
+   *
+   * `gameKey` is optional here while `LeaderboardApiService`'s is required, and
+   * that is not an inconsistency: omitting it is a *meaningful value* — "use
+   * the server's gomoku default" — which is exactly how the profile page's
+   * first paint arrives. On the leaderboard page there is no such reading;
+   * omitting it there could only ever be a forgotten argument.
+   */
+  abstract getProfile(userId: string, gameKey?: string): Observable<UserPublicProfileDto>;
   abstract getGames(
     userId: string,
     page: number,
@@ -36,9 +45,11 @@ export abstract class UsersApiService {
 export class DefaultUsersApiService extends UsersApiService {
   private readonly http = inject(HttpClient);
 
-  getProfile(userId: string): Observable<UserPublicProfileDto> {
+  getProfile(userId: string, gameKey?: string): Observable<UserPublicProfileDto> {
+    const options = gameKey ? { params: new HttpParams().set('gameKey', gameKey) } : {};
     return this.http.get<UserPublicProfileDto>(
       `/api/users/${encodeURIComponent(userId)}`,
+      options,
     );
   }
 

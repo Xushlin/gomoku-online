@@ -304,7 +304,7 @@
     "draws-label": "Draws",
     "win-rate-label": "Win rate",
     "joined-label": "Joined",
-    "games-title": "Games",
+    "games-title": "Games (all types)",
     "games-empty": "No finished games yet.",
     "result-win": "Won",
     "result-loss": "Lost",
@@ -316,7 +316,11 @@
     "back-to-lobby": "Back to lobby",
     "errors": {
       "generic": "Couldn't load this profile. Please try again."
-    }
+    },
+    "game-switcher": {
+      "label": "Record for"
+    },
+    "no-games-in-game": "No finished games in this one yet."
   },
   "catalog": {
     "title": "Games",
@@ -325,7 +329,8 @@
     "chinese-only": "Chinese content",
     "category-match": "Versus",
     "category-puzzle": "Puzzle",
-    "category-score": "Score attack"
+    "category-score": "Score attack",
+    "leaderboard-link": "Leaderboard"
   },
   "games": {
     "gomoku": {
@@ -415,5 +420,23 @@
     "start": "Start game",
     "starting": "Creating…",
     "subtitle": "Three in a row on 3×3. A quick game against the machine — unrated."
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "title-for": "{{game}} leaderboard",
+    "subtitle": "Ranked by rating, then wins, then fewest games played.",
+    "rank": "Rank",
+    "player": "Player",
+    "rating": "Rating",
+    "record": "W/L/D",
+    "empty-title": "Nobody has played this game yet.",
+    "empty-hint": "The board fills up as games finish — a new game starts out empty.",
+    "error": "Couldn't load the leaderboard.",
+    "retry": "Try again",
+    "pagination": "Leaderboard pages",
+    "page-indicator": "Page {{page}} of {{total}}",
+    "prev-page": "Previous",
+    "next-page": "Next",
+    "back-to-games": "← All games"
   }
 }

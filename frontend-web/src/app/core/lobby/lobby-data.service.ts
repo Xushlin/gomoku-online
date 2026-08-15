@@ -9,6 +9,9 @@ import { LOBBY_POLLING_CONFIG } from './lobby-polling.config';
 
 const LEADERBOARD_SIZE = 10;
 
+/** The lobby is gomoku's lobby — see the leaderboard slice below. */
+const GOMOKU_GAME_KEY = 'gomoku';
+
 /**
  * Read-only view over a single data slice. Components bind to these signals
  * and call `refresh()` when they want an immediate re-fetch (e.g. after the
@@ -75,7 +78,12 @@ export class DefaultLobbyDataService extends LobbyDataService implements OnDestr
     );
     this.leaderboard = this.buildSlice<readonly LeaderboardEntry[]>(
       'leaderboard',
-      () => this.leaderboardApi.top(LEADERBOARD_SIZE),
+      // Pinned to gomoku, spelled out rather than left to a default. `/home` is
+      // *gomoku's* lobby; giving this card a game switcher would start
+      // generalising it, and `/home` is a normative path in five web specs.
+      // Writing the key here makes today's pinning a fact in the code instead
+      // of a silent consequence of an omitted argument.
+      () => this.leaderboardApi.top(GOMOKU_GAME_KEY, LEADERBOARD_SIZE),
       null,
     );
 

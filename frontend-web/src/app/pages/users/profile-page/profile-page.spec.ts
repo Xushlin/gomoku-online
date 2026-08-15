@@ -10,6 +10,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PresenceApiService } from '../../../core/api/presence-api.service';
 import { UsersApiService } from '../../../core/api/users-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
+import { StubGameCapabilities } from '../../../games/game-capabilities.stub';
+import { GameCatalogService } from '../../../games/game-catalog.service';
 import { ProfilePage } from './profile-page';
 
 class StubUsers {
@@ -53,6 +56,7 @@ function mount(opts: {
   getProfile?: ReturnType<typeof vi.fn>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getUserOnline?: any;
+  capabilities?: StubGameCapabilities;
 } = {}) {
   const users = new StubUsers();
   if (opts.getProfile) users.getProfile = opts.getProfile;
@@ -66,7 +70,24 @@ function mount(opts: {
     imports: [
       ProfilePage,
       TranslocoTestingModule.forRoot({
-        langs: { en: {} },
+        langs: {
+          en: {
+            profile: {
+              'game-switcher': { label: 'Record for' },
+              'no-games-in-game': 'No finished games in this one yet.',
+              'rating-label': 'Rating',
+              'wins-label': 'Wins',
+              'losses-label': 'Losses',
+              'draws-label': 'Draws',
+              'win-rate-label': 'Win rate',
+              'joined-label': 'Joined',
+            },
+            games: {
+              gomoku: { title: 'Gomoku' },
+              xiangqi: { title: 'Xiangqi' },
+            },
+          },
+        },
         translocoConfig: { availableLangs: ['en'], defaultLang: 'en' },
         preloadLangs: true,
       }),
@@ -79,6 +100,16 @@ function mount(opts: {
       { provide: Router, useValue: router },
       { provide: ActivatedRoute, useValue: activatedRoute(opts.id ?? 'u-1') },
       { provide: LanguageService, useValue: { current: signal('en') } },
+      { provide: GameCapabilitiesService, useValue: opts.capabilities ?? new StubGameCapabilities() },
+      {
+        provide: GameCatalogService,
+        useValue: {
+          all: () => [],
+          available: () => [],
+          planned: () => [],
+          byKey: (k: string) => ({ key: k, titleKey: `games.${k}.title` }),
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(ProfilePage);
@@ -91,7 +122,7 @@ describe('ProfilePage', () => {
 
   it('on init: fetches profile by route id', () => {
     const { users } = mount();
-    expect(users.getProfile).toHaveBeenCalledWith('u-1');
+    expect(users.getProfile).toHaveBeenCalledWith('u-1', undefined);
   });
 
   it('404 sets notFound', () => {
@@ -135,6 +166,104 @@ describe('ProfilePage', () => {
     });
     const comp = fixture.componentInstance as unknown as { winRateLabel: () => string };
     expect(comp.winRateLabel()).toBe('—');
+  });
+
+  it('the switcher lists rated games only', () => {
+    const { fixture } = mount({
+      capabilities: new StubGameCapabilities([
+        { gameKey: 'gomoku', isRated: true, supportsHumanVsHuman: true, rows: 15, cols: 15 },
+        { gameKey: 'tictactoe', isRated: false, supportsHumanVsHuman: false, rows: 3, cols: 3 },
+      ]),
+    });
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Gomoku');
+    expect(text).not.toContain('Tic-tac-toe');
+  });
+
+  it('renders the switcher even with a single rated game', () => {
+    // It is the only thing on screen saying *which* game the rating belongs to.
+    // Hide it and a gomoku 1500 reads as "their rating", full stop.
+    const { fixture } = mount({ capabilities: StubGameCapabilities.rated('gomoku') });
+    const group = fixture.nativeElement.querySelector('[role="group"]');
+    expect(group).not.toBeNull();
+    expect(group.querySelectorAll('button').length).toBe(1);
+  });
+
+  it('the first paint sends no gameKey, letting the server default answer', () => {
+    const { users } = mount({ capabilities: StubGameCapabilities.rated('gomoku') });
+    expect(users.getProfile).toHaveBeenCalledWith('u-1', undefined);
+  });
+
+  it('switching games re-fetches with ?gameKey=', () => {
+    const { fixture, users } = mount({
+      capabilities: StubGameCapabilities.rated('gomoku', 'xiangqi'),
+    });
+    const buttons = [...fixture.nativeElement.querySelectorAll('[role="group"] button')];
+    const xiangqi = buttons.find((b) =>
+      (b as HTMLElement).textContent?.includes('Xiangqi'),
+    ) as HTMLButtonElement;
+
+    xiangqi.click();
+
+    expect(users.getProfile).toHaveBeenLastCalledWith('u-1', 'xiangqi');
+  });
+
+  it('clicking the already-active game does not re-fetch', () => {
+    const { fixture, users } = mount({ capabilities: StubGameCapabilities.rated('gomoku') });
+    const button = fixture.nativeElement.querySelector('[role="group"] button') as HTMLButtonElement;
+
+    button.click();
+
+    expect(users.getProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('switching games does NOT re-fetch presence', () => {
+    // Presence is a property of the person, not of the game being viewed.
+    const { fixture, presence } = mount({
+      capabilities: StubGameCapabilities.rated('gomoku', 'xiangqi'),
+    });
+    const buttons = [...fixture.nativeElement.querySelectorAll('[role="group"] button')];
+    (buttons.find((b) => (b as HTMLElement).textContent?.includes('Xiangqi')) as HTMLButtonElement).click();
+
+    expect(presence.getUserOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('zero games in this one shows an empty state instead of 1200', () => {
+    // The server answers 200 + initial values rather than 404, because "exists
+    // but has not played this game" is a normal answer. Rendering that payload
+    // verbatim would read as a beginner who HAS played. When a new game ships
+    // that is true of nearly every user, so it is not an edge case.
+    const { fixture } = mount({
+      capabilities: StubGameCapabilities.rated('gomoku'),
+      getProfile: vi.fn(() =>
+        of({
+          id: 'u-1',
+          username: 'alice',
+          rating: 1200,
+          gamesPlayed: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          createdAt: '2025-12-01T00:00:00Z',
+        }),
+      ),
+    });
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(text).toContain('No finished games in this one yet.');
+    expect(text).not.toContain('1200');
+  });
+
+  it('a played game still shows the numbers', () => {
+    const { fixture } = mount({ capabilities: StubGameCapabilities.rated('gomoku') });
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('1280');
+    expect(text).not.toContain('No finished games in this one yet.');
+  });
+
+  it('no switcher at all when capabilities never loaded', () => {
+    const { fixture } = mount({ capabilities: new StubGameCapabilities() });
+    expect(fixture.nativeElement.querySelector('[role="group"]')).toBeNull();
   });
 
   it('presence dot has bg-success when online', () => {

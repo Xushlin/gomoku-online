@@ -1,5 +1,27 @@
 ## ADDED Requirements
 
+### Requirement: `IGameRulesRegistry` 能枚举全部已登记棋种
+
+`IGameRulesRegistry` SHALL 提供 `IReadOnlyCollection<IGameRules> All { get; }`,返回全部已登记的规则实例;顺序不作保证。
+
+**提案漏了这一条。** 它写着"handler 直接读 `IGameRulesRegistry`",但那个接口此前只有
+`For(gameKey)` —— 能按键取,不能列举。没有 `All`,`GET /api/games` 只能拿一份手写的棋种清单去
+逐个 `For()`,而那正是本变更要消灭的第二份清单,只是换了个位置。
+
+它同时让"遍历注册表"的不变量测试(`IsRated ⇒ SupportsHumanVsHuman`)能对着注册表本身跑,
+而不是对着一份手写清单 —— 后者会在加中国象棋时静静通过。
+
+`IPuzzleRulesRegistry` 与 `IGameAiRegistry` 目前同样只有 `For()`。**不顺手给它们加** ——
+今天没有消费者,而"三个注册表长得一样"不构成给两个接口加未使用成员的理由。
+
+#### Scenario: 列出全部
+- **WHEN** 注册表登记了五子棋与一字棋
+- **THEN** `All` 含且仅含这两个实例
+
+#### Scenario: 与 `For` 一致
+- **WHEN** 对 `All` 中每个实例的 `GameKey` 调 `For`
+- **THEN** 每次都返回同一个实例
+
 ### Requirement: `GET /api/games` 把棋种注册表投影给客户端
 
 Api 层 SHALL 暴露 `GET /api/games`(`[Authorize]`),返回 `IGameRulesRegistry` 中每个已登记棋种的一条描述:

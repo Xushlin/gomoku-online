@@ -1,0 +1,127 @@
+<div class="flex flex-col gap-4">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-text text-2xl font-semibold tracking-tight">
+      @if (titleKey(); as key) {
+        {{ 'leaderboard.title-for' | transloco: { game: key | transloco } }}
+      } @else {
+        {{ 'leaderboard.title' | transloco }}
+      }
+    </h1>
+    <p class="text-muted text-sm">{{ 'leaderboard.subtitle' | transloco }}</p>
+  </header>
+
+  <section
+    class="bg-surface border-border rounded-card shadow-elevated flex flex-col border"
+    [attr.aria-busy]="loading()"
+  >
+    @if (loading()) {
+      <!-- Skeleton rows, not a "loading…" string: same height as real rows so
+           the list does not jump when data lands. -->
+      <ul class="flex flex-col divide-y divide-[var(--color-border)]">
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <li class="flex items-center gap-3 p-4">
+            <span class="bg-border h-4 w-6 animate-pulse rounded"></span>
+            <span class="bg-border h-4 flex-1 animate-pulse rounded"></span>
+            <span class="bg-border h-4 w-12 animate-pulse rounded"></span>
+          </li>
+        }
+      </ul>
+    } @else if (loadError()) {
+      <div class="flex flex-col items-start gap-3 p-6">
+        <p class="text-text text-sm">{{ 'leaderboard.error' | transloco }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="border-border text-text hover:bg-bg focus-visible:outline-primary rounded-card border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {{ 'leaderboard.retry' | transloco }}
+        </button>
+      </div>
+    } @else if (isEmpty()) {
+      <!-- An empty ladder is the normal state of a game nobody has played yet,
+           so the copy says that rather than "no data" — which reads as a fault.
+           Unrated and unregistered keys land here too: the server answers
+           200 + empty for both. -->
+      <div class="flex flex-col items-start gap-1 p-6">
+        <p class="text-text text-sm">{{ 'leaderboard.empty-title' | transloco }}</p>
+        <p class="text-muted text-sm">{{ 'leaderboard.empty-hint' | transloco }}</p>
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[32rem] text-sm">
+          <caption class="sr-only">
+            {{ 'leaderboard.title' | transloco }}
+          </caption>
+          <thead>
+            <tr class="text-muted border-border border-b text-left">
+              <th scope="col" class="px-4 py-2 font-medium">
+                {{ 'leaderboard.rank' | transloco }}
+              </th>
+              <th scope="col" class="px-4 py-2 font-medium">
+                {{ 'leaderboard.player' | transloco }}
+              </th>
+              <th scope="col" class="px-4 py-2 text-right font-medium">
+                {{ 'leaderboard.rating' | transloco }}
+              </th>
+              <th scope="col" class="px-4 py-2 text-right font-medium">
+                {{ 'leaderboard.record' | transloco }}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--color-border)]">
+            @for (entry of entries(); track trackEntry($index, entry)) {
+              <tr>
+                <td class="text-muted px-4 py-2 tabular-nums">
+                  @if (tierIcon(entry.rank); as icon) {
+                    <span aria-hidden="true">{{ icon }}</span>
+                  }
+                  {{ entry.rank }}
+                </td>
+                <td class="px-4 py-2">
+                  <a
+                    class="username-link"
+                    [routerLink]="['/users', entry.userId]"
+                    >{{ entry.username }}</a
+                  >
+                </td>
+                <td class="text-text px-4 py-2 text-right tabular-nums">{{ entry.rating }}</td>
+                <td class="text-muted px-4 py-2 text-right tabular-nums">
+                  {{ entry.wins }}/{{ entry.losses }}/{{ entry.draws }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav
+        class="border-border flex items-center justify-between gap-3 border-t p-3"
+        [attr.aria-label]="'leaderboard.pagination' | transloco"
+      >
+        <button
+          type="button"
+          (click)="prev()"
+          [disabled]="page() <= 1"
+          class="border-border text-text hover:bg-bg focus-visible:outline-primary rounded-card border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+        >
+          {{ 'leaderboard.prev-page' | transloco }}
+        </button>
+        <span class="text-muted text-sm tabular-nums">
+          {{ 'leaderboard.page-indicator' | transloco: { page: page(), total: totalPages() } }}
+        </span>
+        <button
+          type="button"
+          (click)="next()"
+          [disabled]="page() >= totalPages()"
+          class="border-border text-text hover:bg-bg focus-visible:outline-primary rounded-card border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+        >
+          {{ 'leaderboard.next-page' | transloco }}
+        </button>
+      </nav>
+    }
+  </section>
+
+  <a class="text-muted hover:text-text w-fit text-sm transition-colors" routerLink="/games">
+    {{ 'leaderboard.back-to-games' | transloco }}
+  </a>
+</div>

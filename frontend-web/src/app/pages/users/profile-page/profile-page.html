@@ -46,34 +46,80 @@
         }
         <span>{{ p.username }}</span>
       </h1>
-      <div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm">
-        <div class="flex items-baseline gap-1">
-          <span class="text-muted text-xs">{{ 'profile.rating-label' | transloco }}:</span>
-          <span class="text-primary text-lg font-semibold">{{ p.rating }}</span>
+
+      <!--
+        Which game's record is shown. Rendered even when there is only one rated
+        game: it is the only thing on screen saying *which* game the rating
+        belongs to, and hiding it would let a gomoku 1500 read as "their rating".
+      -->
+      @if (ratedGames().length > 0) {
+        <div
+          class="flex flex-wrap items-center gap-2"
+          role="group"
+          [attr.aria-label]="'profile.game-switcher.label' | transloco"
+        >
+          <span class="text-muted text-xs">{{ 'profile.game-switcher.label' | transloco }}:</span>
+          @for (game of ratedGames(); track game.key) {
+            <button
+              type="button"
+              (click)="selectGame(game.key)"
+              [attr.aria-pressed]="game.key === activeGameKey()"
+              class="rounded-card focus-visible:outline-primary border px-2.5 py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+              [class.border-primary]="game.key === activeGameKey()"
+              [class.text-primary]="game.key === activeGameKey()"
+              [class.border-border]="game.key !== activeGameKey()"
+              [class.text-muted]="game.key !== activeGameKey()"
+              [class.hover:bg-bg]="game.key !== activeGameKey()"
+            >
+              {{ game.titleKey | transloco }}
+            </button>
+          }
         </div>
-        <div class="flex items-baseline gap-1">
-          <span class="text-muted text-xs">{{ 'profile.wins-label' | transloco }}:</span>
-          <span class="font-mono">{{ p.wins }}</span>
+      }
+
+      @if (hasNoGames()) {
+        <!--
+          The server answers 200 + initial values (1200, all zeroes) rather than
+          404, because "exists but has not played this game" is a normal answer.
+          Rendering that payload verbatim would read as a beginner who *has*
+          played. So the numbers are withheld and the state is named instead.
+        -->
+        <p class="text-muted text-sm">{{ 'profile.no-games-in-game' | transloco }}</p>
+      } @else {
+        <div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm">
+          <div class="flex items-baseline gap-1">
+            <span class="text-muted text-xs">{{ 'profile.rating-label' | transloco }}:</span>
+            <span class="text-primary text-lg font-semibold">{{ p.rating }}</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-muted text-xs">{{ 'profile.wins-label' | transloco }}:</span>
+            <span class="font-mono">{{ p.wins }}</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-muted text-xs">{{ 'profile.losses-label' | transloco }}:</span>
+            <span class="font-mono">{{ p.losses }}</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-muted text-xs">{{ 'profile.draws-label' | transloco }}:</span>
+            <span class="font-mono">{{ p.draws }}</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-muted text-xs">{{ 'profile.win-rate-label' | transloco }}:</span>
+            <span class="font-mono">{{ winRateLabel() }}</span>
+          </div>
         </div>
-        <div class="flex items-baseline gap-1">
-          <span class="text-muted text-xs">{{ 'profile.losses-label' | transloco }}:</span>
-          <span class="font-mono">{{ p.losses }}</span>
-        </div>
-        <div class="flex items-baseline gap-1">
-          <span class="text-muted text-xs">{{ 'profile.draws-label' | transloco }}:</span>
-          <span class="font-mono">{{ p.draws }}</span>
-        </div>
-        <div class="flex items-baseline gap-1">
-          <span class="text-muted text-xs">{{ 'profile.win-rate-label' | transloco }}:</span>
-          <span class="font-mono">{{ winRateLabel() }}</span>
-        </div>
-      </div>
+      }
       <p class="text-muted text-xs">
         {{ 'profile.joined-label' | transloco }}:
         {{ p.createdAt | date: 'longDate' : undefined : language.current() }}
       </p>
     </header>
 
+    <!--
+      The games list is NOT filtered by the switcher: `GET /api/users/{id}/games`
+      has no `gameKey` parameter yet. Its heading says "all games" so the list
+      does not read as contradicting the single-game record above it.
+    -->
     @if (userId(); as uid) {
       <app-games-list [userId]="uid" />
     }

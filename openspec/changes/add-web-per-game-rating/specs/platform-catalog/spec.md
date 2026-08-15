@@ -20,28 +20,46 @@ export interface GameDescriptor {
 - **WHEN** 审阅任何消费它的组件
 - **THEN** 注入的是抽象类,测试可以替换成 stub
 
-### Requirement: `GameCatalogService` 按 key 合并服务端能力,合不上的不填缺省
+### Requirement: `GameCapabilitiesService` 独立于 `GameCatalogService`,按 key 提供服务端能力
 
-`GameCatalogService` SHALL 把 `GamesApiService` 返回的能力按 `gameKey` 合并进 `GAME_REGISTRY` 的清单,合并结果对每份清单暴露一个可空的能力对象。
+Web 客户端 SHALL 提供 `GameCapabilitiesService`(抽象类 DI token + 默认实现),一次性拉取 `GamesApiService` 的结果并按 `gameKey` 提供查询:`ensureLoaded()` / `of(key)` / `ratedKeys()` / `loaded()`。
 
-合不上的清单(谜题类、以及尚未实现的规划中游戏)MUST **没有**能力信息 —— MUST NOT 用
-`false` / `0` 之类的缺省值填。它们没有 `IGameRules`,那不是"能力为 false",是"这个问题不适用"。
-两者一旦被同一个 `false` 表示,"一字棋不计分"和"成语纵横不是对战游戏"就再也分不开了。
+**它 MUST 是一个独立的 service,MUST NOT 并入 `GameCatalogService`。** 提案里写的是"合并进
+`GameCatalogService`",实现时发现那是错的:目录服务读的是静态 import —— 同步、不会失败、不会为空,
+而好几个组件与它们的 spec 都依赖这一点。为了两个布尔把它变成异步的,就要把 loading / error 状态
+推进每一个消费者。
 
-`GAME_REGISTRY`(manifest 清单)**仍然是唯一的注册点**,并且仍然并排列出三个类别 —— 目录页确实
-要并排展示它们。服务端能力是**叠加**上去的一层,不替换它。
+于是两层分开、在调用点组合:**manifest 说"有哪些游戏、怎么进去",本 service 说"服务端允许它们做
+什么"。**
 
-#### Scenario: 对战棋种合上
+一个键没有描述符表示**"不适用"**,而不是 `false`。MUST NOT 用 `false` / `0` 之类的缺省值填 ——
+谜题类根本没有 `IGameRules`,把它折叠成 `isRated: false` 会让"一字棋不计分"和"成语纵横不是对战
+游戏"再也分不开。
+
+`GAME_REGISTRY`(manifest 清单)**仍然是唯一的注册点**,并且仍然并排列出三个类别。
+
+加载失败时 MUST 退化为"全部不适用" —— 于是没有排行榜入口、没有棋种切换,即本变更之前的界面。
+**失败要退化成少一个入口,而不是退化成一个错的入口**(比如一个指向空榜的链接)。
+
+#### Scenario: 对战棋种查得到
 - **WHEN** 服务端返回 `gomoku` 的能力
-- **THEN** `gomoku` 的清单带上 `isRated === true`
+- **THEN** `of('gomoku')?.isRated === true`,且 `ratedKeys()` 含 `gomoku`
 
 #### Scenario: 谜题游戏没有能力信息
 - **WHEN** 查询 `idiom-crossword` 的能力
-- **THEN** 结果为"不适用"(`undefined` / `null`),MUST NOT 是一个 `isRated: false` 的对象
+- **THEN** 结果为 `undefined`,MUST NOT 是一个 `isRated: false` 的对象
 
 #### Scenario: 规划中的游戏没有能力信息
 - **WHEN** 查询尚未在服务端登记的 `xiangqi`
-- **THEN** 同样是"不适用"
+- **THEN** 同样是 `undefined`
+
+#### Scenario: 只拉一次
+- **WHEN** 多个组件各调一次 `ensureLoaded()`
+- **THEN** MUST 只发出一次 `GET /api/games`
+
+#### Scenario: 失败退化为少一个入口
+- **WHEN** `GET /api/games` 失败
+- **THEN** `of(...)` 全部返回 `undefined`、`ratedKeys()` 为空;界面 MUST NOT 出现任何排行榜入口或棋种切换器
 
 ### Requirement: 目录卡片为计分的可玩棋种提供排行榜入口
 
@@ -53,9 +71,14 @@ export interface GameDescriptor {
   manifest 上一个布尔副本"那份论证的唯一可执行形式。测试挂掉,就说明那份副本又爬回来了。
 - **谜题类 MUST NOT 有**(没有能力信息,不适用)。
 - **规划中的游戏 MUST NOT 有**(卡片本身就不可交互)。
+- **能力尚未加载 / 加载失败时一个都 MUST NOT 有**(退化成本变更之前的界面)。
 
-入口是**次级**的:主入口仍然是"开始游戏"。它 MUST 键盘可达、有可见 focus 环,
-并 MUST NOT 触发卡片本身的导航(与既有 username 链接的 `stopPropagation` 约定一致)。
+入口是**次级**的:主入口仍然是"开始游戏"。
+
+可玩卡片的标记因此 MUST 从"整张卡是一个 `<a>`"改为"卡片是容器,启动链接靠伸展的伪元素
+(`after:inset-0`)覆盖整张卡"。**`<a>` 里套 `<a>` 是非法 HTML**,浏览器会把它拆开,键盘顺序
+和屏幕阅读器都会坏掉 —— 所以两个链接不能嵌套。整张卡片仍然可点,排行榜入口靠更高的
+`z-index` 赢得重叠区域。
 
 #### Scenario: 五子棋卡片有榜入口
 - **WHEN** 目录页渲染,服务端说 `gomoku` 计分

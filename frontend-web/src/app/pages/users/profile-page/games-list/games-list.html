@@ -1,5 +1,11 @@
 <section class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4">
   <h2 class="text-base font-semibold tracking-tight">
+    <!--
+      "all types", not just "Games": the record above this list is scoped to one
+      game by the switcher, while `GET /api/users/{id}/games` has no gameKey
+      parameter and returns everything. Without the qualifier the two read as
+      contradicting each other — one game played, nine games listed.
+    -->
     {{ 'profile.games-title' | transloco }}
   </h2>
 
