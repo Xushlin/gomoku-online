@@ -24,6 +24,42 @@ MUST NOT 改用 JSON 载荷列。象棋的每一步都恰好是 `from → to`(�
 - **WHEN** 在含既有 `Moves` 行的库上跑迁移
 - **THEN** 每行的 `Ply` / `Row` / `Col` / `Stone` 一字不变,两个新列为 `NULL`
 
+## RENAMED Requirements
+
+一条 requirement 连标题一起改:落子判定不再属于聚合根。
+(`GameEndReason` 那条**不改标题** —— 它的主题仍然是「表达对局结束原因」,变的只是一个成员名。)
+应用顺序 RENAMED → REMOVED → MODIFIED → ADDED,所以下面 MODIFIED 用的是新标题。
+
+- FROM: ### Requirement: `Room.PlayMove` 以原子事务落子、判胜并推进状态
+- TO: ### Requirement: `Room.PlayMove` 校验回合与玩家身份，把盘面判定交给规则
+
+### Requirement: Hub 用两个方法承载两种走子形状
+
+`GomokuHub` SHALL 保留 `MakeMove(roomId, row, col)` 原样不动(落子类棋种),并新增
+`MovePiece(roomId, fromRow, fromCol, row, col)`(走子类棋种)。两者 MUST 分派到同一条
+`MakeMoveCommand`。
+
+**MUST NOT 改成给 `MakeMove` 加两个可选参数。** SignalR **不套用 C# 的可选参数默认值**:
+三参调用打到五参方法上,服务端直接回
+`InvalidDataException: Invocation provides 3 argument(s) but target expects 5` ——
+每一个已发布的客户端会当场下不了棋。
+
+这一条是 `AiSmoke` 跑出来的。该工具不知道这次重构存在,所以它撞上的正是真实客户端会撞上的东西
+—— 而三个层级的单元测试(Domain / Application / Api)**一条都没有发现它**,因为它们都不经过
+SignalR 的参数绑定。
+
+这与「不给规则开两个方法」不矛盾:那条约束的理由是**调用方得判断棋种**,而规则的调用方是通用的
+聚合根。Hub 的调用方是某个棋种自己的棋盘组件,按定义只服务一个棋种。Domain 一侧仍然只有
+`IGameRules.Apply` 一个入口。
+
+#### Scenario: 已发布客户端不受影响
+- **WHEN** 客户端以三个参数调 `MakeMove`
+- **THEN** 正常落子 —— 签名一个字没改
+
+#### Scenario: 走子类棋种走另一个方法
+- **WHEN** 客户端调 `MovePiece(roomId, 0, 1, 2, 2)`
+- **THEN** 命令带上起点,`Move` 行的 `FromRow` / `FromCol` 落库
+
 ## MODIFIED Requirements
 
 ### Requirement: `Room.PlayMove` 校验回合与玩家身份，把盘面判定交给规则
@@ -59,7 +95,7 @@ MUST NOT 改用 JSON 载荷列。象棋的每一步都恰好是 `from → to`(�
 - **WHEN** `rules.Apply` 返回 `BlackWin`
 - **THEN** `Status == Finished`、`Game.Result == BlackWin`、`EndReason == Decided`、`WinnerUserId` 是黑方
 
-### Requirement: `GameEndReason` 用游戏中立的 `Decided`
+### Requirement: `GameEndReason` 枚举表达对局结束原因
 
 `GameEndReason` SHALL 定义 `Decided = 0` / `Resigned` / `TurnTimeout`。
 
@@ -79,30 +115,3 @@ MUST NOT 改用 JSON 载荷列。象棋的每一步都恰好是 `from → to`(�
 #### Scenario: 枚举里没有棋种专名
 - **WHEN** 反射检视 `GameEndReason` 的成员名
 - **THEN** MUST NOT 出现任何以某个棋种胜利条件命名的成员
-
-### Requirement: Hub 用两个方法承载两种走子形状
-
-`GomokuHub` SHALL 保留 `MakeMove(roomId, row, col)` 原样不动(落子类棋种),并新增
-`MovePiece(roomId, fromRow, fromCol, row, col)`(走子类棋种)。两者 MUST 分派到同一条
-`MakeMoveCommand`。
-
-**MUST NOT 改成给 `MakeMove` 加两个可选参数。** SignalR **不套用 C# 的可选参数默认值**:
-三参调用打到五参方法上,服务端直接回
-`InvalidDataException: Invocation provides 3 argument(s) but target expects 5` ——
-每一个已发布的客户端会当场下不了棋。
-
-这一条是 `AiSmoke` 跑出来的。该工具不知道这次重构存在,所以它撞上的正是真实客户端会撞上的东西
-—— 而三个层级的单元测试(Domain / Application / Api)**一条都没有发现它**,因为它们都不经过
-SignalR 的参数绑定。
-
-这与「不给规则开两个方法」不矛盾:那条约束的理由是**调用方得判断棋种**,而规则的调用方是通用的
-聚合根。Hub 的调用方是某个棋种自己的棋盘组件,按定义只服务一个棋种。Domain 一侧仍然只有
-`IGameRules.Apply` 一个入口。
-
-#### Scenario: 已发布客户端不受影响
-- **WHEN** 客户端以三个参数调 `MakeMove`
-- **THEN** 正常落子 —— 签名一个字没改
-
-#### Scenario: 走子类棋种走另一个方法
-- **WHEN** 客户端调 `MovePiece(roomId, 0, 1, 2, 2)`
-- **THEN** 命令带上起点,`Move` 行的 `FromRow` / `FromCol` 落库

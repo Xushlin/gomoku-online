@@ -164,52 +164,6 @@ HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id
 
 ---
 
-### Requirement: `Room.PlayMove` 以原子事务落子、判胜并推进状态
-
-系统 SHALL 提供 `Room.PlayMove(UserId userId, Position position, DateTime now, IGameRules rules)`,按顺序:
-
-1. `Status != Playing` → MUST 抛 `RoomNotInPlayException`
-2. `userId != BlackPlayerId && userId != WhitePlayerId` → MUST 抛 `NotAPlayerException`
-3. 根据 `userId` 推断棋色 `Stone`,若不等于 `Game.CurrentTurn` → MUST 抛 `NotYourTurnException`
-4. `rules.IsInBounds(position)` 为假 → MUST 抛 `InvalidMoveException`
-5. 调 `Board.PlaceStone(new Move(position, stone))`,棋盘由 `rules.CreateBoard()` 经 replay 得到(重复落子判定仍由 `Board` 负责)
-6. Append 一条 `Move` 子实体:`Ply = 上一 Ply + 1`、`Position`、`Stone`、`PlayedAt = now`
-7. `Game.CurrentTurn = oppositeColor(stone)`
-8. 若 Board 返回的 `GameResult != Ongoing`:
-   - `Game.FinishWith(result, winnerUserId, GameEndReason.Connected5, now)`
-   - `Room.Status = Finished`
-9. 返回的 `MoveOutcome` MUST 包含新 `Move` 实体引用与 `GameResult`,供调用方决定发哪些事件。
-
-规则 MUST 由调用方**作为参数传入**,MUST NOT 由聚合自行解析注册表 —— `Domain` 因此保持零外部依赖,`Room` 也仍然是其入参的纯函数,不需要一个注册表才能在测试里构造。调用方 SHALL 依据 `room.GameKey` 解析规则。
-
-#### Scenario: 最后一子连五
-- **WHEN** 黑方已在 `(7,3)..(7,6)` 连四,调 `PlayMove(aliceId, (7,7), now, gomokuRules)`
-- **THEN** 返回 `GameResult.BlackWin`;`Game.EndedAt == now`;`Game.WinnerUserId == aliceId`;`Game.EndReason == Connected5`;`Room.Status == Finished`
-
-#### Scenario: 合法落子且未连五
-- **WHEN** `Playing` 状态,轮到 Alice(黑方),调 `PlayMove(aliceId, (7,7), now, gomokuRules)`,棋盘此前为空
-- **THEN** 返回 `GameResult.Ongoing`;`Game.Moves` 新增一条 `Ply=1` 的 Move;`Game.CurrentTurn == White`;`Room.Status == Playing`;`Game.EndReason == null`
-
-#### Scenario: 非玩家尝试落子
-- **WHEN** 围观者或非成员调 `PlayMove`
-- **THEN** 抛 `NotAPlayerException`
-
-#### Scenario: 不是你的回合
-- **WHEN** 白方在 `CurrentTurn == Black` 时调 `PlayMove`
-- **THEN** 抛 `NotYourTurnException`
-
-#### Scenario: 非 `Playing` 状态
-- **WHEN** `Status == Waiting` 或 `Finished`,调 `PlayMove`
-- **THEN** 抛 `RoomNotInPlayException`
-
-#### Scenario: 超出该棋种边界
-- **WHEN** 在五子棋房间以 `(15, 0)` 落子
-- **THEN** 抛 `InvalidMoveException`;`Move` 未被 append,状态保持不变
-
-#### Scenario: 底层棋盘规则违反
-- **WHEN** 正确玩家在正确回合,但该位置已有子
-- **THEN** `Board` 抛 `InvalidMoveException`,`Room` MUST 让其原样冒泡;`Move` 未被 append,状态保持不变
-
 ### Requirement: `Game` 子实体承载对局运行状态
 
 `Game` MUST 包含字段:
@@ -550,13 +504,24 @@ Api 层全局异常中间件 MUST 映射:
 
 ### Requirement: `GameEndReason` 枚举表达对局结束原因
 
-系统 SHALL 在 `Gewu.Domain/Enums/GameEndReason.cs` 定义 `enum GameEndReason { Connected5 = 0, Resigned = 1, TurnTimeout = 2 }`。底层整数值固定,以便序列化稳定性与未来追加(如 `Disconnected = 3`)。
+`GameEndReason` SHALL 定义 `Decided = 0` / `Resigned` / `TurnTimeout`。
 
-#### Scenario: 枚举值存在
-- **WHEN** 审阅 `Gewu.Domain/Enums/GameEndReason.cs`
-- **THEN** 存在三个值 `Connected5=0`、`Resigned=1`、`TurnTimeout=2`
+`Decided` **重命名自 `Connected5`**,底层值不变。原名描述的是五子棋的胜利条件,而这个字段回答的
+问题是「这局怎么结束的」,答案只有三类:规则从局面判出了结果 / 有人认输 / 时间到。
 
----
+它不是陈旧而是**错的** —— 一字棋从上线第一天起就在给三连记录「Connected5」,象棋会给将死记录
+同一个词。`Decided` 同时覆盖平局(一字棋满盘和棋也是规则判出来的)。
+
+底层值保持 `0`,数据库存的是 int,**不需要数据迁移**;变的只有 JSON 线上的字符串,
+而 web 与后端同批发布。
+
+#### Scenario: 底层值不变
+- **WHEN** 检视 `GameEndReason.Decided`
+- **THEN** 其值为 `0`,与原 `Connected5` 相同 —— 既有行不需要改写
+
+#### Scenario: 枚举里没有棋种专名
+- **WHEN** 反射检视 `GameEndReason` 的成员名
+- **THEN** MUST NOT 出现任何以某个棋种胜利条件命名的成员
 
 ### Requirement: `Game.EndReason` 字段记录对局结束原因
 
@@ -1137,4 +1102,61 @@ Validator MUST 通过注入的 `IGameRulesRegistry` 判断,MUST NOT 内联一份
 #### Scenario: 缺省仍是五子棋
 - **WHEN** 请求体不含 `gameKey`
 - **THEN** 建出的房间 `GameKey == "gomoku"`
+
+### Requirement: `Room.PlayMove` 校验回合与玩家身份，把盘面判定交给规则
+
+`Room.PlayMove(UserId userId, MoveIntent intent, DateTime now, IGameRules rules)` SHALL 依次执行:
+
+1. `Status != Playing` → 抛 `RoomNotInPlayException`
+2. `userId` 不是黑 / 白方 → 抛 `NotAPlayerException`
+3. 不是该方回合 → 抛 `NotYourTurnException`
+4. 调 `rules.Apply(history, intent, side)` —— **越界、重复落子、走法合法性全部由规则回答**
+5. 合法则 append 一条 `Move`(含可空起点)、切换回合
+6. `Result != Ongoing` 则 `Game.FinishWith(result, winner, GameEndReason.Decided, now)` 并转 `Finished`
+
+**聚合根 MUST NOT 再调 `rules.IsInBounds` / `rules.CreateBoard` / `Board.PlaceStone`。** 盘面语义
+整个属于规则。这是象棋能进这个聚合的前提:它的一格上是七种棋子之一 × 两方,胜负是将死 / 困毙,
+与最后一步的位置没有直接关系 —— 没有一条能塞进「连 N 子棋盘」。
+
+签名从 `Position position` 改为 `MoveIntent intent`。落子类棋种的调用方传 `MoveIntent(null, to)`。
+
+#### Scenario: 非玩家落子
+- **WHEN** 一个围观者调 `PlayMove`
+- **THEN** 抛 `NotAPlayerException`,MUST NOT 调 `rules.Apply`
+
+#### Scenario: 不是自己的回合
+- **WHEN** 白方在黑方回合调 `PlayMove`
+- **THEN** 抛 `NotYourTurnException`,MUST NOT 调 `rules.Apply`
+
+#### Scenario: 规则拒绝则聚合状态不变
+- **WHEN** `rules.Apply` 抛 `InvalidMoveException`
+- **THEN** `Game.Moves` 不增加、`CurrentTurn` 不变、`Status` 仍是 `Playing`
+
+#### Scenario: 规则判出胜负则对局结束
+- **WHEN** `rules.Apply` 返回 `BlackWin`
+- **THEN** `Status == Finished`、`Game.Result == BlackWin`、`EndReason == Decided`、`WinnerUserId` 是黑方
+
+### Requirement: `Move` 子实体记录可空的起点
+
+`Move` SHALL 新增 `int? FromRow` 与 `int? FromCol`,与既有的 `Row` / `Col`(终点)并存。
+
+两者 MUST 同为 `null` 或同为非 `null` —— 半个坐标不是坐标。
+
+数据库层两列 MUST 可空,于是迁移是纯增量:既有的落子类记录不用回填,`Down` 只丢列。
+
+MUST NOT 改用 JSON 载荷列。象棋的每一步都恰好是 `from → to`(没有王车易位、吃过路兵、升变),
+两个可空列就覆盖了两类棋种,而且**列仍然可查询**、EF 原生映射、replay 仍是强类型的 ——
+写错了是编译错误而不是运行时的 `JsonException`。真出现不规则走子时再加列或那时才上 JSON。
+
+#### Scenario: 落子类的起点为空
+- **WHEN** 记录一步五子棋
+- **THEN** `FromRow == null && FromCol == null`
+
+#### Scenario: 走子类的起点非空
+- **WHEN** 记录一步走子类的棋
+- **THEN** `FromRow` / `FromCol` 都非 `null`
+
+#### Scenario: 迁移不动既有数据
+- **WHEN** 在含既有 `Moves` 行的库上跑迁移
+- **THEN** 每行的 `Ply` / `Row` / `Col` / `Stone` 一字不变,两个新列为 `NULL`
 
