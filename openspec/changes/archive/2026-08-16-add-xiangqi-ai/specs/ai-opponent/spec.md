@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: `IBoardGameAi` 是棋盘对抗棋种的 AI 决策接口
+### Requirement: `IBoardGameAi` 是纯函数式 AI 决策接口
 
 `IBoardGameAi` SHALL 定义为:
 
