@@ -1,0 +1,52 @@
+<div
+  class="kt-board"
+  [style.--kt-rows]="layout().rows"
+  [style.--kt-cols]="layout().cols"
+  [style.aspect-ratio]="layout().cols + ' / ' + layout().rows"
+>
+  <!-- The exit, painted under everything: the one cell pair 曹操 has to reach. -->
+  <div
+    class="kt-exit"
+    aria-hidden="true"
+    [style.grid-area]="
+      layout().exit.row + 1 + ' / ' + (layout().exit.col + 1) + ' / -1 / ' + (layout().exit.col + 3)
+    "
+  ></div>
+
+  @for (t of targets(); track t.row * 100 + t.col) {
+    <button
+      type="button"
+      class="kt-target focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[color:var(--color-primary)]"
+      [style.grid-area]="targetArea(t)"
+      [attr.aria-label]="'klotski.board.slide-here' | transloco: { row: t.row + 1, col: t.col + 1 }"
+      (click)="handleSlide(t)"
+    ></button>
+  }
+
+  @for (p of placed(); track p.piece.id) {
+    <button
+      type="button"
+      class="kt-piece focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default"
+      [class.kt-piece--target]="p.piece.target"
+      [class.kt-piece--wide]="p.piece.width >= p.piece.height"
+      [class.kt-piece--selected]="isSelected(p.piece.id)"
+      [style.grid-area]="area(p)"
+      [attr.aria-pressed]="isSelected(p.piece.id)"
+      [attr.aria-label]="
+        'klotski.board.piece'
+          | transloco
+            : {
+                name: p.piece.name ?? p.piece.id,
+                row: p.row + 1,
+                col: p.col + 1,
+                height: p.piece.height,
+                width: p.piece.width,
+              }
+      "
+      [disabled]="readonly()"
+      (click)="handlePick(p.piece.id)"
+    >
+      <span class="kt-piece__name" aria-hidden="true">{{ p.piece.name ?? p.piece.id }}</span>
+    </button>
+  }
+</div>

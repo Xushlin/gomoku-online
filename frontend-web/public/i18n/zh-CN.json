@@ -406,6 +406,39 @@
       "load-level": "这一关没能开始。"
     }
   },
+  "klotski": {
+    "back-to-levels": "返回关卡",
+    "best": "{{stars}} 星 · {{seconds}} 秒",
+    "board": {
+      "piece": "{{name}}，第 {{row}} 行第 {{col}} 列，{{height}} 行 {{width}} 列",
+      "slide-here": "移到第 {{row}} 行第 {{col}} 列"
+    },
+    "difficulty-1": "入门",
+    "difficulty-2": "进阶",
+    "difficulty-3": "高手",
+    "error-hint-failed": "要提示失败，请重试。",
+    "error-load-failed": "载入失败，请重试。",
+    "error-submit-failed": "提交失败，请重试。",
+    "hint": "提示",
+    "hint-cost": "提示会走掉一步，并影响这一关的评级。",
+    "hints-used": "提示 {{count}} 次",
+    "level-n": "第 {{n}} 关",
+    "level-not-found": "找不到这一关。",
+    "loading": "载入中…",
+    "locked": "先通过上一关",
+    "moves": "{{count}} 步",
+    "new-best": "新纪录",
+    "no-levels": "还没有关卡。",
+    "not-played": "还没玩过",
+    "play": "开始",
+    "play-again": "再来一次",
+    "progress": "已通关 {{completed}} 关，共 {{stars}} 星",
+    "restart": "重来",
+    "result-stars": "{{stars}} 星",
+    "retry": "重试",
+    "solved": "曹操出来了！",
+    "subtitle": "把曹操从下方缺口挪出去。步数越少越好。"
+  },
   "tictactoe": {
     "back": "返回游戏列表",
     "difficulty-easy": "简单",

@@ -117,15 +117,22 @@ export interface CrosswordRevealedCell {
 }
 
 /** Parsed check result — `solved` is non-null only on a correct verdict. */
-export interface PuzzleCheckResult {
+export interface PuzzleCheckResult<TSolved = unknown> {
   readonly isCorrect: boolean;
   readonly mistakes: number;
-  readonly solved: CrosswordSolvedWord | null;
+  readonly solved: TSolved | null;
 }
 
-/** Parsed hint result. */
-export interface PuzzleHint {
-  readonly revealed: CrosswordRevealedCell | null;
+/**
+ * Parsed hint result.
+ *
+ * Generic over the revealed fragment. It used to name `CrosswordRevealedCell`
+ * directly — one game's shape on the shared puzzle client, which held only
+ * because 成语纵横 was the only game using it. 华容道's fragment is a slide,
+ * not a cell.
+ */
+export interface PuzzleHint<TRevealed = unknown> {
+  readonly revealed: TRevealed | null;
   readonly hintsUsed: number;
 }
 

@@ -2,9 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, type Observable } from 'rxjs';
 import type {
-  CrosswordLayout,
-  CrosswordRevealedCell,
-  CrosswordSolvedWord,
   PuzzleAttemptStarted,
   PuzzleCheckResult,
   PuzzleCheckResultDto,
@@ -30,12 +27,24 @@ export abstract class PuzzleApiService {
   abstract getLevel(gameKey: string, levelIndex: number): Observable<PuzzleLevelDetail>;
   abstract getProgress(gameKey: string): Observable<PuzzleProgress>;
   abstract startAttempt(gameKey: string, levelIndex: number): Observable<PuzzleAttemptStarted>;
-  abstract check(attemptId: string, partial: unknown): Observable<PuzzleCheckResult>;
-  abstract hint(attemptId: string, state?: unknown): Observable<PuzzleHint>;
+  abstract check<TSolved = unknown>(
+    attemptId: string,
+    partial: unknown,
+  ): Observable<PuzzleCheckResult<TSolved>>;
+  abstract hint<TRevealed = unknown>(
+    attemptId: string,
+    state?: unknown,
+  ): Observable<PuzzleHint<TRevealed>>;
   abstract submit(attemptId: string, submission: unknown): Observable<PuzzleSubmitResult>;
 
-  /** Parse a level's opaque `layoutJson` into the crossword layout. */
-  abstract parseLayout(layoutJson: string): CrosswordLayout | null;
+  /**
+   * Parse a level's opaque `layoutJson` into that game's layout shape.
+   *
+   * Generic because the platform does not understand layouts — it only knows
+   * they are JSON. This used to return `CrosswordLayout`, which put one game's
+   * shape on the shared client; 华容道 is the game that exposed it.
+   */
+  abstract parseLayout<TLayout>(layoutJson: string): TLayout | null;
 }
 
 /**
@@ -81,7 +90,10 @@ export class DefaultPuzzleApiService extends PuzzleApiService {
     );
   }
 
-  check(attemptId: string, partial: unknown): Observable<PuzzleCheckResult> {
+  check<TSolved = unknown>(
+    attemptId: string,
+    partial: unknown,
+  ): Observable<PuzzleCheckResult<TSolved>> {
     return this.http
       .post<PuzzleCheckResultDto>(`/api/puzzle-attempts/${encodeURIComponent(attemptId)}/check`, {
         partialJson: JSON.stringify(partial),
@@ -90,12 +102,15 @@ export class DefaultPuzzleApiService extends PuzzleApiService {
         map((dto) => ({
           isCorrect: dto.isCorrect,
           mistakes: dto.mistakes,
-          solved: parseNested<CrosswordSolvedWord>(dto.payloadJson),
+          solved: parseNested<TSolved>(dto.payloadJson),
         })),
       );
   }
 
-  hint(attemptId: string, state?: unknown): Observable<PuzzleHint> {
+  hint<TRevealed = unknown>(
+    attemptId: string,
+    state?: unknown,
+  ): Observable<PuzzleHint<TRevealed>> {
     return this.http
       .post<PuzzleHintDto>(`/api/puzzle-attempts/${encodeURIComponent(attemptId)}/hint`, {
         // Same string-inside-JSON shape as check / submit: the platform does not
@@ -104,7 +119,7 @@ export class DefaultPuzzleApiService extends PuzzleApiService {
       })
       .pipe(
         map((dto) => ({
-          revealed: parseNested<CrosswordRevealedCell>(dto.revealedJson),
+          revealed: parseNested<TRevealed>(dto.revealedJson),
           hintsUsed: dto.hintsUsed,
         })),
       );
@@ -117,7 +132,7 @@ export class DefaultPuzzleApiService extends PuzzleApiService {
     );
   }
 
-  parseLayout(layoutJson: string): CrosswordLayout | null {
-    return parseNested<CrosswordLayout>(layoutJson);
+  parseLayout<TLayout>(layoutJson: string): TLayout | null {
+    return parseNested<TLayout>(layoutJson);
   }
 }

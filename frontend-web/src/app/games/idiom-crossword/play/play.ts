@@ -11,6 +11,8 @@ import {
 import { Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type {
+  CrosswordLayout,
+  CrosswordRevealedCell,
   CrosswordSlot,
   CrosswordSolvedWord,
 } from '../../../core/api/models/puzzle.model';
@@ -101,7 +103,7 @@ export class Play {
 
     this.api.startAttempt(IDIOM_CROSSWORD_KEY, this.levelIndex()).subscribe({
       next: (attempt) => {
-        const layout = this.api.parseLayout(attempt.layoutJson);
+        const layout = this.api.parseLayout<CrosswordLayout>(attempt.layoutJson);
         if (!layout) {
           this.failed.set(true);
           this.loading.set(false);
@@ -143,7 +145,7 @@ export class Play {
     if (!attemptId) return;
 
     const word = this.board.wordIn(slot);
-    this.api.check(attemptId, { slotIndex: slot.index, word }).subscribe({
+    this.api.check<CrosswordSolvedWord>(attemptId, { slotIndex: slot.index, word }).subscribe({
       next: (result) => {
         this.mistakes.set(result.mistakes);
 
@@ -186,7 +188,7 @@ export class Play {
     if (!attemptId || this.busy()) return;
 
     this.busy.set(true);
-    this.api.hint(attemptId, this.board.hintState()).subscribe({
+    this.api.hint<CrosswordRevealedCell>(attemptId, this.board.hintState()).subscribe({
       next: (result) => {
         this.hintsUsed.set(result.hintsUsed);
         if (result.revealed) {

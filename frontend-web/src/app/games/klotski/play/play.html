@@ -1,0 +1,134 @@
+<div class="mx-auto flex w-full max-w-md flex-col gap-4">
+  <header class="flex items-baseline justify-between gap-3">
+    <h1 class="text-text text-xl font-semibold tracking-tight">
+      {{ layout()?.name ?? ('games.klotski.title' | transloco) }}
+    </h1>
+    <a
+      routerLink="/g/klotski"
+      class="text-muted hover:text-text focus-visible:outline-primary rounded text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      {{ 'klotski.back-to-levels' | transloco }}
+    </a>
+  </header>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <div class="bg-surface border-border rounded-card h-72 animate-pulse border" aria-hidden="true"></div>
+      <p class="text-muted text-sm">{{ 'klotski.loading' | transloco }}</p>
+    }
+    @case ('not-found') {
+      <p class="text-muted text-sm">{{ 'klotski.level-not-found' | transloco }}</p>
+      <a
+        routerLink="/g/klotski"
+        class="border-border text-text rounded-card focus-visible:outline-primary self-start border px-4 py-2 text-sm"
+        >{{ 'klotski.back-to-levels' | transloco }}</a
+      >
+    }
+    @case ('error') {
+      <p class="text-danger text-sm" role="alert">{{ 'klotski.error-load-failed' | transloco }}</p>
+      <button
+        type="button"
+        class="border-border text-text rounded-card focus-visible:outline-primary self-start border px-4 py-2 text-sm"
+        (click)="load()"
+      >
+        {{ 'klotski.retry' | transloco }}
+      </button>
+    }
+    @default {
+      @if (layout(); as l) {
+        <app-klotski-board
+          [layout]="l"
+          [positions]="positions()"
+          [selected]="selected()"
+          [readonly]="phase() === 'solved'"
+          (pick)="handlePick($event)"
+          (slide)="handleSlide($event)"
+        />
+      }
+
+      <!--
+        The move count is on screen; the level's minimum is not. It is the divisor
+        the server scores with, and putting it up during play turns a puzzle into
+        a countdown. It shows up afterwards, as a result rather than a target.
+      -->
+      <div class="text-muted flex items-center justify-between text-sm">
+        <span>{{ 'klotski.moves' | transloco: { count: moveCount() } }}</span>
+        <span>{{ 'klotski.hints-used' | transloco: { count: hintsUsed() } }}</span>
+      </div>
+
+      @if (phase() === 'playing') {
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="border-border text-text rounded-card hover:bg-bg focus-visible:outline-primary flex-1 border px-4 py-2 text-sm transition-colors disabled:opacity-60"
+              [disabled]="busy()"
+              (click)="requestHint()"
+            >
+              {{ 'klotski.hint' | transloco }}
+            </button>
+            <button
+              type="button"
+              class="border-border text-text rounded-card hover:bg-bg focus-visible:outline-primary border px-4 py-2 text-sm transition-colors"
+              (click)="restart()"
+            >
+              {{ 'klotski.restart' | transloco }}
+            </button>
+          </div>
+          <p class="text-muted text-xs">{{ 'klotski.hint-cost' | transloco }}</p>
+        </div>
+      }
+
+      @if (result(); as r) {
+        <div
+          class="bg-surface border-border rounded-card flex flex-col gap-2 border p-4"
+          role="status"
+        >
+          <p class="text-text text-lg font-semibold">{{ 'klotski.solved' | transloco }}</p>
+          <p class="text-2xl" aria-hidden="true">
+            @for (s of starList(); track s) {
+              <span [class.opacity-25]="s > stars()">★</span>
+            }
+          </p>
+          <p class="text-muted text-sm">
+            {{ 'klotski.result-stars' | transloco: { stars: r.stars ?? 0 } }}
+            ·
+            {{ 'klotski.moves' | transloco: { count: moveCount() } }}
+            ·
+            {{ 'klotski.hints-used' | transloco: { count: r.hintsUsed } }}
+          </p>
+          @if (r.newBest) {
+            <p class="text-primary text-sm">{{ 'klotski.new-best' | transloco }}</p>
+          }
+          <div class="flex gap-2 pt-1">
+            <button
+              type="button"
+              class="border-border text-text rounded-card hover:bg-bg focus-visible:outline-primary border px-4 py-2 text-sm transition-colors"
+              (click)="restart()"
+            >
+              {{ 'klotski.play-again' | transloco }}
+            </button>
+            <a
+              routerLink="/g/klotski"
+              class="bg-primary rounded-card focus-visible:outline-primary px-4 py-2 text-sm font-medium text-white"
+              >{{ 'klotski.back-to-levels' | transloco }}</a
+            >
+          </div>
+        </div>
+      }
+
+      @if (errorKey(); as key) {
+        <div class="flex items-center gap-3">
+          <p class="text-danger text-sm" role="alert">{{ key | transloco }}</p>
+          <button
+            type="button"
+            class="border-border text-text rounded-card focus-visible:outline-primary border px-3 py-1.5 text-sm"
+            (click)="submit()"
+          >
+            {{ 'klotski.retry' | transloco }}
+          </button>
+        </div>
+      }
+    }
+  }
+</div>
