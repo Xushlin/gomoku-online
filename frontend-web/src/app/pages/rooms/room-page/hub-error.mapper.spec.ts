@@ -51,4 +51,40 @@ describe('hubErrorToKey', () => {
   it('string error is matched on its content', () => {
     expect(hubErrorToKey('not your turn')).toBe('game.errors.not-your-turn');
   });
+
+  /**
+   * Xiangqi's refusals, verbatim from `XiangqiRules.Apply`.
+   *
+   * These matter more than the gomoku ones they sit beside. Gomoku's board only
+   * lets you click an empty cell, so `invalid-move` was near-unreachable and an
+   * unmapped message cost nothing. Xiangqi's board knows no rules on purpose, so a
+   * refused move is how a player learns what a piece can do — and it was landing on
+   * "Something went wrong. Please try again.", which reads as a broken app. Found
+   * in the browser, not by reading the mapper.
+   */
+  describe('xiangqi refusals', () => {
+    it.each([
+      'A General cannot move from (9, 4) to (7, 4).',
+      'There is no piece at (5, 5).',
+      'The piece at (0, 0) does not belong to Black.',
+      "A move must change the piece's square.",
+      "'xiangqi' moves pieces; a move must carry an origin square.",
+      "Position is outside the 10x9 board of 'xiangqi'.",
+      '(9, 1) is occupied by your own piece.',
+    ])('maps %s to invalid-move', (message) => {
+      expect(hubErrorToKey(new Error(message))).toBe('game.errors.invalid-move');
+    });
+
+    it('gives self-check its own message', () => {
+      // "That move is not legal" would not tell the player what they missed, and
+      // hanging your own general is the most common way to be refused.
+      expect(
+        hubErrorToKey(
+          new Error(
+            'That move would leave your general in check (self-check or flying generals).',
+          ),
+        ),
+      ).toBe('game.errors.self-check');
+    });
+  });
 });

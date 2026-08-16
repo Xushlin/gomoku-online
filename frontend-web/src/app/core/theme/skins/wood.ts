@@ -24,6 +24,11 @@ export const woodSkin: BoardSkinTokens = {
     whiteRim: 'rgb(120 100 70 / 0.5)',
     whiteShadow: '0 2px 3px rgb(0 0 0 / 0.3), inset 0 0 0 1px rgb(120 100 70 / 0.5)',
   },
+  pieces: {
+    bg: '#f3e3c0',
+    red: '#b3261e',
+    black: '#241d16',
+  },
   lastMove: {
     ring: '#ffb000',
   },

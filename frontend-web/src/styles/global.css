@@ -172,6 +172,123 @@ body {
 }
 
 /*
+ * 中国象棋 — 10×9 board, pieces on intersections.
+ *
+ * Deliberately NOT .board-grid with different --board-rows/--board-cols: that grid
+ * paints stones inside cells and is locked to aspect-ratio 1/1, while xiangqi needs
+ * 9∶10, a river gap, and two palaces. It does reuse the board-skin tokens, so the
+ * wood / classic surface follows whichever skin is active.
+ *
+ * Lines are an SVG overlay rather than the layered-gradient trick .board-grid uses.
+ * The river gap and the palace diagonals are not expressible as repeating gradients,
+ * and a path is the honest way to say "these seven files stop at the river".
+ * The overlay is inset by half a cell on each side so the path's integer coordinates
+ * land exactly on the button centres.
+ */
+.xq-board {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  aspect-ratio: 9 / 10;
+  border-radius: var(--board-radius, 8px);
+  box-shadow: var(--board-shadow, 0 2px 8px rgb(0 0 0 / 0.08));
+  background-color: var(--board-bg-color, #c88a4e);
+  background-image: var(--board-bg-image, none);
+  background-size: 100% 100%;
+}
+
+.xq-lines {
+  position: absolute;
+  /* half a row top/bottom (100%/20), half a column left/right (100%/18) */
+  inset: 5% calc(100% / 18);
+  stroke: var(--board-line, #888);
+  pointer-events: none;
+}
+
+.xq-river {
+  position: absolute;
+  inset-inline: 8%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  color: var(--board-line, #888);
+  font-size: 4.2cqw;
+  letter-spacing: 0.4em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.xq-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+}
+
+.xq-point {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.xq-point:focus-visible {
+  z-index: 2;
+}
+
+.xq-piece {
+  display: grid;
+  place-items: center;
+  width: 86%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  border: 0.22cqw solid currentColor;
+  background: var(--xq-piece-bg, #f0dcb4);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  font-size: 5.6cqw;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/*
+ * Stone.Black is 红. See position.ts — `Game` opens on Stone.Black and xiangqi is
+ * red-first, so this mapping is what let the Domain stay untouched.
+ */
+.xq-piece--red {
+  color: var(--xq-red, #b3261e);
+}
+.xq-piece--black {
+  color: var(--xq-black, #1f1f1f);
+}
+
+.xq-piece--selected {
+  box-shadow:
+    0 0 0 0.55cqw var(--color-primary),
+    0 1px 3px rgb(0 0 0 / 0.35);
+}
+
+.xq-point--last-to::after,
+.xq-point--last-from::after {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--last-move-ring, #ffb000);
+  pointer-events: none;
+}
+/* The origin is context, not the event — say it more quietly than the destination. */
+.xq-point--last-from::after {
+  opacity: 0.45;
+}
+
+/*
  * 成语纵横 — movable-type board.
  *
  * Every colour is a token, so the board follows whichever theme is active

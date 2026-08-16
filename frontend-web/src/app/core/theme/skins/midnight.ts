@@ -26,6 +26,14 @@ export const midnightSkin: BoardSkinTokens = {
     whiteRim: 'rgb(90 105 125 / 0.55)',
     whiteShadow: '0 2px 4px rgb(0 0 0 / 0.5), inset 0 0 0 0.5px rgb(90 105 125 / 0.55)',
   },
+  pieces: {
+    // A slate disc, not ivory — an ivory piece on this surface reads as a hole.
+    // The black side goes light for the same reason it does in `stones`: a dark
+    // glyph on a dark disc on a dark slab disappears.
+    bg: '#2b3442',
+    red: '#ff7a6b',
+    black: '#ccd6e4',
+  },
   lastMove: {
     ring: '#22d3ee',
   },

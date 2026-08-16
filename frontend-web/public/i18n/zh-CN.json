@@ -262,6 +262,7 @@
       "network": "网络错误,请重试。",
       "not-your-turn": "还没到你的回合。",
       "invalid-move": "这一步不合法。",
+      "self-check": "这一步会让自己的帅／将被吃（送将，或与对方将帅照面）。",
       "concurrent-move-refetched": "状态不同步,棋盘已刷新。",
       "urge-cooldown": "催促冷却中。"
     },
@@ -420,6 +421,42 @@
     "start": "开始对局",
     "starting": "正在创建…",
     "subtitle": "3×3 连三。跟机器下一局 —— 不计积分。"
+  },
+  "xiangqi": {
+    "back": "返回游戏列表",
+    "board": {
+      "empty": "空",
+      "point": "第 {{row}} 行 第 {{col}} 列，{{piece}}"
+    },
+    "difficulty-easy": "简单",
+    "difficulty-hard": "困难",
+    "difficulty-legend": "选难度",
+    "difficulty-medium": "普通",
+    "error-create-failed": "创建对局失败，请重试。",
+    "notice-ai": "机器人用的是限深搜索：深一档看得远一档，也想得久一点。这里不承诺任何一档的强弱 —— 象棋的局面数不可能穷举，能说的只有它实际是什么。",
+    "notice-unrated": "本棋种不计 ELO：输赢不影响你的积分与战绩。",
+    "piece": {
+      "black-advisor": "黑士",
+      "black-cannon": "黑砲",
+      "black-chariot": "黑車",
+      "black-elephant": "黑象",
+      "black-general": "黑將",
+      "black-horse": "黑馬",
+      "black-soldier": "黑卒",
+      "red-advisor": "红仕",
+      "red-cannon": "红炮",
+      "red-chariot": "红俥",
+      "red-elephant": "红相",
+      "red-general": "红帥",
+      "red-horse": "红傌",
+      "red-soldier": "红兵"
+    },
+    "side-black": "执红（先手）",
+    "side-legend": "选先后手",
+    "side-white": "执黑（后手）",
+    "start": "开始对局",
+    "starting": "正在创建…",
+    "subtitle": "十行九列，隔河相对。与机器下一盘 —— 不计分。"
   },
   "leaderboard": {
     "title": "排行榜",

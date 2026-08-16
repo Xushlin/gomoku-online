@@ -70,6 +70,10 @@
     inset 0 0 0 0.5px rgb(140 110 70 / 0.5),
     inset -1px -2px 3px rgb(120 90 50 / 0.25);
 
+  --xq-piece-bg: #f3e3c0;
+  --xq-red: #b3261e;
+  --xq-black: #241d16;
+
   --last-move-ring: #ff9f1a;
 }
 
@@ -116,6 +120,11 @@
     0 2px 4px rgb(0 0 0 / 0.5),
     inset 0 0 0 0.5px rgb(80 60 40 / 0.7),
     inset -1px -2px 3px rgb(80 50 25 / 0.45);
+
+  /* Dimmer ivory so the discs stop glaring against the walnut surface. */
+  --xq-piece-bg: #e6d2a8;
+  --xq-red: #c33a2c;
+  --xq-black: #1d1812;
 
   --last-move-ring: #ffb000;
 }
@@ -179,6 +188,12 @@
     inset 0 0 0 0.5px rgb(90 105 125 / 0.55),
     inset -1px -2px 3px rgb(90 105 125 / 0.3);
 
+  /* Slate discs: ivory on this slab reads as a hole, and a dark glyph on a dark
+     disc disappears — so the black side goes light, exactly as its stones do. */
+  --xq-piece-bg: #2b3442;
+  --xq-red: #ff7a6b;
+  --xq-black: #ccd6e4;
+
   --last-move-ring: #22d3ee;
 }
 
@@ -203,6 +218,15 @@
     color-mix(in srgb, var(--color-bg) 60%, var(--color-muted))
   );
   --stone-white-shadow: 0 2px 4px rgb(0 0 0 / 0.35), inset 0 0 0 1.5px var(--color-muted);
+
+  /* The disc and the black side follow the theme; 红 does not, because it is the
+     game's identity rather than a palette choice.
+     The disc takes --color-bg, NOT --color-surface: this skin paints the board
+     itself in --color-surface, so matching it would make the pieces invisible
+     discs carrying a glyph. */
+  --xq-piece-bg: var(--color-bg);
+  --xq-red: #c0392b;
+  --xq-black: var(--color-text);
 
   --last-move-ring: var(--color-primary);
 }

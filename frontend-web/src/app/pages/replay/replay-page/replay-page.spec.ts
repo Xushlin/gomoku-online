@@ -175,3 +175,70 @@ describe('ReplayPage', () => {
     vi.useRealTimers();
   });
 });
+
+/**
+ * The replay page renders whichever shared board the game needs.
+ *
+ * It still writes no rendering code of its own — the original requirement said "do
+ * not introduce a second board renderer", which was written when the platform had
+ * one board shape. Xiangqi's is not a parameterisation of gomoku's, so the rule now
+ * reads "pick between the shared components", and the intent it protected is intact.
+ */
+describe('ReplayPage board selection', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+
+  const XIANGQI_MOVES: GameReplayDto['moves'] = [
+    { ply: 1, row: 5, col: 0, stone: 'Black', playedAt: 'x', fromRow: 6, fromCol: 0 },
+    { ply: 2, row: 4, col: 0, stone: 'White', playedAt: 'x', fromRow: 3, fromCol: 0 },
+    // 炮打马: the cannon on (7,1) uses the black cannon on (2,1) as its screen and
+    // takes the horse on (0,1).
+    { ply: 3, row: 0, col: 1, stone: 'Black', playedAt: 'x', fromRow: 7, fromCol: 1 },
+  ];
+
+  function mountXiangqi() {
+    return mount({
+      getReplay: vi.fn(() =>
+        of(makeReplay({ gameKey: 'xiangqi', moves: XIANGQI_MOVES, endReason: 'Resigned' })),
+      ),
+    });
+  }
+
+  it('draws a read-only xiangqi board for a xiangqi replay', () => {
+    const { fixture } = mountXiangqi();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-xiangqi-board')).toBeTruthy();
+    expect(el.querySelector('app-board')).toBeNull();
+
+    const points = Array.from(el.querySelectorAll('.xq-point')) as HTMLButtonElement[];
+    expect(points).toHaveLength(90);
+    expect(points.every((b) => b.disabled)).toBe(true);
+  });
+
+  it('brings captured pieces back when the scrubber goes backwards', () => {
+    // Ply 3 is 炮打马 — the black horse on (0,1) comes off. Stepping back must
+    // put it there again, which only works because the position is derived from
+    // the opening setup each frame rather than mutated in place.
+    const { fixture } = mountXiangqi();
+    const comp = fixture.componentInstance as unknown as { step: (d: number) => void };
+    const pieces = () => (fixture.nativeElement as HTMLElement).querySelectorAll('.xq-piece');
+
+    comp.step(+1);
+    comp.step(+1);
+    comp.step(+1);
+    fixture.detectChanges();
+    expect(pieces()).toHaveLength(31);
+
+    comp.step(-1);
+    fixture.detectChanges();
+    expect(pieces()).toHaveLength(32);
+  });
+
+  it('leaves gomoku replays exactly as they were', () => {
+    const { fixture } = mount();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-board')).toBeTruthy();
+    expect(el.querySelector('app-xiangqi-board')).toBeNull();
+  });
+});

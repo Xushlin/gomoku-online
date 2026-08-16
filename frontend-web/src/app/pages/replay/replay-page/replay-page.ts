@@ -13,6 +13,8 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Board } from '../../rooms/room-page/board/board';
+import { XiangqiBoard } from '../../../games/xiangqi/board/xiangqi-board';
+import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
 import type {
   GameReplayDto,
   RoomState,
@@ -29,7 +31,7 @@ type Speed = 0.5 | 1 | 2;
 @Component({
   selector: 'app-replay-page',
   standalone: true,
-  imports: [Board, CommonModule, RouterLink, TranslocoPipe],
+  imports: [Board, XiangqiBoard, CommonModule, RouterLink, TranslocoPipe],
   templateUrl: './replay-page.html',
   styles: [':host { display: block; width: 100%; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,6 +71,14 @@ export class ReplayPage implements OnInit, OnDestroy {
   protected readonly boardSize = computed(() =>
     boardSizeFor(this.catalog, this.replay()?.gameKey),
   );
+
+  /**
+   * Which read-only renderer this replay needs — same `@if` the room page uses, and
+   * for the same reason (see `RoomPage.isXiangqi`). The page still writes no
+   * rendering code of its own; it just picks between two shared components instead
+   * of always reaching for one.
+   */
+  protected readonly isXiangqi = computed(() => this.replay()?.gameKey === XIANGQI_KEY);
 
   /**
    * Synthesise a `RoomState`-shaped object so the existing Board component

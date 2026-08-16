@@ -53,6 +53,7 @@ class StubHub {
   joinSpectatorGroup = vi.fn(async () => undefined);
   leaveRoom = vi.fn(async () => undefined);
   makeMove = vi.fn(async () => undefined);
+  movePiece = vi.fn(async () => undefined);
   sendChat = vi.fn(async () => undefined);
   urge = vi.fn(async () => undefined);
   reconnect = vi.fn(async () => undefined);
@@ -174,5 +175,65 @@ describe('RoomPage', () => {
     await Promise.resolve();
     hub.roomDissolved$.next({ roomId: 'r-1' });
     expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
+  });
+});
+
+/**
+ * Which board a room draws.
+ *
+ * A two-way `@if` rather than a registry — see `RoomPage.isXiangqi` for why. These
+ * tests are what makes the branch a contract instead of an implementation detail.
+ */
+describe('RoomPage board selection', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+
+  async function mountWithGame(gameKey: string | undefined) {
+    const mounted = mount();
+    await Promise.resolve();
+    await Promise.resolve();
+    mounted.hub.state.set({ ...makeRoomState(), gameKey } as ReturnType<typeof makeRoomState>);
+    mounted.fixture.detectChanges();
+    return mounted;
+  }
+
+  it('draws the xiangqi board for a xiangqi room', async () => {
+    const { fixture } = await mountWithGame('xiangqi');
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-xiangqi-board')).toBeTruthy();
+    expect(el.querySelector('app-board')).toBeNull();
+    expect(el.querySelectorAll('.xq-point')).toHaveLength(90);
+  });
+
+  it('leaves gomoku on the 15x15 board', async () => {
+    const { fixture } = await mountWithGame('gomoku');
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-board')).toBeTruthy();
+    expect(el.querySelector('app-xiangqi-board')).toBeNull();
+    expect(el.querySelectorAll('.board-cell')).toHaveLength(225);
+  });
+
+  it('falls back to the default board for a game key it has never heard of', async () => {
+    // A client that has not been redeployed will meet keys its registry lacks. A
+    // possibly-wrong board beats a blank page.
+    const { fixture } = await mountWithGame('a-game-nobody-registered');
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-board')).toBeTruthy();
+  });
+
+  it('sends a xiangqi move through MovePiece, never MakeMove', async () => {
+    const { fixture, hub } = await mountWithGame('xiangqi');
+    const points = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.xq-point'),
+    ) as HTMLButtonElement[];
+
+    points[9 * 9 + 0].click(); // pick up the red 俥 on (9,0)
+    fixture.detectChanges();
+    points[8 * 9 + 0].click(); // and slide it to (8,0)
+    fixture.detectChanges();
+
+    expect(hub.movePiece).toHaveBeenCalledWith('r-1', 9, 0, 8, 0);
+    expect(hub.makeMove).not.toHaveBeenCalled();
   });
 });

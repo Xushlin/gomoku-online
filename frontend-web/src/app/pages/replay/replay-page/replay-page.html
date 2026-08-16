@@ -73,14 +73,23 @@
       </p>
     </header>
 
-    <app-board
-      [state]="boardState()"
-      [rows]="boardSize().rows"
-      [cols]="boardSize().cols"
-      [mySide]="'spectator'"
-      [submitting]="false"
-      [readonly]="true"
-    />
+    @if (isXiangqi()) {
+      <app-xiangqi-board
+        [state]="boardState()"
+        [mySide]="'spectator'"
+        [submitting]="false"
+        [readonly]="true"
+      />
+    } @else {
+      <app-board
+        [state]="boardState()"
+        [rows]="boardSize().rows"
+        [cols]="boardSize().cols"
+        [mySide]="'spectator'"
+        [submitting]="false"
+        [readonly]="true"
+      />
+    }
 
     <div
       class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-3 text-sm"
