@@ -14,7 +14,7 @@ namespace Gewu.Domain.Ai;
 /// 方块内的空格"(典型 10–30 个)。配合 α-β,两层搜索单步 &lt; 10ms。纯函数 / 不修改入参。
 /// </para>
 /// </summary>
-public sealed class HardAi : IBoardGameAi
+public sealed class HardAi : IPlacementAi
 {
     private const int BoardCenter = 7;
     private const int NeighbourRadius = 2;

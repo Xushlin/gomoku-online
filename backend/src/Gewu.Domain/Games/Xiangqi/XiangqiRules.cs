@@ -255,9 +255,22 @@ public sealed class XiangqiRules : IGameRules
         return false;
     }
 
-    /// <summary>某方还有没有任何一步合法走法。没有 = 将死或困毙,两者都判负。</summary>
-    private static bool HasAnyLegalMove(XiangqiBoard board, Stone side)
+    /// <summary>
+    /// 某方在该局面下的**全部合法着法**(已排除会导致自将 / 照面的)。
+    /// <para>
+    /// 对外暴露是因为 AI 需要它。让 AI 自己再实现一遍走法枚举就是第二份真源,
+    /// 而两份不一致的表现是 **AI 走出规则会拒绝的棋** —— 用户看到的是「机器人卡住了」。
+    /// </para>
+    /// </summary>
+    /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
+    /// <param name="side">要枚举哪一方的着法。</param>
+    public IReadOnlyList<MoveIntent> LegalMoves(
+        IReadOnlyList<PlayedMove> history, Stone side)
+        => LegalMovesOn(Replay(history), side);
+
+    private static List<MoveIntent> LegalMovesOn(XiangqiBoard board, Stone side)
     {
+        var moves = new List<MoveIntent>();
         foreach (var (from, piece) in board.PiecesOf(side).ToList())
         {
             for (var row = 0; row < XiangqiBoard.RowCount; row++)
@@ -282,11 +295,38 @@ public sealed class XiangqiRules : IGameRules
                     after.Move(from, to);
                     if (!IsInCheck(after, side))
                     {
-                        return true;
+                        moves.Add(MoveIntent.Slide(from, to));
                     }
                 }
             }
         }
-        return false;
+        return moves;
     }
+
+    /// <summary>
+    /// 某方还有没有任何一步合法走法。没有 = 将死或困毙,两者都判负。
+    /// <para>
+    /// 走 <see cref="LegalMovesOn"/> 而不是自己再写一遍循环 —— 两份枚举迟早不一致,
+    /// 而不一致的表现是「判负了但其实有棋走」。多枚举几步的开销在这里无关紧要。
+    /// </para>
+    /// </summary>
+    private static bool HasAnyLegalMove(XiangqiBoard board, Stone side)
+        => LegalMovesOn(board, side).Count > 0;
+
+    /// <summary>供 AI 查看局面的只读入口 —— 返回一份副本,调用方改不到规则的东西。</summary>
+    /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
+    internal static XiangqiBoard BoardFrom(IReadOnlyList<PlayedMove> history) => Replay(history);
+
+    /// <summary>
+    /// 直接在一块盘面上枚举合法着法 —— 供 AI 搜索使用。
+    /// <para>
+    /// 与 <see cref="LegalMoves"/> 同一份实现,只是免去重放:搜索每往下一层都重放一遍历史,
+    /// 会把 O(b^d) 变成 O(b^d · n)。**判定逻辑仍然只有一份**,这才是重点 ——
+    /// AI 与规则对「什么是合法着法」的看法不可能分叉。
+    /// </para>
+    /// </summary>
+    /// <param name="board">局面。</param>
+    /// <param name="side">要枚举哪一方的着法。</param>
+    internal static List<MoveIntent> LegalMovesOnBoard(XiangqiBoard board, Stone side)
+        => LegalMovesOn(board, side);
 }

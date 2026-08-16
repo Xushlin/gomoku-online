@@ -10,6 +10,14 @@ namespace Gewu.Domain.Tests.Ai;
 /// 复用了五子棋的实现,一行都没改。另两档是它的反证:各自都得重写。
 /// </para>
 /// </summary>
+/// <summary>
+/// AI 工厂的分支。
+/// <para>
+/// 断言现在穿过一层 <c>PlacementAiAdapter</c> —— 外层接缝在 <c>add-xiangqi-ai</c> 里
+/// 从「收 Board、给 Position」改成了「收历史、给 MoveIntent」,而那五个落子类实现
+/// **一行没改**,由适配器补上差值。这几条测什么没变:哪个难度拿到哪个实现。
+/// </para>
+/// </summary>
 public class GameAiFactoryTests
 {
     private static readonly IGameAiFactory Gomoku = new GomokuAiFactory();
@@ -29,19 +37,22 @@ public class GameAiFactoryTests
     [Fact]
     public void Easy_Branch_Returns_EasyAi()
     {
-        Gomoku.Create(BotDifficulty.Easy, new Random(1)).Should().BeOfType<EasyAi>();
+        Gomoku.Create(BotDifficulty.Easy, new Random(1)).Should().BeOfType<PlacementAiAdapter>()
+            .Which.Inner.Should().BeOfType<EasyAi>();
     }
 
     [Fact]
     public void Medium_Branch_Returns_MediumAi()
     {
-        Gomoku.Create(BotDifficulty.Medium, new Random(1)).Should().BeOfType<MediumAi>();
+        Gomoku.Create(BotDifficulty.Medium, new Random(1)).Should().BeOfType<PlacementAiAdapter>()
+            .Which.Inner.Should().BeOfType<MediumAi>();
     }
 
     [Fact]
     public void Hard_Branch_Returns_HardAi()
     {
-        Gomoku.Create(BotDifficulty.Hard, new Random(1)).Should().BeOfType<HardAi>();
+        Gomoku.Create(BotDifficulty.Hard, new Random(1)).Should().BeOfType<PlacementAiAdapter>()
+            .Which.Inner.Should().BeOfType<HardAi>();
     }
 
     [Fact]
@@ -68,16 +79,19 @@ public class GameAiFactoryTests
         // 这条断言是本变更最想留下的一句证据:EasyAi 只按 board.Rows / board.Cols 遍历,
         // 不含任何棋种假设,所以第二个棋种直接拿来用。若哪天有人写了 TicTacToeEasyAi,
         // 这条测试会挂 —— 那时该问的是"EasyAi 哪里不够用",而不是顺手改掉断言。
-        TicTacToe.Create(BotDifficulty.Easy, new Random(1)).Should().BeOfType<EasyAi>();
+        TicTacToe.Create(BotDifficulty.Easy, new Random(1)).Should().BeOfType<PlacementAiAdapter>()
+            .Which.Inner.Should().BeOfType<EasyAi>();
     }
 
     [Fact]
     public void TicTacToe_Medium_and_Hard_are_their_own_implementations()
     {
         TicTacToe.Create(BotDifficulty.Medium, new Random(1))
-            .Should().BeOfType<TicTacToeMediumAi>();
+            .Should().BeOfType<PlacementAiAdapter>()
+            .Which.Inner.Should().BeOfType<TicTacToeMediumAi>();
         TicTacToe.Create(BotDifficulty.Hard, new Random(1))
-            .Should().BeOfType<TicTacToeHardAi>();
+            .Should().BeOfType<PlacementAiAdapter>()
+            .Which.Inner.Should().BeOfType<TicTacToeHardAi>();
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using Gewu.Domain.Entities;
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.ValueObjects;
 
 namespace Gewu.Domain.Ai;
@@ -7,33 +8,79 @@ namespace Gewu.Domain.Ai;
 /// <summary>
 /// 棋盘对抗棋种的 AI 决策接口,纯函数式。
 /// <para>
-/// 由 <c>IGomokuAi</c> 更名而来。它从来就没用到任何五子棋专属的东西 —— 入参只有一块
-/// <see cref="Board"/> 和己方棋色,而 <c>Board</c> 在 <c>add-game-rules-registry</c> 之后
-/// 已经带着自己的尺寸。名字是当时唯一把它绑在一个棋种上的东西。
+/// 收**走子历史**、返回一个 <see cref="MoveIntent"/> —— 与 <c>IGameRules.Apply</c> 同形,
+/// 理由也一样。
+/// </para>
+/// <para>
+/// **此前的签名是 <c>SelectMove(Board, Stone) → Position</c>,而那条注释写着「它从来就没用到
+/// 任何五子棋专属的东西」—— 那句话是错的。** 它有两条硬假设:吃的是 <c>Board</c>
+/// (连 N 子专用的表示,带着 <c>WinLength</c> 与 <c>PlaceStone</c>),以及返回一个
+/// <c>Position</c>(假设一步棋就是「落在某格」)。中国象棋两条都不满足。
+/// </para>
+/// <para>
+/// 那句话是 <c>add-tictactoe</c> 把 <c>IGomokuAi</c> 改名成 <c>IBoardGameAi</c> 时写下的,
+/// 而**一字棋证明不了它**:一字棋也是落子类、也用 <c>Board</c>。改个名字不会让一个接口变通用,
+/// 加一个同族的棋种也不会 —— 这与 <c>add-tictactoe</c> 自己的审计结论(「规则花了零行」)
+/// 是同一件事的两面。
 /// </para>
 /// <list type="bullet">
-/// <item>返回的 <see cref="Position"/> MUST 落在 <paramref name="board"/> 的空格上(<see cref="Stone.Empty"/>);</item>
-/// <item>MUST NOT 修改入参 <paramref name="board"/>(实现内部如需试走,应先 <see cref="Board.Clone"/>);</item>
+/// <item>返回的着法 MUST 在该棋种下**合法**;</item>
+/// <item>MUST NOT 修改入参 <c>history</c>;</item>
 /// <item>MUST NOT 读取时钟 / 磁盘 / 网络 / 静态可变状态;</item>
-/// <item>对相同 <paramref name="board"/> 快照 + 相同 <paramref name="myStone"/> 与相同随机源,输出 MUST 可复现。</item>
+/// <item>相同 <c>history</c> + 相同 <c>myStone</c> + 相同随机源 → 输出 MUST 可复现。</item>
 /// </list>
 /// </summary>
 public interface IBoardGameAi
 {
     /// <summary>
-    /// 在给定棋盘快照上,为落子方 <paramref name="myStone"/> 选择下一步。
+    /// 在给定走子历史之后,为 <paramref name="myStone"/> 一方选择下一步。
     /// </summary>
-    /// <param name="board">当前棋盘快照;调用前后内容 MUST 一致。</param>
-    /// <param name="myStone">己方棋色,MUST 是 <see cref="Stone.Black"/> 或 <see cref="Stone.White"/>。</param>
-    /// <returns>一个合法的空格坐标。</returns>
+    /// <param name="history">本局已走的全部步,按 Ply 升序;调用前后内容 MUST 一致。</param>
+    /// <param name="myStone">己方,MUST 是 <see cref="Stone.Black"/> 或 <see cref="Stone.White"/>。</param>
+    /// <returns>一个合法着法。</returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="myStone"/> 为 <see cref="Stone.Empty"/>。
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// <paramref name="board"/> 已被全部占据(五子棋 225 格、一字棋 9 格 —— 判定按
-    /// <c>board.CellCount</c>,不是任何写死的数);调用方应在棋盘满之前就已结束对局。
+    /// 该方没有任何合法着法 —— 调用方应在对局结束之后就不再问 AI。
     /// </exception>
+    MoveIntent SelectMove(IReadOnlyList<PlayedMove> history, Stone myStone);
+}
+
+/// <summary>
+/// **落子类**棋种的 AI —— 原来的 <c>IBoardGameAi</c> 签名,原样保留。
+/// <para>
+/// 分出这个窄接口,是为了让既有的五个实现(五子棋 Easy / Medium / Hard、一字棋 Medium / Hard)
+/// **一行不改**。它们背后有一批很值钱的测试 —— 尤其一字棋 Hard 档那套**穷举**验证:
+/// 对每一个可达局面断言它落在博弈论最优值上。为了换一个签名把它们重写,
+/// 是拿一份已经证明过的东西去换一次纯机械改动的风险。
+/// </para>
+/// </summary>
+public interface IPlacementAi
+{
+    /// <summary>在给定棋盘快照上为己方选择落点。</summary>
+    /// <param name="board">当前棋盘快照;调用前后内容 MUST 一致。</param>
+    /// <param name="myStone">己方棋色。</param>
     Position SelectMove(Board board, Stone myStone);
+}
+
+/// <summary>
+/// 把一个 <see cref="IPlacementAi"/> 包成 <see cref="IBoardGameAi"/>:用规则从历史重建棋盘,
+/// 再把选出的落点包成一个没有起点的着法。
+/// </summary>
+/// <param name="inner">落子类 AI。</param>
+/// <param name="rules">本棋种的规则 —— 造盘的是它,不是这里。</param>
+public sealed class PlacementAiAdapter(IPlacementAi inner, INInARowRules rules) : IBoardGameAi
+{
+    /// <summary>
+    /// 被包住的落子类 AI。公开它是因为「这个难度给的是哪个实现」是工厂的可观察行为 ——
+    /// 包一层之后如果看不见,那条约束就只能靠读代码保证。
+    /// </summary>
+    public IPlacementAi Inner => inner;
+
+    /// <inheritdoc />
+    public MoveIntent SelectMove(IReadOnlyList<PlayedMove> history, Stone myStone)
+        => MoveIntent.Place(inner.SelectMove(rules.ReplayBoard(history), myStone));
 }
 
 /// <summary>

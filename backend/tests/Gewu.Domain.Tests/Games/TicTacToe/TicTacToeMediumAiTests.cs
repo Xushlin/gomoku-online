@@ -252,7 +252,7 @@ public class TicTacToeMediumAiTests
 
         do
         {
-            IBoardGameAi ai = toMove == Stone.Black ? medium : hard;
+            IPlacementAi ai = toMove == Stone.Black ? medium : hard;
             result = board.PlaceStone(new DomainMove(ai.SelectMove(board, toMove), toMove));
             toMove = toMove == Stone.Black ? Stone.White : Stone.Black;
         }

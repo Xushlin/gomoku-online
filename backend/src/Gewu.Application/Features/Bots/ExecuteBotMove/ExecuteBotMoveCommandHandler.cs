@@ -99,22 +99,17 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares game '{room.GameKey}', which has no AI.");
 
-        // AI 层吃的是 Board,那是连 N 子专有的表示 —— 所以这里要的是窄接口。
-        // 走子类棋种(象棋)自带表示,它的 AI 不走这条路。
-        if (rules is not INInARowRules boardRules)
-        {
-            throw new RoomNotFoundException(
-                $"Room '{room.Id.Value}' declares game '{room.GameKey}', whose AI does not use a Board.");
-        }
-
-        // 盘面由规则从走子历史重建 —— 聚合只交出发生过什么。
-        var board = boardRules.ReplayBoard(room.Game.History());
-
+        // handler 不再造盘 —— 它把**历史**交给 AI,盘面怎么重建是那个棋种自己的事。
+        // 此前这里要把规则 cast 成 INInARowRules 才拿得到 Board,而那条 cast 正是
+        // 「AI 接缝仍然是落子类形状」的症状:象棋根本过不去。
         var ai = aiFactory.Create(difficulty, _random.Get());
-        var pick = ai.SelectMove(board, botStone);
+        var pick = ai.SelectMove(room.Game.History(), botStone);
 
         await _sender.Send(
-            new MakeMoveCommand(request.BotUserId, request.RoomId, pick.Row, pick.Col),
+            new MakeMoveCommand(
+                request.BotUserId, request.RoomId,
+                pick.To.Row, pick.To.Col,
+                pick.From?.Row, pick.From?.Col),
             cancellationToken);
 
         return Unit.Value;

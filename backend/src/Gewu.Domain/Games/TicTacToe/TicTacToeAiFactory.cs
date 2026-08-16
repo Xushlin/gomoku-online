@@ -1,3 +1,4 @@
+using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Ai;
 using Gewu.Domain.Games.Abstractions;
 
@@ -21,7 +22,9 @@ public sealed class TicTacToeAiFactory : IGameAiFactory
     public IBoardGameAi Create(BotDifficulty difficulty, Random random)
     {
         ArgumentNullException.ThrowIfNull(random);
-        return difficulty switch
+        // 落子类 AI 用 Board 思考,而外层接缝收历史、给 MoveIntent —— 适配器补这一段,
+        // 于是那五个实现连同它们的测试一行不用改。
+        IPlacementAi inner = difficulty switch
         {
             BotDifficulty.Easy => new EasyAi(random),
             BotDifficulty.Medium => new TicTacToeMediumAi(random),
@@ -30,5 +33,6 @@ public sealed class TicTacToeAiFactory : IGameAiFactory
             _ => throw new ArgumentOutOfRangeException(
                 nameof(difficulty), difficulty, "Unknown BotDifficulty value."),
         };
+        return new PlacementAiAdapter(inner, BuiltInGameRules.TicTacToe);
     }
 }
