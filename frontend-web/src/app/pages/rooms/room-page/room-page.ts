@@ -12,6 +12,8 @@ import { boardSizeFor } from '../../../games/board-size';
 import { GameCatalogService } from '../../../games/game-catalog.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
+import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
+import { XiangqiBoard, type PieceMoveEvent } from '../../../games/xiangqi/board/xiangqi-board';
 import { Board } from './board/board';
 import { ChatPanel, type SendChatPayload } from './chat/chat-panel';
 import { GameEndedDialog, type GameEndedDialogData, type GameEndedDialogResult } from './dialogs/game-ended-dialog';
@@ -26,7 +28,7 @@ const TICK_MS = 1_000;
 @Component({
   selector: 'app-room-page',
   standalone: true,
-  imports: [Board, ChatPanel, RoomSidebar, RouterLink, TranslocoPipe],
+  imports: [Board, XiangqiBoard, ChatPanel, RoomSidebar, RouterLink, TranslocoPipe],
   templateUrl: './room-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,6 +74,19 @@ export class RoomPage implements OnInit, OnDestroy {
   protected readonly boardSize = computed(() =>
     boardSizeFor(this.catalog, this.state()?.gameKey),
   );
+
+  /**
+   * Which board renderer this room needs.
+   *
+   * A two-way `@if` in the template rather than a board-component registry. The
+   * registries this app does keep (themes, locales, sound packs, board skins) exist
+   * because adding an entry is a routine, expected operation. A board shape is not:
+   * the match family has exactly these two, and the only remaining match game
+   * (成语接龙) has no grid at all. A registry here would trade type-safe input and
+   * output bindings for dynamic components — a real guarantee for an extension that
+   * is not coming. If a third shape ever appears, extracting one then costs the same.
+   */
+  protected readonly isXiangqi = computed(() => this.state()?.gameKey === XIANGQI_KEY);
 
   protected readonly mySide = computed<'black' | 'white' | 'spectator'>(() => {
     const s = this.state();
@@ -204,11 +219,28 @@ export class RoomPage implements OnInit, OnDestroy {
   }
 
   protected handleCellClick(payload: { row: number; col: number }): void {
+    this.submitMove((id) => this.hub.makeMove(id, payload.row, payload.col));
+  }
+
+  /**
+   * Xiangqi's move is `from → to`, so it goes through `MovePiece` rather than
+   * `MakeMove`. The failure path is identical, which is why both share `submitMove`.
+   *
+   * The board keeps its selection when this rejects — the component only clears it
+   * when a ply actually lands. A refused move almost always means "wrong target",
+   * not "wrong piece".
+   */
+  protected handlePieceMove(payload: PieceMoveEvent): void {
+    this.submitMove((id) =>
+      this.hub.movePiece(id, payload.from.row, payload.from.col, payload.to.row, payload.to.col),
+    );
+  }
+
+  private submitMove(send: (roomId: string) => Promise<void>): void {
     const id = this.roomId;
     if (!id || this.submittingMove()) return;
     this.submittingMove.set(true);
-    this.hub
-      .makeMove(id, payload.row, payload.col)
+    send(id)
       .catch((err: unknown) => {
         const key = hubErrorToKey(err);
         this.flashError(key);

@@ -32,6 +32,25 @@ export interface BoardSkinTokens {
     /** `box-shadow` for white stones (usually includes the inset ring). */
     whiteShadow: string;
   }>;
+  readonly pieces: Readonly<{
+    /**
+     * Disc background for a 中国象棋 piece.
+     *
+     * Xiangqi pieces are discs with a character on them, not stones, so they need
+     * their own tokens rather than reusing `stones`.
+     */
+    bg: string;
+    /**
+     * Glyph colour of the red side (`Stone.Black` — see games/xiangqi/position.ts).
+     *
+     * A skin may pick any *shade* that reads on its own surface, but not any hue:
+     * a xiangqi board whose red side is not red is broken, in every theme. Hue is
+     * the game's identity; shade is the skin's call.
+     */
+    red: string;
+    /** Glyph colour of the black side. Same rule: shade is free, hue is not. */
+    black: string;
+  }>;
   readonly lastMove: Readonly<{
     /** Ring color around the most recent move. */
     ring: string;

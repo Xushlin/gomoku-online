@@ -83,6 +83,7 @@ describe('DefaultBoardSkinService', () => {
         whiteRim: '#ccc',
         whiteShadow: 'none',
       },
+      pieces: { bg: '#f3e3c0', red: '#b3261e', black: '#241d16' },
       lastMove: { ring: '#f00' },
     });
     expect(svc.availableSkins()).toContain('bamboo');

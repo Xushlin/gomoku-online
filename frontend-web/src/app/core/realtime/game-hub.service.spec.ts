@@ -123,6 +123,27 @@ describe('DefaultGameHubService', () => {
     expect(conn.invoke).toHaveBeenCalledWith('JoinRoom', 'r-2');
   });
 
+  it('movePiece() invokes MovePiece with all five arguments', async () => {
+    // Two hub methods rather than `MakeMove` with optional parameters, because
+    // SignalR does not apply C# optional-parameter defaults: a 3-argument call
+    // against a 5-parameter method is rejected outright, which would have broken
+    // every published client on its next move. Unit tests at three backend layers
+    // all passed; the end-to-end smoke is what caught it. This is the client half.
+    const { svc, conn } = setup();
+
+    await svc.movePiece('r-1', 9, 0, 8, 0);
+
+    expect(conn.invoke).toHaveBeenCalledWith('MovePiece', 'r-1', 9, 0, 8, 0);
+  });
+
+  it('makeMove() still invokes MakeMove with three arguments', async () => {
+    const { svc, conn } = setup();
+
+    await svc.makeMove('r-1', 7, 7);
+
+    expect(conn.invoke).toHaveBeenCalledWith('MakeMove', 'r-1', 7, 7);
+  });
+
   it('RoomState event replaces state wholesale', async () => {
     const { svc, conn } = setup();
     await svc.joinRoom('r-1');

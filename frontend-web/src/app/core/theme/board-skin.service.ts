@@ -89,8 +89,8 @@ export class DefaultBoardSkinService extends BoardSkinService {
   }
 
   private validate(name: string, tokens: BoardSkinTokens): void {
-    if (!tokens?.board || !tokens.stones || !tokens.lastMove) {
-      this.warn(`register('${name}'): missing board/stones/lastMove section.`);
+    if (!tokens?.board || !tokens.stones || !tokens.pieces || !tokens.lastMove) {
+      this.warn(`register('${name}'): missing board/stones/pieces/lastMove section.`);
     }
   }
 

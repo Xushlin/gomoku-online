@@ -1,0 +1,41 @@
+<div class="xq-board">
+  <svg class="xq-lines" viewBox="0 0 8 9" preserveAspectRatio="none" aria-hidden="true">
+    <path [attr.d]="gridPath" fill="none" stroke-width="1" vector-effect="non-scaling-stroke" />
+  </svg>
+
+  <div class="xq-river" aria-hidden="true">
+    <span>楚河</span>
+    <span>漢界</span>
+  </div>
+
+  <div class="xq-grid">
+    @for (r of rowIndices; track r) {
+      @for (c of colIndices; track c) {
+        <button
+          type="button"
+          class="xq-point focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default"
+          [class.xq-point--last-to]="isLastTo(r, c)"
+          [class.xq-point--last-from]="isLastFrom(r, c)"
+          [attr.aria-pressed]="isSelected(r, c)"
+          [attr.aria-label]="
+            'xiangqi.board.point'
+              | transloco: { row: r + 1, col: c + 1, piece: pieceNameKey(r, c) | transloco }
+          "
+          [disabled]="pointDisabled(r, c)"
+          (click)="handleClick(r, c)"
+        >
+          @if (glyph(r, c); as text) {
+            <span
+              class="xq-piece"
+              [class.xq-piece--red]="isRed(r, c)"
+              [class.xq-piece--black]="!isRed(r, c)"
+              [class.xq-piece--selected]="isSelected(r, c)"
+              aria-hidden="true"
+              >{{ text }}</span
+            >
+          }
+        </button>
+      }
+    }
+  </div>
+</div>

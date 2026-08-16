@@ -262,6 +262,7 @@
       "network": "Network error — please try again.",
       "not-your-turn": "It's not your turn.",
       "invalid-move": "That move isn't allowed.",
+      "self-check": "That move would leave your own general open to capture (self-check, or the two generals facing each other).",
       "concurrent-move-refetched": "Out of sync — board refreshed.",
       "urge-cooldown": "Urge is on cooldown."
     },
@@ -420,6 +421,42 @@
     "start": "Start game",
     "starting": "Creating…",
     "subtitle": "Three in a row on 3×3. A quick game against the machine — unrated."
+  },
+  "xiangqi": {
+    "back": "Back to games",
+    "board": {
+      "empty": "empty",
+      "point": "Rank {{row}}, file {{col}}, {{piece}}"
+    },
+    "difficulty-easy": "Easy",
+    "difficulty-hard": "Hard",
+    "difficulty-legend": "Difficulty",
+    "difficulty-medium": "Medium",
+    "error-create-failed": "Could not create the game. Please try again.",
+    "notice-ai": "The bot uses a depth-limited search: a higher setting looks further ahead and thinks a little longer. No claim is made about how strong any setting is — xiangqi cannot be searched exhaustively, so the only honest thing to state is what it does.",
+    "notice-unrated": "This game is unrated: results do not affect your rating or record.",
+    "piece": {
+      "black-advisor": "black advisor",
+      "black-cannon": "black cannon",
+      "black-chariot": "black chariot",
+      "black-elephant": "black elephant",
+      "black-general": "black general",
+      "black-horse": "black horse",
+      "black-soldier": "black soldier",
+      "red-advisor": "red advisor",
+      "red-cannon": "red cannon",
+      "red-chariot": "red chariot",
+      "red-elephant": "red elephant",
+      "red-general": "red general",
+      "red-horse": "red horse",
+      "red-soldier": "red soldier"
+    },
+    "side-black": "Red (first)",
+    "side-legend": "Your side",
+    "side-white": "Black (second)",
+    "start": "Start game",
+    "starting": "Creating…",
+    "subtitle": "Ten ranks, nine files, a river between them. A game against the machine — unrated."
   },
   "leaderboard": {
     "title": "Leaderboard",

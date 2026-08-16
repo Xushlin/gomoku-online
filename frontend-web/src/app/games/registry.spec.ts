@@ -41,6 +41,16 @@ describe('GAME_REGISTRY', () => {
     expect(crossword?.contentLocales).toEqual(['zh-CN']);
   });
 
+  it('has 中国象棋 available at its own route, on a 10×9 board', () => {
+    const xiangqi = GAME_REGISTRY.find((g) => g.key === 'xiangqi');
+
+    expect(xiangqi?.status).toBe('available');
+    expect(xiangqi?.category).toBe('match');
+    expect(xiangqi?.launchRoute).toBe('/g/xiangqi');
+    // Not square, unlike every board that shipped before it.
+    expect(xiangqi?.board).toEqual({ rows: 10, cols: 9 });
+  });
+
   it('uses kebab-case keys', () => {
     for (const game of GAME_REGISTRY) {
       expect(game.key).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);

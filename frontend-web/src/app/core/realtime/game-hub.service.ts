@@ -61,6 +61,22 @@ export abstract class GameHubService {
   abstract leaveRoom(roomId: string): Promise<void>;
   abstract joinSpectatorGroup(roomId: string): Promise<void>;
   abstract makeMove(roomId: string, row: number, col: number): Promise<void>;
+  /**
+   * A slide move — `from → to`. Xiangqi uses this; placement games use `makeMove`.
+   *
+   * These are two hub methods rather than `makeMove` with two optional parameters
+   * because **SignalR does not apply C# optional-parameter defaults**: a 3-argument
+   * invocation against a 5-parameter method is rejected outright, so widening
+   * `MakeMove` would have broken every published client on its next move. Unit tests
+   * at three layers all passed; the end-to-end smoke caught it.
+   */
+  abstract movePiece(
+    roomId: string,
+    fromRow: number,
+    fromCol: number,
+    row: number,
+    col: number,
+  ): Promise<void>;
   abstract sendChat(roomId: string, content: string, channel: ChatChannel): Promise<void>;
   abstract urge(roomId: string): Promise<void>;
 
@@ -189,6 +205,17 @@ export class DefaultGameHubService extends GameHubService {
   async makeMove(roomId: string, row: number, col: number): Promise<void> {
     const conn = await this.ensureConnected();
     await conn.invoke('MakeMove', roomId, row, col);
+  }
+
+  async movePiece(
+    roomId: string,
+    fromRow: number,
+    fromCol: number,
+    row: number,
+    col: number,
+  ): Promise<void> {
+    const conn = await this.ensureConnected();
+    await conn.invoke('MovePiece', roomId, fromRow, fromCol, row, col);
   }
 
   async sendChat(roomId: string, content: string, channel: ChatChannel): Promise<void> {

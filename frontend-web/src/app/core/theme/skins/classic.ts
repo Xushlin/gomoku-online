@@ -22,6 +22,15 @@ export const classicSkin: BoardSkinTokens = {
     whiteRim: 'var(--color-muted)',
     whiteShadow: '0 2px 4px rgb(0 0 0 / 0.35), inset 0 0 0 1.5px var(--color-muted)',
   },
+  pieces: {
+    // Follows the theme for the disc and the black side; the red side does not,
+    // because 红 is the game's identity rather than a palette choice.
+    // --color-bg rather than --color-surface: this skin paints the board in
+    // --color-surface, so matching it would make the discs invisible.
+    bg: 'var(--color-bg)',
+    red: '#c0392b',
+    black: 'var(--color-text)',
+  },
   lastMove: {
     ring: 'var(--color-primary)',
   },
