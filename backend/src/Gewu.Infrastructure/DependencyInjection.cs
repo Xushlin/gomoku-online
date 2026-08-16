@@ -48,8 +48,12 @@ public static class DependencyInjection
 
         // 棋盘对抗棋种。加一个连 N 子棋种就是下面再来一行 —— 连规则类都不用写。
         // 一字棋是这句话的第一次兑现:它整个棋种就是 (3, 3, 3) 这三个数。
-        services.AddSingleton<IGameRules>(BuiltInGameRules.Gomoku);
-        services.AddSingleton<IGameRules>(BuiltInGameRules.TicTacToe);
+        // 从 BuiltInGameRules.All 注册 —— 那是**唯一**的一份内置棋种清单。
+        // 在这里逐个写 AddSingleton 会造出第二份,而两份清单迟早不一致。
+        foreach (var rules in BuiltInGameRules.All)
+        {
+            services.AddSingleton(rules);
+        }
         services.AddSingleton<IGameRulesRegistry, GameRulesRegistry>();
 
         // 棋种 AI。与规则分开注册,因为注册单位不同:规则是"怎么判胜",AI 是"怎么思考"

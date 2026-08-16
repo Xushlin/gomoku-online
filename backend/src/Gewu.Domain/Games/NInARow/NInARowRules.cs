@@ -172,4 +172,26 @@ public static class BuiltInGameRules
     /// </summary>
     public static readonly INInARowRules TicTacToe = new NInARowRules(
         GameKeys.TicTacToe, 3, 3, 3, supportsHumanVsHuman: false, isRated: false);
+
+    /// <summary>
+    /// 中国象棋。规则整个在 <see cref="Xiangqi.XiangqiRules"/> 里 —— 它**不是**连 N 子棋种,
+    /// 所以不实现 <see cref="INInARowRules"/>。
+    /// <para>
+    /// 今天没有任何进入象棋对局的入口(没有 AI、没有人人对战),因此
+    /// <c>SupportsHumanVsHuman == false</c> 且不计分。见该类的说明。
+    /// </para>
+    /// </summary>
+    public static readonly IGameRules Xiangqi = new Xiangqi.XiangqiRules();
+
+    /// <summary>
+    /// **全部内置棋种,唯一的一份清单。** DI 注册与「遍历注册表」的不变量测试都从这里取。
+    /// <para>
+    /// 加它是因为此前有两份:<c>DependencyInjection</c> 里逐个 <c>AddSingleton</c>,
+    /// 外加测试里手写的 <c>AllBuiltInRules() =&gt; { Gomoku, TicTacToe }</c>。
+    /// 后者的注释写着「遍历注册表…将来加中国象棋它自动被覆盖」——**那句话是假的**,
+    /// 数据源是手写的,象棋会静静绕过 <c>IsRated ⇒ SupportsHumanVsHuman</c> 那条测试。
+    /// 那正是它自己预言的失效方式,只是它预言错了自己的机制。
+    /// </para>
+    /// </summary>
+    public static readonly IReadOnlyList<IGameRules> All = [Gomoku, TicTacToe, Xiangqi];
 }
