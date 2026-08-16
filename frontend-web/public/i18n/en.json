@@ -406,6 +406,39 @@
       "load-level": "Couldn't start this level."
     }
   },
+  "klotski": {
+    "back-to-levels": "Back to levels",
+    "best": "{{stars}} stars · {{seconds}}s",
+    "board": {
+      "piece": "{{name}}, row {{row}} column {{col}}, {{height}} by {{width}}",
+      "slide-here": "Slide to row {{row}} column {{col}}"
+    },
+    "difficulty-1": "Gentle",
+    "difficulty-2": "Tricky",
+    "difficulty-3": "Hard",
+    "error-hint-failed": "Could not get a hint. Please try again.",
+    "error-load-failed": "Could not load. Please try again.",
+    "error-submit-failed": "Could not submit. Please try again.",
+    "hint": "Hint",
+    "hint-cost": "A hint plays one move for you and affects your rating on this level.",
+    "hints-used": "{{count}} hints",
+    "level-n": "Level {{n}}",
+    "level-not-found": "That level does not exist.",
+    "loading": "Loading…",
+    "locked": "Finish the previous level first",
+    "moves": "{{count}} moves",
+    "new-best": "New best",
+    "no-levels": "No levels yet.",
+    "not-played": "Not played yet",
+    "play": "Play",
+    "play-again": "Play again",
+    "progress": "{{completed}} solved · {{stars}} stars",
+    "restart": "Restart",
+    "result-stars": "{{stars}} stars",
+    "retry": "Retry",
+    "solved": "Cao Cao is out!",
+    "subtitle": "Slide Cao Cao out through the gap at the bottom. Fewer moves is better."
+  },
   "tictactoe": {
     "back": "Back to games",
     "difficulty-easy": "Easy",

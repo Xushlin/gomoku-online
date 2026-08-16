@@ -1,0 +1,81 @@
+<div class="mx-auto flex w-full max-w-2xl flex-col gap-5">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-text text-2xl font-semibold tracking-tight">
+      {{ 'games.klotski.title' | transloco }}
+    </h1>
+    <p class="text-muted text-sm">{{ 'klotski.subtitle' | transloco }}</p>
+  </header>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-hidden="true">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <li class="bg-surface border-border rounded-card h-24 animate-pulse border"></li>
+        }
+      </ul>
+      <p class="text-muted text-sm">{{ 'klotski.loading' | transloco }}</p>
+    }
+    @case ('empty') {
+      <p class="text-muted text-sm">{{ 'klotski.no-levels' | transloco }}</p>
+    }
+    @case ('error') {
+      <p class="text-danger text-sm" role="alert">{{ 'klotski.error-load-failed' | transloco }}</p>
+      <button
+        type="button"
+        class="border-border text-text rounded-card focus-visible:outline-primary self-start border px-4 py-2 text-sm"
+        (click)="load()"
+      >
+        {{ 'klotski.retry' | transloco }}
+      </button>
+    }
+    @default {
+      @if (progress(); as p) {
+        <p class="text-muted text-sm">
+          {{ 'klotski.progress' | transloco: { completed: p.levelsCompleted, stars: p.totalStars } }}
+        </p>
+      }
+
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        @for (level of levels(); track level.levelIndex) {
+          <li
+            class="bg-surface border-border rounded-card relative flex flex-col gap-2 border p-4"
+            [class.opacity-60]="!level.unlocked"
+          >
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="text-text font-medium">
+                {{ 'klotski.level-n' | transloco: { n: level.levelIndex + 1 } }}
+              </span>
+              <span class="text-muted text-xs">{{ difficultyKey(level.difficulty) | transloco }}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-lg leading-none" aria-hidden="true">
+                @for (s of starList; track s) {
+                  <span [class.opacity-25]="s > (level.bestStars ?? 0)">★</span>
+                }
+              </span>
+              <span class="text-muted text-xs">
+                @if (level.bestStars !== null) {
+                  {{ 'klotski.best' | transloco: { stars: level.bestStars, seconds: seconds(level.bestDurationMs) } }}
+                } @else {
+                  {{ 'klotski.not-played' | transloco }}
+                }
+              </span>
+            </div>
+
+            @if (level.unlocked) {
+              <a
+                [routerLink]="['/g/klotski/levels', level.levelIndex]"
+                class="text-primary after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-primary)] text-sm"
+              >
+                {{ 'klotski.play' | transloco }}
+              </a>
+            } @else {
+              <span class="text-muted text-sm">{{ 'klotski.locked' | transloco }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>

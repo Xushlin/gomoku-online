@@ -65,6 +65,17 @@ export const routes: Routes = [
     loadComponent: () => import('./games/idiom-crossword/play/play').then((m) => m.Play),
   },
   {
+    path: 'g/klotski',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./games/klotski/level-list/level-list').then((m) => m.KlotskiLevelList),
+  },
+  {
+    path: 'g/klotski/levels/:index',
+    canMatch: [authGuard],
+    loadComponent: () => import('./games/klotski/play/play').then((m) => m.KlotskiPlay),
+  },
+  {
     path: 'rooms/:id',
     canMatch: [authGuard],
     loadComponent: () =>

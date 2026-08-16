@@ -289,6 +289,93 @@ body {
 }
 
 /*
+ * 华容道 — sliding blocks on a rows × cols grid.
+ *
+ * Pieces are grid items spanning several cells, not absolutely positioned boxes:
+ * the grid already knows where row 3 column 1 is, and a piece that declares its
+ * own `grid-area` cannot drift out of alignment with the exit marker underneath.
+ * The CSS transition is on `grid-area`'s resolved position, which browsers animate
+ * as a layout change — cheap here because the grid is 20 cells.
+ *
+ * Every colour is a token, so the board follows the active theme.
+ */
+.kt-board {
+  display: grid;
+  grid-template-columns: repeat(var(--kt-cols, 4), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--kt-rows, 5), minmax(0, 1fr));
+  gap: 2px;
+  width: 100%;
+  max-width: 360px;
+  margin-inline: auto;
+  padding: 6px;
+  container-type: inline-size;
+  border-radius: var(--radius-card, 10px);
+  background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Where 曹操 has to end up. Painted, not implied — the player should not have to
+   be told the goal in prose. */
+.kt-exit {
+  border: 2px dashed var(--color-primary);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.kt-piece {
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-bottom: 3px solid color-mix(in srgb, var(--color-text) 25%, transparent);
+  box-shadow: var(--shadow-elevated);
+  cursor: pointer;
+  font-size: 4.4cqw;
+  font-weight: 600;
+  line-height: 1.15;
+  transition:
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+.kt-piece:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* 曹操 reads as the thing you are moving, in every theme. */
+.kt-piece--target {
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  border-bottom-color: var(--color-primary);
+  font-size: 6cqw;
+}
+
+.kt-piece--selected {
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    var(--shadow-elevated);
+}
+
+/* A legal destination. Sits under the pieces in z-order but over the exit. */
+.kt-target {
+  border: 2px dashed var(--color-primary);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  cursor: pointer;
+}
+
+.kt-piece__name {
+  writing-mode: vertical-rl;
+  letter-spacing: 0.05em;
+}
+/* Wider-than-tall pieces (关羽, 曹操) read better across than stacked. */
+.kt-piece--wide .kt-piece__name {
+  writing-mode: horizontal-tb;
+}
+
+/*
  * 成语纵横 — movable-type board.
  *
  * Every colour is a token, so the board follows whichever theme is active
