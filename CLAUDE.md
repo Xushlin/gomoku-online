@@ -119,6 +119,14 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   It also found the same leak one layer up from the one `generalize-puzzle-rules` fixed: `PuzzleApiService.parseLayout` returned `CrosswordLayout`, `PuzzleHint.revealed` was a `CrosswordRevealedCell`, `PuzzleCheckResult.solved` a `CrosswordSolvedWord` — one game's shape on the *platform's* client, holding only because one game used it. Now generic.
 
+- [x] **`remove-manifest-board`** — `GameManifest.board` is gone; `boardSizeFor` reads the descriptor `GET /api/games` already returns.
+
+  The copy had been tolerated on this repo's own test — *whether a copy is acceptable depends not on how small it is but on whether being wrong would ever be noticed*. `add-web-xiangqi` quietly voided that: it added `{ rows: 10, cols: 9 }` for a game whose board component hardcodes its own 10×9, so **nothing read it**, and a wrong value there would have been noticed by nobody. The field survived only because a test demanded every playable match game declare one. The field and that invariant died together.
+
+  The one real cost is that the size is now asynchronous, so both pages hold their skeleton until `capabilities.loaded()`. `DEFAULT_BOARD` narrowed with it: it is for *a game key this client has never heard of*, **not** for *the descriptor has not arrived* — conflating those is how you end up painting a fallback over a size the client is about to learn.
+
+  A note on evidence, kept in the archived tasks: the gate is proven by a unit test with a `loaded() === false` stub. The browser run only *corroborates* it — sampling started after page load, so it shows no flash at observable resolution rather than proving the first frame. **"I did not see it" and "it does not happen" are not the same claim.**
+
 Not yet done — platform roadmap, in this order:
 
 1. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, so it is also what finally forces lobby generalization. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
@@ -130,10 +138,6 @@ Deferred follow-ups, each with a reason:
 
 - `squash-migration-baseline` — squash the 11 migrations into one. Needs deltas because `ai-opponent` has requirements named after `AddBotSupport` / `AddHardBotAccount`, `room-and-gameplay` after `AddGameEndReason`, and `user-management` now names `AddUserGameStats` / `DropUserRatingColumns` — the last pair with a normative ordering constraint the squash must preserve. Cheap while the DB is still local-only (no production data exists).
 - `backend/smoke/AiSmoke` is **broken and has been since `add-leaderboard-pagination`**: step 7 deserializes `/api/leaderboard` into `List<LeaderboardEntry>`, but the endpoint returns `PagedResult<T>`. It is not in `Gewu.slnx` and CI does not run it, which is exactly why nobody noticed. Either wire it into CI or delete it — a smoke test outside CI rots silently and then lies about coverage.
-- `GameManifest.board` (front-end copy of the board dimensions) is **deletable** — `GET /api/games` already carries `rows` / `cols`. Its doc comment still says to wait for `generalize-match-contract`; that condition is stale.
-
-  `add-web-xiangqi` was the change that next touched the manifest and it **did not** delete the field — it added another copy (`{ rows: 10, cols: 9 }`). Worse, nothing reads that copy: `XiangqiBoard` hardcodes its own dimensions because a 10×9 intersection board is not a parameterisation of the n-in-a-row grid. By this repo's own test — *would being wrong ever be noticed?* — a xiangqi `board` value that is wrong would be noticed by nobody. It is kept only because `board-size.spec.ts` requires every playable match game to declare one. That invariant and this field should die together. **This is no longer a "fold it in when convenient" item.**
-
 - `hubErrorToKey` matches the server's **English prose** with substrings — a second copy of the domain's exception wording that nothing keeps in sync. `add-web-xiangqi` raised the stakes: gomoku's board only lets you click an empty cell, so `invalid-move` was near-unreachable, but 象棋's board deliberately knows no rules, so a refused move is the ordinary way a player learns what a piece can do. The fix is a structured error code on the hub contract, which is a cross-cutting change to error handling.
 
 - Puzzle level artefacts are stored **pretty-printed** in the database (`layoutJson` carries its indentation), so a 10-piece klotski layout ships 1.7 kB instead of ~0.5 kB. Pre-dates `add-klotski` — 成语纵横 does exactly the same — but both games now pay transfer cost for a reviewable artefact. Fixing it means compacting in the seeder, which is puzzle-core work.
