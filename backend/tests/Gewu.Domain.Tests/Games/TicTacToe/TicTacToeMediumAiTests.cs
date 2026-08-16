@@ -18,7 +18,7 @@ namespace Gewu.Domain.Tests.Games.TicTacToe;
 /// </summary>
 public class TicTacToeMediumAiTests
 {
-    private static readonly IGameRules Rules = BuiltInGameRules.TicTacToe;
+    private static readonly INInARowRules Rules = BuiltInGameRules.TicTacToe;
 
     private static Board Board(params (int R, int C, Stone S)[] stones)
     {

@@ -20,7 +20,7 @@ namespace Gewu.Domain.Tests.Games.TicTacToe;
 /// </summary>
 public class TicTacToeHardAiTests
 {
-    private static readonly IGameRules Rules = BuiltInGameRules.TicTacToe;
+    private static readonly INInARowRules Rules = BuiltInGameRules.TicTacToe;
 
     private static Stone Other(Stone s) => s == Stone.Black ? Stone.White : Stone.Black;
 

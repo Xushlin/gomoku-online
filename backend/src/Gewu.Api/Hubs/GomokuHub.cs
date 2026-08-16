@@ -85,10 +85,35 @@ public sealed class GomokuHub : Hub
     public Task JoinSpectatorGroup(Guid roomId)
         => Groups.AddToGroupAsync(Context.ConnectionId, SpectatorsGroupName(new RoomId(roomId)));
 
-    /// <summary>落子。</summary>
+    /// <summary>
+    /// 落子 —— **落子类**棋种(五子棋 / 一字棋)的走子入口。签名一个字没改。
+    /// </summary>
     public async Task MakeMove(Guid roomId, int row, int col)
     {
         var command = new MakeMoveCommand(GetUserId(), new RoomId(roomId), row, col);
+        await _mediator.Send(command, Context.ConnectionAborted);
+    }
+
+    /// <summary>
+    /// 走子 —— **走子类**棋种(中国象棋)的走子入口:把 <paramref name="fromRow"/> /
+    /// <paramref name="fromCol"/> 上的棋子走到 <paramref name="row"/> / <paramref name="col"/>。
+    /// <para>
+    /// **为什么是第二个方法,而不是给 <see cref="MakeMove"/> 加两个可选参数:**
+    /// SignalR **不套用 C# 的可选参数默认值**。三参调用打到五参方法上,服务端直接回
+    /// <c>InvalidDataException: Invocation provides 3 argument(s) but target expects 5</c> ——
+    /// 也就是说那种写法会让每一个已发布的客户端当场下不了棋。
+    /// 这一条是 AiSmoke 跑出来的:那个工具不知道本次重构存在,所以它撞上的正是真实客户端会撞上的东西。
+    /// </para>
+    /// <para>
+    /// 这与 design D2「不给规则开两个方法」不矛盾:那里的问题是**调用方得判断棋种**,
+    /// 而调用方是通用的聚合根。这里的调用方是象棋自己的棋盘组件 —— 它按定义只服务一个棋种,
+    /// 不存在判断。Domain 那一侧仍然只有 <c>Apply</c> 一个入口。
+    /// </para>
+    /// </summary>
+    public async Task MovePiece(Guid roomId, int fromRow, int fromCol, int row, int col)
+    {
+        var command = new MakeMoveCommand(
+            GetUserId(), new RoomId(roomId), row, col, fromRow, fromCol);
         await _mediator.Send(command, Context.ConnectionAborted);
     }
 

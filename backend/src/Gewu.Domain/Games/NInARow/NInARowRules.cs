@@ -1,4 +1,6 @@
 using Gewu.Domain.Entities;
+using Gewu.Domain.Enums;
+using Gewu.Domain.Exceptions;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.ValueObjects;
 
@@ -14,7 +16,7 @@ namespace Gewu.Domain.Games.NInARow;
 /// 无状态,可安全地被并发的多个房间共享。
 /// </para>
 /// </summary>
-public sealed class NInARowRules : IGameRules
+public sealed class NInARowRules : INInARowRules
 {
     /// <summary>
     /// 构造一个连 N 子棋种。
@@ -94,7 +96,50 @@ public sealed class NInARowRules : IGameRules
     public Board CreateBoard() => new(Rows, Cols, WinLength);
 
     /// <inheritdoc />
-    public bool IsInBounds(Position position)
+    public Board ReplayBoard(IReadOnlyList<PlayedMove> history)
+    {
+        var board = CreateBoard();
+        foreach (var played in history)
+        {
+            board.PlaceStone(new Move(played.To, played.Side));
+        }
+        return board;
+    }
+
+    /// <inheritdoc />
+    public MoveApplication Apply(
+        IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side)
+    {
+        if (side == Stone.Empty)
+        {
+            throw new InvalidMoveException("Move side cannot be Stone.Empty; use Black or White.");
+        }
+
+        // 形状校验属于规则,不属于聚合根 —— 聚合根不知道哪些棋种走子。连 N 子是**落子类**:
+        // 一步棋只有落点。带起点的载荷不是「走错了」,是「客户端发了一个这个棋种不存在的走法」。
+        if (intent.From is not null)
+        {
+            throw new InvalidMoveException(
+                $"'{GameKey}' places stones; a move must not carry an origin square.");
+        }
+
+        if (!IsInBounds(intent.To))
+        {
+            throw new InvalidMoveException(
+                $"Position ({intent.To.Row}, {intent.To.Col}) is outside the bounds of '{GameKey}'.");
+        }
+
+        // 从历史重放。此前这段在 Game.ReplayBoard 里 —— 搬进来是本变更的要点:
+        // 盘面语义整个属于规则,聚合根不该知道有一块 Board。
+        var board = ReplayBoard(history);
+
+        var result = board.PlaceStone(new Move(intent.To, side));
+        return new MoveApplication(result);
+    }
+
+    /// <summary>该坐标是否在本棋种界内。<c>Position</c> 只保证非负,上界在这里判。</summary>
+    /// <param name="position">坐标。</param>
+    private bool IsInBounds(Position position)
         => position.Row < Rows && position.Col < Cols;
 }
 
@@ -102,7 +147,7 @@ public sealed class NInARowRules : IGameRules
 public static class BuiltInGameRules
 {
     /// <summary>五子棋:15×15 连五。与本变更前写死的常量完全一致。</summary>
-    public static readonly IGameRules Gomoku =
+    public static readonly INInARowRules Gomoku =
         new NInARowRules(GameKeys.Gomoku, 15, 15, 5);
 
     /// <summary>
@@ -125,6 +170,6 @@ public static class BuiltInGameRules
     /// 第一次被真正验证。
     /// </para>
     /// </summary>
-    public static readonly IGameRules TicTacToe = new NInARowRules(
+    public static readonly INInARowRules TicTacToe = new NInARowRules(
         GameKeys.TicTacToe, 3, 3, 3, supportsHumanVsHuman: false, isRated: false);
 }

@@ -27,10 +27,10 @@ public class GetGameReplayQueryHandlerTests
         var start = RoomsFixtures.Now.AddSeconds(2);
         for (var i = 0; i < 4; i++)
         {
-            room.PlayMove(alice.Id, new Position(7, i), start.AddSeconds(i * 2), BuiltInGameRules.Gomoku);
-            room.PlayMove(bob.Id, new Position(0, i), start.AddSeconds(i * 2 + 1), BuiltInGameRules.Gomoku);
+            room.PlayMove(alice.Id, MoveIntent.Place(new Position(7, i)), start.AddSeconds(i * 2), BuiltInGameRules.Gomoku);
+            room.PlayMove(bob.Id, MoveIntent.Place(new Position(0, i)), start.AddSeconds(i * 2 + 1), BuiltInGameRules.Gomoku);
         }
-        room.PlayMove(alice.Id, new Position(7, 4), start.AddSeconds(9), BuiltInGameRules.Gomoku);
+        room.PlayMove(alice.Id, MoveIntent.Place(new Position(7, 4)), start.AddSeconds(9), BuiltInGameRules.Gomoku);
         return room;
     }
 
@@ -54,7 +54,7 @@ public class GetGameReplayQueryHandlerTests
         dto.Host.Id.Should().Be(alice.Id.Value);
         dto.Result.Should().Be(GameResult.BlackWin);
         dto.WinnerUserId.Should().Be(alice.Id.Value);
-        dto.EndReason.Should().Be(GameEndReason.Connected5);
+        dto.EndReason.Should().Be(GameEndReason.Decided);
         dto.Moves.Should().HaveCount(9);
         // Moves 按 Ply 升序
         dto.Moves.Select(m => m.Ply).Should().BeInAscendingOrder();

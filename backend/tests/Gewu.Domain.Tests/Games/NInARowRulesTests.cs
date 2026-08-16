@@ -1,3 +1,4 @@
+using Gewu.Domain.Exceptions;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.NInARow;
@@ -15,9 +16,26 @@ namespace Gewu.Domain.Tests.Games;
 /// </summary>
 public class NInARowRulesTests
 {
+
+    /// <summary>
+    /// 越界判定现在是 <c>Apply</c> 的内部一步(<c>IsInBounds</c> 不再是公开成员)——
+    /// 盘面语义整个属于规则。这个 helper 通过公开面问同一个问题,断言的行为一字未变。
+    /// </summary>
+    private static bool AcceptsPlacement(IGameRules rules, Position position)
+    {
+        try
+        {
+            rules.Apply([], MoveIntent.Place(position), Stone.Black);
+            return true;
+        }
+        catch (InvalidMoveException)
+        {
+            return false;
+        }
+    }
     // 用真正注册给一字棋的那套规则,而不是在测试里另 new 一个 (3,3,3)。
     // 后者会在注册的参数被改掉时仍然全绿 —— 那正是这组测试要抓的东西。
-    private static readonly IGameRules TicTacToe = BuiltInGameRules.TicTacToe;
+    private static readonly INInARowRules TicTacToe = BuiltInGameRules.TicTacToe;
 
     // ---- 构造校验 ----
 
@@ -146,16 +164,16 @@ public class NInARowRulesTests
     {
         var p = new Position(5, 5);
 
-        BuiltInGameRules.Gomoku.IsInBounds(p).Should().BeTrue();
-        TicTacToe.IsInBounds(p).Should().BeFalse();
+        AcceptsPlacement(BuiltInGameRules.Gomoku, p).Should().BeTrue();
+        AcceptsPlacement(TicTacToe, p).Should().BeFalse();
     }
 
     [Fact]
     public void The_last_cell_is_in_bounds_and_the_next_is_not()
     {
-        TicTacToe.IsInBounds(new Position(2, 2)).Should().BeTrue();
-        TicTacToe.IsInBounds(new Position(3, 2)).Should().BeFalse();
-        TicTacToe.IsInBounds(new Position(2, 3)).Should().BeFalse();
+        AcceptsPlacement(TicTacToe, new Position(2, 2)).Should().BeTrue();
+        AcceptsPlacement(TicTacToe, new Position(3, 2)).Should().BeFalse();
+        AcceptsPlacement(TicTacToe, new Position(2, 3)).Should().BeFalse();
     }
 
     // ---- 判胜随棋种 ----
@@ -245,8 +263,8 @@ public class NInARowRulesTests
         var rules = new NInARowRules("wide", 3, 5, 3);
         var board = rules.CreateBoard();
 
-        rules.IsInBounds(new Position(2, 4)).Should().BeTrue();
-        rules.IsInBounds(new Position(3, 0)).Should().BeFalse();
+        AcceptsPlacement(rules, new Position(2, 4)).Should().BeTrue();
+        AcceptsPlacement(rules, new Position(3, 0)).Should().BeFalse();
 
         board.PlaceStone(new DomainMove(new Position(2, 4), Stone.Black));
 

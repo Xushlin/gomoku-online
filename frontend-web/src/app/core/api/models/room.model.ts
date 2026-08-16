@@ -8,7 +8,7 @@
 export type RoomStatus = 'Waiting' | 'Playing' | 'Finished';
 export type Stone = 'Empty' | 'Black' | 'White';
 export type GameResult = 'Ongoing' | 'BlackWin' | 'WhiteWin' | 'Draw';
-export type GameEndReason = 'Connected5' | 'Resigned' | 'TurnTimeout';
+export type GameEndReason = 'Decided' | 'Resigned' | 'TurnTimeout';
 export type ChatChannel = 'Room' | 'Spectator';
 export type BotDifficulty = 'Easy' | 'Medium' | 'Hard';
 /**
@@ -38,10 +38,23 @@ export interface RoomSummary {
 
 export interface MoveDto {
   readonly ply: number;
+  /** Destination row. */
   readonly row: number;
+  /** Destination column. */
   readonly col: number;
   readonly stone: Stone;
   readonly playedAt: string;
+  /**
+   * Origin row, present only for games where a move slides a piece from one
+   * square to another. Placement games (gomoku, tic-tac-toe) omit it — the
+   * server sends `null`, and the board components never read it.
+   *
+   * Optional rather than `number | null` so the two published-client shapes
+   * (field absent, field null) both type-check without a cast at every use.
+   */
+  readonly fromRow?: number | null;
+  /** Origin column. See {@link MoveDto.fromRow}. */
+  readonly fromCol?: number | null;
 }
 
 export interface GameSnapshot {

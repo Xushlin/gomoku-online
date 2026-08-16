@@ -250,7 +250,7 @@
       "title-win": "You won!",
       "title-lose": "You lost.",
       "title-draw": "Draw.",
-      "reason-connected-5": "A line was completed.",
+      "reason-decided": "The game was decided on the board.",
       "reason-resigned": "Opponent resigned.",
       "reason-timeout": "Turn timed out.",
       "back-to-lobby": "Back to lobby",

@@ -39,7 +39,7 @@ public class RoomTimeOutTests
     {
         var (room, black, _) = PlayingRoom();
         var blackMoveAt = Now.AddSeconds(2);
-        room.PlayMove(black, new Position(7, 7), blackMoveAt, BuiltInGameRules.Gomoku);
+        room.PlayMove(black, MoveIntent.Place(new Position(7, 7)), blackMoveAt, BuiltInGameRules.Gomoku);
         // CurrentTurn 现在是 White,lastActivity = blackMoveAt
 
         var later = blackMoveAt.AddSeconds(61);

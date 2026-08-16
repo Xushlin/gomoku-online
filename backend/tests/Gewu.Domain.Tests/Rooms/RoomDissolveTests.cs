@@ -64,10 +64,10 @@ public class RoomDissolveTests
         // 黑方横向连五结束对局
         for (var c = 0; c <= 3; c++)
         {
-            room.PlayMove(hostId, new Position(7, c), Now.AddMinutes(2).AddSeconds(c * 2), BuiltInGameRules.Gomoku);
-            room.PlayMove(whiteId, new Position(8, c), Now.AddMinutes(2).AddSeconds(c * 2 + 1), BuiltInGameRules.Gomoku);
+            room.PlayMove(hostId, MoveIntent.Place(new Position(7, c)), Now.AddMinutes(2).AddSeconds(c * 2), BuiltInGameRules.Gomoku);
+            room.PlayMove(whiteId, MoveIntent.Place(new Position(8, c)), Now.AddMinutes(2).AddSeconds(c * 2 + 1), BuiltInGameRules.Gomoku);
         }
-        room.PlayMove(hostId, new Position(7, 4), Now.AddMinutes(3), BuiltInGameRules.Gomoku);
+        room.PlayMove(hostId, MoveIntent.Place(new Position(7, 4)), Now.AddMinutes(3), BuiltInGameRules.Gomoku);
         room.Status.Should().Be(RoomStatus.Finished);
 
         var act = () => room.Dissolve(hostId);

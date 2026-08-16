@@ -193,7 +193,7 @@ describe('RoomsApiService', () => {
       endedAt: '2026-04-24T00:05:00Z',
       result: 'BlackWin',
       winnerUserId: 'u-1',
-      endReason: 'Connected5',
+      endReason: 'Decided',
       moves: [],
     });
     http.verify();

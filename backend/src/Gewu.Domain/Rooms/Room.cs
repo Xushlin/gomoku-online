@@ -265,11 +265,19 @@ public sealed class Room
     }
 
     /// <summary>
-    /// 落子领域入口。按 spec 8 步执行:状态校验 → 身份校验 → 回合校验 →
-    /// <see cref="Board"/> 合法性 → 记录 <see cref="SubMove"/> → 翻转回合 →
-    /// 判胜 → 可能转入 Finished。
+    /// 走子领域入口。顺序:房间态校验 → 身份校验 → 回合校验 → <c>rules.Apply</c> →
+    /// 记录 <see cref="SubMove"/> → 翻转回合 → 可能转入 Finished。
+    /// <para>
+    /// **聚合根只管前三条。** 越界、重复落子、走法合不合规,全部由 <c>rules.Apply</c> 回答 ——
+    /// 盘面语义整个属于规则。这是象棋能进这个聚合的前提:它一格上是七种棋子之一 × 两方,
+    /// 胜负是将死 / 困毙,与最后一步的位置没有直接关系。
+    /// </para>
     /// </summary>
-    public MoveOutcome PlayMove(UserId userId, Position position, DateTime now, IGameRules rules)
+    /// <param name="userId">走子的玩家。</param>
+    /// <param name="intent">这一步想怎么走;落子类棋种的 <c>From</c> 为 <c>null</c>。</param>
+    /// <param name="now">走子时刻(UTC)。</param>
+    /// <param name="rules">本房间棋种的规则。</param>
+    public MoveOutcome PlayMove(UserId userId, MoveIntent intent, DateTime now, IGameRules rules)
     {
         if (Status != RoomStatus.Playing)
         {
@@ -303,20 +311,14 @@ public sealed class Room
                 $"It is not {playerStone}'s turn; current turn is {Game.CurrentTurn}.");
         }
 
-        // 上界属于棋种,所以在触碰棋盘之前先问规则。抛的仍是 InvalidMoveException,
-        // 对外的 409 契约不动。
-        if (!rules.IsInBounds(position))
-        {
-            throw new InvalidMoveException(
-                $"Position ({position.Row}, {position.Col}) is outside the bounds of '{rules.GameKey}'.");
-        }
+        // 盘面语义整个属于规则:越界、重复落子、走法合不合规,全部由 Apply 回答。
+        // 聚合根到这里为止只验了三件事——房间在不在对局中、这人是不是玩家、是不是他的回合。
+        // 非法则抛 InvalidMoveException 向上冒泡(对外仍是 409),而 Game 的 Moves
+        // 在此之前尚未追加,聚合状态不变。
+        var application = rules.Apply(Game.History(), intent, playerStone);
+        var result = application.Result;
 
-        // 让 Board 做重复落子判定;若非法抛 InvalidMoveException 向上冒泡,
-        // Game 的 Moves 在此之前尚未追加,状态不变。
-        var board = Game.ReplayBoard(rules);
-        var result = board.PlaceStone(new DomainMove(position, playerStone));
-
-        var appended = Game.RecordMove(position, playerStone, now);
+        var appended = Game.RecordMove(intent, playerStone, now);
 
         if (result != GameResult.Ongoing)
         {
@@ -326,7 +328,7 @@ public sealed class Room
                 GameResult.WhiteWin => WhitePlayerId,
                 _ => null,
             };
-            Game.FinishWith(result, winnerId, GameEndReason.Connected5, now);
+            Game.FinishWith(result, winnerId, GameEndReason.Decided, now);
             TransitionStatus(RoomStatus.Finished);
         }
 

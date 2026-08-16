@@ -99,9 +99,16 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares game '{room.GameKey}', which has no AI.");
 
-        // 用聚合自己的 replay —— 这里原先是它的一份手抄副本,注释甚至写明了"逻辑一致",
-        // 两份就是两个会各自漂移的真源。
-        var board = room.Game.ReplayBoard(rules);
+        // AI 层吃的是 Board,那是连 N 子专有的表示 —— 所以这里要的是窄接口。
+        // 走子类棋种(象棋)自带表示,它的 AI 不走这条路。
+        if (rules is not INInARowRules boardRules)
+        {
+            throw new RoomNotFoundException(
+                $"Room '{room.Id.Value}' declares game '{room.GameKey}', whose AI does not use a Board.");
+        }
+
+        // 盘面由规则从走子历史重建 —— 聚合只交出发生过什么。
+        var board = boardRules.ReplayBoard(room.Game.History());
 
         var ai = aiFactory.Create(difficulty, _random.Get());
         var pick = ai.SelectMove(board, botStone);

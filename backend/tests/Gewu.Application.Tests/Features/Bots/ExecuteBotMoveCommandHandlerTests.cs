@@ -1,3 +1,4 @@
+using Gewu.Domain.ValueObjects;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Features.Bots.ExecuteBotMove;
@@ -27,7 +28,7 @@ public class ExecuteBotMoveCommandHandlerTests
         var bot = RoomsFixtures.NewBot(BotDifficulty.Easy);
         var room = RoomsFixtures.PlayingRoom(host, bot); // host=Black, bot=White
         // 当前回合 == Black(host)—— bot 不该走。先让 host 走一步,回合变成 White。
-        room.PlayMove(host.Id, new Gewu.Domain.ValueObjects.Position(7, 7), RoomsFixtures.Now.AddSeconds(2), BuiltInGameRules.Gomoku);
+        room.PlayMove(host.Id, MoveIntent.Place(new Gewu.Domain.ValueObjects.Position(7, 7)), RoomsFixtures.Now.AddSeconds(2), BuiltInGameRules.Gomoku);
         room.Game!.CurrentTurn.Should().Be(Stone.White); // 确认轮到白方(bot)
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
@@ -117,7 +118,7 @@ public class ExecuteBotMoveCommandHandlerTests
         var room = RoomsFixtures.PlayingRoom(host, bot, "ttt", GameKeys.TicTacToe);
         room.PlayMove(
             host.Id,
-            new Gewu.Domain.ValueObjects.Position(0, 0),
+            MoveIntent.Place(new Gewu.Domain.ValueObjects.Position(0, 0)),
             RoomsFixtures.Now.AddSeconds(2),
             BuiltInGameRules.TicTacToe);
 
@@ -147,7 +148,7 @@ public class ExecuteBotMoveCommandHandlerTests
         var room = RoomsFixtures.PlayingRoom(host, bot, "ttt", GameKeys.TicTacToe);
         room.PlayMove(
             host.Id,
-            new Gewu.Domain.ValueObjects.Position(0, 0),
+            MoveIntent.Place(new Gewu.Domain.ValueObjects.Position(0, 0)),
             RoomsFixtures.Now.AddSeconds(2),
             BuiltInGameRules.TicTacToe);
 

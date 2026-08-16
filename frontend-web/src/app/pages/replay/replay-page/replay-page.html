@@ -64,7 +64,7 @@
         >{{ r.white.username }}</a>
         <span class="mx-1">·</span>
         @switch (r.endReason) {
-          @case ('Connected5') { <span>{{ 'game.ended.reason-connected-5' | transloco }}</span> }
+          @case ('Decided') { <span>{{ 'game.ended.reason-decided' | transloco }}</span> }
           @case ('Resigned') { <span>{{ 'game.ended.reason-resigned' | transloco }}</span> }
           @case ('TurnTimeout') { <span>{{ 'game.ended.reason-timeout' | transloco }}</span> }
         }

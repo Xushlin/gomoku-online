@@ -7,7 +7,24 @@ namespace Gewu.Application.Common.DTOs;
 public sealed record UserSummaryDto(Guid Id, string Username);
 
 /// <summary>对局中一步棋的网络表示。</summary>
-public sealed record MoveDto(int Ply, int Row, int Col, Stone Stone, DateTime PlayedAt);
+/// <param name="Ply">步数(1-based)。</param>
+/// <param name="Row">终点 / 落点行。</param>
+/// <param name="Col">终点 / 落点列。</param>
+/// <param name="Stone">走这一步的一方。</param>
+/// <param name="PlayedAt">走子时刻(UTC)。</param>
+/// <param name="FromRow">
+/// 起点行;**落子类棋种(五子棋 / 一字棋)为 <c>null</c>**,走子类(中国象棋)非 <c>null</c>。
+/// 追加在末尾且可空 —— 已发布的客户端解析时会忽略它,形状向后兼容。
+/// </param>
+/// <param name="FromCol">起点列;见 <paramref name="FromRow"/>。</param>
+public sealed record MoveDto(
+    int Ply,
+    int Row,
+    int Col,
+    Stone Stone,
+    DateTime PlayedAt,
+    int? FromRow = null,
+    int? FromCol = null);
 
 /// <summary>
 /// 对局结束事件的 payload。<paramref name="EndReason"/> 明示"怎么结束的"(Connected5 / Resigned / TurnTimeout),

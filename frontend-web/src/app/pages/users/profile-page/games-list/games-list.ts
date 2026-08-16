@@ -80,8 +80,8 @@ export class GamesList {
 
   protected reasonKey(g: UserGameSummaryDto): string {
     switch (g.endReason) {
-      case 'Connected5':
-        return 'game.ended.reason-connected-5';
+      case 'Decided':
+        return 'game.ended.reason-decided';
       case 'Resigned':
         return 'game.ended.reason-resigned';
       case 'TurnTimeout':
