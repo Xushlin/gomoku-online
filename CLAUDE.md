@@ -56,10 +56,20 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   The reusable lesson is about testing, not design. Plans called for two optional parameters on the SignalR hub's `MakeMove`. **SignalR does not apply C# optional-parameter defaults** — a 3-arg invocation against a 5-param method is rejected outright, which would have broken every published client on its next move. Domain, Application, and Api unit tests all passed; none of them cross SignalR's argument binding. `AiSmoke` caught it, because it does not know the refactor exists. That is the whole argument for keeping an end-to-end smoke that speaks the real transport.
 
+- [x] **`add-xiangqi`** — 中国象棋的**规则**. `XiangqiRules` owns its own piece model and 10×9 board entirely inside the rules; the aggregate never sees them.
+
+  **`generalize-match-domain`'s acceptance criterion held: `Room`/`Game`/`Move` were not touched at all.** `XiangqiThroughRoomTests` proves it by playing real xiangqi through the real aggregate. The change is a new `Games/Xiangqi/` directory, two registration lines, and one DI line.
+
+  In this game **`Stone.Black` is 红**. `Game` starts on `Stone.Black` and xiangqi is red-first, so reading Black as red costs zero Domain change — `Stone` has always meant "first mover / second mover", and 红/黑 is how the display paints it. That is the bet `generalize-match-domain` placed, now collected.
+
+  Two implementation choices worth keeping: flying-generals is **not** a special case (it is exactly "the enemy general can capture down that file", so it folds into the same check test as self-check); and **stalemate is a loss**, unlike chess — the one rule most likely to be miscopied from a western-chess implementation.
+
+  It also removed a **fake** test. `AllBuiltInRules()` claimed in its own comment to walk the registry so that "adding 中国象棋 is automatically covered" — but its data source was a hand-written `{ Gomoku, TicTacToe }`, so xiangqi would have slipped past the `IsRated ⇒ SupportsHumanVsHuman` invariant in silence. That is precisely the failure the comment predicted, about a mechanism the comment got wrong. `BuiltInGameRules.All` is now the single list, feeding both DI and the test.
+
 Not yet done — platform roadmap, in this order:
 
 1. Lobby generalization — `/home` is still gomoku's lobby, and 一字棋 therefore has human-vs-AI only, reachable only from `/games`. Parameterising it means rewriting `/home` as a normative path in five web specs, so it waits for the first game that genuinely needs human-vs-human: 中国象棋.
-2. `add-xiangqi` — the Domain is ready: `XiangqiRules` implements `IGameRules.Apply` and owns its own board representation, piece types, and check/checkmate detection. It should need **no change to `Room`/`Game`/`Move`**; if it does, `generalize-match-domain` abstracted in the wrong place. Then `add-xiangqi-ai` and `add-web-xiangqi` (the web client needs a `MovePiece` wrapper on `GameHubService` — deliberately not written yet, since a method with no caller is code nobody can verify).
+2. `add-xiangqi-ai` then `add-web-xiangqi`. The AI is the piece that gives 象棋 an opponent at all today (human-vs-human waits on lobby generalization), and it is *not* gomoku-sized: no exhaustive search is possible, so it needs a depth-limited alpha-beta with a real evaluation. The web client needs a `MovePiece` wrapper on `GameHubService` — deliberately not written yet, since a method with no caller is code nobody can verify. Only once 象棋 has an opponent does `SupportsHumanVsHuman` / `IsRated` become a live question, and the invariant keeps that from being forgotten.
 3. Then `add-idiom-chain`, `add-klotski`, `add-xiangqi-*`, `add-score-attack-core` + `add-tetris`.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
