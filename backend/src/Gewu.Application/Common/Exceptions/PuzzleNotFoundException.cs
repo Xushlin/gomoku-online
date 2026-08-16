@@ -1,3 +1,5 @@
+using Gewu.Domain.Exceptions;
+
 namespace Gewu.Application.Common.Exceptions;
 
 /// <summary>
@@ -7,8 +9,8 @@ namespace Gewu.Application.Common.Exceptions;
 /// "这个 id 确实存在,只是不属于你"。
 /// </para>
 /// </summary>
-public sealed class PuzzleNotFoundException : Exception
+public sealed class PuzzleNotFoundException : DomainException
 {
     /// <inheritdoc />
-    public PuzzleNotFoundException(string message) : base(message) { }
+    public PuzzleNotFoundException(string message) : base("puzzle-not-found", message) { }
 }

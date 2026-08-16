@@ -1,70 +1,89 @@
 /**
- * Maps a hub command error (usually a `HubException` whose message is the
- * English domain exception text) to a translation key under `game.errors.*`.
- * Match is case-insensitive substring on the error's `message`.
+ * Maps a hub command failure to a translation key.
  *
- * ⚠️ This is a fuzzy match against the server's English prose — effectively a
- * second copy of the domain's exception wording, kept in sync by nothing. That was
- * tolerable while the only reachable failures were "not your turn" and a concurrency
- * clash: an unmapped message fell through to a generic toast that a player would
- * almost never see.
+ * The `HubException` message **is** the server's error code — a stable kebab-case
+ * identifier, never prose. See `DomainErrorHubFilter`.
  *
- * 中国象棋 changes the stakes. Its board deliberately knows no rules, so an illegal
- * attempt is the ordinary way a player discovers what a piece can do — and
- * "Something went wrong" reads as a broken app, not as a refused move. The proper
- * fix is a structured error code on the hub contract rather than more phrases here;
- * that is a cross-cutting change to error handling and is recorded as a follow-up.
+ * This used to fuzzy-match the server's English exception text, and that did not
+ * work outside Development. A hub method throwing a plain exception only has its
+ * message delivered when `EnableDetailedErrors` is on, and that is
+ * `IsDevelopment()` — so in production every keyword missed and every failure
+ * showed "Something went wrong." Measured, not deduced: the same illegal 象棋 move
+ * read "That move isn't allowed." in Development and "Something went wrong. Please
+ * try again." in Production.
+ *
+ * `HubException` is the fix because its message survives in **both** environments.
+ * It does not arrive verbatim, though — SignalR wraps it. Measured on the wire,
+ * identical under `EnableDetailedErrors` true and false:
+ *
+ * ```
+ * "An unexpected error occurred invoking 'MovePiece' on the server. HubException: invalid-move"
+ * ```
+ *
+ * So the code has to be extracted, not compared. That prefix is why an earlier
+ * draft of this mapper still returned generic even after the server started
+ * sending codes — the whole string was being looked up.
  */
 export type HubErrorKey =
   | 'game.errors.not-your-turn'
   | 'game.errors.invalid-move'
   | 'game.errors.self-check'
+  | 'game.errors.room-not-in-play'
+  | 'game.errors.not-a-player'
+  | 'game.errors.not-opponents-turn'
+  | 'game.errors.invalid-chat'
+  | 'game.chat.forbidden-error'
   | 'game.errors.concurrent-move-refetched'
   | 'game.errors.urge-cooldown'
   | 'game.errors.network'
   | 'game.errors.generic';
 
+/**
+ * Server code → translation key.
+ *
+ * Exhaustive by construction: a code that is not here falls back to generic, but
+ * a *new* server error now arrives as its own code rather than as prose that
+ * happens to miss every keyword — so the fallback stops being the common case.
+ */
+const BY_CODE: Readonly<Record<string, HubErrorKey>> = {
+  'not-your-turn': 'game.errors.not-your-turn',
+  'invalid-move': 'game.errors.invalid-move',
+  'self-check': 'game.errors.self-check',
+  'room-not-in-play': 'game.errors.room-not-in-play',
+  'not-a-player': 'game.errors.not-a-player',
+  'not-opponents-turn': 'game.errors.not-opponents-turn',
+  'invalid-chat-content': 'game.errors.invalid-chat',
+  'spectator-channel-forbidden': 'game.chat.forbidden-error',
+  'urge-too-frequent': 'game.errors.urge-cooldown',
+  'concurrent-modification': 'game.errors.concurrent-move-refetched',
+};
+
 export function hubErrorToKey(err: unknown): HubErrorKey {
   const message = extractMessage(err);
   if (!message) return 'game.errors.generic';
-  const m = message.toLowerCase();
 
+  // Connection failures are a *client-side* condition — the request never reached
+  // a hub method, so there is no server code to read. This one stays a text check.
+  const m = message.toLowerCase();
   if (m.includes('no connection') || m.includes('not started') || m.includes('disconnected')) {
     return 'game.errors.network';
   }
-  if (m.includes('not your turn') || m.includes('notopponent')) {
-    return 'game.errors.not-your-turn';
-  }
-  if (m.includes('too frequent') || m.includes('urgetoo')) {
-    return 'game.errors.urge-cooldown';
-  }
-  if (m.includes('concurrent') || m.includes('dbupdateconcurrency')) {
-    return 'game.errors.concurrent-move-refetched';
-  }
-  // Leaving your own general attacked (self-check, or the two generals facing down
-  // an open file) gets its own message. It is the single most common refusal in
-  // xiangqi, and "that move is not legal" does not tell the player what they missed.
-  if (m.includes('in check')) {
-    return 'game.errors.self-check';
-  }
-  if (
-    m.includes('invalid move') ||
-    m.includes('occupied') ||
-    m.includes('out of bounds') ||
-    // Xiangqi's phrasings. The client deliberately knows no rules (it would be a
-    // second source of truth), so an illegal attempt is a NORMAL event here rather
-    // than the near-impossibility it is in gomoku, where you can only click an empty
-    // cell. Falling through to "something went wrong" reads as a system fault.
-    m.includes('cannot move from') ||
-    m.includes('there is no piece at') ||
-    m.includes('does not belong to') ||
-    m.includes('must change the piece') ||
-    m.includes('origin square') ||
-    m.includes('outside the')
-  ) {
-    return 'game.errors.invalid-move';
-  }
-  return 'game.errors.generic';
+
+  return BY_CODE[extractCode(message)] ?? 'game.errors.generic';
+}
+
+/**
+ * Pull the server's code out of SignalR's wrapper.
+ *
+ * The wire form is `…on the server. HubException: <code>`. Anything that is not
+ * wrapped (a bare code, a plain sentence) is used as-is — and a plain sentence
+ * then simply misses the table, which is the honest outcome: guessing meaning
+ * from English is what this change removed.
+ */
+function extractCode(message: string): string {
+  const marker = 'HubException: ';
+  const at = message.lastIndexOf(marker);
+  return (at === -1 ? message : message.slice(at + marker.length)).trim();
 }
 
 function extractMessage(err: unknown): string | null {

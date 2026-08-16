@@ -106,7 +106,7 @@ public sealed class XiangqiRules : IGameRules
         after.Move(from, to);
         if (IsInCheck(after, side))
         {
-            throw new InvalidMoveException(
+            throw InvalidMoveException.SelfCheck(
                 "That move would leave your general in check (self-check or flying generals).");
         }
 

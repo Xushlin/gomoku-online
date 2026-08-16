@@ -258,12 +258,16 @@
       "dismiss": "Stay and review"
     },
     "errors": {
-      "generic": "Something went wrong. Please try again.",
-      "network": "Network error — please try again.",
-      "not-your-turn": "It's not your turn.",
-      "invalid-move": "That move isn't allowed.",
-      "self-check": "That move would leave your own general open to capture (self-check, or the two generals facing each other).",
       "concurrent-move-refetched": "Out of sync — board refreshed.",
+      "generic": "Something went wrong. Please try again.",
+      "invalid-chat": "That message cannot be sent: it must not be empty or too long.",
+      "invalid-move": "That move isn't allowed.",
+      "network": "Network error — please try again.",
+      "not-a-player": "You are watching this game, not playing it.",
+      "not-opponents-turn": "It is your move — there is nobody to nudge.",
+      "not-your-turn": "It's not your turn.",
+      "room-not-in-play": "This game has not started, or it has already finished.",
+      "self-check": "That move would leave your own general open to capture (self-check, or the two generals facing each other).",
       "urge-cooldown": "Urge is on cooldown."
     },
     "connection": {
