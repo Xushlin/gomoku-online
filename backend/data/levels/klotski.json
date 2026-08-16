@@ -1,0 +1,464 @@
+{
+  "game": "klotski",
+  "levels": [
+    {
+      "levelIndex": 0,
+      "difficulty": 1,
+      "layout": {
+        "rows": 5,
+        "cols": 4,
+        "name": "初识华容",
+        "exit": {
+          "row": 3,
+          "col": 1
+        },
+        "pieces": [
+          {
+            "id": "cao",
+            "name": "曹操",
+            "row": 0,
+            "col": 1,
+            "height": 2,
+            "width": 2,
+            "target": true
+          },
+          {
+            "id": "zhang",
+            "name": "张飞",
+            "row": 0,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "ma",
+            "name": "马超",
+            "row": 0,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "zhao",
+            "name": "赵云",
+            "row": 2,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "huang",
+            "name": "黄忠",
+            "row": 2,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "guan",
+            "name": "关羽",
+            "row": 2,
+            "col": 1,
+            "height": 1,
+            "width": 2,
+            "target": false
+          }
+        ]
+      },
+      "solution": {
+        "minMoves": 16
+      }
+    },
+    {
+      "levelIndex": 1,
+      "difficulty": 1,
+      "layout": {
+        "rows": 5,
+        "cols": 4,
+        "name": "四卒当关",
+        "exit": {
+          "row": 3,
+          "col": 1
+        },
+        "pieces": [
+          {
+            "id": "cao",
+            "name": "曹操",
+            "row": 0,
+            "col": 1,
+            "height": 2,
+            "width": 2,
+            "target": true
+          },
+          {
+            "id": "zhang",
+            "name": "张飞",
+            "row": 0,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "ma",
+            "name": "马超",
+            "row": 0,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "zhao",
+            "name": "赵云",
+            "row": 2,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "huang",
+            "name": "黄忠",
+            "row": 2,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "guan",
+            "name": "关羽",
+            "row": 2,
+            "col": 1,
+            "height": 1,
+            "width": 2,
+            "target": false
+          },
+          {
+            "id": "s3",
+            "name": "卒",
+            "row": 4,
+            "col": 0,
+            "height": 1,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "s4",
+            "name": "卒",
+            "row": 4,
+            "col": 3,
+            "height": 1,
+            "width": 1,
+            "target": false
+          }
+        ]
+      },
+      "solution": {
+        "minMoves": 23
+      }
+    },
+    {
+      "levelIndex": 2,
+      "difficulty": 2,
+      "layout": {
+        "rows": 5,
+        "cols": 4,
+        "name": "兵临城下",
+        "exit": {
+          "row": 3,
+          "col": 1
+        },
+        "pieces": [
+          {
+            "id": "cao",
+            "name": "曹操",
+            "row": 0,
+            "col": 1,
+            "height": 2,
+            "width": 2,
+            "target": true
+          },
+          {
+            "id": "zhang",
+            "name": "张飞",
+            "row": 0,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "ma",
+            "name": "马超",
+            "row": 0,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "zhao",
+            "name": "赵云",
+            "row": 2,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "huang",
+            "name": "黄忠",
+            "row": 2,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "guan",
+            "name": "关羽",
+            "row": 2,
+            "col": 1,
+            "height": 1,
+            "width": 2,
+            "target": false
+          },
+          {
+            "id": "s1",
+            "name": "卒",
+            "row": 3,
+            "col": 1,
+            "height": 1,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "s2",
+            "name": "卒",
+            "row": 3,
+            "col": 2,
+            "height": 1,
+            "width": 1,
+            "target": false
+          }
+        ]
+      },
+      "solution": {
+        "minMoves": 27
+      }
+    },
+    {
+      "levelIndex": 3,
+      "difficulty": 2,
+      "layout": {
+        "rows": 5,
+        "cols": 4,
+        "name": "一卒之差",
+        "exit": {
+          "row": 3,
+          "col": 1
+        },
+        "pieces": [
+          {
+            "id": "cao",
+            "name": "曹操",
+            "row": 0,
+            "col": 1,
+            "height": 2,
+            "width": 2,
+            "target": true
+          },
+          {
+            "id": "zhang",
+            "name": "张飞",
+            "row": 0,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "ma",
+            "name": "马超",
+            "row": 0,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "zhao",
+            "name": "赵云",
+            "row": 2,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "huang",
+            "name": "黄忠",
+            "row": 2,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "guan",
+            "name": "关羽",
+            "row": 2,
+            "col": 1,
+            "height": 1,
+            "width": 2,
+            "target": false
+          },
+          {
+            "id": "s2",
+            "name": "卒",
+            "row": 3,
+            "col": 2,
+            "height": 1,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "s3",
+            "name": "卒",
+            "row": 4,
+            "col": 0,
+            "height": 1,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "s4",
+            "name": "卒",
+            "row": 4,
+            "col": 3,
+            "height": 1,
+            "width": 1,
+            "target": false
+          }
+        ]
+      },
+      "solution": {
+        "minMoves": 53
+      }
+    },
+    {
+      "levelIndex": 4,
+      "difficulty": 3,
+      "layout": {
+        "rows": 5,
+        "cols": 4,
+        "name": "横刀立马",
+        "exit": {
+          "row": 3,
+          "col": 1
+        },
+        "pieces": [
+          {
+            "id": "cao",
+            "name": "曹操",
+            "row": 0,
+            "col": 1,
+            "height": 2,
+            "width": 2,
+            "target": true
+          },
+          {
+            "id": "zhang",
+            "name": "张飞",
+            "row": 0,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "ma",
+            "name": "马超",
+            "row": 0,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "zhao",
+            "name": "赵云",
+            "row": 2,
+            "col": 0,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "huang",
+            "name": "黄忠",
+            "row": 2,
+            "col": 3,
+            "height": 2,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "guan",
+            "name": "关羽",
+            "row": 2,
+            "col": 1,
+            "height": 1,
+            "width": 2,
+            "target": false
+          },
+          {
+            "id": "s1",
+            "name": "卒",
+            "row": 3,
+            "col": 1,
+            "height": 1,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "s2",
+            "name": "卒",
+            "row": 3,
+            "col": 2,
+            "height": 1,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "s3",
+            "name": "卒",
+            "row": 4,
+            "col": 0,
+            "height": 1,
+            "width": 1,
+            "target": false
+          },
+          {
+            "id": "s4",
+            "name": "卒",
+            "row": 4,
+            "col": 3,
+            "height": 1,
+            "width": 1,
+            "target": false
+          }
+        ]
+      },
+      "solution": {
+        "minMoves": 116
+      }
+    }
+  ]
+}

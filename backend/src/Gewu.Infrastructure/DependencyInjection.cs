@@ -1,6 +1,7 @@
 using Gewu.Application.Abstractions;
 using Gewu.Domain.Ai;
 using Gewu.Domain.Games.IdiomCrossword;
+using Gewu.Domain.Games.Klotski;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.TicTacToe;
@@ -17,12 +18,19 @@ using Gewu.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Gewu.Infrastructure;
 
 /// <summary>Infrastructure 层 DI 注册入口。</summary>
 public static class DependencyInjection
 {
+    /// <summary>成语纵横的 seeder 键。</summary>
+    public const string IdiomCrosswordKey = "idiom-crossword";
+
+    /// <summary>华容道的 seeder 键。</summary>
+    public const string KlotskiKey = "klotski";
+
     /// <summary>
     /// 注册 <c>AppDbContext</c>(SQLite)、仓储、UnitOfWork、密码哈希、JWT 服务、时钟。
     /// 绑定 <see cref="JwtOptions"/> 到配置节 <c>"Jwt"</c>。
@@ -64,10 +72,22 @@ public static class DependencyInjection
         services.AddSingleton<IGameAiFactory, XiangqiAiFactory>();
         services.AddSingleton<IGameAiRegistry, GameAiRegistry>();
 
-        // 成语纵横 —— 平台的第一个关卡类游戏。加一个关卡游戏就是这两行:
-        // 一个 IPuzzleRules 实现 + 一处注册。
+        // 关卡类游戏。加一个游戏就是这两行:一个 IPuzzleRules 实现 + 一处注册。
+        // 关卡产物再各配一个 seeder —— seeder 是通用的,游戏键与路径是它的构造参数。
         services.AddSingleton<IPuzzleRules, IdiomCrosswordRules>();
-        services.AddScoped<CrosswordLevelSeeder>();
+        services.AddSingleton<IPuzzleRules, KlotskiRules>();
+
+        services.AddKeyedScoped(IdiomCrosswordKey, (sp, _) => new PuzzleLevelSeeder(
+            IdiomCrosswordKey,
+            PuzzleLevelSeeder.IdiomCrosswordPath,
+            sp.GetRequiredService<AppDbContext>(),
+            sp.GetRequiredService<ILogger<PuzzleLevelSeeder>>()));
+
+        services.AddKeyedScoped(KlotskiKey, (sp, _) => new PuzzleLevelSeeder(
+            KlotskiKey,
+            PuzzleLevelSeeder.KlotskiPath,
+            sp.GetRequiredService<AppDbContext>(),
+            sp.GetRequiredService<ILogger<PuzzleLevelSeeder>>()));
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();

@@ -39,6 +39,15 @@
           Link="data\levels\idiom-crossword.json"
           CopyToOutputDirectory="PreserveNewest"
           Condition="Exists('..\..\data\levels\idiom-crossword.json')" />
+
+    <!--
+      华容道的关卡产物。布局手写、minMoves 由求解器算出,产物提交进仓库,
+      由 PuzzleLevelSeeder 从 `data/levels/klotski.json` 读入。
+    -->
+    <None Include="..\..\data\levels\klotski.json"
+          Link="data\levels\klotski.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\data\levels\klotski.json')" />
   </ItemGroup>
 
   <ItemGroup>
