@@ -127,6 +127,21 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   A note on evidence, kept in the archived tasks: the gate is proven by a unit test with a `loaded() === false` stub. The browser run only *corroborates* it — sampling started after page load, so it shows no flash at observable resolution rather than proving the first frame. **"I did not see it" and "it does not happen" are not the same claim.**
 
+- [x] **`add-hub-error-codes`** — domain errors now carry a stable kebab-case `Code`, a hub filter turns them into `HubException(code)`, and the client maps codes instead of prose.
+
+  The deferred note called `hubErrorToKey`'s prose matching "fragile". It was worse: **it did not work outside Development.** A hub method throwing a plain exception only has its message delivered when `EnableDetailedErrors` is on, and that is `IsDevelopment()`. Measured — same illegal 象棋 move, same build, same database, only the environment variable changed:
+
+  | | before | after |
+  | --- | --- | --- |
+  | Development | *That move isn't allowed.* | *That move isn't allowed.* |
+  | **Production** | ***Something went wrong.*** | ***That move isn't allowed.*** |
+
+  So the message-quality fix `add-web-xiangqi` shipped was switched off in the only environment that will ever have players. Nothing is deployed, which is the only reason it had not bitten.
+
+  The code lives on a `DomainException` base rather than in an Api-layer lookup table, because a table would have been the **third** place enumerating these exceptions — and a table is a list someone must remember to extend, while a constructor parameter is one the compiler demands.
+
+  **A mechanism claim of mine was wrong here, and being wrong had a cost.** The proposal said `HubException` messages arrive verbatim; SignalR wraps them (`…on the server. HubException: invalid-move`, byte-identical in both environments). The first mapper compared the whole string, so the server was already sending codes while the UI still showed the generic message — a fix that looked done and was not. It was caught by reading the wire frame over long-polling instead of guessing again. *A mechanism description that sounds right and one that has been measured differ only when it matters.*
+
 Not yet done — platform roadmap, in this order:
 
 1. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, so it is also what finally forces lobby generalization. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
@@ -138,8 +153,6 @@ Deferred follow-ups, each with a reason:
 
 - `squash-migration-baseline` — squash the 11 migrations into one. Needs deltas because `ai-opponent` has requirements named after `AddBotSupport` / `AddHardBotAccount`, `room-and-gameplay` after `AddGameEndReason`, and `user-management` now names `AddUserGameStats` / `DropUserRatingColumns` — the last pair with a normative ordering constraint the squash must preserve. Cheap while the DB is still local-only (no production data exists).
 - `backend/smoke/AiSmoke` is **broken and has been since `add-leaderboard-pagination`**: step 7 deserializes `/api/leaderboard` into `List<LeaderboardEntry>`, but the endpoint returns `PagedResult<T>`. It is not in `Gewu.slnx` and CI does not run it, which is exactly why nobody noticed. Either wire it into CI or delete it — a smoke test outside CI rots silently and then lies about coverage.
-- `hubErrorToKey` matches the server's **English prose** with substrings — a second copy of the domain's exception wording that nothing keeps in sync. `add-web-xiangqi` raised the stakes: gomoku's board only lets you click an empty cell, so `invalid-move` was near-unreachable, but 象棋's board deliberately knows no rules, so a refused move is the ordinary way a player learns what a piece can do. The fix is a structured error code on the hub contract, which is a cross-cutting change to error handling.
-
 - Puzzle level artefacts are stored **pretty-printed** in the database (`layoutJson` carries its indentation), so a 10-piece klotski layout ships 1.7 kB instead of ~0.5 kB. Pre-dates `add-klotski` — 成语纵横 does exactly the same — but both games now pay transfer cost for a reviewable artefact. Fixing it means compacting in the seeder, which is puzzle-core work.
 
 - `ng build` reports `bundle initial exceeded maximum budget` (500 kB budget, ~535 kB actual). Pre-dates `add-web-xiangqi` (532 kB before it). It is a warning, not an error, so CI is green and nobody is shrinking it.
