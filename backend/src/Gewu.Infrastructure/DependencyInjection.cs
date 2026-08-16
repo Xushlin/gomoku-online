@@ -4,6 +4,7 @@ using Gewu.Domain.Games.IdiomCrossword;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.TicTacToe;
+using Gewu.Domain.Games.Xiangqi;
 using Gewu.Infrastructure.Games;
 using Gewu.Domain.Puzzles;
 using Gewu.Infrastructure.Ai;
@@ -60,6 +61,7 @@ public static class DependencyInjection
         // —— 一个棋种可以先有规则(人人对战)、后有 AI。
         services.AddSingleton<IGameAiFactory, GomokuAiFactory>();
         services.AddSingleton<IGameAiFactory, TicTacToeAiFactory>();
+        services.AddSingleton<IGameAiFactory, XiangqiAiFactory>();
         services.AddSingleton<IGameAiRegistry, GameAiRegistry>();
 
         // 成语纵横 —— 平台的第一个关卡类游戏。加一个关卡游戏就是这两行:

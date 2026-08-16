@@ -23,7 +23,7 @@ namespace Gewu.Domain.Games.TicTacToe;
 /// 会不会给对手造出双威胁")在五子棋的评分语言里根本不存在。
 /// </para>
 /// </summary>
-public sealed class TicTacToeMediumAi : IBoardGameAi
+public sealed class TicTacToeMediumAi : IPlacementAi
 {
     private readonly Random _random;
 

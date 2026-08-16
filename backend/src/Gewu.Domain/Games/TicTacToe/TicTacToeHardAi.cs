@@ -27,7 +27,7 @@ namespace Gewu.Domain.Games.TicTacToe;
 /// 让"它永远不会输"从抽样断言变成穷举断言 —— 可证 &gt; 好看。
 /// </para>
 /// </summary>
-public sealed class TicTacToeHardAi : IBoardGameAi
+public sealed class TicTacToeHardAi : IPlacementAi
 {
     /// <summary>胜负分基准。大于最大深度(9),所以"赢"永远压过"和",符号不会串。</summary>
     private const int WinBase = 100;
