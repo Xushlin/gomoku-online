@@ -94,8 +94,21 @@ public class NInARowRulesTests
         }
     }
 
-    public static TheoryData<IGameRules> AllBuiltInRules() =>
-        new() { BuiltInGameRules.Gomoku, BuiltInGameRules.TicTacToe };
+    /// <summary>
+    /// **此前这里是一份手写清单 `{ Gomoku, TicTacToe }`**,而上面那条注释写着
+    /// 「遍历注册表…将来加中国象棋它自动被覆盖」—— 那句话是假的:数据源是手写的,
+    /// 象棋会静静绕过这条不变量测试。那正是它自己预言的失效方式,只是它预言错了自己的机制。
+    /// 现在取的是 `BuiltInGameRules.All`,与 DI 注册同一份清单。
+    /// </summary>
+    public static TheoryData<IGameRules> AllBuiltInRules()
+    {
+        var data = new TheoryData<IGameRules>();
+        foreach (var rules in BuiltInGameRules.All)
+        {
+            data.Add(rules);
+        }
+        return data;
+    }
 
     [Fact]
     public void Rejects_a_rated_game_with_no_human_opponents()

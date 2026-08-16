@@ -168,4 +168,7 @@ public static class GameKeys
 
     /// <summary>一字棋。</summary>
     public const string TicTacToe = "tictactoe";
+
+    /// <summary>中国象棋。</summary>
+    public const string Xiangqi = "xiangqi";
 }
