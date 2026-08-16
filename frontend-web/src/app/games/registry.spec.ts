@@ -41,14 +41,16 @@ describe('GAME_REGISTRY', () => {
     expect(crossword?.contentLocales).toEqual(['zh-CN']);
   });
 
-  it('has 中国象棋 available at its own route, on a 10×9 board', () => {
+  it('has 中国象棋 available at its own route', () => {
     const xiangqi = GAME_REGISTRY.find((g) => g.key === 'xiangqi');
 
     expect(xiangqi?.status).toBe('available');
     expect(xiangqi?.category).toBe('match');
     expect(xiangqi?.launchRoute).toBe('/g/xiangqi');
-    // Not square, unlike every board that shipped before it.
-    expect(xiangqi?.board).toEqual({ rows: 10, cols: 9 });
+    // No board dimensions here: 象棋's are 10×9, they come from GET /api/games,
+    // and its board component hardcodes them anyway because an intersection
+    // board is not a parameterisation of a grid of cells. A manifest copy would
+    // have been read by nobody — see board-size.spec.ts.
   });
 
   it('uses kebab-case keys', () => {

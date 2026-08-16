@@ -9,7 +9,8 @@ import type { GameReplayDto } from '../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ReplayPage } from './replay-page';
-import { DefaultGameCatalogService, GameCatalogService } from '../../../games/game-catalog.service';
+import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
+import { StubGameCapabilities } from '../../../games/game-capabilities.stub';
 
 function makeReplay(overrides: Partial<GameReplayDto> = {}): GameReplayDto {
   return {
@@ -70,7 +71,14 @@ function mount(opts: { id?: string | null; getReplay?: ReturnType<typeof vi.fn> 
       }),
     ],
     providers: [
-      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
+      {
+        provide: GameCapabilitiesService,
+        useValue: StubGameCapabilities.sized({
+          gomoku: { rows: 15, cols: 15 },
+          tictactoe: { rows: 3, cols: 3 },
+          xiangqi: { rows: 10, cols: 9 },
+        }),
+      },
       { provide: RoomsApiService, useValue: rooms },
       { provide: Router, useValue: router },
       { provide: ActivatedRoute, useValue: activatedRoute(id) },

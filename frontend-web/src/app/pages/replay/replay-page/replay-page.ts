@@ -21,7 +21,7 @@ import type {
   Stone,
 } from '../../../core/api/models/room.model';
 import { boardSizeFor } from '../../../games/board-size';
-import { GameCatalogService } from '../../../games/game-catalog.service';
+import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 
@@ -40,7 +40,7 @@ export class ReplayPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly rooms = inject(RoomsApiService);
-  private readonly catalog = inject(GameCatalogService);
+  private readonly capabilities = inject(GameCapabilitiesService);
   protected readonly language = inject(LanguageService);
 
   protected readonly replay = signal<GameReplayDto | null>(null);
@@ -66,10 +66,16 @@ export class ReplayPage implements OnInit, OnDestroy {
   /**
    * Board dimensions for the replayed game. Same resolution as the live room
    * page, and for the same reason: a replay link opened cold carries only a room
-   * id, so the size has to come from the payload's game key.
+   * id, so the size has to come from the payload's game key — and the size itself
+   * comes from the server, not from a client-side copy of it.
    */
   protected readonly boardSize = computed(() =>
-    boardSizeFor(this.catalog, this.replay()?.gameKey),
+    boardSizeFor(this.capabilities, this.replay()?.gameKey),
+  );
+
+  /** True until both the replay and the server's game descriptors are in hand. */
+  protected readonly loadingBoard = computed(
+    () => this.loading() || !this.capabilities.loaded(),
   );
 
   /**
@@ -134,6 +140,7 @@ export class ReplayPage implements OnInit, OnDestroy {
       return;
     }
     this.roomId = id;
+    this.capabilities.ensureLoaded();
     this.fetch(id);
   }
 
