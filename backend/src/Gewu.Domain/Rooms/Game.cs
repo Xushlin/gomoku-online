@@ -36,7 +36,7 @@ public sealed class Game
 
     /// <summary>
     /// 对局结束原因。进行中 <c>null</c>;结束后非 <c>null</c>,取值对应触发路径:
-    /// <see cref="Room.PlayMove"/> 的连五 → <see cref="GameEndReason.Connected5"/>、
+    /// <see cref="Room.PlayMove"/> 规则判出结果 → <see cref="GameEndReason.Decided"/>、
     /// <see cref="Room.Resign"/> → <see cref="GameEndReason.Resigned"/>、
     /// <see cref="Room.TimeOutCurrentTurn"/> → <see cref="GameEndReason.TurnTimeout"/>。
     /// </summary>
@@ -73,31 +73,23 @@ public sealed class Game
     private void TouchRowVersion() => RowVersion = Guid.NewGuid().ToByteArray();
 
     /// <summary>
-    /// 从 <see cref="Moves"/> 按 Ply 升序 replay 得到当前 <see cref="Board"/>。
-    /// 复杂度 O(n),耗时亚毫秒级。
+    /// 本局已走的全部步,按 Ply 升序,还原成规则看得懂的形状。
     /// <para>
-    /// 棋盘尺寸与连子长度取自传入的 <paramref name="rules"/> —— 同一段落子序列在不同
-    /// 棋种下重放出对应尺寸的棋盘。规则由调用方传入,理由与 <c>Room.PlayMove</c> 一致。
+    /// 这是 <c>IGameRules.Apply</c> 的入参。此前这里是 <c>ReplayBoard(rules)</c>,直接返回一块
+    /// <c>Board</c> —— 那让本子实体知道了「盘面长什么样」,而象棋的盘面塞不进 <c>Board</c>。
+    /// 现在它只交出**发生过什么**,盘面怎么重建是规则的私事。
     /// </para>
     /// </summary>
-    /// <param name="rules">本房间棋种的规则。</param>
-    public Board ReplayBoard(IGameRules rules)
-    {
-        var board = rules.CreateBoard();
-        foreach (var m in _moves.OrderBy(x => x.Ply))
-        {
-            board.PlaceStone(new ValueObjects.Move(m.ToPosition(), m.Stone));
-        }
-        return board;
-    }
+    public IReadOnlyList<PlayedMove> History()
+        => _moves.OrderBy(x => x.Ply).Select(m => m.ToPlayedMove()).ToList();
 
     /// <summary>
     /// 在对局内记录一步棋(仅由 <see cref="Room.PlayMove"/> 调用)。更新 <see cref="CurrentTurn"/>。
     /// </summary>
-    internal Move RecordMove(Position position, Stone stone, DateTime playedAt)
+    internal Move RecordMove(MoveIntent intent, Stone stone, DateTime playedAt)
     {
         var nextPly = _moves.Count + 1;
-        var move = new Move(Id, nextPly, position, stone, playedAt);
+        var move = new Move(Id, nextPly, intent, stone, playedAt);
         _moves.Add(move);
         CurrentTurn = stone == Stone.Black ? Stone.White : Stone.Black;
         TouchRowVersion();

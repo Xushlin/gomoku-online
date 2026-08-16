@@ -46,7 +46,7 @@ public class RoomSwapPlayersTests
     {
         var room = PlayingRoom(out _, out _);
         // Make any legal move (host = black, plays first).
-        room.PlayMove(room.BlackPlayerId, new Position(7, 7), Now.AddSeconds(2), BuiltInGameRules.Gomoku);
+        room.PlayMove(room.BlackPlayerId, MoveIntent.Place(new Position(7, 7)), Now.AddSeconds(2), BuiltInGameRules.Gomoku);
 
         var act = () => room.SwapPlayers(Now.AddSeconds(3));
 

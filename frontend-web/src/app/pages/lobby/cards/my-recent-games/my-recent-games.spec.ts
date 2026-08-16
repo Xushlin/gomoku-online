@@ -19,7 +19,7 @@ const sampleGames = [
     endedAt: '2026-04-25T00:05:00Z',
     result: 'BlackWin' as const,
     winnerUserId: 'u-me',
-    endReason: 'Connected5' as const,
+    endReason: 'Decided' as const,
     moveCount: 17,
   },
   {

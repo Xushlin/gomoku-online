@@ -1,4 +1,5 @@
 using Gewu.Domain.Entities;
+using Gewu.Domain.Enums;
 using Gewu.Domain.ValueObjects;
 
 namespace Gewu.Domain.Games.Abstractions;
@@ -31,9 +32,6 @@ public interface IGameRules
 
     /// <summary>列数。</summary>
     int Cols { get; }
-
-    /// <summary>判胜所需的同色连续子数。</summary>
-    int WinLength { get; }
 
     /// <summary>
     /// 本棋种是否存在**人类对手池** —— 平台有没有为它提供人人对战入口。
@@ -76,12 +74,61 @@ public interface IGameRules
     /// </summary>
     bool IsRated { get; }
 
-    /// <summary>造一块本棋种的空棋盘。</summary>
+    /// <summary>
+    /// 校验一步棋并给出走完之后的对局状态 —— **走子合法性与胜负判定的唯一入口**。
+    /// <para>
+    /// 实现 MUST 自行完成:形状校验(本棋种要不要 <c>From</c>)、越界、目标格合法性、走法合法性,
+    /// 以及走完之后的 <see cref="GameResult"/>。非法走子 MUST 抛
+    /// <see cref="Exceptions.InvalidMoveException"/>,且 MUST NOT 产生任何副作用 ——
+    /// 规则实例无状态,同一个实例被并发的多个房间共享。
+    /// </para>
+    /// <para>
+    /// **聚合根不再自己判断盘面。** <c>Room.PlayMove</c> 在调本方法之前只做三件事:房间在不在对局中、
+    /// 这人是不是玩家、是不是他的回合。越界、重复落子、走法合不合规,全部由这里回答。
+    /// 这是象棋能进这个聚合的前提:它一格上是七种棋子之一 × 两方,胜负是将死 / 困毙,
+    /// 与最后一步的位置没有直接关系 —— 没有一条塞得进「连 N 子棋盘」。
+    /// </para>
+    /// <para>
+    /// 收的是**走子历史**而不是一个盘面对象:后者会让聚合根重新知道「有一个盘面」,只是换了个名字,
+    /// 而盘面要么冗余存盘(第二份真源)、要么每次重放(那就是现在的做法)。每步 O(n) 重放在
+    /// 五子棋 &lt; 100 步、象棋 &lt; 200 步的量级上是亚毫秒的,而且**此前的 <c>Game.ReplayBoard</c>
+    /// 已经在这么做** —— 本抽象没有让它变慢,只是把重放搬进了规则。真慢了就在规则内部加缓存,
+    /// 那是规则的私事,接口不用动。
+    /// </para>
+    /// </summary>
+    /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
+    /// <param name="intent">这一步想怎么走。</param>
+    /// <param name="side">走这一步的一方。</param>
+    /// <exception cref="Exceptions.InvalidMoveException">这一步不合法。</exception>
+    MoveApplication Apply(IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side);
+}
+
+/// <summary>
+/// 「连 N 子」类棋种的专有成员。
+/// <para>
+/// 从 <see cref="IGameRules"/> 分出来,是因为中国象棋没有「连几子」,<see cref="CreateBoard"/>
+/// 返回的 <see cref="Board"/> 它也不用。留在基接口上,象棋就得实现两个骗人的成员 ——
+/// 而骗人的实现是下一个人删不掉的东西(他无从知道有没有调用方)。
+/// </para>
+/// <para>
+/// 这与 <see cref="IGameRules"/> 上那条能力声明的门槛注释是同一条纪律的另一面:
+/// **接口只承载对每个实现都成立的东西。**
+/// </para>
+/// </summary>
+public interface INInARowRules : IGameRules
+{
+    /// <summary>判胜所需的同色连续子数。</summary>
+    int WinLength { get; }
+
+    /// <summary>造一块本棋种的空棋盘。AI 层吃的是这个。</summary>
     Board CreateBoard();
 
-    /// <summary>该坐标是否在本棋种界内。<c>Position</c> 只保证非负,上界在这里判。</summary>
-    /// <param name="position">坐标。</param>
-    bool IsInBounds(Position position);
+    /// <summary>
+    /// 从走子历史重建棋盘。AI 需要看局面,而 <c>Game</c> 已经不再交出 <see cref="Board"/> ——
+    /// 它只交出发生过什么,盘面怎么重建属于规则。
+    /// </summary>
+    /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
+    Board ReplayBoard(IReadOnlyList<PlayedMove> history);
 }
 
 /// <summary>

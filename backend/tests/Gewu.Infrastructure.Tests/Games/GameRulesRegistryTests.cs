@@ -21,7 +21,8 @@ public class GameRulesRegistryTests
 
         rules.Should().NotBeNull();
         rules!.Rows.Should().Be(15);
-        rules.WinLength.Should().Be(5);
+        rules.Should().BeAssignableTo<INInARowRules>()
+            .Which.WinLength.Should().Be(5);
     }
 
     [Fact]
@@ -68,7 +69,8 @@ public class GameRulesRegistryTests
         rules.Should().NotBeNull();
         rules!.Rows.Should().Be(3);
         rules.Cols.Should().Be(3);
-        rules.WinLength.Should().Be(3);
+        rules.Should().BeAssignableTo<INInARowRules>()
+            .Which.WinLength.Should().Be(3);
         rules.IsRated.Should().BeFalse();
     }
 

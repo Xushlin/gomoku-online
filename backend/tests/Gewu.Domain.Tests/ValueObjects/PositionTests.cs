@@ -1,8 +1,28 @@
+using Gewu.Domain.Games.Abstractions;
+using Gewu.Domain.Exceptions;
+using Gewu.Domain.Enums;
 using Gewu.Domain.Games.NInARow;
 namespace Gewu.Domain.Tests.ValueObjects;
 
 public class PositionTests
 {
+
+    /// <summary>
+    /// 越界判定现在是 <c>Apply</c> 的内部一步(<c>IsInBounds</c> 不再是公开成员)——
+    /// 盘面语义整个属于规则。这个 helper 通过公开面问同一个问题,断言的行为一字未变。
+    /// </summary>
+    private static bool AcceptsPlacement(IGameRules rules, Position position)
+    {
+        try
+        {
+            rules.Apply([], MoveIntent.Place(position), Stone.Black);
+            return true;
+        }
+        catch (InvalidMoveException)
+        {
+            return false;
+        }
+    }
     [Theory]
     [InlineData(0, 0)]
     [InlineData(14, 14)]
@@ -46,7 +66,7 @@ public class PositionTests
     [InlineData(100)]
     public void Row_Beyond_A_Gomoku_Board_Is_Rejected_By_The_Rules(int row)
     {
-        BuiltInGameRules.Gomoku.IsInBounds(new Position(row, 0)).Should().BeFalse();
+        AcceptsPlacement(BuiltInGameRules.Gomoku, new Position(row, 0)).Should().BeFalse();
     }
 
     [Theory]
@@ -67,7 +87,7 @@ public class PositionTests
     public void Col_Beyond_A_Gomoku_Board_Is_Rejected_By_The_Rules(int col)
     {
         new Position(0, col).Col.Should().Be(col);
-        BuiltInGameRules.Gomoku.IsInBounds(new Position(0, col)).Should().BeFalse();
+        AcceptsPlacement(BuiltInGameRules.Gomoku, new Position(0, col)).Should().BeFalse();
     }
 
     [Fact]

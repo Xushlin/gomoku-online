@@ -53,7 +53,7 @@ public static class RoomMapping
         {
             var orderedMoves = room.Game.Moves.OrderBy(mv => mv.Ply).ToList();
             var moves = orderedMoves
-                .Select(mv => new MoveDto(mv.Ply, mv.Row, mv.Col, mv.Stone, mv.PlayedAt))
+                .Select(mv => new MoveDto(mv.Ply, mv.Row, mv.Col, mv.Stone, mv.PlayedAt, mv.FromRow, mv.FromCol))
                 .ToList()
                 .AsReadOnly();
             var turnStartedAt = orderedMoves.LastOrDefault()?.PlayedAt ?? room.Game.StartedAt;

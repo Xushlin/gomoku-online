@@ -34,8 +34,8 @@ export class GameEndedDialog {
 
   protected readonly reasonKey = computed<string>(() => {
     switch (this.data.endReason) {
-      case 'Connected5':
-        return 'game.ended.reason-connected-5';
+      case 'Decided':
+        return 'game.ended.reason-decided';
       case 'Resigned':
         return 'game.ended.reason-resigned';
       case 'TurnTimeout':

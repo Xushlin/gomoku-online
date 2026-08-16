@@ -57,8 +57,13 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
 
-        var outcome = room.PlayMove(
-            request.UserId, new Position(request.Row, request.Col), _clock.UtcNow, rules);
+        // 起点可空:落子类棋种(五子棋 / 一字棋)不带 FromRow / FromCol,走子类带。
+        // 形状对不对由规则判——聚合根不知道哪些棋种走子。
+        var intent = request.FromRow is int fr && request.FromCol is int fc
+            ? MoveIntent.Slide(new Position(fr, fc), new Position(request.Row, request.Col))
+            : MoveIntent.Place(new Position(request.Row, request.Col));
+
+        var outcome = room.PlayMove(request.UserId, intent, _clock.UtcNow, rules);
 
         if (outcome.Result != GameResult.Ongoing)
         {
@@ -72,7 +77,9 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             outcome.Move.Row,
             outcome.Move.Col,
             outcome.Move.Stone,
-            outcome.Move.PlayedAt);
+            outcome.Move.PlayedAt,
+            outcome.Move.FromRow,
+            outcome.Move.FromCol);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
         var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);

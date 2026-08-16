@@ -18,7 +18,7 @@ function mount(data: GameEndedDialogData) {
                 'title-win': 'You won!',
                 'title-lose': 'You lost.',
                 'title-draw': 'Draw.',
-                'reason-connected-5': 'Five in a row.',
+                'reason-decided': 'Five in a row.',
                 'reason-resigned': 'Opponent resigned.',
                 'reason-timeout': 'Turn timed out.',
                 'back-to-lobby': 'Back to lobby',
@@ -49,7 +49,7 @@ describe('GameEndedDialog', () => {
     const { fixture } = mount({
       result: 'BlackWin',
       winnerUserId: 'u-1',
-      endReason: 'Connected5',
+      endReason: 'Decided',
       mySide: 'black',
       roomId: 'r-1',
     });
@@ -71,7 +71,7 @@ describe('GameEndedDialog', () => {
     const { fixture } = mount({
       result: 'Draw',
       winnerUserId: null,
-      endReason: 'Connected5',
+      endReason: 'Decided',
       mySide: 'black',
       roomId: 'r-1',
     });
@@ -82,7 +82,7 @@ describe('GameEndedDialog', () => {
     const { fixture, dialogRef } = mount({
       result: 'Draw',
       winnerUserId: null,
-      endReason: 'Connected5',
+      endReason: 'Decided',
       mySide: 'spectator',
       roomId: 'r-1',
     });
@@ -96,7 +96,7 @@ describe('GameEndedDialog', () => {
     const { fixture, dialogRef } = mount({
       result: 'BlackWin',
       winnerUserId: 'u-1',
-      endReason: 'Connected5',
+      endReason: 'Decided',
       mySide: 'black',
       roomId: 'r-1',
     });
@@ -109,7 +109,7 @@ describe('GameEndedDialog', () => {
     const { fixture, dialogRef } = mount({
       result: 'Draw',
       winnerUserId: null,
-      endReason: 'Connected5',
+      endReason: 'Decided',
       mySide: 'spectator',
       roomId: 'r-1',
     });

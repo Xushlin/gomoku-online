@@ -23,10 +23,10 @@ public class GetUserGamesPagedQueryHandlerTests
         var start = RoomsFixtures.Now.AddSeconds(2);
         for (var i = 0; i < 4; i++)
         {
-            room.PlayMove(alice.Id, new Position(7, i), start.AddSeconds(i * 2), BuiltInGameRules.Gomoku);
-            room.PlayMove(bob.Id, new Position(0, i), start.AddSeconds(i * 2 + 1), BuiltInGameRules.Gomoku);
+            room.PlayMove(alice.Id, MoveIntent.Place(new Position(7, i)), start.AddSeconds(i * 2), BuiltInGameRules.Gomoku);
+            room.PlayMove(bob.Id, MoveIntent.Place(new Position(0, i)), start.AddSeconds(i * 2 + 1), BuiltInGameRules.Gomoku);
         }
-        room.PlayMove(alice.Id, new Position(7, 4), start.AddSeconds(9), BuiltInGameRules.Gomoku);
+        room.PlayMove(alice.Id, MoveIntent.Place(new Position(7, 4)), start.AddSeconds(9), BuiltInGameRules.Gomoku);
         return room;
     }
 
@@ -56,7 +56,7 @@ public class GetUserGamesPagedQueryHandlerTests
         first.Black.Username.Should().Be("Alice");
         first.White.Username.Should().Be("Bob");
         first.Result.Should().Be(GameResult.BlackWin);
-        first.EndReason.Should().Be(GameEndReason.Connected5);
+        first.EndReason.Should().Be(GameEndReason.Decided);
         first.MoveCount.Should().Be(9);
     }
 

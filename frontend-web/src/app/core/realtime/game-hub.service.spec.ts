@@ -187,7 +187,7 @@ describe('DefaultGameHubService', () => {
       result: 'BlackWin',
       winnerUserId: 'u-1',
       endedAt: '2026-04-24T00:05:00Z',
-      endReason: 'Connected5',
+      endReason: 'Decided',
     };
     conn.handlers['GameEnded']?.(ended);
     expect(svc.gameEnded()).toEqual(ended);
@@ -201,7 +201,7 @@ describe('DefaultGameHubService', () => {
       result: 'Draw',
       winnerUserId: null,
       endedAt: 'x',
-      endReason: 'Connected5',
+      endReason: 'Decided',
     });
     expect(svc.gameEnded()).not.toBeNull();
     await svc.leaveRoom('r-1');

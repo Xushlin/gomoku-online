@@ -250,7 +250,7 @@
       "title-win": "你赢了!",
       "title-lose": "你输了。",
       "title-draw": "平局。",
-      "reason-connected-5": "连成一线。",
+      "reason-decided": "棋局本身分出了胜负。",
       "reason-resigned": "对手认输。",
       "reason-timeout": "超时判负。",
       "back-to-lobby": "返回大厅",

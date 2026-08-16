@@ -51,7 +51,7 @@ public class UnratedGameEloTests
         _stats = RoomsFixtures.SetupGameStats(_users);
     }
 
-    private static readonly IGameRules TicTacToe = BuiltInGameRules.TicTacToe;
+    private static readonly INInARowRules TicTacToe = BuiltInGameRules.TicTacToe;
 
     private (User Host, User Guest, Room Room) TicTacToeRoom()
     {
@@ -96,10 +96,10 @@ public class UnratedGameEloTests
         // O O .
         // . . .      黑方走 (0,2) 成三连。
         var t = RoomsFixtures.Now;
-        room.PlayMove(host.Id, new Position(0, 0), t.AddSeconds(1), TicTacToe);
-        room.PlayMove(guest.Id, new Position(1, 0), t.AddSeconds(2), TicTacToe);
-        room.PlayMove(host.Id, new Position(0, 1), t.AddSeconds(3), TicTacToe);
-        room.PlayMove(guest.Id, new Position(1, 1), t.AddSeconds(4), TicTacToe);
+        room.PlayMove(host.Id, MoveIntent.Place(new Position(0, 0)), t.AddSeconds(1), TicTacToe);
+        room.PlayMove(guest.Id, MoveIntent.Place(new Position(1, 0)), t.AddSeconds(2), TicTacToe);
+        room.PlayMove(host.Id, MoveIntent.Place(new Position(0, 1)), t.AddSeconds(3), TicTacToe);
+        room.PlayMove(guest.Id, MoveIntent.Place(new Position(1, 1)), t.AddSeconds(4), TicTacToe);
         return new Position(0, 2);
     }
 
@@ -206,7 +206,7 @@ public class UnratedGameEloTests
         var i = 1;
         foreach (var (who, r, c) in order)
         {
-            room.PlayMove(who, new Position(r, c), t.AddSeconds(i++), TicTacToe);
+            room.PlayMove(who, MoveIntent.Place(new Position(r, c)), t.AddSeconds(i++), TicTacToe);
         }
 
         RoomsFixtures.SetupClock(_clock, t.AddSeconds(20));
