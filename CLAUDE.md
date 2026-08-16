@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **格物 / Gewu** — a multi-platform online game hall. Planned games: idiom games (成语纵横 / 成语接龙 / 猜成语), 五子棋, 一字棋, 中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what they all have in common.
 
-Four games ship today, and between them they establish the two kernels every later game reuses:
+Five games ship today, and between them they establish the two kernels every later game reuses:
 
 - **五子棋 (gomoku)** — the *match* kernel: players register, create/join rooms, play real-time matches (via SignalR) with room chat, spectator chat, and urge-opponent shortcuts; ELO-based ranking with special icons for the top three; human-vs-AI with multiple difficulties; game-record storage and replay.
 - **成语纵横 (idiom-crossword)** — the *puzzle* kernel: a level catalogue, server-authoritative attempts (the answer key never leaves the server), server-counted mistakes and hints, star scoring, and per-level best records.
-- **华容道 (klotski)** — the puzzle kernel's **proof**, and the one that showed its authority model has two shapes. 成语纵横 is authoritative because it *withholds* the answer; 华容道 hides nothing and is authoritative because it *replays* every claimed move. Rules, an A\* solver and five levels ship; the UI does not yet.
+- **华容道 (klotski)** — the puzzle kernel's **proof**, and the one that showed its authority model has two shapes. 成语纵横 is authoritative because it *withholds* the answer; 华容道 hides nothing and is authoritative because it *replays* every claimed move. Playable at `/g/klotski`.
 - **一字棋 (tictactoe)** — the match kernel's **proof**, not an extension of it. Its entire rule set is `NInARowRules("tictactoe", 3, 3, 3)`; it contributed zero lines of win detection. Human-vs-AI only, and therefore **unrated**: with no human-vs-human mode its only opponents are bots, bot games are rated, so a ladder over it would rank Easy-bot grinding rather than skill. That is now enforced by the invariant `IsRated ⇒ SupportsHumanVsHuman` rather than left to a comment. See the `add-tictactoe` audit for what adding the game revealed about the registry.
 - **中国象棋 (xiangqi)** — the match kernel's **first genuinely different game**. Its move is `from → to` rather than a placement, its board is 10×9 with pieces on intersections, and `Stone.Black` is 红. 一字棋 could not prove any of the kernel's seams general, because it is gomoku in miniature; 象棋 could, and did — at each of the three layers the assumption had leaked into (rules, AI, board component). Human-vs-AI only and unrated, same as 一字棋 but for a structural reason: it has no human-vs-human mode.
 
@@ -24,7 +24,7 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
 ## Current phase
 
-**Four games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), and 中国象棋 (the change that proved which seams were actually general). Detail:
+**Five games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), 中国象棋 (the change that proved which match seams were actually general), and 华容道 (the one that did the same to the puzzle kernel). Detail:
 
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
@@ -109,9 +109,19 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   **The inherited acceptance criterion held: `git diff --name-only` contains no puzzle-core file.** This time a real second game checked it, not a fake modelled on the first.
 
+- [x] **`add-web-klotski`** — 华容道 is playable at `/g/klotski`. Backend: **zero changes**.
+
+  Its board judges its own slides, which is the **opposite** of what `add-web-xiangqi` decided one game earlier — and both are right for the same reason. 象棋's move rules live only on the server, so a TypeScript port would *create* a second source of truth that could silently disagree. 华容道's rule already has to live on the client — "a block slides into an adjacent empty cell" is what drawing a drag requires — so there is nothing to create, and the server replays the whole path anyway.
+
+  > The test is not *should the client know the rules*, it is *would knowing them produce a second truth that can diverge*.
+
+  So no per-move `check`, legal destinations highlighted, and one submission at the end. The level's minimum stays hidden until the puzzle is solved: it is the divisor the server scores with, and on screen during play it turns a puzzle into a countdown.
+
+  It also found the same leak one layer up from the one `generalize-puzzle-rules` fixed: `PuzzleApiService.parseLayout` returned `CrosswordLayout`, `PuzzleHint.revealed` was a `CrosswordRevealedCell`, `PuzzleCheckResult.solved` a `CrosswordSolvedWord` — one game's shape on the *platform's* client, holding only because one game used it. Now generic.
+
 Not yet done — platform roadmap, in this order:
 
-1. `add-web-klotski` — 华容道 has rules, a solver and levels but **no UI**, so it is reachable only from tests and curl, and the catalogue still says 即将上线. A 5×4 grid of draggable rectangles; no realtime, no hub — pure REST on the puzzle endpoints. Then `add-idiom-chain`, `add-score-attack-core` + `add-tetris`.
+1. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, so it is also what finally forces lobby generalization. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
 2. Lobby generalization — `/home` is still gomoku's lobby, so 一字棋 and 中国象棋 both have human-vs-AI only, reachable only from `/games`. Parameterising it means rewriting `/home` as a normative path in five web specs. It no longer has a game waiting on it: 象棋 is `SupportsHumanVsHuman == false`, so the first game that genuinely needs it is 成语接龙.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
