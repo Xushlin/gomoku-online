@@ -66,11 +66,21 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   It also removed a **fake** test. `AllBuiltInRules()` claimed in its own comment to walk the registry so that "adding 中国象棋 is automatically covered" — but its data source was a hand-written `{ Gomoku, TicTacToe }`, so xiangqi would have slipped past the `IsRated ⇒ SupportsHumanVsHuman` invariant in silence. That is precisely the failure the comment predicted, about a mechanism the comment got wrong. `BuiltInGameRules.All` is now the single list, feeding both DI and the test.
 
+- [x] **`add-xiangqi-ai`** — depth-limited alpha-beta, three difficulties, and 象棋's first actual opponent. It also had to free the **AI seam** from the same placement-shaped assumption the rules seam had.
+
+  `IBoardGameAi.SelectMove(Board, Stone) → Position` took an n-in-a-row-specific `Board` and returned a bare placement. Its own comment claimed "it never used anything gomoku-specific" — **that was false**, and it was written when `add-tictactoe` renamed `IGomokuAi`. 一字棋 cannot prove that interface general, because it is also a placement game on a `Board`. **Renaming an interface does not generalize it, and neither does adding a second game from the same family.** The seam now mirrors the rules: `SelectMove(history, myStone) → MoveIntent`.
+
+  The five existing AI implementations were **not touched**. They moved to a narrow `IPlacementAi` behind a `PlacementAiAdapter`, because behind them sits the exhaustive tic-tac-toe verification (every reachable position asserted to land on the game-theoretic value) — rewriting that to change a signature trades a proven thing for mechanical-change risk. Two test files needed one-line adaptations; the tasks entry claiming "zero changes to existing AI tests" was overstated and is corrected there.
+
+  Capture-first move ordering is **not an optional optimization**: alpha-beta's pruning depends entirely on order, and it took Hard from ~1.7s to ~750ms per move. 750ms sits inside `AiMoveWorker`'s existing 800ms minimum think time — that is the number that matters, not the test runtime.
+
+  Nothing claims any difficulty is unbeatable. 象棋 cannot be searched exhaustively, so that assertion is unverifiable here, and **an unverifiable claim is worse than none**. What is asserted instead: legality across 12 plies of self-play, taking a hanging piece, and — the sharpest one — that the opening has exactly **44** legal moves, a number that can be checked independently.
+
 Not yet done — platform roadmap, in this order:
 
 1. Lobby generalization — `/home` is still gomoku's lobby, and 一字棋 therefore has human-vs-AI only, reachable only from `/games`. Parameterising it means rewriting `/home` as a normative path in five web specs, so it waits for the first game that genuinely needs human-vs-human: 中国象棋.
-2. `add-xiangqi-ai` then `add-web-xiangqi`. The AI is the piece that gives 象棋 an opponent at all today (human-vs-human waits on lobby generalization), and it is *not* gomoku-sized: no exhaustive search is possible, so it needs a depth-limited alpha-beta with a real evaluation. The web client needs a `MovePiece` wrapper on `GameHubService` — deliberately not written yet, since a method with no caller is code nobody can verify. Only once 象棋 has an opponent does `SupportsHumanVsHuman` / `IsRated` become a live question, and the invariant keeps that from being forgotten.
-3. Then `add-idiom-chain`, `add-klotski`, `add-xiangqi-*`, `add-score-attack-core` + `add-tetris`.
+2. `add-web-xiangqi` — 象棋 has rules and an opponent but **no UI**, so today it is reachable only from tests. The board is 10×9 with pieces on intersections and a river gap, so it cannot reuse the gomoku board component; the client also needs a `MovePiece` wrapper on `GameHubService` (still unwritten — a method with no caller is code nobody can verify).
+3. Then `add-klotski` (华容道 — it runs on `IPuzzleRules`, so it depends on **none** of the above and is the cheapest remaining game), `add-idiom-chain`, `add-score-attack-core` + `add-tetris`.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
 
