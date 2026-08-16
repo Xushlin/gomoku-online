@@ -123,6 +123,8 @@ ReplayPage 标题区 SHALL 渲染:
 
 本条原本写作「不引入第二个棋盘渲染层」。那个说法写于平台只有一种盘面形状的时候,而象棋的盘面**不是**五子棋盘的参数化(交叉点上的子 vs 格子里的子、两步走子 vs 一步落子)。约束的**意图**不变:回放页一行渲染代码都不自己写。变的是「共享组件」从单数变成了按棋种解析的两个。
 
+`<app-board>` 的 `rows` / `cols` SHALL 与房间页同源:`GameCapabilitiesService.of(gameKey)`,即 `GET /api/games` 下发的服务端声明,MUST NOT 来自前端清单。描述符未到达时页面停在加载态,理由与房间页相同 —— 见 web-tictactoe「房间页按棋种决定棋盘尺寸」。
+
 `boardState` `computed` SHALL 合成 `RoomState` 形状(synthesised partial)使棋盘组件自然消费 —— `status: 'Finished'` 触发落子按钮永远 disabled,所以 readonly 边界由两层共同保证(`[readonly]` 输入 + `status !== 'Playing'`)。
 
 象棋回放 MUST 从 `MoveDto` 的 `fromRow`/`fromCol` → `row`/`col` 逐步推导盘面(与房间页同一个纯函数),MUST NOT 另写一份推导。
@@ -146,4 +148,8 @@ ReplayPage 标题区 SHALL 渲染:
 #### Scenario: 五子棋回放不受影响
 - **WHEN** 回放一局五子棋
 - **THEN** 渲染 `<app-board>`,行为与本变更之前完全一致
+
+#### Scenario: 一字棋回放画 3×3
+- **WHEN** 回放一局 `gameKey === 'tictactoe'` 的对局,服务端描述符已到达
+- **THEN** 棋盘渲染 9 格
 

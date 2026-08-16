@@ -14,18 +14,14 @@ TBD - created by archiving change add-platform-catalog. Update Purpose after arc
 - `icon: string` —— 卡片图标(当前为字符/emoji 形式的字符串)。
 - `contentLocales: readonly string[]` —— 该游戏**内容**(而非 UI)可用的 locale 列表。
 - `launchRoute?: string` —— 仅当 `status === 'available'` 时有意义的入口路由。
-- `board?: { readonly rows: number; readonly cols: number }` —— 盘面格数,只对 `category: 'match'` 有意义。
 
 不变量:`status === 'available'` 的清单 MUST 提供非空 `launchRoute`;`status === 'planned'` 的清单 MUST NOT 依赖 `launchRoute` 被读取。
 
-`board` 是**服务端权威数据在客户端的一份刻意副本**。真源是后端的 `IGameRules`,本字段存在的
-唯一理由是房间 DTO 不下发尺寸(见 `room-and-gameplay` 的"房间 DTO 携带棋种键")。
-失配的代价被两件事限住:症状是棋盘格数肉眼可见地不对,而不是潜伏的错;且服务端
-`rules.IsInBounds` 会挡住越界落子,所以一个画大了的客户端棋盘点下去只会拿到错误,
-不会写坏对局。`generalize-match-contract` 改为服务端下发尺寸后,本字段 MUST 被删除。
+**清单 MUST NOT 携带盘面尺寸。** 它此前有一个 `board` 字段,是服务端权威数据的一份刻意副本,当时被接受的理由是「错了会被看见」——格数肉眼可辨,且服务端会挡住越界落子。
 
-`category: 'match'` 的清单在 `status === 'available'` 时 MUST 提供 `board`;
-`category` 为 `'puzzle'` / `'score'` 的清单 MUST NOT 依赖它被读取。
+那个理由后来不成立了:`add-web-xiangqi` 给象棋填了 `{ rows: 10, cols: 9 }`,而象棋的棋盘组件**硬编码自己的 10×9**(交叉点上的盘不是格子盘的参数化),于是那份副本**没有任何读者** —— 它错了永远不会被任何人发现,正是本仓库判据要挡的那种副本。它当时还活着,只因为一条测试要求每个可玩的对战棋种都声明它。
+
+尺寸的真源在服务端,并且 `add-web-per-game-rating` 起就已经在线上:`GET /api/games` 的描述符带 `rows` / `cols`,由 `GameCapabilitiesService` 缓存。清单说的是**有哪些游戏、怎么进去**,服务端说的是**它们能做什么**,盘面属于后者。
 
 #### Scenario: available 游戏必须有入口路由
 - **WHEN** 注册表中存在 `status === 'available'` 的清单
@@ -35,13 +31,9 @@ TBD - created by archiving change add-platform-catalog. Update Purpose after arc
 - **WHEN** 遍历注册表中每一份清单
 - **THEN** `titleKey === 'games.' + key + '.title'` 且 `descriptionKey === 'games.' + key + '.description'`
 
-#### Scenario: 可玩的对战棋种必须声明盘面
-- **WHEN** 遍历注册表中 `category === 'match'` 且 `status === 'available'` 的清单
-- **THEN** 每一份的 `board.rows` 与 `board.cols` MUST 为正整数
-
-#### Scenario: 盘面与后端注册一致
-- **WHEN** 读取 `gomoku` 与 `tictactoe` 的 `board`
-- **THEN** 分别为 `{ rows: 15, cols: 15 }` 与 `{ rows: 3, cols: 3 }`,与后端 `BuiltInGameRules` 的注册参数相同
+#### Scenario: 清单里没有盘面字段
+- **WHEN** 遍历注册表中每一份清单
+- **THEN** 其中 MUST NOT 存在 `board` 属性 —— 尺寸只来自 `GET /api/games`
 
 ### Requirement: `src/app/games/index.ts` 是唯一注册点
 
