@@ -32,7 +32,8 @@ public sealed class IdiomCrosswordRules : IPuzzleRules
     public string GameKey => "idiom-crossword";
 
     /// <inheritdoc />
-    public PuzzleValidationResult Validate(string solutionJson, string submissionJson)
+    public PuzzleValidationResult Validate(
+        string solutionJson, string layoutJson, string submissionJson)
     {
         var solution = Deserialize<CrosswordSolution>(solutionJson);
         var submission = TryDeserialize<CrosswordSubmission>(submissionJson);
@@ -59,7 +60,8 @@ public sealed class IdiomCrosswordRules : IPuzzleRules
     }
 
     /// <inheritdoc />
-    public PuzzlePartialResult CheckPartial(string solutionJson, string partialJson)
+    public PuzzlePartialResult CheckPartial(
+        string solutionJson, string layoutJson, string partialJson)
     {
         var solution = Deserialize<CrosswordSolution>(solutionJson);
         var partial = TryDeserialize<CrosswordPartialSubmission>(partialJson);
@@ -150,11 +152,14 @@ public sealed class IdiomCrosswordRules : IPuzzleRules
     }
 
     /// <inheritdoc />
-    public int Score(int hintsUsed, int mistakes, TimeSpan duration)
+    public int Score(PuzzleScoreInput input)
     {
         // 与原型一致:用时不参与计分。它被记录下来做最好成绩的次级排序,但一个想清楚
         // 每一步的玩家不该因为想得慢而掉星。
-        var cost = hintsUsed + mistakes;
+        //
+        // 关卡与提交同样不参与 —— 这是**选择**而不是遗漏。填字的成绩就是"错了几次、
+        // 要了几次提示",格子填在哪儿不额外说明什么;华容道要看提交是因为它计步数。
+        var cost = input.HintsUsed + input.Mistakes;
         return cost == 0 ? 3 : cost <= 2 ? 2 : 1;
     }
 

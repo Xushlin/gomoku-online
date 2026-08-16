@@ -1,3 +1,4 @@
+using System.Globalization;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Rooms;
@@ -145,9 +146,16 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
 
         // 直接构造一条带起点的记录:五子棋规则会拒绝带起点的走子(它是落子类),
         // 而本用例验的是**持久化层**存不存得住,不是规则接不接受。
-        await db.Database.ExecuteSqlRawAsync($"""
+        //
+        // `ExecuteSqlAsync` 而不是 `ExecuteSqlRawAsync`:后者把插值直接拼进 SQL,编译器
+        // 为此报 EF1002。这里的值全是自己造的,注入风险为零,但一条长期存在的 warning
+        // 会让下一条真正要紧的 warning 淹没在噪声里。
+        var moveId = Sql(Guid.NewGuid());
+        var gameId = Sql(room.Game!.Id);
+        var playedAt = Now.ToString("o", CultureInfo.InvariantCulture);
+        await db.Database.ExecuteSqlAsync($"""
             INSERT INTO Moves (Id, GameId, Ply, FromRow, FromCol, Row, Col, Stone, PlayedAt)
-            VALUES ('{Sql(Guid.NewGuid())}', '{Sql(room.Game!.Id)}', 1, 3, 4, 5, 6, 1, '{Now:o}');
+            VALUES ({moveId}, {gameId}, 1, 3, 4, 5, 6, 1, {playedAt});
             """);
 
         var stored = await db.Set<PersistedMove>()

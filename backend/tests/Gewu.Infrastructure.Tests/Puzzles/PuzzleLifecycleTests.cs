@@ -40,14 +40,23 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
     private IUnitOfWork _uow = null!;
 
     /// <summary>把 "SOLVED" 当作唯一正确的完整答案,"OK-" 前缀当作正确的部分答案。</summary>
+    /// <summary>
+    /// ⚠️ **这个 fake 证明不了 `IPuzzleRules` 通用。** 它是照着成语纵横的形状写的,
+    /// 而一个 fake 不可能推翻写它时所依据的假设 —— `generalize-puzzle-rules` 正是
+    /// 因为这一点才存在:接口原本无法表达一个答案是**路径**的谜题,而覆盖
+    /// 「新增游戏不改既有文件」那条的测试用的就是这个 fake,于是从未报警。
+    /// 真正的判据在 `add-klotski` 的 `git diff --name-only` 里。
+    /// </summary>
     private sealed class FakeRules : IPuzzleRules
     {
         public string GameKey => PuzzleLifecycleTests.GameKey;
 
-        public PuzzleValidationResult Validate(string solutionJson, string submissionJson)
+        public PuzzleValidationResult Validate(
+            string solutionJson, string layoutJson, string submissionJson)
             => new(submissionJson == solutionJson);
 
-        public PuzzlePartialResult CheckPartial(string solutionJson, string partialJson)
+        public PuzzlePartialResult CheckPartial(
+            string solutionJson, string layoutJson, string partialJson)
         {
             var correct = partialJson.StartsWith("OK-", StringComparison.Ordinal);
 
@@ -62,9 +71,9 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
             => new($"{{\"state\":{(stateJson is null ? "null" : "\"seen\"")}}}");
 
         // 与原型同构:cost = 错误 + 提示;0 → 3 星,≤2 → 2 星,否则 1 星。
-        public int Score(int hintsUsed, int mistakes, TimeSpan duration)
+        public int Score(PuzzleScoreInput input)
         {
-            var cost = hintsUsed + mistakes;
+            var cost = input.HintsUsed + input.Mistakes;
             return cost == 0 ? 3 : cost <= 2 ? 2 : 1;
         }
     }
@@ -348,9 +357,9 @@ public sealed class PuzzleLifecycleTests : IAsyncLifetime
     private sealed class MarkerRules : IPuzzleRules
     {
         public string GameKey => "marker-game";
-        public PuzzleValidationResult Validate(string s, string x) => new(false);
-        public PuzzlePartialResult CheckPartial(string s, string x) => new(false);
+        public PuzzleValidationResult Validate(string s, string l, string x) => new(false);
+        public PuzzlePartialResult CheckPartial(string s, string l, string x) => new(false);
         public PuzzleHintResult Hint(string s, string l, string? state) => new("{}");
-        public int Score(int h, int m, TimeSpan d) => 1;
+        public int Score(PuzzleScoreInput input) => 1;
     }
 }
