@@ -18,9 +18,14 @@ API 契约:
 - `leaveRoom(roomId: string): Promise<void>`
 - `joinSpectatorGroup(roomId: string): Promise<void>`
 - `makeMove(roomId: string, row: number, col: number): Promise<void>`
+- `movePiece(roomId: string, fromRow: number, fromCol: number, row: number, col: number): Promise<void>`
 - `sendChat(roomId: string, content: string, channel: 'Room' | 'Spectator'): Promise<void>`
 - `urge(roomId: string): Promise<void>`
 - `applySnapshot(state: RoomState): void` —— REST rehydration path 用
+
+`movePiece` 对应服务端的 `MovePiece` hub 方法,用于**走子类**棋种(象棋);`makeMove` 对应 `MakeMove`,用于**落子类**棋种(五子棋、一字棋)。
+
+它们是两个方法而不是「`makeMove` 加两个可选参数」,原因是 **SignalR 不套用 C# 的可选参数默认值**:一个 3 参调用打到 5 参方法上会被直接拒绝(`InvalidDataException`),已发布的客户端会在下一步棋当场坏掉。这件事是 `AiSmoke` 抓到的 —— Domain、Application、Api 三层单元测试全绿,因为它们都不经过 SignalR 的参数绑定。**这个形状 MUST NOT 被「简化」成一个方法。**
 
 组件 MUST 通过 `inject(GameHubService)` 消费,MUST NOT 直接 `inject(DefaultGameHubService)`。所有命令返回 `Promise<void>` —— 服务端结果通过 server→client 事件到达,而不是 RPC 返回值。命令失败时,`HubException` 的消息 MUST 透传给 caller,caller 可根据消息做翻译映射。
 
@@ -44,7 +49,13 @@ API 契约:
 - **WHEN** 服务端调用 `Clients.User(urgedUserId).SendAsync("UrgeReceived", ...)`
 - **THEN** 仅该用户的 hub 连接 emits `urged$` 下一个值;其它订阅者不 emit
 
----
+#### Scenario: movePiece 调的是 MovePiece
+- **WHEN** 调用 `movePiece(roomId, 9, 0, 8, 0)`
+- **THEN** 底层 `connection.invoke` 收到 `('MovePiece', roomId, 9, 0, 8, 0)` —— 5 个参数,MUST NOT 走 `MakeMove`
+
+#### Scenario: 落子类棋种不受影响
+- **WHEN** 调用 `makeMove(roomId, 7, 7)`
+- **THEN** 底层 `connection.invoke` 收到 `('MakeMove', roomId, 7, 7)`,与本变更之前完全一致
 
 ### Requirement: Hub 连接使用 `/hubs/gomoku` + 查询串 JWT + `AuthService.accessToken()` 工厂
 
@@ -430,7 +441,8 @@ export interface UrgeDto {
 RoomPage / Board / ChatPanel SHALL 把从 hub 命令 promise 抛出的 `HubException` 处理为用户可见的翻译文案。映射规则(按消息字段包含的关键字,case-insensitive):
 
 - 包含 `"not your turn"` → `game.errors.not-your-turn`
-- 包含 `"invalid move"` 或 `"occupied"` 或 `"out of bounds"` → `game.errors.invalid-move`
+- 包含 `"in check"` → `game.errors.self-check`
+- 包含 `"invalid move"` / `"occupied"` / `"out of bounds"` / `"cannot move from"` / `"there is no piece at"` / `"does not belong to"` / `"must change the piece"` / `"origin square"` / `"outside the"` → `game.errors.invalid-move`
 - 包含 `"concurrent"` 或 `"DbUpdateConcurrency"` → `game.errors.concurrent-move-refetched`(并**必须**跟进一次 `roomsApi.getById → applySnapshot`)
 - 包含 `"too frequent"`(urge 冷却)→ `game.errors.urge-cooldown`
 - 其它未识别 → `game.errors.generic`
@@ -438,6 +450,10 @@ RoomPage / Board / ChatPanel SHALL 把从 hub 命令 promise 抛出的 `HubExcep
 网络层错误(Promise rejection 不是 `HubException`,而是 connection 已断)→ `game.errors.network`。
 
 这种字符串匹配承认脆弱但**是当前后端没有结构化错误码的最小痛苦**方案;design.md 记录了后续添加 typed error code 的跟进项。
+
+**中国象棋 抬高了这条的赌注,所以后半段的关键字是必须的而不是顺手加的。** 五子棋的棋盘只允许点空格,`invalid-move` 因此几乎不可达,一条没被映射的消息不花什么代价。象棋的棋盘**刻意不懂规则**(否则就是第二份真源),所以被拒绝是玩家了解棋子怎么走的常规途径 —— 而它原本落在「Something went wrong. Please try again.」上,读起来像应用坏了,不像一步棋被拒。
+
+自将/照面 SHALL 有**自己**的文案而不是并进 `invalid-move`:它是象棋里最常见的一种拒绝,而「这步不合法」不告诉玩家他漏看了什么。
 
 #### Scenario: 并发错误走 rehydration
 - **WHEN** `hub.makeMove` reject,消息包含 `'concurrent'`
@@ -447,7 +463,13 @@ RoomPage / Board / ChatPanel SHALL 把从 hub 命令 promise 抛出的 `HubExcep
 - **WHEN** `HubException` 消息是 `"something weird"`
 - **THEN** toast 显示 `game.errors.generic` 翻译
 
----
+#### Scenario: 象棋的走法拒绝读得懂
+- **WHEN** `HubException` 消息是 `"A General cannot move from (9, 4) to (7, 4)."`
+- **THEN** toast 显示 `game.errors.invalid-move`,MUST NOT 显示 `game.errors.generic`
+
+#### Scenario: 自将有自己的说法
+- **WHEN** `HubException` 消息含 `"leave your general in check"`
+- **THEN** toast 显示 `game.errors.self-check`
 
 ### Requirement: i18n —— `game.*` 翻译树同步扩充
 
@@ -460,7 +482,7 @@ RoomPage / Board / ChatPanel SHALL 把从 hub 命令 promise 抛出的 `HubExcep
 - `game.chat.{title, tab-room, tab-spectator, send, placeholder, empty, max-length-error, forbidden-error}`
 - `game.urge.{toast, button-disabled-own-turn, button-disabled-cooldown}`
 - `game.ended.{title-win, title-lose, title-draw, reason-connected-5, reason-resigned, reason-timeout, back-to-lobby, dismiss}`
-- `game.errors.{generic, network, not-your-turn, invalid-move, concurrent-move-refetched, urge-cooldown}`
+- `game.errors.{generic, network, not-your-turn, invalid-move, self-check, concurrent-move-refetched, urge-cooldown}`
 - `game.connection.{reconnecting, disconnected, retry, connected}`
 
 键集合 MUST 两份 JSON 完全相等;已有 flattener parity check 持续 0 drift。
@@ -474,8 +496,6 @@ RoomPage / Board / ChatPanel SHALL 把从 hub 命令 promise 抛出的 `HubExcep
 #### Scenario: 模板零硬编码
 - **WHEN** 在 `src/app/pages/rooms/room-page/**/*.html` 下搜索 CJK 字符或 ≥3 字母英文显示字符串
 - **THEN** 0 匹配(Brand / test-id / 技术字符串豁免)
-
----
 
 ### Requirement: 颜色 / 组件 / 交互规则继承所有先前立下的约定
 

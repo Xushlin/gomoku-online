@@ -6,11 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **格物 / Gewu** — a multi-platform online game hall. Planned games: idiom games (成语纵横 / 成语接龙 / 猜成语), 五子棋, 一字棋, 中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what they all have in common.
 
-Three games ship today, and between them they establish the two kernels every later game reuses:
+Four games ship today, and between them they establish the two kernels every later game reuses:
 
 - **五子棋 (gomoku)** — the *match* kernel: players register, create/join rooms, play real-time matches (via SignalR) with room chat, spectator chat, and urge-opponent shortcuts; ELO-based ranking with special icons for the top three; human-vs-AI with multiple difficulties; game-record storage and replay.
 - **成语纵横 (idiom-crossword)** — the *puzzle* kernel: a level catalogue, server-authoritative attempts (the answer key never leaves the server), server-counted mistakes and hints, star scoring, and per-level best records.
 - **一字棋 (tictactoe)** — the match kernel's **proof**, not an extension of it. Its entire rule set is `NInARowRules("tictactoe", 3, 3, 3)`; it contributed zero lines of win detection. Human-vs-AI only, and therefore **unrated**: with no human-vs-human mode its only opponents are bots, bot games are rated, so a ladder over it would rank Easy-bot grinding rather than skill. That is now enforced by the invariant `IsRated ⇒ SupportsHumanVsHuman` rather than left to a comment. See the `add-tictactoe` audit for what adding the game revealed about the registry.
+- **中国象棋 (xiangqi)** — the match kernel's **first genuinely different game**. Its move is `from → to` rather than a placement, its board is 10×9 with pieces on intersections, and `Stone.Black` is 红. 一字棋 could not prove any of the kernel's seams general, because it is gomoku in miniature; 象棋 could, and did — at each of the three layers the assumption had leaked into (rules, AI, board component). Human-vs-AI only and unrated, same as 一字棋 but for a structural reason: it has no human-vs-human mode.
 
 Games fall into three categories that deliberately do **not** share one aggregate — see the platform roadmap below:
 
@@ -22,7 +23,7 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
 ## Current phase
 
-**Three games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), and 一字棋 (the change that priced what a second board game costs). Detail:
+**Four games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), and 中国象棋 (the change that proved which seams were actually general). Detail:
 
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
@@ -76,11 +77,23 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   Nothing claims any difficulty is unbeatable. 象棋 cannot be searched exhaustively, so that assertion is unverifiable here, and **an unverifiable claim is worse than none**. What is asserted instead: legality across 12 plies of self-play, taking a hanging piece, and — the sharpest one — that the opening has exactly **44** legal moves, a number that can be checked independently.
 
+- [x] **`add-web-xiangqi`** — 象棋 is playable at `/g/xiangqi`. Backend: **zero changes**.
+
+  The front end had the same placement-shaped assumption the Domain and the AI seam had already shed, and for the same reason it went unnoticed: gomoku and 一字棋 are one family, so the shared `Board` component had never been asked by another. Two things followed.
+
+  **The client must hold the opening setup.** A gomoku board *is* its move history — every ply places a stone of a known colour. A 象棋 ply is `from → to`, which says nothing about where anything started, so the board can only be derived from a known initial position. That copy is accepted on the repo's existing test: being wrong paints the whole board wrong on move zero, the most visible failure there is, and the server rejects any move that only looks legal on a wrong board. The rejected alternative — have the server send a board projection — would put back into the match kernel exactly what `generalize-match-domain` took out, and would be pure cost for gomoku.
+
+  **The board judges no legality.** It does only what needs no rules: you can pick up only your own piece, and it is read-only off-turn. A TypeScript port of the rules would be a second source of truth whose divergence reads to the player as a bug and which nothing here would detect. The price is real — you discover illegality by being refused — and it is the cheaper price.
+
+  Two defects were found **in the browser, not by reading the code**, and both are the kind that unit tests structurally cannot see:
+
+  1. Illegal moves surfaced as "Something went wrong. Please try again." `hubErrorToKey`'s keyword table was written for gomoku, where `invalid-move` is near-unreachable because you can only click an empty cell. In 象棋 refusal is the *normal* channel through which a player learns the rules, so the generic fallback reads as a broken app. Fixed, plus a dedicated message for self-check / flying-generals — "that move is not legal" does not tell a player what they missed.
+  2. Piece colours were `var(--xq-red, #b3261e)` with **nothing defining the variable** — a literal wearing a token's clothes, inert under every skin and both colour modes. Now `pieces: { bg, red, black }` is part of `BoardSkinTokens`, so a new skin *cannot* omit them (a test fixture failed to compile the moment the field was added — that is the mechanism working). The constraint recorded on the token: a skin picks the **shade**, never the **hue**. A xiangqi board whose red side is not red is broken in every theme.
+
 Not yet done — platform roadmap, in this order:
 
-1. Lobby generalization — `/home` is still gomoku's lobby, and 一字棋 therefore has human-vs-AI only, reachable only from `/games`. Parameterising it means rewriting `/home` as a normative path in five web specs, so it waits for the first game that genuinely needs human-vs-human: 中国象棋.
-2. `add-web-xiangqi` — 象棋 has rules and an opponent but **no UI**, so today it is reachable only from tests. The board is 10×9 with pieces on intersections and a river gap, so it cannot reuse the gomoku board component; the client also needs a `MovePiece` wrapper on `GameHubService` (still unwritten — a method with no caller is code nobody can verify).
-3. Then `add-klotski` (华容道 — it runs on `IPuzzleRules`, so it depends on **none** of the above and is the cheapest remaining game), `add-idiom-chain`, `add-score-attack-core` + `add-tetris`.
+1. `add-klotski` (华容道) — runs on `IPuzzleRules`, depends on **nothing** above, and is the cheapest remaining game. Then `add-idiom-chain`, `add-score-attack-core` + `add-tetris`.
+2. Lobby generalization — `/home` is still gomoku's lobby, so 一字棋 and 中国象棋 both have human-vs-AI only, reachable only from `/games`. Parameterising it means rewriting `/home` as a normative path in five web specs. It no longer has a game waiting on it: 象棋 is `SupportsHumanVsHuman == false`, so the first game that genuinely needs it is 成语接龙.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
 
@@ -88,7 +101,13 @@ Deferred follow-ups, each with a reason:
 
 - `squash-migration-baseline` — squash the 11 migrations into one. Needs deltas because `ai-opponent` has requirements named after `AddBotSupport` / `AddHardBotAccount`, `room-and-gameplay` after `AddGameEndReason`, and `user-management` now names `AddUserGameStats` / `DropUserRatingColumns` — the last pair with a normative ordering constraint the squash must preserve. Cheap while the DB is still local-only (no production data exists).
 - `backend/smoke/AiSmoke` is **broken and has been since `add-leaderboard-pagination`**: step 7 deserializes `/api/leaderboard` into `List<LeaderboardEntry>`, but the endpoint returns `PagedResult<T>`. It is not in `Gewu.slnx` and CI does not run it, which is exactly why nobody noticed. Either wire it into CI or delete it — a smoke test outside CI rots silently and then lies about coverage.
-- `GameManifest.board` (front-end copy of the board dimensions) is now **deletable at any time** — `GET /api/games` already carries `rows` / `cols`. Its doc comment still says to wait for `generalize-match-contract`; that condition is stale. Fold the deletion into whichever change next touches the manifest.
+- `GameManifest.board` (front-end copy of the board dimensions) is **deletable** — `GET /api/games` already carries `rows` / `cols`. Its doc comment still says to wait for `generalize-match-contract`; that condition is stale.
+
+  `add-web-xiangqi` was the change that next touched the manifest and it **did not** delete the field — it added another copy (`{ rows: 10, cols: 9 }`). Worse, nothing reads that copy: `XiangqiBoard` hardcodes its own dimensions because a 10×9 intersection board is not a parameterisation of the n-in-a-row grid. By this repo's own test — *would being wrong ever be noticed?* — a xiangqi `board` value that is wrong would be noticed by nobody. It is kept only because `board-size.spec.ts` requires every playable match game to declare one. That invariant and this field should die together. **This is no longer a "fold it in when convenient" item.**
+
+- `hubErrorToKey` matches the server's **English prose** with substrings — a second copy of the domain's exception wording that nothing keeps in sync. `add-web-xiangqi` raised the stakes: gomoku's board only lets you click an empty cell, so `invalid-move` was near-unreachable, but 象棋's board deliberately knows no rules, so a refused move is the ordinary way a player learns what a piece can do. The fix is a structured error code on the hub contract, which is a cross-cutting change to error handling.
+
+- `ng build` reports `bundle initial exceeded maximum budget` (500 kB budget, ~535 kB actual). Pre-dates `add-web-xiangqi` (532 kB before it). It is a warning, not an error, so CI is green and nobody is shrinking it.
 - `gomoku:*` → `gewu:*` localStorage keys — normative in five web specs, and renaming logs everyone out; needs a read-old/write-new shim.
 - `GomokuHub` → `MatchHub` and `/hubs/gomoku` → `/hubs/match`. `GameEndReason.Connected5` is **done** (`generalize-match-domain` renamed it to `Decided`); the hub name is what remains, and it rides along with lobby generalization, which must rewrite those specs anyway.
 - `logs/gomoku-.log` Serilog filename and the `GOMOKU_*` env-var prefix — both normative in specs (`observability`, `api-ops`). The env-var prefix is **not implemented**: `Program.cs` never calls `AddEnvironmentVariables("GOMOKU_")`, so the documented `GOMOKU_JWT__SIGNINGKEY` / `GOMOKU_CORS__ALLOWEDORIGINS__0` are silently ignored and only the unprefixed `JWT__SIGNINGKEY` works. That is a live ops trap, not just a naming wart — fix the code or the spec, but do not leave them disagreeing.
