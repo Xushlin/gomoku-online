@@ -93,12 +93,12 @@ public class IdiomCrosswordRulesTests
 
     [Fact]
     public void Validate_passes_an_exact_grid()
-        => Rules.Validate(SolutionJson(), FullSubmission(correct: true))
+        => Rules.Validate(SolutionJson(), LayoutJson(), FullSubmission(correct: true))
             .IsCorrect.Should().BeTrue();
 
     [Fact]
     public void Validate_fails_on_a_single_wrong_cell()
-        => Rules.Validate(SolutionJson(), FullSubmission(correct: false))
+        => Rules.Validate(SolutionJson(), LayoutJson(), FullSubmission(correct: false))
             .IsCorrect.Should().BeFalse();
 
     [Fact]
@@ -110,16 +110,16 @@ public class IdiomCrosswordRulesTests
                 [CrosswordSolution.Key(0, 0)] = "合",
             }), Json);
 
-        Rules.Validate(SolutionJson(), partial).IsCorrect.Should().BeFalse();
+        Rules.Validate(SolutionJson(), LayoutJson(), partial).IsCorrect.Should().BeFalse();
     }
 
     [Fact]
     public void Validate_treats_malformed_json_as_incorrect_rather_than_throwing()
     {
         // 载荷来自玩家,畸形输入是正常情况:一律当作"不正确",不让坏 JSON 变成 500。
-        var act = () => Rules.Validate(SolutionJson(), "{not json");
+        var act = () => Rules.Validate(SolutionJson(), LayoutJson(), "{not json");
         act.Should().NotThrow();
-        Rules.Validate(SolutionJson(), "{not json").IsCorrect.Should().BeFalse();
+        Rules.Validate(SolutionJson(), LayoutJson(), "{not json").IsCorrect.Should().BeFalse();
     }
 
     // ---- CheckPartial ----
@@ -127,7 +127,7 @@ public class IdiomCrosswordRulesTests
     [Fact]
     public void CheckPartial_returns_the_word_and_its_explanation_when_correct()
     {
-        var result = Rules.CheckPartial(SolutionJson(), Partial(0, Across));
+        var result = Rules.CheckPartial(SolutionJson(), LayoutJson(), Partial(0, Across));
 
         result.IsCorrect.Should().BeTrue();
         result.PayloadJson.Should().NotBeNull();
@@ -140,7 +140,7 @@ public class IdiomCrosswordRulesTests
     [Fact]
     public void CheckPartial_returns_no_payload_when_wrong()
     {
-        var result = Rules.CheckPartial(SolutionJson(), Partial(0, "合而为二"));
+        var result = Rules.CheckPartial(SolutionJson(), LayoutJson(), Partial(0, "合而为二"));
 
         result.IsCorrect.Should().BeFalse();
         // 答错附带任何内容都等于借错误路径泄题。
@@ -150,7 +150,7 @@ public class IdiomCrosswordRulesTests
     [Fact]
     public void CheckPartial_rejects_an_unknown_slot_index()
     {
-        var result = Rules.CheckPartial(SolutionJson(), Partial(99, Across));
+        var result = Rules.CheckPartial(SolutionJson(), LayoutJson(), Partial(99, Across));
 
         result.IsCorrect.Should().BeFalse();
         result.PayloadJson.Should().BeNull();
@@ -160,7 +160,7 @@ public class IdiomCrosswordRulesTests
     public void CheckPartial_checks_the_named_slot_not_just_any_slot()
     {
         // 把横排的答案报到竖排的槽上 —— 必须判错,否则玩家可以拿一条成语骗过所有槽。
-        var result = Rules.CheckPartial(SolutionJson(), Partial(1, Across));
+        var result = Rules.CheckPartial(SolutionJson(), LayoutJson(), Partial(1, Across));
 
         result.IsCorrect.Should().BeFalse();
     }
@@ -206,14 +206,34 @@ public class IdiomCrosswordRulesTests
     [InlineData(0, 3, 1)]
     [InlineData(2, 2, 1)]
     public void Score_matches_the_prototype(int hints, int mistakes, int expected)
-        => Rules.Score(hints, mistakes, TimeSpan.FromMinutes(3)).Should().Be(expected);
+        => Rules.Score(ScoreInput(hints, mistakes, TimeSpan.FromMinutes(3)))
+            .Should().Be(expected);
 
     [Fact]
     public void Score_ignores_elapsed_time()
     {
         // 与原型一致:想得慢不该掉星。用时被记录下来做最好成绩的次级排序,不参与计分。
-        Rules.Score(0, 0, TimeSpan.FromSeconds(5))
-            .Should().Be(Rules.Score(0, 0, TimeSpan.FromHours(2)));
+        Rules.Score(ScoreInput(0, 0, TimeSpan.FromSeconds(5)))
+            .Should().Be(Rules.Score(ScoreInput(0, 0, TimeSpan.FromHours(2))));
+    }
+
+    /// <summary>
+    /// 计分入参。成语纵横只看提示与错误,所以关卡与提交在这里传什么都不影响结果 ——
+    /// 这一点由 <see cref="Score_ignores_the_level_and_the_submission"/> 钉住。
+    /// </summary>
+    private static PuzzleScoreInput ScoreInput(int hints, int mistakes, TimeSpan duration)
+        => new(hints, mistakes, duration, LayoutJson(), SolutionJson(), FullSubmission(correct: true));
+
+    [Fact]
+    public void Score_ignores_the_level_and_the_submission()
+    {
+        // `generalize-puzzle-rules` 把关卡的两半与提交交给了 Score,因为华容道要数步数。
+        // 成语纵横**故意**不看它们:填字的成绩就是"错了几次、要了几次提示",格子填在哪儿
+        // 不额外说明什么。这条测试记的是那个选择,不是遗漏。
+        var baseline = Rules.Score(ScoreInput(1, 1, TimeSpan.FromMinutes(3)));
+
+        Rules.Score(new PuzzleScoreInput(1, 1, TimeSpan.FromMinutes(3), "{}", "{}", "{}"))
+            .Should().Be(baseline);
     }
 
     [Fact]

@@ -42,7 +42,8 @@ public sealed class SubmitPuzzleAttemptCommandHandler
             ?? throw new PuzzleNotFoundException($"Level {attempt.PuzzleLevelId} was not found.");
 
         var rules = PuzzleRulesResolver.Resolve(_registry, level.GameKey);
-        var validation = rules.Validate(level.SolutionJson, request.SubmissionJson);
+        var validation = rules.Validate(
+            level.SolutionJson, level.LayoutJson, request.SubmissionJson);
 
         if (!validation.IsCorrect)
         {
@@ -58,8 +59,16 @@ public sealed class SubmitPuzzleAttemptCommandHandler
         var now = _clock.UtcNow;
         var duration = now - attempt.StartedAt;
 
-        // 三个入参全是服务端事实:提示由服务端发放、错误由服务端在 check 里判定、用时取服务端时钟。
-        var stars = rules.Score(attempt.HintsUsed, attempt.Mistakes, duration);
+        // 入参全是服务端事实:提示由服务端发放、错误由服务端在 check 里判定、用时取服务端
+        // 时钟,而提交**已经**在上面被 Validate 判定为通关 —— 服务端必须重建之后才肯接受的
+        // 东西,和客户端的自述不是一类。
+        var stars = rules.Score(new PuzzleScoreInput(
+            attempt.HintsUsed,
+            attempt.Mistakes,
+            duration,
+            level.LayoutJson,
+            level.SolutionJson,
+            request.SubmissionJson));
         attempt.Complete(stars, now);
 
         var durationMs = (long)duration.TotalMilliseconds;

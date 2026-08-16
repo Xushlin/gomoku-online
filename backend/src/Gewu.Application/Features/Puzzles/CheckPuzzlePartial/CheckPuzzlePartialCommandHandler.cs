@@ -35,7 +35,8 @@ public sealed class CheckPuzzlePartialCommandHandler
             ?? throw new PuzzleNotFoundException($"Level {attempt.PuzzleLevelId} was not found.");
 
         var rules = PuzzleRulesResolver.Resolve(_registry, level.GameKey);
-        var result = rules.CheckPartial(level.SolutionJson, request.PartialJson);
+        var result = rules.CheckPartial(
+            level.SolutionJson, level.LayoutJson, request.PartialJson);
 
         if (!result.IsCorrect)
         {
