@@ -253,7 +253,13 @@ if (app.Environment.IsDevelopment())
     // 成语词典是参考数据,不放在 migration 里(3 万行 InsertData 没人 review 得动),
     // 由种子载入器从提交进仓库的产物灌入。幂等:表非空即无操作。
     await scope.ServiceProvider.GetRequiredService<IdiomSeeder>().SeedAsync();
-    await scope.ServiceProvider.GetRequiredService<CrosswordLevelSeeder>().SeedAsync();
+    // 关卡产物同理,每个关卡类游戏一个 seeder 实例(游戏键与路径是构造参数)。
+    await scope.ServiceProvider
+        .GetRequiredKeyedService<PuzzleLevelSeeder>(Gewu.Infrastructure.DependencyInjection.IdiomCrosswordKey)
+        .SeedAsync();
+    await scope.ServiceProvider
+        .GetRequiredKeyedService<PuzzleLevelSeeder>(Gewu.Infrastructure.DependencyInjection.KlotskiKey)
+        .SeedAsync();
 }
 
 await app.RunAsync();

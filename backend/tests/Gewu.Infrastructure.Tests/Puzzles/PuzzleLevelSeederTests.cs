@@ -9,7 +9,7 @@ namespace Gewu.Infrastructure.Tests.Puzzles;
 /// 关卡种子载入。与 <c>IdiomSeeder</c> 同一契约:表里已有本游戏的关卡就直接返回,
 /// 幂等性以 <c>(GameKey, LevelIndex)</c> 判定。
 /// </summary>
-public sealed class CrosswordLevelSeederTests : IAsyncLifetime
+public sealed class PuzzleLevelSeederTests : IAsyncLifetime
 {
     private SqliteConnection _connection = null!;
     private AppDbContext _db = null!;
@@ -60,8 +60,10 @@ public sealed class CrosswordLevelSeederTests : IAsyncLifetime
         }
     }
 
-    private CrosswordLevelSeeder Seeder()
-        => new(_db, NullLogger<CrosswordLevelSeeder>.Instance);
+    /// <summary>成语纵横的 seeder。游戏键与产物路径现在是构造参数。</summary>
+    private PuzzleLevelSeeder Seeder(string gameKey = "idiom-crossword")
+        => new(gameKey, PuzzleLevelSeeder.IdiomCrosswordPath, _db,
+            NullLogger<PuzzleLevelSeeder>.Instance);
 
     [Fact]
     public async Task Seeds_an_empty_database()
@@ -128,7 +130,7 @@ public sealed class CrosswordLevelSeederTests : IAsyncLifetime
     public async Task The_committed_artefact_seeds_cleanly()
     {
         // 打真产物,而不是只打测试夹具 —— 提交进仓库的那份必须真的能载入。
-        var committed = Path.Combine(AppContext.BaseDirectory, CrosswordLevelSeeder.DefaultRelativePath);
+        var committed = Path.Combine(AppContext.BaseDirectory, PuzzleLevelSeeder.IdiomCrosswordPath);
         if (!File.Exists(committed))
         {
             Assert.Fail($"committed level artefact missing at {committed}");
@@ -144,5 +146,49 @@ public sealed class CrosswordLevelSeederTests : IAsyncLifetime
         levels.Select(l => l.LevelIndex).Should().OnlyHaveUniqueItems();
         levels.Should().OnlyContain(l =>
             l.LayoutJson.Length > 0 && l.SolutionJson.Length > 0);
+    }
+
+    [Fact]
+    public async Task The_same_seeder_loads_a_second_game()
+    {
+        // 这个 seeder 之所以从 CrosswordLevelSeeder 改名而来,就是因为除了游戏键和
+        // 路径之外它没有任何成语纵横专属的东西。这条用真的华容道产物证明那句话。
+        var committed = Path.Combine(AppContext.BaseDirectory, PuzzleLevelSeeder.KlotskiPath);
+        if (!File.Exists(committed))
+        {
+            Assert.Fail($"committed klotski artefact missing at {committed}");
+        }
+
+        var seeder = new PuzzleLevelSeeder(
+            "klotski", PuzzleLevelSeeder.KlotskiPath, _db, NullLogger<PuzzleLevelSeeder>.Instance);
+        await seeder.SeedAsync(committed);
+
+        var levels = await _db.PuzzleLevels
+            .Where(l => l.GameKey == "klotski")
+            .OrderBy(l => l.LevelIndex)
+            .ToListAsync();
+
+        levels.Should().NotBeEmpty();
+        levels.Select(l => l.LevelIndex).Should().OnlyHaveUniqueItems();
+        levels.Should().OnlyContain(l => l.SolutionJson.Contains("minMoves"));
+    }
+
+    [Fact]
+    public async Task A_seeder_only_touches_its_own_game()
+    {
+        // 幂等性按 (GameKey, LevelIndex) 判定,所以两个游戏的 seeder 互不阻塞:
+        // 先灌了成语纵横,不该让华容道变成 no-op。
+        await Seeder().SeedAsync(
+            Path.Combine(AppContext.BaseDirectory, PuzzleLevelSeeder.IdiomCrosswordPath));
+
+        var klotski = new PuzzleLevelSeeder(
+            "klotski", PuzzleLevelSeeder.KlotskiPath, _db, NullLogger<PuzzleLevelSeeder>.Instance);
+        await klotski.SeedAsync(
+            Path.Combine(AppContext.BaseDirectory, PuzzleLevelSeeder.KlotskiPath));
+
+        (await _db.PuzzleLevels.CountAsync(l => l.GameKey == "idiom-crossword"))
+            .Should().BeGreaterThan(0);
+        (await _db.PuzzleLevels.CountAsync(l => l.GameKey == "klotski"))
+            .Should().BeGreaterThan(0);
     }
 }
