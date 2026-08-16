@@ -142,9 +142,15 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // SignalR + Hub 支持服务
+builder.Services.AddSingleton<DomainErrorHubFilter>();
 builder.Services.AddSignalR(options =>
 {
+    // 开发机上把真实异常消息发给客户端,方便调试。**客户端不依赖它** —— 领域错误
+    // 由 DomainErrorHubFilter 转成 HubException(码),那种消息无论这个开关如何都会送达。
+    // 客户端此前依赖过,结果是整套错误文案在生产环境里静默失效。
     options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    // 全限定:`using Microsoft.Extensions.Logging` 也带了一个 AddFilter，短名会撞上。
+    Microsoft.AspNetCore.SignalR.HubOptionsExtensions.AddFilter<DomainErrorHubFilter>(options);
 }).AddJsonProtocol(options =>
 {
     // 与 Controllers 的 JsonOptions 对齐:枚举以字符串出现(Stone/GameResult 等),

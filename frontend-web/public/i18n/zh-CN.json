@@ -258,12 +258,16 @@
       "dismiss": "留下查看"
     },
     "errors": {
-      "generic": "出了点问题,请重试。",
-      "network": "网络错误,请重试。",
-      "not-your-turn": "还没到你的回合。",
-      "invalid-move": "这一步不合法。",
-      "self-check": "这一步会让自己的帅／将被吃（送将，或与对方将帅照面）。",
       "concurrent-move-refetched": "状态不同步,棋盘已刷新。",
+      "generic": "出了点问题,请重试。",
+      "invalid-chat": "这条消息发不出去：不能为空，也不能太长。",
+      "invalid-move": "这一步不合法。",
+      "network": "网络错误,请重试。",
+      "not-a-player": "你不是这局的对弈者，只能观战。",
+      "not-opponents-turn": "现在轮到你走，催不了对手。",
+      "not-your-turn": "还没到你的回合。",
+      "room-not-in-play": "这局还没开始，或者已经结束了。",
+      "self-check": "这一步会让自己的帅／将被吃（送将，或与对方将帅照面）。",
       "urge-cooldown": "催促冷却中。"
     },
     "connection": {
