@@ -30,8 +30,30 @@ export class StubGameCapabilities extends GameCapabilitiesService {
     );
   }
 
+  /** Board dimensions for one key, for suites that care about the size. */
+  static sized(entries: Readonly<Record<string, { rows: number; cols: number }>>): StubGameCapabilities {
+    return new StubGameCapabilities(
+      Object.entries(entries).map(([gameKey, { rows, cols }]) => ({
+        gameKey,
+        isRated: false,
+        supportsHumanVsHuman: false,
+        rows,
+        cols,
+      })),
+    );
+  }
+
+  /** A stub that has not finished loading — for the "hold the render" cases. */
+  static pending(): StubGameCapabilities {
+    const stub = new StubGameCapabilities();
+    stub.settled = false;
+    return stub;
+  }
+
+  private settled = true;
+
   ensureLoaded(): void {
-    // Already loaded.
+    // Already loaded, unless the case asked for `pending()`.
   }
 
   of(gameKey: string): GameDescriptor | undefined {
@@ -43,6 +65,6 @@ export class StubGameCapabilities extends GameCapabilitiesService {
   }
 
   loaded(): boolean {
-    return true;
+    return this.settled;
   }
 }

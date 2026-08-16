@@ -22,5 +22,4 @@ export const xiangqiManifest: GameManifest = {
   icon: '帥',
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/xiangqi',
-  board: { rows: 10, cols: 9 },
 };

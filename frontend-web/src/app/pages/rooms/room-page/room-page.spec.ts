@@ -12,7 +12,8 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
 import { RoomPage } from './room-page';
-import { DefaultGameCatalogService, GameCatalogService } from '../../../games/game-catalog.service';
+import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
+import { StubGameCapabilities } from '../../../games/game-capabilities.stub';
 
 function makeRoomState() {
   return {
@@ -90,7 +91,14 @@ function routerStub() {
   };
 }
 
-function mount(id = 'r-1') {
+const SERVER_BOARDS = () =>
+  StubGameCapabilities.sized({
+    gomoku: { rows: 15, cols: 15 },
+    tictactoe: { rows: 3, cols: 3 },
+    xiangqi: { rows: 10, cols: 9 },
+  });
+
+function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS()) {
   const hub = new StubHub();
   const rooms = new StubRoomsApi();
   const router = routerStub();
@@ -105,7 +113,7 @@ function mount(id = 'r-1') {
       }),
     ],
     providers: [
-      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
+      { provide: GameCapabilitiesService, useValue: capabilities },
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: GameHubService, useValue: hub },
@@ -187,8 +195,11 @@ describe('RoomPage', () => {
 describe('RoomPage board selection', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
-  async function mountWithGame(gameKey: string | undefined) {
-    const mounted = mount();
+  async function mountWithGame(
+    gameKey: string | undefined,
+    capabilities?: GameCapabilitiesService,
+  ) {
+    const mounted = mount('r-1', capabilities);
     await Promise.resolve();
     await Promise.resolve();
     mounted.hub.state.set({ ...makeRoomState(), gameKey } as ReturnType<typeof makeRoomState>);
@@ -203,6 +214,24 @@ describe('RoomPage board selection', () => {
     expect(el.querySelector('app-xiangqi-board')).toBeTruthy();
     expect(el.querySelector('app-board')).toBeNull();
     expect(el.querySelectorAll('.xq-point')).toHaveLength(90);
+  });
+
+  it('sizes a tic-tac-toe room from the server descriptor', async () => {
+    // 3×3 comes from GET /api/games now, not from a manifest copy of it.
+    const { fixture } = await mountWithGame('tictactoe');
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.board-cell')).toHaveLength(9);
+  });
+
+  it('holds the skeleton until the descriptors arrive', async () => {
+    // The client knows the size is coming. Painting 15×15 for a frame and then
+    // snapping to 3×3 is worse than showing the skeleton a moment longer.
+    const { fixture } = await mountWithGame('tictactoe', StubGameCapabilities.pending());
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-board')).toBeNull();
+    expect(el.querySelector('app-xiangqi-board')).toBeNull();
+    expect(el.querySelector('.animate-pulse')).toBeTruthy();
   });
 
   it('leaves gomoku on the 15x15 board', async () => {

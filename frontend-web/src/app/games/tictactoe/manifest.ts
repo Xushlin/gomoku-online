@@ -22,5 +22,4 @@ export const ticTacToeManifest: GameManifest = {
   icon: '井',
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/tictactoe',
-  board: { rows: 3, cols: 3 },
 };

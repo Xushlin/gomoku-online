@@ -9,7 +9,7 @@ import type { GameEndedDto } from '../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { boardSizeFor } from '../../../games/board-size';
-import { GameCatalogService } from '../../../games/game-catalog.service';
+import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
@@ -40,7 +40,7 @@ export class RoomPage implements OnInit, OnDestroy {
   private readonly hub = inject(GameHubService);
   private readonly sound = inject(SoundService);
   private readonly dialog = inject(Dialog);
-  private readonly catalog = inject(GameCatalogService);
+  private readonly capabilities = inject(GameCapabilitiesService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly state = this.hub.state;
@@ -64,15 +64,25 @@ export class RoomPage implements OnInit, OnDestroy {
   private previousMoveCount = -1;
 
   /**
-   * Board dimensions for this room's game.
+   * Board dimensions for this room's game, from the server's descriptors.
    *
    * Resolving a game key into a size is the container's job — `Board` stays a
-   * pure presentational component and never learns what `gameKey` means. The
-   * key comes from the room DTO rather than the route, because three of the four
-   * ways a player reaches this page carry no game in the URL.
+   * pure presentational component and never learns what `gameKey` means. The key
+   * comes from the room DTO rather than the route, because three of the four ways
+   * a player reaches this page carry no game in the URL.
+   *
+   * The descriptors arrive over HTTP, so {@link loading} holds until they land.
+   * Otherwise a tic-tac-toe room would paint 15×15 for a frame and then snap to
+   * 3×3 — the client knows the size is coming, and showing a wrong one meanwhile
+   * is worse than showing the skeleton a moment longer.
    */
   protected readonly boardSize = computed(() =>
-    boardSizeFor(this.catalog, this.state()?.gameKey),
+    boardSizeFor(this.capabilities, this.state()?.gameKey),
+  );
+
+  /** True until both the room and the server's game descriptors are in hand. */
+  protected readonly loadingBoard = computed(
+    () => this.loading() || !this.capabilities.loaded(),
   );
 
   /**
@@ -157,6 +167,7 @@ export class RoomPage implements OnInit, OnDestroy {
       return;
     }
     this.roomId = id;
+    this.capabilities.ensureLoaded();
     if (!this.auth.isAuthenticated()) {
       void this.router.navigateByUrl('/login');
       return;
