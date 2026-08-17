@@ -44,12 +44,12 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
         await _uow.SaveChangesAsync(cancellationToken);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
+        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds, RoomView.For(room, request.UserId));
         var joiner = new UserSummaryDto(request.UserId.Value,
             usernames.TryGetValue(request.UserId.Value, out var n) ? n : "<unknown>");
 
         await _notifier.PlayerJoinedAsync(room.Id, joiner, cancellationToken);
-        await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
+        await _notifier.RoomStateChangedAsync(room, usernames, _gameOptions.TurnTimeoutSeconds, cancellationToken);
 
         return state;
     }

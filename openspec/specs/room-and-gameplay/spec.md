@@ -313,12 +313,17 @@ Api 层 SHALL 暴露以下端点(均要求 `Authorize`):
 
 系统 SHALL 在 `/hubs/gomoku` 暴露 `GomokuHub`(`[Authorize]`)。Hub 客户端方法:
 
-- `JoinRoom(Guid roomId)` —— 把当前 connection 加入 SignalR group `room:{roomId}`;若调用方已是该房间的玩家或围观者(聚合成员已由 REST 建立),则**额外**加入 `room:{roomId}:spectators` 子群(仅围观者)。不会修改 `Room` 聚合。
+- `JoinRoom(Guid roomId)` —— 把当前 connection 加入 SignalR group `room:{roomId}`,并按**聚合里的身份**额外加入恰好一个子群:围观者进 `room:{roomId}:spectators`,其余(玩家,以及进了房但还没围观的连接)进 `room:{roomId}:non-spectators`。身份由 `GetRoomRoleQuery` 从聚合解析,MUST NOT 采信客户端自报。不会修改 `Room` 聚合。
+
+  两个子群 MUST **互斥且穷尽**。互斥不成立会让某个连接收到两份 `RoomState`、由到达顺序决定它看到什么;不穷尽会让某个连接一份都收不到。子群名叫「非围观者」而不是「玩家」正是为了穷尽 —— 按「玩家」分会把还没围观的旁观连接漏在缝里。
+
+  **此前这里的实现与本条不符**:`JoinRoom` 只加 `room:{roomId}`,而围观子群靠客户端自己调 `JoinSpectatorGroup`,那个方法**不做任何校验**。于是这局的玩家调一次就进了围观子群,实时收到全部围观频道消息。实测过。
 - `LeaveRoom(Guid roomId)` —— 从上述 group 中移除。不会修改聚合。
 - `MakeMove(Guid roomId, int row, int col)` —— **落子类**棋种(五子棋 / 一字棋)。派 `MakeMoveCommand`。
 - `MovePiece(Guid roomId, int fromRow, int fromCol, int row, int col)` —— **走子类**棋种(中国象棋)。
 - `SayWord(Guid roomId, string word)` —— **文本类**棋种(成语接龙)。
 - `SendChat(Guid roomId, string content, ChatChannel channel)` —— 派 `SendChatMessageCommand`(规则见 `in-room-chat` spec)。
+- `JoinSpectatorGroup(Guid roomId)` —— 幂等地把连接放进围观子群,**身份由服务端查聚合确认**。对非围观者 MUST 静默无操作:「我还不是围观者」不是错误,把它变成异常只会让客户端多一条要处理的分支。它保留的用途是重连,以及 `JoinRoom` 之后才 `POST /spectate` 的顺序。
 - `Urge(Guid roomId)` —— 派 `UrgeOpponentCommand`。
 
 三条走子入口 MUST 是**三个方法**,MUST NOT 合并为一个带可选参数的方法。**SignalR 不套用 C# 的可选参数默认值**,参数个数是**双向精确匹配**:

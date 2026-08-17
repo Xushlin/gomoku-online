@@ -48,8 +48,8 @@ public sealed class JoinAsSpectatorCommandHandler : IRequestHandler<JoinAsSpecta
         await _notifier.SpectatorJoinedAsync(room.Id, spectatorDto, cancellationToken);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
-        await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
+        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds, RoomView.For(room, request.UserId));
+        await _notifier.RoomStateChangedAsync(room, usernames, _gameOptions.TurnTimeoutSeconds, cancellationToken);
 
         return Unit.Value;
     }

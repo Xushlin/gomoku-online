@@ -14,8 +14,26 @@ namespace Gewu.Application.Abstractions;
 /// </summary>
 public interface IRoomNotifier
 {
-    /// <summary>推完整房间状态(用于对齐,优先于细粒度事件)。</summary>
-    Task RoomStateChangedAsync(RoomId roomId, RoomStateDto state, CancellationToken ct);
+    /// <summary>
+    /// 推完整房间状态(用于对齐,优先于细粒度事件)。
+    /// <para>
+    /// <b>收的是原料,不是成品 DTO</b> —— 因为这一次广播要发**两份**:给玩家的那份不含围观频道,
+    /// 给围观者的那份含。让调用方各自投影两次,就等于让每个 handler 都有一次忘掉裁剪的机会,
+    /// 而那正是这个缺陷此前的形状(一份 DTO 推给整个房间 group)。
+    /// </para>
+    /// <para>
+    /// 实现方 MUST 分群推送,MUST NOT 把含围观频道的那份推给玩家。
+    /// </para>
+    /// </summary>
+    /// <param name="room">房间聚合 —— 实现方据此投影两份视图。</param>
+    /// <param name="usernames">用户名字典。</param>
+    /// <param name="turnTimeoutSeconds">回合超时秒数,嵌进快照供客户端倒计时。</param>
+    /// <param name="ct">取消令牌。</param>
+    Task RoomStateChangedAsync(
+        Room room,
+        IReadOnlyDictionary<Guid, string> usernames,
+        int turnTimeoutSeconds,
+        CancellationToken ct);
 
     /// <summary>玩家加入房间。</summary>
     Task PlayerJoinedAsync(RoomId roomId, UserSummaryDto user, CancellationToken ct);

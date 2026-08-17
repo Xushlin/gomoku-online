@@ -1,5 +1,6 @@
 using Gewu.Application.Abstractions;
 using Gewu.Application.Common.DTOs;
+using Gewu.Application.Common.Mapping;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 using Microsoft.AspNetCore.SignalR;
@@ -20,9 +21,37 @@ public sealed class SignalRRoomNotifier : IRoomNotifier
         _hub = hub;
     }
 
-    /// <inheritdoc />
-    public Task RoomStateChangedAsync(RoomId roomId, RoomStateDto state, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId)).SendAsync("RoomState", state, ct);
+    /// <summary>
+    /// 推完整房间状态 —— **分两份**。
+    /// <para>
+    /// 给玩家子群的那份不含围观频道,给围观者子群的那份含。此前这里是一份 DTO 推给
+    /// <c>room:{id}</c>(全体),于是围观者的吐槽进了玩家的客户端。
+    /// </para>
+    /// <para>
+    /// 两个目标群 MUST **互斥且穷尽**:<c>JoinRoom</c> 按聚合身份把每个连接放进
+    /// spectators 或 non-spectators 之一,所以每个连接恰好收到一份。互斥不成立会让某个连接
+    /// 收到两份、由到达顺序决定它看到什么;不穷尽会让某个连接一份都收不到 ——
+    /// 后者是我第一版按"玩家"分组时真的发生的事。
+    /// </para>
+    /// </summary>
+    /// <param name="room">房间聚合。</param>
+    /// <param name="usernames">用户名字典。</param>
+    /// <param name="turnTimeoutSeconds">回合超时秒数。</param>
+    /// <param name="ct">取消令牌。</param>
+    public async Task RoomStateChangedAsync(
+        Room room,
+        IReadOnlyDictionary<Guid, string> usernames,
+        int turnTimeoutSeconds,
+        CancellationToken ct)
+    {
+        var forNonSpectators = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForNonSpectators);
+        var forSpectators = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForSpectators);
+
+        await _hub.Clients.Group(GomokuHub.NonSpectatorsGroupName(room.Id))
+            .SendAsync("RoomState", forNonSpectators, ct);
+        await _hub.Clients.Group(GomokuHub.SpectatorsGroupName(room.Id))
+            .SendAsync("RoomState", forSpectators, ct);
+    }
 
     /// <inheritdoc />
     public Task PlayerJoinedAsync(RoomId roomId, UserSummaryDto user, CancellationToken ct) =>

@@ -35,7 +35,8 @@ public class JoinRoomCommandHandlerTests
             It.Is<UserSummaryDto>(u => u.Id == bob.Id.Value && u.Username == "Bob"),
             It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.RoomStateChangedAsync(
-            room.Id, It.IsAny<RoomStateDto>(), It.IsAny<CancellationToken>()), Times.Once);
+            It.IsAny<Room>(), It.IsAny<IReadOnlyDictionary<Guid, string>>(),
+            It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

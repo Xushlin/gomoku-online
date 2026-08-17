@@ -34,7 +34,7 @@ public class MakeMoveCommandHandlerTests
 
         move.Ply.Should().Be(1);
         move.Stone.Should().Be(Stone.Black);
-        _notifier.Verify(n => n.RoomStateChangedAsync(room.Id, It.IsAny<RoomStateDto>(), It.IsAny<CancellationToken>()), Times.Once);
+        _notifier.Verify(n => n.RoomStateChangedAsync(It.IsAny<Room>(), It.IsAny<IReadOnlyDictionary<Guid, string>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.MoveMadeAsync(room.Id, It.IsAny<MoveDto>(), It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.GameEndedAsync(It.IsAny<RoomId>(), It.IsAny<GameEndedDto>(), It.IsAny<CancellationToken>()), Times.Never);
 

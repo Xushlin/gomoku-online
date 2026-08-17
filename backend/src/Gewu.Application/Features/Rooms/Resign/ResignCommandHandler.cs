@@ -62,9 +62,8 @@ public sealed class ResignCommandHandler : IRequestHandler<ResignCommand, GameEn
             room.Game.EndReason!.Value);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
 
-        await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
+        await _notifier.RoomStateChangedAsync(room, usernames, _gameOptions.TurnTimeoutSeconds, cancellationToken);
         await _notifier.GameEndedAsync(room.Id, ended, cancellationToken);
 
         return ended;

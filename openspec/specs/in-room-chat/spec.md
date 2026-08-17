@@ -78,6 +78,44 @@ SignalR 事件:`ChatMessage`(按频道广播)与 `UrgeReceived`(仅被催方)。
 
 ---
 
+### Requirement: 围观频道在**读取侧**也必须被强制,不能靠客户端自觉
+
+「`Spectator` 频道仅围观者可见」这条规则 SHALL 在**每一条读取路径**上由服务端强制。
+
+具体三条,每一条都 MUST 独立成立:
+
+1. **REST 快照** —— `GetRoomStateQuery` MUST 带发起者(`ViewerId`),`ToState` MUST 收一个**必需的** `RoomView` 参数并据此裁剪。参数 MUST NOT 有默认值:一个默认值会让「忘了表态」与「故意给全部」在代码里长得一模一样。
+2. **`RoomState` 广播** —— MUST 分两份:非围观者子群那份不含围观频道,围观者子群那份含。`IRoomNotifier.RoomStateChangedAsync` MUST 收原料(聚合)而不是成品 DTO,由实现方投影两份 —— 让每个 handler 各自投影,就等于给每个 handler 一次忘掉裁剪的机会。
+3. **实时 `ChatMessage` 事件** —— 按频道分群推送是必要的但**不充分**:入群本身 MUST 校验(见 `room-and-gameplay` 的 `JoinRoom` / `JoinSpectatorGroup`)。
+
+客户端隐藏围观 Tab MUST NOT 被当作实现手段。它是展示;数据不该到那里。
+
+**这三条此前全部不成立**,而写入侧一直是强制的 —— 于是规则看起来在工作。屏幕上也看不出来:`ChatPanel` 用 `@if (isSpectator())` 藏了围观 Tab,玩家 UI 干净,而对手围观区的全文早就在他的客户端里。
+
+**一条只做对了一半的机制,读那一半的代码看不出来。** 第三条的分群是对的,校验是缺的;先只读代码会把它判成正确的。
+
+#### Scenario: 玩家的 REST 快照不含围观频道
+- **WHEN** 玩家 `GET /api/rooms/{id}`
+- **THEN** `chatMessages` 里 MUST NOT 出现 `Channel == Spectator` 的消息;房间频道的消息 MUST 照常返回
+
+#### Scenario: 围观者的 REST 快照两个频道都有
+- **WHEN** 围观者 `GET /api/rooms/{id}`
+- **THEN** 两个频道的消息都返回,包括其它围观者发的
+
+#### Scenario: 玩家收到的广播不含围观频道
+- **WHEN** 房间状态变化触发 `RoomState` 广播
+- **THEN** 玩家收到的那份 MUST NOT 含围观频道消息,围观者收到的那份 MUST 含 —— 两者 MUST 都真的收到一份(分组互斥且穷尽)
+
+#### Scenario: 玩家不能把自己塞进围观子群
+- **WHEN** 这局的玩家调 `JoinSpectatorGroup`
+- **THEN** 服务端 MUST NOT 把它加进围观子群,该玩家 MUST NOT 收到任何围观频道的实时消息
+
+#### Scenario: 还没围观的人也看不到围观频道
+- **WHEN** 一个既非玩家也非围观者的登录用户读房间状态
+- **THEN** MUST NOT 含围观频道 —— 判据是「是不是围观者」,不是「不是玩家」。两者对这个人给出不同答案,而取前者才能让 REST 与广播分组一致
+
+---
+
 ### Requirement: 聊天消息通过 `IRoomNotifier` 按频道分发
 
 Handler `SendChatMessageCommand` 在 `SaveChangesAsync` 之后 MUST 调 `IRoomNotifier.ChatMessagePostedAsync(roomId, channel, dto)`。SignalR 实现 MUST:

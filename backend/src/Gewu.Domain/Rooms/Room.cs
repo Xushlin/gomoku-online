@@ -235,6 +235,22 @@ public sealed class Room
     }
 
     /// <summary>加入围观者集合。玩家不可围观自己的对局。重复加入幂等。</summary>
+    /// <summary>
+    /// 这个用户是否是本房间的**玩家**(黑方或白方)。
+    /// <para>
+    /// 加它是为了一件安全判定:围观频道的消息只能给围观者看,而"谁不是玩家"是那条规则的判据。
+    /// 此前没有这个谓词,于是判定散在各处 —— 而实际情况是**三条读取路径全都没做这个判定**,
+    /// 围观频道的保密性完全依赖客户端自觉。
+    /// </para>
+    /// </summary>
+    /// <param name="userId">要判断的用户。</param>
+    public bool IsPlayer(UserId userId)
+        => userId == BlackPlayerId || (WhitePlayerId is not null && userId == WhitePlayerId.Value);
+
+    /// <summary>这个用户是否在围观者集合里。</summary>
+    /// <param name="userId">要判断的用户。</param>
+    public bool IsSpectator(UserId userId) => _spectators.Any(s => s.UserId == userId);
+
     public void JoinAsSpectator(UserId userId)
     {
         if (userId == BlackPlayerId || userId == WhitePlayerId)
