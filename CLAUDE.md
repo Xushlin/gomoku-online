@@ -204,11 +204,23 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   Verified live, not deduced: `GET /api/games` reports `idiom-chain` with `rows: null, cols: null` — the boardless branch `generalize-match-payload` opened, reached by a real game for the first time — and `POST /api/rooms { gameKey: "idiom-chain" }` returns **201** while `xiangqi` still returns 400. Also checked that the lexicon holds **30,895** words: an empty dictionary would have made every step above look identical and rejected every idiom.
 
+- [x] **`add-idiom-chain-transport`** — 成语接龙 is now *playable*, with no UI: `SayWord(Guid roomId, string word)` on the hub, `string? Text` on `MakeMoveCommand`, `Row`/`Col` narrowed to `int?`.
+
+  **A third hub method rather than a fourth parameter**, and this change re-measured the reason instead of inheriting it. `generalize-match-domain` recorded `InvalidDataException: Invocation provides N argument(s) but target expects M` after `AiSmoke` hit it; quoting a measurement and taking one differ only when the answer has changed, so it was taken again — and it returned something the original note did not have: **an extra argument is refused too** (`provides 3 … expects 2`). So adding a parameter to a live hub method breaks in *both* directions — old clients cannot send fewer, and new clients cannot send more ahead of the server. Three methods is not caution, it is the only shape that rolls forward.
+
+  Verified over two real long-polling connections against a **Production** host — `EnableDetailedErrors` is off there, which is the environment `add-hub-error-codes` existed to fix. A four-ply chain succeeded; an unlinked word, a non-idiom, and a `MakeMove(7,7)` aimed at a boardless game each came back `HubException: invalid-move`; gomoku's `MakeMove` was untouched and its AI answered. In one `Moves` table, from one run: four rows with `Text` set and **all four coordinates `NULL`**, beside two gomoku rows with `Row=7, Col=7` and `Text=NULL`. `generalize-match-payload`'s migration had never before been exercised by both payload kinds at once.
+
+  **The command is a third encoding of "positional or textual", and that is a trade, not an oversight.** Carrying a `MoveIntent` on the command would delete the encoding — but `Position`'s constructor rejects negative coordinates, so building the intent in the hub would move that rejection out of `MakeMoveCommandValidator`, turning a documented **400 with a named field** into a throw before the command exists. `web-game-board` and `add-hub-error-codes` both pin that path. Changing it is defensible; doing it silently inside a feature change is not. A test pins the resulting division of labour: the validator deliberately does **not** check "exactly one payload" — that invariant has exactly one home, `MoveIntent`'s constructor, and re-implementing it in the validator would make a fourth copy.
+
+  Two things found by running it that no unit test sees. Argument-count refusals happen in SignalR's binding layer, **before** `DomainErrorHubFilter` — so in Production they produce no error code and **no server log line at all**, only "Failed to invoke". Pre-existing, but it means a client/server signature mismatch is invisible from both ends. And the server's own refusal messages are precise (「'风和日丽' must start with '止'」, 「is not an idiom in the dictionary」) while the client receives a single `invalid-move`. 象棋 can live with that — a player looks at the board and works it out. 接龙 cannot: **"not a word" / "doesn't link" / "already said" are three different corrections**, and one code says none of them. That is a granularity requirement 成语接龙 creates, so it belongs to the change that renders it.
+
 Not yet done — platform roadmap, in this order:
 
-1. `add-web-idiom-chain` — 成语接龙 has rules and no way to reach them. It needs a **hub path for a textual move** (`GomokuHub` has `MakeMove` and `MovePiece`, both positional), the lobby at `/g/idiom-chain/lobby` — **the generalized lobby's first real consumer** — and a UI that is a word list rather than a grid.
+1. `add-web-idiom-chain` — 成语接龙 has rules and a transport, and still no way for a person to reach either. It needs the lobby at `/g/idiom-chain/lobby` — **the generalized lobby's first real consumer** — a UI that is a word list rather than a grid, the manifest flipped to `available`, and i18n.
 
    The board seam is now proven by a real game; the **lobby** seam still is not. Only gomoku uses it. This is the change that tests it, and the mitigation remains structural: a lobby is a page parameterised by a string, not an interface a game implements.
+
+   It also inherits one concrete debt: splitting `invalid-move` into codes a chain player can act on (see `add-idiom-chain-transport`).
 
 2. `add-score-attack-core` + `add-tetris` (俄罗斯方块) — the last category with no kernel at all.
 
