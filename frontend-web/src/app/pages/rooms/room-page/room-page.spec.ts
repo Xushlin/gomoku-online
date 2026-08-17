@@ -230,7 +230,20 @@ describe('RoomPage', () => {
   });
 
   it('leaving an AI room of a game with no lobby returns to that game', async () => {
-    // 象棋 has no room list, but /g/xiangqi is where you start another one.
+    // 一字棋 has no room list, but /g/tictactoe is where you start another one.
+    // This case named 象棋 until `enable-xiangqi-human-play` gave it a lobby;
+    // 一字棋 is the only game left on this path.
+    const { fixture, hub, router } = mount();
+    await Promise.resolve();
+    hub.state.set({ ...makeRoomState(), gameKey: 'tictactoe' } as ReturnType<typeof makeRoomState>);
+    fixture.detectChanges();
+
+    (fixture.componentInstance as unknown as { handleLeave: () => void }).handleLeave();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/g/tictactoe');
+  });
+
+  it('leaving a xiangqi room now returns to its lobby', async () => {
     const { fixture, hub, router } = mount();
     await Promise.resolve();
     hub.state.set({ ...makeRoomState(), gameKey: 'xiangqi' } as ReturnType<typeof makeRoomState>);
@@ -238,7 +251,7 @@ describe('RoomPage', () => {
 
     (fixture.componentInstance as unknown as { handleLeave: () => void }).handleLeave();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/g/xiangqi');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/g/xiangqi/lobby');
   });
 
   it('a room that vanished during a reconnect goes to the platform home', async () => {

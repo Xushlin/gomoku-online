@@ -90,6 +90,31 @@ public class GetGameDescriptorsQueryHandlerTests
     }
 
     [Fact]
+    public async Task Xiangqi_is_rated_and_open_to_human_play()
+    {
+        // 点名象棋,因为遍历守不住某个特定成员的值 —— Every_field_mirrors_the_rules_instance
+        // 会在象棋被翻回 AI-only 之后依然全绿(它只断言 DTO 与规则一致,不管规则说什么)。
+        // 计分这件事在客户端的可见后果是阶梯页出现,而那按 isRated 渲染,不需要任何新代码。
+        var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
+
+        var xiangqi = items.Single(i => i.GameKey == GameKeys.Xiangqi);
+        xiangqi.SupportsHumanVsHuman.Should().BeTrue();
+        xiangqi.IsRated.Should().BeTrue();
+        xiangqi.SupportsAi.Should().BeTrue("象棋既有真人对手也有机器人");
+    }
+
+    [Fact]
+    public async Task TicTacToe_is_the_only_unrated_versus_game()
+    {
+        // 一字棋是唯一不计分的对战棋种,也因此是好几条"两类都要出现过"的遍历断言在
+        // 拒绝那一侧的唯一样本。哪天它也计分了,那些断言会变红 —— 那是想要的。
+        var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
+
+        items.Where(i => !i.IsRated).Should().ContainSingle()
+            .Which.GameKey.Should().Be(GameKeys.TicTacToe);
+    }
+
+    [Fact]
     public async Task TicTacToe_is_unrated_and_three_by_three()
     {
         // 这一条是整个端点存在的理由的可执行形式:前端靠它决定一字棋卡片**没有**排行榜入口。

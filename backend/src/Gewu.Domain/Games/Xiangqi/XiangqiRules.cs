@@ -37,16 +37,37 @@ public sealed class XiangqiRules : IBoardGameRules
     public int Cols => XiangqiBoard.ColCount;
 
     /// <summary>
-    /// 今天没有人人对战入口 —— 平台还没有进入象棋对局的任何途径。这是**结构性事实**,不是判断:
-    /// 大厅泛化之后翻它,而计不计分是那时一个独立的、需要理由的决定。
+    /// 开放人人对战。
+    /// <para>
+    /// 这是**推论**,不是判断。<c>enforce-human-vs-human</c> 给这个字段定的含义是「平台是否提供
+    /// 人人对战入口」,而判据是行为不是意图:只要 <c>POST /api/rooms</c> 接受这个棋种,入口就
+    /// **确实**存在。大厅泛化之后 <c>/g/xiangqi/lobby</c> 是一个真实可用的页面,象棋走的是同一个
+    /// <c>Room</c> 聚合、同一套建房与加入,所以声明只能跟上。
+    /// </para>
+    /// <para>
+    /// 本字段此前是 <c>false</c>,注释写着「大厅泛化之后翻它」—— 那是一个**自己写下触发条件的
+    /// 推迟**,而触发条件已经到了。
+    /// </para>
     /// </summary>
-    public bool SupportsHumanVsHuman => false;
+    public bool SupportsHumanVsHuman => true;
 
     /// <summary>
-    /// 不计分。由不变量 <c>IsRated ⇒ SupportsHumanVsHuman</c> 决定,不是一个独立的选择 ——
-    /// 没有对手池的阶梯量不出棋力。
+    /// 计分。
+    /// <para>
+    /// 与上一个字段不同,这一条是**判断**,所以它需要一个写下来的理由 —— 而这正是本类上一版
+    /// 预告过的那个决定(「计不计分是那时一个独立的、需要理由的决定」)。
+    /// </para>
+    /// <para>
+    /// 理由:象棋此前不计分的**唯一**依据是「没有对手池,阶梯量不出棋力」,而开放人人对战正好
+    /// 消灭了那条依据。剩下的形状与五子棋逐项相同 —— 有真实的人类对手池,也有 AI,而机器人对局
+    /// 计分是 <c>ai-opponent</c> D7 的反套利规则,不是漏洞。
+    /// </para>
+    /// <para>
+    /// 不变量 <c>IsRated ⇒ SupportsHumanVsHuman</c> 仍然成立(true ⇒ true),并且仍然由遍历
+    /// 注册表的测试强制 —— 本类不走 <c>NInARowRules</c> 的构造器,所以那条遍历是它唯一的机制。
+    /// </para>
     /// </summary>
-    public bool IsRated => false;
+    public bool IsRated => true;
 
     /// <inheritdoc />
     public MoveApplication Apply(
