@@ -18,6 +18,9 @@ describe('hubErrorToKey', () => {
     ['not-your-turn', 'game.errors.not-your-turn'],
     ['invalid-move', 'game.errors.invalid-move'],
     ['self-check', 'game.errors.self-check'],
+    ['idiom-not-found', 'game.errors.idiom-not-found'],
+    ['idiom-does-not-link', 'game.errors.idiom-does-not-link'],
+    ['idiom-already-used', 'game.errors.idiom-already-used'],
     ['room-not-in-play', 'game.errors.room-not-in-play'],
     ['not-a-player', 'game.errors.not-a-player'],
     ['not-opponents-turn', 'game.errors.not-opponents-turn'],
@@ -41,6 +44,27 @@ describe('hubErrorToKey', () => {
       "An unexpected error occurred invoking 'MovePiece' on the server. HubException: invalid-move";
 
     expect(hubErrorToKey(new Error(wire))).toBe('game.errors.invalid-move');
+  });
+
+  it('gives each 成语接龙 refusal its own message, not one shared one', () => {
+    // 「不是成语」「接不上」「说过了」are three different corrections, and the chain
+    // board deliberately judges nothing — so the server's refusal is the only place
+    // a player learns which rule they broke. Sharing invalid-move says none of them.
+    const wire = (code: string) =>
+      `An unexpected error occurred invoking 'SayWord' on the server. HubException: ${code}`;
+
+    const keys = ['idiom-not-found', 'idiom-does-not-link', 'idiom-already-used'].map((c) =>
+      hubErrorToKey(new Error(wire(c))),
+    );
+
+    expect(keys).toEqual([
+      'game.errors.idiom-not-found',
+      'game.errors.idiom-does-not-link',
+      'game.errors.idiom-already-used',
+    ]);
+    expect(new Set(keys).size).toBe(3);
+    expect(keys).not.toContain('game.errors.invalid-move');
+    expect(keys).not.toContain('game.errors.generic');
   });
 
   it('unwraps a self-check the same way', () => {

@@ -80,6 +80,13 @@
             [submitting]="submittingMove()"
             (pieceMove)="handlePieceMove($event)"
           />
+        } @else if (isIdiomChain()) {
+          <app-chain-board
+            [state]="room"
+            [mySide]="mySide()"
+            [submitting]="submittingMove()"
+            (wordSay)="handleWordSay($event)"
+          />
         } @else if (boardSize(); as size) {
           <app-board
             [state]="room"

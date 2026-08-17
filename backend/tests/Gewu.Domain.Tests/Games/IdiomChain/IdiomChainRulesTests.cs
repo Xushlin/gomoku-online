@@ -49,7 +49,9 @@ public class IdiomChainRulesTests
     {
         var act = () => Apply([Said("一心一意", First)], "风和日丽", Second);
 
-        act.Should().Throw<InvalidMoveException>().WithMessage("*意*");
+        act.Should().Throw<InvalidMoveException>()
+            .WithMessage("*意*")
+            .Which.Code.Should().Be("idiom-does-not-link");
     }
 
     [Fact]
@@ -57,23 +59,30 @@ public class IdiomChainRulesTests
     {
         var act = () => Apply([], "这不是成语", First);
 
-        act.Should().Throw<InvalidMoveException>().WithMessage("*dictionary*");
+        act.Should().Throw<InvalidMoveException>()
+            .WithMessage("*dictionary*")
+            .Which.Code.Should().Be("idiom-not-found");
     }
 
     [Fact]
     public void A_word_already_played_is_refused_even_though_it_links_on()
     {
-        // 「一心一意」→「意气风发」→ 想再说「一心一意」。它接不上「发」,所以先造一条
-        // 真正接得上、但已经出现过的链:意气风发 → 发号施令 → …… 这里直接用重复首步。
+        // 【合而为一】末字是【一】，所以【一心一意】**真的接得上** —— 而它已经说过了。
+        // 历史不必自洽：规则只读最后一项与已用集合，而且只对**提交的**那个词查词典。
+        //
+        // 本用例之前的历史是【…止于至善】，而【发号施令】接不上【善】——
+        // 于是它其实在验第二条规则，名字却说第三条。两条共用一个无区别的
+        // `InvalidMoveException` 时，这个谎无从暴露；拆开错误码的第一个收获就是它。
         var history = new List<PlayedMove>
         {
-            Said("发号施令", First),
-            Said("令行禁止", Second),
+            Said("一心一意", First),
+            Said("合而为一", Second),
         };
 
-        var act = () => Apply([.. history, Said("止于至善", First)], "发号施令", Second);
+        var act = () => Apply(history, "一心一意", First);
 
-        act.Should().Throw<InvalidMoveException>();
+        act.Should().Throw<InvalidMoveException>()
+            .Which.Code.Should().Be("idiom-already-used");
     }
 
     [Fact]
@@ -81,7 +90,10 @@ public class IdiomChainRulesTests
     {
         var act = () => Rules.Apply([], MoveIntent.Place(new Position(0, 0)), First);
 
-        act.Should().Throw<InvalidMoveException>().WithMessage("*board*");
+        // 缺省的 invalid-move：送错了形状不是三条规则之一。
+        act.Should().Throw<InvalidMoveException>()
+            .WithMessage("*board*")
+            .Which.Code.Should().Be("invalid-move");
     }
 
     [Fact]
@@ -99,7 +111,8 @@ public class IdiomChainRulesTests
         // 根本拿不到音。字是双方都看得见的东西。
         var act = () => Apply([Said("一心一意", First)], "义无反顾", Second);
 
-        act.Should().Throw<InvalidMoveException>();
+        act.Should().Throw<InvalidMoveException>()
+            .Which.Code.Should().Be("idiom-does-not-link");
     }
 
     [Fact]

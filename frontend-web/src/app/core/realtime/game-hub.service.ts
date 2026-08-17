@@ -77,6 +77,15 @@ export abstract class GameHubService {
     row: number,
     col: number,
   ): Promise<void>;
+  /**
+   * A spoken move — one 成语. 成语接龙 uses this; it has no board and no coordinates.
+   *
+   * A third method for the same reason there is a second one, re-measured when it
+   * was added server-side: SignalR's argument count is an **exact** match in both
+   * directions. One argument against a two-parameter target is refused, and so is
+   * three — so widening a live hub method has no rolling-upgrade path at all.
+   */
+  abstract sayWord(roomId: string, word: string): Promise<void>;
   abstract sendChat(roomId: string, content: string, channel: ChatChannel): Promise<void>;
   abstract urge(roomId: string): Promise<void>;
 
@@ -216,6 +225,11 @@ export class DefaultGameHubService extends GameHubService {
   ): Promise<void> {
     const conn = await this.ensureConnected();
     await conn.invoke('MovePiece', roomId, fromRow, fromCol, row, col);
+  }
+
+  async sayWord(roomId: string, word: string): Promise<void> {
+    const conn = await this.ensureConnected();
+    await conn.invoke('SayWord', roomId, word);
   }
 
   async sendChat(roomId: string, content: string, channel: ChatChannel): Promise<void> {

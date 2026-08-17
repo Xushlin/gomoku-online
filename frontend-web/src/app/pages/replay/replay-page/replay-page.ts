@@ -13,6 +13,8 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Board } from '../../rooms/room-page/board/board';
+import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
+import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XiangqiBoard } from '../../../games/xiangqi/board/xiangqi-board';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
 import type {
@@ -31,7 +33,7 @@ type Speed = 0.5 | 1 | 2;
 @Component({
   selector: 'app-replay-page',
   standalone: true,
-  imports: [Board, XiangqiBoard, CommonModule, RouterLink, TranslocoPipe],
+  imports: [Board, XiangqiBoard, ChainBoard, CommonModule, RouterLink, TranslocoPipe],
   templateUrl: './replay-page.html',
   styles: [':host { display: block; width: 100%; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,6 +87,11 @@ export class ReplayPage implements OnInit, OnDestroy {
    * of always reaching for one.
    */
   protected readonly isXiangqi = computed(() => this.replay()?.gameKey === XIANGQI_KEY);
+
+  /** Replaying a chain is the same list, read-only. */
+  protected readonly isIdiomChain = computed(
+    () => this.replay()?.gameKey === IDIOM_CHAIN_KEY,
+  );
 
   /**
    * Synthesise a `RoomState`-shaped object so the existing Board component

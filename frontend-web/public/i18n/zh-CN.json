@@ -278,6 +278,9 @@
     "errors": {
       "concurrent-move-refetched": "状态不同步,棋盘已刷新。",
       "generic": "出了点问题,请重试。",
+      "idiom-already-used": "这个成语本局已经说过了。",
+      "idiom-does-not-link": "接不上 —— 首字要跟上一个成语的末字一样。",
+      "idiom-not-found": "词典里没有这个成语。",
       "invalid-chat": "这条消息发不出去：不能为空，也不能太长。",
       "invalid-move": "这一步不合法。",
       "network": "网络错误,请重试。",
@@ -530,5 +533,17 @@
     "prev-page": "上一页",
     "next-page": "下一页",
     "back-to-games": "← 全部游戏"
+  },
+  "idiom-chain": {
+    "board": {
+      "chain-label": "本局词链",
+      "empty": "还没有人开口 —— 第一步任何成语都算。",
+      "must-start-with": "下一个成语要以这个字开头:",
+      "opening-move": "开局第一步:任何成语都可以。",
+      "input-label": "你要说的成语",
+      "placeholder": "输入一个成语",
+      "submit": "说出",
+      "waiting": "等对手接上……"
+    }
   }
 }
