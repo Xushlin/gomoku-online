@@ -1,5 +1,6 @@
 using Gewu.Domain.Entities;
 using Gewu.Domain.Enums;
+using Gewu.Domain.Idioms;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.ValueObjects;
@@ -196,6 +197,15 @@ public static class BuiltInGameRules
     /// 数据源是手写的,象棋会静静绕过 <c>IsRated ⇒ SupportsHumanVsHuman</c> 那条测试。
     /// 那正是它自己预言的失效方式,只是它预言错了自己的机制。
     /// </para>
+    /// <para>
+    /// 它此前是一个静态列表。成语接龙需要词典,而词典不能在类型初始化时加载,于是它变成了
+    /// 一个**函数**。诱惑是把成语接龙单独注册到 DI、把这份清单留在原地 —— 那正是上面那段
+    /// 描述的缺陷再来一次:清单之外的棋种会同时从 <c>IsRated ⇒ SupportsHumanVsHuman</c>
+    /// 与建房能力校验两条遍历里静静溜过去。代价是每个调用方都得说明它拿什么来描述这个平台,
+    /// 而那正是诚实的形状。
+    /// </para>
     /// </summary>
-    public static readonly IReadOnlyList<IGameRules> All = [Gomoku, TicTacToe, Xiangqi];
+    /// <param name="idioms">成语词典 —— 成语接龙的规则需要它。</param>
+    public static IReadOnlyList<IGameRules> All(IIdiomLexicon idioms) =>
+        [Gomoku, TicTacToe, Xiangqi, new IdiomChain.IdiomChainRules(idioms)];
 }

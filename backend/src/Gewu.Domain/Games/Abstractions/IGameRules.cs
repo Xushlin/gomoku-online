@@ -188,4 +188,7 @@ public static class GameKeys
 
     /// <summary>中国象棋。</summary>
     public const string Xiangqi = "xiangqi";
+
+    /// <summary>成语接龙 —— 平台第一个不在盘面上进行的对战棋种。</summary>
+    public const string IdiomChain = "idiom-chain";
 }

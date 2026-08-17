@@ -103,7 +103,7 @@ public class NInARowRulesTests
     public static TheoryData<IGameRules> AllBuiltInRules()
     {
         var data = new TheoryData<IGameRules>();
-        foreach (var rules in BuiltInGameRules.All)
+        foreach (var rules in BuiltInGameRules.All(IdiomLexicons.Small))
         {
             data.Add(rules);
         }

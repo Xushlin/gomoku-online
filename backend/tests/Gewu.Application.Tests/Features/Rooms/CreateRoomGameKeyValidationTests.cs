@@ -112,7 +112,7 @@ public class CreateRoomGameKeyValidationTests
         // 夹具此前手写成两项,却在注释里自称与生产 DI 一致;象棋因此在整个
         // Gewu.Application.Tests 里都不存在。这条断言让那件事无法再悄悄发生。
         GomokuRules.Registry.All.Select(r => r.GameKey)
-            .Should().BeEquivalentTo(BuiltInGameRules.All.Select(r => r.GameKey));
+            .Should().BeEquivalentTo(BuiltInGameRules.All(GomokuRules.Lexicon).Select(r => r.GameKey));
     }
 
     [Fact]
