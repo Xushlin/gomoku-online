@@ -224,8 +224,10 @@ DTO 定义 MUST 精确包含 8 个字段(沿用 `add-elo-system`);MUST NOT 泄�
 - **THEN** MUST 不出现 `Email` / `PasswordHash` / `RefreshTokens`
 
 #### Scenario: 未登记的棋种返回空榜而不是 400
-- **WHEN** `GetLeaderboardQuery("xiangqi", 1, 20)` 而 `xiangqi` 尚未登记
+- **WHEN** `GetLeaderboardQuery("a-game-nobody-registered", 1, 20)`
 - **THEN** Items 为空、Total == 0、HTTP 200
+
+  举例 MUST NOT 用 `xiangqi` —— 它自 `add-xiangqi` 起就已登记,拿它举例"未登记"会让这条场景为了错误的理由通过(一个新棋种的空榜同样是空的)。对应的测试用的一直是真正没登记的键。
 
 ### Requirement: `GET /api/leaderboard` 端点返回前 100 条排行榜
 
