@@ -43,7 +43,7 @@ TBD - created by archiving change add-platform-catalog. Update Purpose after arc
 
 注册表 MUST 包含平台规划中的全部游戏,未实现的以 `status: 'planned'` 声明 —— 目录页因此从第一天起就展示平台的完整形状。
 
-一个游戏从"规划中"变为"可玩",MUST 只需要改动它自己 manifest 里的 `status` 与 `launchRoute` 两个字段(对战棋种再加 `board`)—— 这是 `add-platform-catalog` 承诺的机制,由 成语纵横 第一次真正兑现,一字棋第二次。
+一个游戏从"规划中"变为"可玩",MUST 只需要改动它自己 manifest 里的 `status` 与 `launchRoute` 两个字段 —— 这是 `add-platform-catalog` 承诺的机制,由 成语纵横 第一次真正兑现,一字棋第二次。(此处原本还写着「对战棋种再加 `board`」,那个字段已由 `remove-manifest-board` 删除。)
 
 #### Scenario: key 唯一
 - **WHEN** 读取注册表
@@ -59,11 +59,11 @@ TBD - created by archiving change add-platform-catalog. Update Purpose after arc
 
 #### Scenario: 一字棋已可用
 - **WHEN** 读取注册表
-- **THEN** 存在 `key === 'tictactoe'` 且 `status === 'available'` 的清单,`category === 'match'`,`launchRoute === '/g/tictactoe'`,`board === { rows: 3, cols: 3 }`
+- **THEN** 存在 `key === 'tictactoe'` 且 `status === 'available'` 的清单,`category === 'match'`,`launchRoute === '/g/tictactoe'`
 
 #### Scenario: 状态翻转只动自己的 manifest
 - **WHEN** 比对 一字棋 上线前后 `src/app/games/` 下的 diff
-- **THEN** 除 `tictactoe/manifest.ts` 与 `game-manifest.ts`(新增 `board` 字段本身)以外,其它游戏的 manifest 内容 MUST NOT 被修改
+- **THEN** 除 `tictactoe/manifest.ts` 以外,其它游戏的 manifest 内容 MUST NOT 被修改
 
 ### Requirement: `GameCatalogService` 以抽象类作为 DI token
 

@@ -27,12 +27,6 @@ public interface IGameRules
     /// <summary>棋种键,与房间的 <c>GameKey</c>、前端游戏注册表中的 key 一致。</summary>
     string GameKey { get; }
 
-    /// <summary>行数。</summary>
-    int Rows { get; }
-
-    /// <summary>列数。</summary>
-    int Cols { get; }
-
     /// <summary>
     /// 本棋种是否存在**人类对手池** —— 平台有没有为它提供人人对战入口。
     /// <para>
@@ -104,6 +98,29 @@ public interface IGameRules
 }
 
 /// <summary>
+/// 有盘面的棋种 —— 一步棋落在某个格子 / 交叉点上。
+/// <para>
+/// 从 <see cref="IGameRules"/> 分出来,是因为成语接龙**没有盘面**:它的一步是一个成语。
+/// 上一次把 <c>WinLength</c> / <c>CreateBoard</c> 分到 <see cref="INInARowRules"/> 时
+/// <c>Rows</c> / <c>Cols</c> 留在了基接口,那时是对的 —— 每个棋种都有盘面。现在不是了。
+/// </para>
+/// <para>
+/// **无盘面的棋种 MUST NOT 返回 <c>0, 0</c> 冒充一个盘面。** 那不只是不整洁:
+/// <c>GameDescriptorDto</c> 会把这两个数发给客户端,而前端把 <c>rows &lt;= 0</c> 当作"未知"
+/// 并代入 15×15,于是一个成语游戏会被描述成一张五子棋盘。用一个合法值表示"不适用",
+/// 错误就是这样悄悄流到界面上的。
+/// </para>
+/// </summary>
+public interface IBoardGameRules : IGameRules
+{
+    /// <summary>行数。</summary>
+    int Rows { get; }
+
+    /// <summary>列数。</summary>
+    int Cols { get; }
+}
+
+/// <summary>
 /// 「连 N 子」类棋种的专有成员。
 /// <para>
 /// 从 <see cref="IGameRules"/> 分出来,是因为中国象棋没有「连几子」,<see cref="CreateBoard"/>
@@ -115,7 +132,7 @@ public interface IGameRules
 /// **接口只承载对每个实现都成立的东西。**
 /// </para>
 /// </summary>
-public interface INInARowRules : IGameRules
+public interface INInARowRules : IBoardGameRules
 {
     /// <summary>判胜所需的同色连续子数。</summary>
     int WinLength { get; }

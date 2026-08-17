@@ -74,7 +74,7 @@ public sealed class XiangqiAi : IBoardGameAi
         foreach (var move in moves)
         {
             var after = board.Clone();
-            after.Move(move.From!.Value, move.To);
+            after.Move(move.From!.Value, move.To!.Value);
             var score = -Search(after, Opponent(myStone), _depth, int.MinValue + 1, int.MaxValue - 1);
 
             if (score > best)
@@ -114,7 +114,7 @@ public sealed class XiangqiAi : IBoardGameAi
         foreach (var move in Ordered(board, moves))
         {
             var after = board.Clone();
-            after.Move(move.From!.Value, move.To);
+            after.Move(move.From!.Value, move.To!.Value);
             var score = -Search(after, Opponent(side), depth - 1, -beta, -alpha);
             if (score > best)
             {
@@ -153,7 +153,7 @@ public sealed class XiangqiAi : IBoardGameAi
     /// </summary>
     private static IEnumerable<MoveIntent> Ordered(XiangqiBoard board, List<MoveIntent> moves)
         => moves.OrderByDescending(m =>
-            board.At(m.To) is { } victim ? PieceValue[victim.Type] : 0);
+            board.At(m.To!.Value) is { } victim ? PieceValue[victim.Type] : 0);
 
     /// <summary>从 <paramref name="side"/> 的视角给局面打分：己方子力减对方子力。</summary>
     private static int Evaluate(XiangqiBoard board, Stone side)

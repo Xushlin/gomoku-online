@@ -19,7 +19,7 @@ namespace Gewu.Domain.Tests.Games.Xiangqi;
 /// </summary>
 public class XiangqiRulesTests
 {
-    private static readonly IGameRules Rules = BuiltInGameRules.Xiangqi;
+    private static readonly IBoardGameRules Rules = (IBoardGameRules)BuiltInGameRules.Xiangqi;
 
     /// <summary>红方 —— 先手。</summary>
     private const Stone Red = Stone.Black;
@@ -30,7 +30,7 @@ public class XiangqiRulesTests
     private static Position P(int row, int col) => new(row, col);
 
     private static PlayedMove Slide(int fromRow, int fromCol, int toRow, int toCol, Stone side)
-        => new(P(fromRow, fromCol), P(toRow, toCol), side);
+        => PlayedMove.Positional(P(fromRow, fromCol), P(toRow, toCol), side);
 
     private static MoveApplication Apply(
         IReadOnlyList<PlayedMove> history, int fr, int fc, int tr, int tc, Stone side)
@@ -375,7 +375,7 @@ public class XiangqiRulesTests
 
     /// <summary>把 (row, col) 上的子清掉 —— 叠到坟场格，覆盖掉上一个。</summary>
     private static PlayedMove Remove(int row, int col, Stone side)
-        => new(P(row, col), Graveyard, side);
+        => PlayedMove.Positional(P(row, col), Graveyard, side);
 
     /// <summary>清掉黑方除将以外的全部棋子，最后用一枚红子吃掉坟场里的幸存者。</summary>
     private static List<PlayedMove> BlackGeneralAlone()
@@ -392,7 +392,7 @@ public class XiangqiRulesTests
             h.Add(Remove(3, col, BlackSide));
         }
         // 坟场里还剩最后一枚黑子。用红兵 (6,4) 吃掉它 —— 那枚兵正好就在 (5,4) 的下方。
-        h.Add(new PlayedMove(P(6, 4), Graveyard, Red));
+        h.Add(PlayedMove.Positional(P(6, 4), Graveyard, Red));
         // **这枚兵就留在 (5,4)。** 坟场格选在 4 列上是有意的:两将都在 4 列,把这一列清空
         // 就会构成将帅照面,于是红方任何一步都成了「自将」。第一版把它挪走了,三条残局用例
         // 全挂在 flying generals —— 规则是对的,是摆的局面本身非法。
@@ -401,15 +401,15 @@ public class XiangqiRulesTests
 
     /// <summary>把红兵从 (6, col) 横移一格，给车让开直线。</summary>
     private static PlayedMove MoveRedSoldierAside(int col)
-        => new(P(6, col), P(6, col + 1), Red);
+        => PlayedMove.Positional(P(6, col), P(6, col + 1), Red);
 
     [Fact]
     public void Checkmate_ends_the_game()
     {
         var h = BlackGeneralAlone();
         h.Add(MoveRedSoldierAside(0));                 // (6,0) → (6,1)，让开 0 列
-        h.Add(new PlayedMove(P(6, 8), P(6, 7), Red));  // (6,8) → (6,7)，让开 8 列
-        h.Add(new PlayedMove(P(9, 0), P(1, 0), Red));  // 红车占住第 1 行，封死 (1,4)
+        h.Add(PlayedMove.Positional(P(6, 8), P(6, 7), Red));  // (6,8) → (6,7)，让开 8 列
+        h.Add(PlayedMove.Positional(P(9, 0), P(1, 0), Red));  // 红车占住第 1 行，封死 (1,4)
 
         // 红另一车 (9,8) 直上 (0,8)：第 0 行已清空 → 照住黑将 (0,4)。
         // 逃格 (0,3) / (0,5) 都在同一条第 0 行上，(1,4) 被 (1,0) 的车封住 —— 将死。
@@ -423,7 +423,7 @@ public class XiangqiRulesTests
     {
         // 对照组：同样是第 0 行的车照将，但不封 (1,4) —— 黑将能逃，对局继续。
         var h = BlackGeneralAlone();
-        h.Add(new PlayedMove(P(6, 8), P(6, 7), Red));
+        h.Add(PlayedMove.Positional(P(6, 8), P(6, 7), Red));
 
         var result = Apply(h, 9, 8, 0, 8, Red);
 
@@ -436,9 +436,9 @@ public class XiangqiRulesTests
         // 困毙：黑将没被将军，但三个逃格全被封 —— 象棋判负，**不是和棋**。
         var h = BlackGeneralAlone();
         h.Add(MoveRedSoldierAside(0));                  // 让开 0 列
-        h.Add(new PlayedMove(P(9, 8), P(2, 5), Red));   // 红车封 5 列 → 盖住 (0,5)
-        h.Add(new PlayedMove(P(7, 1), P(5, 3), Red));   // 红炮到 (5,3)
-        h.Add(new PlayedMove(P(9, 1), P(3, 3), Red));   // 红马当炮架 → 炮打到 (0,3)
+        h.Add(PlayedMove.Positional(P(9, 8), P(2, 5), Red));   // 红车封 5 列 → 盖住 (0,5)
+        h.Add(PlayedMove.Positional(P(7, 1), P(5, 3), Red));   // 红炮到 (5,3)
+        h.Add(PlayedMove.Positional(P(9, 1), P(3, 3), Red));   // 红马当炮架 → 炮打到 (0,3)
 
         // 最后一步：红车 (9,0) → (1,0)，封住 (1,4)。
         // 此刻 (0,4) 本身没有被任何子攻击（车在第 1 行、另一车在 5 列、炮打 3 列），

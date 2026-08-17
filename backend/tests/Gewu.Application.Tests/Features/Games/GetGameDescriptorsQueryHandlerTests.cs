@@ -38,8 +38,9 @@ public class GetGameDescriptorsQueryHandlerTests
             var dto = items.Single(i => i.GameKey == rules.GameKey);
             dto.IsRated.Should().Be(rules.IsRated);
             dto.SupportsHumanVsHuman.Should().Be(rules.SupportsHumanVsHuman);
-            dto.Rows.Should().Be(rules.Rows);
-            dto.Cols.Should().Be(rules.Cols);
+            // 尺寸当且仅当规则有盘面时非空。
+            dto.Rows.Should().Be((rules as IBoardGameRules)?.Rows);
+            dto.Cols.Should().Be((rules as IBoardGameRules)?.Cols);
         }
     }
 

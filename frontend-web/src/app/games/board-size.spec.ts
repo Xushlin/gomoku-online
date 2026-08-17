@@ -20,6 +20,20 @@ const SERVER = StubGameCapabilities.sized({
 });
 
 describe('boardSizeFor', () => {
+  it('returns null for a game that has no board', () => {
+    // Distinct from DEFAULT_BOARD on purpose: routing "boardless" through the
+    // fallback would describe a word game as a 15x15 gomoku grid, and nothing on
+    // screen would say otherwise.
+    expect(boardSizeFor(StubGameCapabilities.boardless('idiom-chain'), 'idiom-chain')).toBeNull();
+  });
+
+  it('keeps "no board" and "unknown game" apart', () => {
+    const server = StubGameCapabilities.boardless('idiom-chain');
+
+    expect(boardSizeFor(server, 'idiom-chain')).toBeNull();
+    expect(boardSizeFor(server, 'go')).toEqual(DEFAULT_BOARD);
+  });
+
   it('resolves gomoku to 15x15', () => {
     expect(boardSizeFor(SERVER, 'gomoku')).toEqual({ rows: 15, cols: 15 });
   });

@@ -182,11 +182,23 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   The replay page was in scope and is not: its only exit link lives in the 404 branch and was already correct. The alternative to dropping it was inventing a button nobody asked for so a spec I had written would come true.
 
+- [x] **`generalize-match-payload`** — the third enabling refactor, and the one that collects a bet `generalize-match-domain` placed in writing. That change rejected a JSON move column with a reason and a trigger: *象棋 would not have created the requirement… **真出现不规则走子时再加列***. 成语接龙 creates it — its move is an idiom, not a square. **A deferral that names its own trigger is the good kind.**
+
+  Two assumptions came out, not one. `MoveIntent.To` was non-nullable, so every move had to land somewhere; and `Rows`/`Cols` sat on the **base** `IGameRules`, so every game had to claim a board. Storing `(0,0)` for an idiom was never an option — the kernel's own rule, in bold on `MoveIntent`, forbids using a legal value to mean "not applicable". Returning `0,0` for the board was worse than untidy: the descriptor publishes those numbers and the web treats `rows <= 0` as *unknown*, substituting 15×15, so a word game would have been described to every client as a gomoku grid.
+
+  So a move is now positional **or** textual, exactly one, enforced in the constructor and shared by all three carriers; and `IBoardGameRules` holds the dimensions, which `INInARowRules` extends and a chain game will not implement. `boardSizeFor` gained a third case — **no board** is not the same answer as **unknown key**, and neither is the same as *the descriptor has not arrived*.
+
+  **The migration is where the interesting failures were, both of them silent.** First: changing the CLR type to `int?` produced a migration that only added the `Text` column, because `MoveConfiguration` still said `.IsRequired()` — **explicit configuration outranks CLR nullability**, so the type change compiled, the migration generated cleanly, and the database would have rejected the first textual move at runtime. Second: EF's generated `Down` wrote `defaultValue: 0` and dropped `Text`, turning every idiom into a move at square (0,0) with its content gone — the same defect `add-per-game-rating`'s `Down` was fixed for. It now refuses via a `CHECK`-constrained scratch table whose **name is the error message**, with a test asserting both rollback paths.
+
+  What this does **not** do is add the game. The seam is shaped against a rule set that is written down and not yet implemented — exactly how `generalize-match-domain` was shaped against 象棋 and `generalize-puzzle-rules` against 华容道. Both held; neither was *proven* until the game landed. `add-idiom-chain` is the only thing that can check this one.
+
 Not yet done — platform roadmap, in this order:
 
-1. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, and **the first real consumer of the generalized lobby**. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
+1. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, **the first real consumer of the generalized lobby**, and the first consumer of the textual move payload. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
 
-   The lobby is parameterised but not yet *proven* general: only gomoku uses it today. The mitigation is structural rather than hopeful — a lobby is a page parameterised by a string, not an interface a game implements, so there is no polymorphism to get wrong. 成语接龙 is what actually tests it.
+   Its rules, as written into `generalize-match-payload`'s proposal: a move is an idiom; it is legal if the dictionary has it, if its first character matches the last character of the previous idiom, and if nobody has said it yet this game; the game ends when a player cannot answer in time. Still to decide when implementing: whether 同音 counts as a match (the common house rule), and whether it gets an AI at all — a dictionary lookup makes one trivial, which is an argument both for and against.
+
+   Two seams are now parameterised but unproven, and this one game tests both. The lobby is a page parameterised by a string, not an interface a game implements, so there is no polymorphism to get wrong. The move payload is a genuine sum type and has more room to be wrong.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
 

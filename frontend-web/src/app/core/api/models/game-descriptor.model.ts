@@ -25,9 +25,15 @@ export interface GameDescriptor {
   /** Whether the platform offers human-vs-human for this game. */
   readonly supportsHumanVsHuman: boolean;
 
-  /** Board rows. */
-  readonly rows: number;
+  /**
+   * Board rows — `null` when the game has **no board at all** (成语接龙).
+   *
+   * That is a different claim from "this client does not know the game", and the
+   * two must not share a fallback: routing "no board" through `DEFAULT_BOARD`
+   * would describe a word game as a 15×15 gomoku grid.
+   */
+  readonly rows: number | null;
 
-  /** Board columns. */
-  readonly cols: number;
+  /** Board columns; `null` whenever {@link GameDescriptor.rows} is. */
+  readonly cols: number | null;
 }

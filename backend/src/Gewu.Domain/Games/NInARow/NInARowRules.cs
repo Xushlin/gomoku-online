@@ -101,7 +101,7 @@ public sealed class NInARowRules : INInARowRules
         var board = CreateBoard();
         foreach (var played in history)
         {
-            board.PlaceStone(new Move(played.To, played.Side));
+            board.PlaceStone(new Move(played.RequirePosition(), played.Side));
         }
         return board;
     }
@@ -123,17 +123,21 @@ public sealed class NInARowRules : INInARowRules
                 $"'{GameKey}' places stones; a move must not carry an origin square.");
         }
 
-        if (!IsInBounds(intent.To))
+        // 文本载荷在这里被挡下:一个成语落到连 N 子规则里,得到的是一句说得清的拒绝,
+        // 而不是一个空引用。
+        var to = intent.RequirePosition();
+
+        if (!IsInBounds(to))
         {
             throw new InvalidMoveException(
-                $"Position ({intent.To.Row}, {intent.To.Col}) is outside the bounds of '{GameKey}'.");
+                $"Position ({to.Row}, {to.Col}) is outside the bounds of '{GameKey}'.");
         }
 
         // 从历史重放。此前这段在 Game.ReplayBoard 里 —— 搬进来是本变更的要点:
         // 盘面语义整个属于规则,聚合根不该知道有一块 Board。
         var board = ReplayBoard(history);
 
-        var result = board.PlaceStone(new Move(intent.To, side));
+        var result = board.PlaceStone(new Move(to, side));
         return new MoveApplication(result);
     }
 

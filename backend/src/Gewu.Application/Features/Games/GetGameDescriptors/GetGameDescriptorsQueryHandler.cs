@@ -42,8 +42,10 @@ public sealed class GetGameDescriptorsQueryHandler
                 GameKey: r.GameKey,
                 IsRated: r.IsRated,
                 SupportsHumanVsHuman: r.SupportsHumanVsHuman,
-                Rows: r.Rows,
-                Cols: r.Cols))
+                // 有盘面才有尺寸。无盘面的棋种在这里是 null,而不是 0 —— 客户端把
+                // "没有盘面"与"不认识这个键"当作两件事处理。
+                Rows: (r as IBoardGameRules)?.Rows,
+                Cols: (r as IBoardGameRules)?.Cols))
             .ToList()
             .AsReadOnly();
 

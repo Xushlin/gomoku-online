@@ -166,7 +166,7 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
         stored.FromCol.Should().Be(4);
         stored.FromPosition().Should().Be(new Position(3, 4));
         stored.ToPosition().Should().Be(new Position(5, 6));
-        stored.ToPlayedMove().Should().Be(new PlayedMove(new Position(3, 4), new Position(5, 6), Stone.Black));
+        stored.ToPlayedMove().Should().Be(PlayedMove.Positional(new Position(3, 4), new Position(5, 6), Stone.Black));
     }
 
     [Fact]

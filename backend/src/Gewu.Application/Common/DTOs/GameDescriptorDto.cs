@@ -25,5 +25,5 @@ public sealed record GameDescriptorDto(
     string GameKey,
     bool IsRated,
     bool SupportsHumanVsHuman,
-    int Rows,
-    int Cols);
+    int? Rows,
+    int? Cols);

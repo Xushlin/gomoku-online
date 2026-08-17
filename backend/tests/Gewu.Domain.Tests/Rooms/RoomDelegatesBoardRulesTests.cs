@@ -165,7 +165,7 @@ public class RoomDelegatesBoardRulesTests
         stored.Col.Should().Be(2);
 
         room.Game.History().Single().Should()
-            .Be(new PlayedMove(new Position(0, 1), new Position(2, 2), Stone.Black));
+            .Be(PlayedMove.Positional(new Position(0, 1), new Position(2, 2), Stone.Black));
     }
 
     [Fact]

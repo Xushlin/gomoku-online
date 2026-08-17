@@ -80,11 +80,11 @@
         [submitting]="false"
         [readonly]="true"
       />
-    } @else {
+    } @else if (boardSize(); as size) {
       <app-board
         [state]="boardState()"
-        [rows]="boardSize().rows"
-        [cols]="boardSize().cols"
+        [rows]="size.rows"
+        [cols]="size.cols"
         [mySide]="'spectator'"
         [submitting]="false"
         [readonly]="true"

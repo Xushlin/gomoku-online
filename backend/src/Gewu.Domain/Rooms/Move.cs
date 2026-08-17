@@ -7,13 +7,18 @@ namespace Gewu.Domain.Rooms;
 /// 对局中一步棋的持久化子实体。由 <see cref="Game"/> 在接受 <see cref="Room.PlayMove"/>
 /// 成功后 append,外部不可直接构造。<c>Ply</c> 从 1 起,按时间严格递增。
 /// <para>
-/// 一步棋是 <c>(FromRow, FromCol) -> (Row, Col)</c>。起点可空:落子类棋种(五子棋 / 一字棋)
-/// 没有起点,走子类(中国象棋)有。
+/// 载荷有两种,**恰好一种**被填充:位置类是 <c>(FromRow, FromCol) -> (Row, Col)</c>(起点可空:
+/// 落子类没有,走子类有),文本类是 <see cref="Text"/>(四个坐标列全空)。
 /// </para>
 /// <para>
-/// **不用 JSON 载荷列。** 象棋的每一步都恰好是 from -> to(没有王车易位、吃过路兵、升变),
-/// 两个可空列就覆盖了两类棋种,而且列**仍然可查询**、EF 原生映射、重放仍是强类型的 ——
-/// 写错了是编译错误而不是运行时的 <c>JsonException</c>。真出现不规则走子时再加列。
+/// **仍然不用 JSON 载荷列。** 上一版的理由是「象棋的每一步都恰好是 from -> to,真出现不规则
+/// 走子时再加列」—— 成语接龙就是那个"真出现",而它要的恰好也只是**一个标量**。一列装得下,
+/// 于是列仍然可查询、EF 原生映射、重放仍是强类型的:写错了是编译错误而不是运行时的
+/// <c>JsonException</c>。JSON 会为一个还没有人提出的扩展性付钱。
+/// </para>
+/// <para>
+/// 坐标列因此可空。**MUST NOT 用 <c>Row = 0, Col = 0</c> 表示「这一步没有格子」** —— 那与
+/// <see cref="MoveIntent"/> 上明令禁止的「用一个合法值表示没有起点」是同一件事,只是换了字段。
 /// </para>
 /// </summary>
 public sealed class Move
@@ -38,11 +43,16 @@ public sealed class Move
     /// <summary>起点列索引;落子类棋种为 <c>null</c>。见 <see cref="FromRow"/>。</summary>
     public int? FromCol { get; private set; }
 
-    /// <summary>终点 / 落点行索引。</summary>
-    public int Row { get; private set; }
+    /// <summary>终点 / 落点行索引;**文本类棋种为 <c>null</c>**。</summary>
+    public int? Row { get; private set; }
 
-    /// <summary>终点 / 落点列索引。</summary>
-    public int Col { get; private set; }
+    /// <summary>终点 / 落点列索引;文本类棋种为 <c>null</c>。见 <see cref="Row"/>。</summary>
+    public int? Col { get; private set; }
+
+    /// <summary>
+    /// 文本载荷(成语接龙的一个成语);**位置类棋种为 <c>null</c>**。
+    /// </summary>
+    public string? Text { get; private set; }
 
     /// <summary>落子棋色(<see cref="Stone.Black"/> 或 <see cref="Stone.White"/>)。</summary>
     public Stone Stone { get; private set; }
@@ -58,21 +68,25 @@ public sealed class Move
         Id = Guid.NewGuid();
         GameId = gameId;
         Ply = ply;
+        // 载荷的合法性由 MoveIntent 的构造器已经保证过一次;这里照抄,不再各判一遍 ——
+        // 同一条规则的第二份实现迟早与第一份不一致。
         FromRow = intent.From?.Row;
         FromCol = intent.From?.Col;
-        Row = intent.To.Row;
-        Col = intent.To.Col;
+        Row = intent.To?.Row;
+        Col = intent.To?.Col;
+        Text = intent.Text;
         Stone = stone;
         PlayedAt = playedAt;
     }
 
-    /// <summary>返回该步终点的 <see cref="Position"/> 值对象(每次访问构造新实例)。</summary>
-    public Position ToPosition() => new(Row, Col);
+    /// <summary>返回该步终点的 <see cref="Position"/>;文本类棋种为 <c>null</c>。</summary>
+    public Position? ToPosition()
+        => Row is int r && Col is int c ? new Position(r, c) : null;
 
     /// <summary>返回该步起点的 <see cref="Position"/>;落子类棋种为 <c>null</c>。</summary>
     public Position? FromPosition()
         => FromRow is int r && FromCol is int c ? new Position(r, c) : null;
 
     /// <summary>把本步还原成规则看得懂的形状,供 <c>IGameRules.Apply</c> 的历史使用。</summary>
-    public PlayedMove ToPlayedMove() => new(FromPosition(), ToPosition(), Stone);
+    public PlayedMove ToPlayedMove() => new(FromPosition(), ToPosition(), Text, Stone);
 }

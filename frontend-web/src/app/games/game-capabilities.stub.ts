@@ -56,6 +56,25 @@ export class StubGameCapabilities extends GameCapabilitiesService {
     );
   }
 
+  /**
+   * A registered game with **no board** — 成语接龙's shape.
+   *
+   * No shipped game reports this yet, which is exactly why it needs a stub: the
+   * branch that distinguishes "boardless" from "unknown key" is unreachable in a
+   * browser until the game lands, so a unit test is the only thing holding it.
+   */
+  static boardless(...keys: readonly string[]): StubGameCapabilities {
+    return new StubGameCapabilities(
+      keys.map((gameKey) => ({
+        gameKey,
+        isRated: false,
+        supportsHumanVsHuman: true,
+        rows: null,
+        cols: null,
+      })),
+    );
+  }
+
   /** A stub that has not finished loading — for the "hold the render" cases. */
   static pending(): StubGameCapabilities {
     const stub = new StubGameCapabilities();
