@@ -80,7 +80,7 @@ describe('CreateAiRoomDialog', () => {
     };
     comp.form.setValue({ name: 'Hard match', difficulty: 'Hard', humanSide: 'Black' });
     comp.submit();
-    expect(rooms.createAiRoom).toHaveBeenCalledWith('Hard match', 'Hard', 'Black');
+    expect(rooms.createAiRoom).toHaveBeenCalledWith('Hard match', 'Hard', 'Black', 'gomoku');
     expect(dialogRef.close).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'r-ai-1' }),
     );
@@ -98,7 +98,7 @@ describe('CreateAiRoomDialog', () => {
     comp.form.setValue({ name: 'Defense', difficulty: 'Medium', humanSide: 'Black' });
     comp.pickSide('White');
     comp.submit();
-    expect(rooms.createAiRoom).toHaveBeenCalledWith('Defense', 'Medium', 'White');
+    expect(rooms.createAiRoom).toHaveBeenCalledWith('Defense', 'Medium', 'White', 'gomoku');
   });
 
   it('too-short name blocks submit, no HTTP call', () => {

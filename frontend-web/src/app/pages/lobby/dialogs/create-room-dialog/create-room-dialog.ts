@@ -7,6 +7,7 @@ import type { RoomSummary } from '../../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../../core/api/rooms-api.service';
 import { isProblemDetails } from '../../../../core/auth/problem-details';
 import { mapProblemDetailsToForm } from '../../../auth/shared/problem-details.mapper';
+import { GOMOKU_KEY } from '../../../../games/gomoku/game-key';
 
 export type CreateRoomResult = RoomSummary | undefined;
 
@@ -47,7 +48,7 @@ export class CreateRoomDialog {
     this.submitting.set(true);
     this.bannerKey.set(null);
     const { name } = this.form.getRawValue();
-    this.rooms.create(name.trim()).subscribe({
+    this.rooms.create(name.trim(), GOMOKU_KEY).subscribe({
       next: (room) => {
         this.submitting.set(false);
         this.dialogRef.close(room);

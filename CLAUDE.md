@@ -152,13 +152,21 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   Enforcement is a second `IRuleBuilder` extension on the human-room path only; human-vs-AI is what these games *do* support, and blocking it there would exile them. It stays silent when the key resolves to nothing, so an unregistered key still reports one error rather than two. Create-time only: blocking `JoinRoom` too would add a registry dependency to serve a population of zero.
 
+- [x] **`require-room-game-key`** — `gameKey` is now mandatory on `POST /api/rooms`, `POST /api/rooms/ai` and `GET /api/rooms`. Zero behaviour change; the point is *where the decision is written down*.
+
+  `RoomsController` filled a missing key with `?? GameKeys.Gomoku`, justified in `CreateRoomRequest`'s own doc comment as compatibility for 「已发布的客户端」 — **published clients, of which there are zero.** The web app had never sent the field to those endpoints, not as a choice but because it was never plumbed. So the shim was not a compatibility layer; it was a hardcoded game living on the server, where no reader of the client could find it — and it is why the lobby stayed gomoku-only without anyone deciding that it should.
+
+  The same decision had been recorded three different ways along one page's data path: an invisible server default (`list`), a half-visible optional argument (`createAiRoom`), and an explicit literal with a comment (the leaderboard slice). Only the third could be found by reading the front end. All three are now the same shape, and `games/gomoku/game-key.ts` exists at last — **五子棋 was the one game whose key had never been written down on the client side**, because the server kept supplying it.
+
+  Three sibling defaults were checked and each **stays, for a different reason** — being able to say a different reason for each is the test that a rule was applied rather than a pattern matched. `HumanSide` defaults because choosing a side completes an incomplete request *within* the named game, whereas defaulting the key changes which game you are playing. The leaderboard defaults because a ladder always renders under a visible game name, so a wrong one is wrong *on screen*. And the profile default **is genuinely used**: `getProfile(userId, gameKey?)` omits it on first paint, where omission is a meaningful value ("the server's default game") rather than a forgotten argument — removing it would have broken that render. That one is the counter-example to this whole change's thesis, and it was found by checking rather than by assuming the pattern generalised.
+
 Not yet done — platform roadmap, in this order:
 
-1. `generalize-lobby` — `/home` is still gomoku's lobby, so 一字棋 and 象棋 have human-vs-AI only, reachable only from `/games`. Now the **immediate** next step rather than a follow-on, because the backend is already parameterised: `CreateRoomCommand`, `CreateAiRoomCommand` and `GetRoomListQuery` have all carried a required `GameKey` since `add-tictactoe`. What is left is entirely front-end plus one shim.
-
-   That shim is worth naming. `RoomsController` fills a missing key with `?? GameKeys.Gomoku`, justified in the spec as 兼容性 for 「已发布的客户端」 — **published clients, of which there are zero.** The web app has never sent `gameKey` to `POST /api/rooms` or `GET /api/rooms`, so the shim is not a compatibility layer; it is a hidden hardcode, and it is the direct reason the lobby is still gomoku-only. Meanwhile the same decision is recorded three different ways in one page's data path: an invisible server default (`list`), a half-visible optional argument (`createAiRoom`), and an explicit literal with a comment (the leaderboard slice). Only the third can be found by reading the client.
+1. `generalize-lobby` — `/home` is still gomoku's lobby, so 一字棋 and 象棋 have human-vs-AI only, reachable only from `/games`. The **immediate** next step: the backend has been parameterised since `add-tictactoe`, and `require-room-game-key` has now made every client call site name its game, so what remains is routes and page structure.
 
    Design settled while investigating: `/g/:gameKey/lobby` (lazy) holds the three game-scoped cards — active rooms, create, play-vs-AI — and `/home` (eager) keeps the four account-scoped ones — hero, my active rooms, my recent games, find player. The split follows a line already present in the data, not an invented one. It should also **shrink** the initial bundle, which is over budget at ~535 kB.
+
+   Also to settle there: leaving a room currently navigates to `/home` from five call sites in `room-page`. It should return to that game's lobby when the game has one.
 
 2. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, and the first real consumer of the generalized lobby. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
 
@@ -169,7 +177,11 @@ Discipline: **do not start a new game until the previous one is archived.** Seve
 Deferred follow-ups, each with a reason:
 
 - `squash-migration-baseline` — squash the 11 migrations into one. Needs deltas because `ai-opponent` has requirements named after `AddBotSupport` / `AddHardBotAccount`, `room-and-gameplay` after `AddGameEndReason`, and `user-management` now names `AddUserGameStats` / `DropUserRatingColumns` — the last pair with a normative ordering constraint the squash must preserve. Cheap while the DB is still local-only (no production data exists).
-- `backend/smoke/AiSmoke` is **broken and has been since `add-leaderboard-pagination`**: step 7 deserializes `/api/leaderboard` into `List<LeaderboardEntry>`, but the endpoint returns `PagedResult<T>`. It is not in `Gewu.slnx` and CI does not run it, which is exactly why nobody noticed. Either wire it into CI or delete it — a smoke test outside CI rots silently and then lies about coverage.
+- `backend/smoke/AiSmoke` is **not in `Gewu.slnx`, CI never runs it, and its base URL is hardcoded to `http://localhost:5145`.** Either wire it into CI or delete it.
+
+  This item used to say it was "broken and has been since `add-leaderboard-pagination`", with the `List<LeaderboardEntry>` / `PagedResult<T>` mismatch as the evidence. `require-room-game-key` ran it: **17 passed, 0 failed.** That bug had already been fixed — the code reads `PagedResult<LeaderboardEntry>` and the comment beside it describes the defect in the past tense — and the script has since grown a step 8 covering per-game rating, work *later* than the note it was described in. The note was true when written and nobody came back to it.
+
+  Worth keeping the irony: the note warned that "a smoke test outside CI rots silently and then lies about coverage", and then became the lie itself, in the opposite direction — claiming there was no coverage where there was. **A stale warning about staleness is still stale.**
 - Puzzle level artefacts are stored **pretty-printed** in the database (`layoutJson` carries its indentation), so a 10-piece klotski layout ships 1.7 kB instead of ~0.5 kB. Pre-dates `add-klotski` — 成语纵横 does exactly the same — but both games now pay transfer cost for a reviewable artefact. Fixing it means compacting in the seeder, which is puzzle-core work.
 
 - `ng build` reports `bundle initial exceeded maximum budget` (500 kB budget, ~535 kB actual). Pre-dates `add-web-xiangqi` (532 kB before it). It is a warning, not an error, so CI is green and nobody is shrinking it.

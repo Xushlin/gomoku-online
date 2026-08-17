@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type {
@@ -10,16 +10,31 @@ import type {
   RoomSummary,
 } from './models/room.model';
 
+/**
+ * Room reads and writes.
+ *
+ * `gameKey` is **required** wherever a room is created or listed, and it has no
+ * default. The server used to fill a missing key with `gomoku`, justified as
+ * compatibility for already-published clients — of which there are none. This
+ * client is the only one, and it had simply never been taught to send the
+ * field, so the "compatibility" default was really a hardcoded game living
+ * where no reader of this file could see it.
+ *
+ * An optional parameter here would move that default rather than remove it:
+ * "forgot to pass it" and "meant gomoku" would again be indistinguishable at
+ * the call site. `myActiveRooms` takes no key on purpose — it answers "which
+ * games am I in right now", and across games is the correct answer.
+ */
 export abstract class RoomsApiService {
-  abstract list(): Observable<readonly RoomSummary[]>;
+  abstract list(gameKey: string): Observable<readonly RoomSummary[]>;
   abstract myActiveRooms(): Observable<readonly RoomSummary[]>;
   abstract getById(roomId: string): Observable<RoomState>;
-  abstract create(name: string): Observable<RoomSummary>;
+  abstract create(name: string, gameKey: string): Observable<RoomSummary>;
   abstract createAiRoom(
     name: string,
     difficulty: BotDifficulty,
-    humanSide?: BotSide,
-    gameKey?: string,
+    humanSide: BotSide,
+    gameKey: string,
   ): Observable<RoomState>;
   abstract join(roomId: string): Observable<RoomState>;
   abstract leave(roomId: string): Observable<void>;
@@ -33,8 +48,9 @@ export abstract class RoomsApiService {
 export class DefaultRoomsApiService extends RoomsApiService {
   private readonly http = inject(HttpClient);
 
-  list(): Observable<readonly RoomSummary[]> {
-    return this.http.get<readonly RoomSummary[]>('/api/rooms');
+  list(gameKey: string): Observable<readonly RoomSummary[]> {
+    const params = new HttpParams().set('gameKey', gameKey);
+    return this.http.get<readonly RoomSummary[]>('/api/rooms', { params });
   }
 
   myActiveRooms(): Observable<readonly RoomSummary[]> {
@@ -45,28 +61,22 @@ export class DefaultRoomsApiService extends RoomsApiService {
     return this.http.get<RoomState>(`/api/rooms/${encodeURIComponent(roomId)}`);
   }
 
-  create(name: string): Observable<RoomSummary> {
-    return this.http.post<RoomSummary>('/api/rooms', { name });
+  create(name: string, gameKey: string): Observable<RoomSummary> {
+    return this.http.post<RoomSummary>('/api/rooms', { name, gameKey });
   }
 
   createAiRoom(
     name: string,
     difficulty: BotDifficulty,
-    humanSide?: BotSide,
-    gameKey?: string,
+    humanSide: BotSide,
+    gameKey: string,
   ): Observable<RoomState> {
-    // Build body conditionally so old callers keep their existing POST body —
-    // the backend defaults humanSide to Black and gameKey to gomoku. Sending
-    // an explicit undefined would serialise as a null and defeat that.
-    const body: {
-      name: string;
-      difficulty: BotDifficulty;
-      humanSide?: BotSide;
-      gameKey?: string;
-    } = { name, difficulty };
-    if (humanSide !== undefined) body.humanSide = humanSide;
-    if (gameKey !== undefined) body.gameKey = gameKey;
-    return this.http.post<RoomState>('/api/rooms/ai', body);
+    return this.http.post<RoomState>('/api/rooms/ai', {
+      name,
+      difficulty,
+      humanSide,
+      gameKey,
+    });
   }
 
   join(roomId: string): Observable<RoomState> {
