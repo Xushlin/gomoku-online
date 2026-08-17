@@ -20,7 +20,7 @@ public class GameRulesRegistryTests
         var rules = registry.For("gomoku");
 
         rules.Should().NotBeNull();
-        rules!.Rows.Should().Be(15);
+        rules.Should().BeAssignableTo<IBoardGameRules>().Which.Rows.Should().Be(15);
         rules.Should().BeAssignableTo<INInARowRules>()
             .Which.WinLength.Should().Be(5);
     }
@@ -55,8 +55,8 @@ public class GameRulesRegistryTests
         // 一字棋的全部代价:一行注册,连规则类都不用写。
         var registry = Registry(BuiltInGameRules.Gomoku, BuiltInGameRules.TicTacToe);
 
-        registry.For("gomoku")!.Rows.Should().Be(15);
-        registry.For("tictactoe")!.Rows.Should().Be(3);
+        registry.For("gomoku").Should().BeAssignableTo<IBoardGameRules>().Which.Rows.Should().Be(15);
+        registry.For("tictactoe").Should().BeAssignableTo<IBoardGameRules>().Which.Rows.Should().Be(3);
     }
 
     [Fact]
@@ -67,8 +67,9 @@ public class GameRulesRegistryTests
         var rules = registry.For("tictactoe");
 
         rules.Should().NotBeNull();
-        rules!.Rows.Should().Be(3);
-        rules.Cols.Should().Be(3);
+        var board = rules.Should().BeAssignableTo<IBoardGameRules>().Which;
+        board.Rows.Should().Be(3);
+        board.Cols.Should().Be(3);
         rules.Should().BeAssignableTo<INInARowRules>()
             .Which.WinLength.Should().Be(3);
         rules.IsRated.Should().BeFalse();

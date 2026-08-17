@@ -108,7 +108,8 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
         await _sender.Send(
             new MakeMoveCommand(
                 request.BotUserId, request.RoomId,
-                pick.To.Row, pick.To.Col,
+                // 机器人只下棋盘类棋种 —— AI 注册表按棋种解析,没有盘面的棋种解析不出工厂。
+                pick.RequirePosition().Row, pick.RequirePosition().Col,
                 pick.From?.Row, pick.From?.Col),
             cancellationToken);
 

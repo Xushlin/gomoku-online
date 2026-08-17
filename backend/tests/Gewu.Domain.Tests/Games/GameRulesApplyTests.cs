@@ -22,7 +22,7 @@ public class GameRulesApplyTests
     private static readonly IReadOnlyList<PlayedMove> Empty = [];
 
     private static PlayedMove Placed(int row, int col, Stone side)
-        => new(null, new Position(row, col), side);
+        => PlayedMove.Positional(null, new Position(row, col), side);
 
     // ---- 合法路径 ----
 

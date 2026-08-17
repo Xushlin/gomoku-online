@@ -80,11 +80,11 @@
             [submitting]="submittingMove()"
             (pieceMove)="handlePieceMove($event)"
           />
-        } @else {
+        } @else if (boardSize(); as size) {
           <app-board
             [state]="room"
-            [rows]="boardSize().rows"
-            [cols]="boardSize().cols"
+            [rows]="size.rows"
+            [cols]="size.cols"
             [mySide]="mySide()"
             [submitting]="submittingMove()"
             (cellClick)="handleCellClick($event)"

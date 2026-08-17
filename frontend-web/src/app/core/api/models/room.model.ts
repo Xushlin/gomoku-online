@@ -38,10 +38,18 @@ export interface RoomSummary {
 
 export interface MoveDto {
   readonly ply: number;
-  /** Destination row. */
-  readonly row: number;
-  /** Destination column. */
-  readonly col: number;
+  /**
+   * Destination row — `null` for games whose move is **not** a square.
+   *
+   * 成语接龙's move is an idiom, carried in {@link MoveDto.text}. Exactly one of
+   * the two payloads is present; the server enforces that at construction, so a
+   * reader that has checked `row != null` may treat `col` as present too.
+   */
+  readonly row: number | null;
+  /** Destination column; `null` whenever {@link MoveDto.row} is. */
+  readonly col: number | null;
+  /** The move's text payload; `null` for games played on a board. */
+  readonly text?: string | null;
   readonly stone: Stone;
   readonly playedAt: string;
   /**

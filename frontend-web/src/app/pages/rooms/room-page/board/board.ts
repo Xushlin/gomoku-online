@@ -69,8 +69,13 @@ export class Board {
       // Out-of-range plies are dropped rather than thrown on. If the client's
       // idea of the size ever disagrees with the server's, the board should look
       // wrong — not blank the page.
-      if (move.row >= 0 && move.row < rowCount && move.col >= 0 && move.col < colCount) {
-        board[move.row][move.col] = move.stone;
+      // A move with no square is not this board's business — a textual move
+      // (成语接龙) reaching a grid renderer means the wrong component is mounted,
+      // and skipping is the same "look wrong, never blank" rule as out-of-range.
+      const { row, col } = move;
+      if (row == null || col == null) continue;
+      if (row >= 0 && row < rowCount && col >= 0 && col < colCount) {
+        board[row][col] = move.stone;
       }
     }
     return board;

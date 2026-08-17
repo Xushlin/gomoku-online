@@ -22,7 +22,7 @@ namespace Gewu.Domain.Games.Xiangqi;
 /// 无状态,可安全地被并发的多个房间共享。
 /// </para>
 /// </summary>
-public sealed class XiangqiRules : IGameRules
+public sealed class XiangqiRules : IBoardGameRules
 {
     /// <summary>红方(<see cref="Stone.Black"/>)一侧的底线行号。</summary>
     private const int RedHomeRow = 9;
@@ -64,7 +64,8 @@ public sealed class XiangqiRules : IGameRules
                 $"'{GameKey}' moves pieces; a move must carry an origin square.");
         }
 
-        var to = intent.To;
+        // 文本载荷在这里被挡下,与连 N 子同理。
+        var to = intent.RequirePosition();
         if (!XiangqiBoard.InBounds(from) || !XiangqiBoard.InBounds(to))
         {
             throw new InvalidMoveException(
@@ -132,7 +133,7 @@ public sealed class XiangqiRules : IGameRules
         {
             if (played.From is { } origin)
             {
-                board.Move(origin, played.To);
+                board.Move(origin, played.RequirePosition());
             }
         }
         return board;

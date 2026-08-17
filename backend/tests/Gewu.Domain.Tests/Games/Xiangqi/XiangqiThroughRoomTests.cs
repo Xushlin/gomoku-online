@@ -88,9 +88,9 @@ public class XiangqiThroughRoomTests
         Play(room, red, 9, 1, 7, 2, 4);
 
         room.Game!.History().Should().Equal(
-            new PlayedMove(new Position(6, 0), new Position(5, 0), Stone.Black),
-            new PlayedMove(new Position(3, 0), new Position(4, 0), Stone.White),
-            new PlayedMove(new Position(9, 1), new Position(7, 2), Stone.Black));
+            PlayedMove.Positional(new Position(6, 0), new Position(5, 0), Stone.Black),
+            PlayedMove.Positional(new Position(3, 0), new Position(4, 0), Stone.White),
+            PlayedMove.Positional(new Position(9, 1), new Position(7, 2), Stone.Black));
     }
 
     [Fact]

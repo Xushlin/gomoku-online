@@ -129,12 +129,12 @@ export function positionAfter(moves: readonly MoveDto[]): XiangqiPosition {
   const cells: (XiangqiPiece | null)[] = [...INITIAL_POSITION];
 
   for (const move of moves) {
-    const { fromRow, fromCol } = move;
-    if (fromRow == null || fromCol == null) continue;
-    if (!inBounds(fromRow, fromCol) || !inBounds(move.row, move.col)) continue;
+    const { fromRow, fromCol, row, col } = move;
+    if (fromRow == null || fromCol == null || row == null || col == null) continue;
+    if (!inBounds(fromRow, fromCol) || !inBounds(row, col)) continue;
 
     const from = cellIndex(fromRow, fromCol);
-    const to = cellIndex(move.row, move.col);
+    const to = cellIndex(row, col);
     cells[to] = cells[from];
     cells[from] = null;
   }

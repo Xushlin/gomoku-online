@@ -35,15 +35,29 @@ export interface BoardSize {
  * page and the replay page need the identical answer, and two copies of a
  * fallback are two chances to disagree about it.
  *
+ * Three outcomes, and they MUST stay distinct:
+ *
+ * 1. **The descriptor names a size** → that size.
+ * 2. **The descriptor says `null`** → the game has *no board* (成语接龙). Returns
+ *    `null`; the caller must not render a grid. Routing this through
+ *    {@link DEFAULT_BOARD} would describe a word game as a 15×15 gomoku grid.
+ * 3. **The key is not in the descriptors** → {@link DEFAULT_BOARD}, per above.
+ *
+ * "The descriptors have not arrived" is a fourth state and not this function's:
+ * callers hold their skeleton until `capabilities.loaded()`.
+ *
  * @param capabilities Server-declared game descriptors.
  * @param gameKey The room's game key; `null` / `undefined` while state loads.
  */
 export function boardSizeFor(
   capabilities: GameCapabilitiesService,
   gameKey: string | null | undefined,
-): BoardSize {
+): BoardSize | null {
   if (!gameKey) return DEFAULT_BOARD;
   const descriptor = capabilities.of(gameKey);
-  if (!descriptor || descriptor.rows <= 0 || descriptor.cols <= 0) return DEFAULT_BOARD;
+  if (!descriptor) return DEFAULT_BOARD;
+  // Declared boardless — a different answer from "never heard of it".
+  if (descriptor.rows === null || descriptor.cols === null) return null;
+  if (descriptor.rows <= 0 || descriptor.cols <= 0) return DEFAULT_BOARD;
   return { rows: descriptor.rows, cols: descriptor.cols };
 }

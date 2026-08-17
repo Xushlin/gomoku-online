@@ -79,7 +79,8 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             outcome.Move.Stone,
             outcome.Move.PlayedAt,
             outcome.Move.FromRow,
-            outcome.Move.FromCol);
+            outcome.Move.FromCol,
+            outcome.Move.Text);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
         var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);

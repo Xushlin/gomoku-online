@@ -8,8 +8,8 @@ public sealed record UserSummaryDto(Guid Id, string Username);
 
 /// <summary>对局中一步棋的网络表示。</summary>
 /// <param name="Ply">步数(1-based)。</param>
-/// <param name="Row">终点 / 落点行。</param>
-/// <param name="Col">终点 / 落点列。</param>
+/// <param name="Row">终点 / 落点行;**文本类棋种为 <c>null</c>**。</param>
+/// <param name="Col">终点 / 落点列;文本类棋种为 <c>null</c>。</param>
 /// <param name="Stone">走这一步的一方。</param>
 /// <param name="PlayedAt">走子时刻(UTC)。</param>
 /// <param name="FromRow">
@@ -17,14 +17,19 @@ public sealed record UserSummaryDto(Guid Id, string Username);
 /// 追加在末尾且可空 —— 已发布的客户端解析时会忽略它,形状向后兼容。
 /// </param>
 /// <param name="FromCol">起点列;见 <paramref name="FromRow"/>。</param>
+/// <param name="Text">
+/// 这一步的文本载荷(成语接龙的一个成语);**位置类棋种为 <c>null</c>**。
+/// 与四个坐标恰好互斥 —— 载荷的合法性由 Domain 的构造器保证,本 DTO 只是如实转述。
+/// </param>
 public sealed record MoveDto(
     int Ply,
-    int Row,
-    int Col,
+    int? Row,
+    int? Col,
     Stone Stone,
     DateTime PlayedAt,
     int? FromRow = null,
-    int? FromCol = null);
+    int? FromCol = null,
+    string? Text = null);
 
 /// <summary>
 /// 对局结束事件的 payload。<paramref name="EndReason"/> 明示"怎么结束的"(Connected5 / Resigned / TurnTimeout),

@@ -25,7 +25,7 @@ public class XiangqiAiTests
     private static Position P(int r, int c) => new(r, c);
 
     private static PlayedMove Put(int fr, int fc, int tr, int tc, Stone side)
-        => new(P(fr, fc), P(tr, tc), side);
+        => PlayedMove.Positional(P(fr, fc), P(tr, tc), side);
 
     private static IBoardGameAi Ai(BotDifficulty difficulty, int seed = 1)
         => Factory.Create(difficulty, new Random(seed));
@@ -60,7 +60,7 @@ public class XiangqiAiTests
         {
             var move = ai.SelectMove(history, side);
             var result = Rules.Apply(history, move, side);   // 非法就抛
-            history.Add(new PlayedMove(move.From, move.To, side));
+            history.Add(PlayedMove.Positional(move.From, move.To!.Value, side));
             if (result.Result != GameResult.Ongoing)
             {
                 break;
