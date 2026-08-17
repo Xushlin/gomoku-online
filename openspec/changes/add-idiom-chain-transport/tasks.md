@@ -63,9 +63,14 @@ MakeMove 2 个参数 → InvalidDataException: Invocation provides 2 argument(s)
 等服务端跟上。三个方法不是保守,是唯一能滚动升级的形状。
 
 在 Production 那条连接上,参数个数错只回一句 `Failed to invoke 'SayWord' due to an
-error on the server.`,**服务端日志里一行都没有**。这不是本变更引入的,但值得记:
-参数绑定层的拒绝不走 `DomainErrorHubFilter`,所以既没有错误码也没有日志。真出现
-客户端/服务端签名不一致时,线上除了"调用失败"什么都拿不到。
+error on the server.`,而**按本仓库出厂的日志配置,服务端一行都不记**:
+`appsettings.json` 把 `Microsoft.AspNetCore` 压到 `Warning`,SignalR 的参数绑定失败
+低于这一级。准确的说法是"在配置的级别之上没有任何记录",不是"框架什么都不发" ——
+但操作者手上就是这个配置。
+
+对照才是关键:同一个方法的**领域**拒绝是记下来的(`[ERR] Failed to invoke hub
+method 'SayWord'`)。所以日志里看得见一类拒绝、看不见另一类,而看不见的那类恰好
+是签名不一致 —— 客户端只有"调用失败",服务端什么都没有。不是本变更引入的。
 
 ## 6. 留给 `add-web-idiom-chain` 的一条
 
