@@ -21,11 +21,18 @@ public sealed class MakeMoveCommandValidator : AbstractValidator<MakeMoveCommand
     /// <summary>构造校验规则。</summary>
     public MakeMoveCommandValidator()
     {
+        // 坐标**存在时**非负 —— 文本类的一步没有坐标,那不是错误。
         RuleFor(x => x.Row)
             .GreaterThanOrEqualTo(0)
+            .When(x => x.Row.HasValue)
             .WithMessage("Row must not be negative.");
         RuleFor(x => x.Col)
             .GreaterThanOrEqualTo(0)
+            .When(x => x.Col.HasValue)
             .WithMessage("Col must not be negative.");
+        RuleFor(x => x.Text)
+            .Must(t => !string.IsNullOrWhiteSpace(t))
+            .When(x => x.Text is not null)
+            .WithMessage("A spoken move must not be blank.");
     }
 }

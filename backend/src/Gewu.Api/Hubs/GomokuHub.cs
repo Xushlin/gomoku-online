@@ -117,6 +117,25 @@ public sealed class GomokuHub : Hub
         await _mediator.Send(command, Context.ConnectionAborted);
     }
 
+    /// <summary>
+    /// 说出一个词 —— **文本类**棋种(成语接龙)的走子入口。
+    /// <para>
+    /// 与 <see cref="MovePiece"/> 同理,这是**第三个方法**而不是给 <see cref="MakeMove"/>
+    /// 加一个可选参数:SignalR 不套用 C# 的可选参数默认值,少参调用打到多参方法上会被
+    /// 直接拒掉。那一条是实测出来的,见 <see cref="MovePiece"/> 的说明。
+    /// </para>
+    /// <para>
+    /// 这个词是不是一条成语、接不接得上,全由规则判 —— Hub 只把参数搬过去。
+    /// </para>
+    /// </summary>
+    /// <param name="roomId">房间。</param>
+    /// <param name="word">这一步说出的词。</param>
+    public async Task SayWord(Guid roomId, string word)
+    {
+        var command = new MakeMoveCommand(GetUserId(), new RoomId(roomId), Text: word);
+        await _mediator.Send(command, Context.ConnectionAborted);
+    }
+
     /// <summary>发送聊天。</summary>
     public async Task SendChat(Guid roomId, string content, ChatChannel channel)
     {

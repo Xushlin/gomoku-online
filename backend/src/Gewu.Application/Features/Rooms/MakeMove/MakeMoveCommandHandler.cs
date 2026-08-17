@@ -57,11 +57,10 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
 
-        // 起点可空:落子类棋种(五子棋 / 一字棋)不带 FromRow / FromCol,走子类带。
-        // 形状对不对由规则判——聚合根不知道哪些棋种走子。
-        var intent = request.FromRow is int fr && request.FromCol is int fc
-            ? MoveIntent.Slide(new Position(fr, fc), new Position(request.Row, request.Col))
-            : MoveIntent.Place(new Position(request.Row, request.Col));
+        // 三种载荷,选**恰好一个**工厂。这里不再实现一遍「恰好一种」——那条不变量由
+        // MoveIntent 的构造器强制,拼错了会当场抛,而不是悄悄传下去。
+        // 哪个棋种收哪种,由规则判:聚合根与 handler 都不知道谁走子、谁说词。
+        var intent = BuildIntent(request);
 
         var outcome = room.PlayMove(request.UserId, intent, _clock.UtcNow, rules);
 
@@ -99,5 +98,24 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
         }
 
         return moveDto;
+    }
+
+    /// <summary>把命令上的扁平载荷搬成一个 <see cref="MoveIntent"/>。</summary>
+    /// <param name="request">落子命令。</param>
+    private static MoveIntent BuildIntent(MakeMoveCommand request)
+    {
+        if (request.Text is not null)
+        {
+            return MoveIntent.Say(request.Text);
+        }
+
+        // 坐标缺失时**不**补默认值 —— 让 MoveIntent 的构造器拒绝,那是这条不变量唯一的家。
+        var to = request.Row is int r && request.Col is int c
+            ? new Position(r, c)
+            : (Position?)null;
+
+        return request.FromRow is int fr && request.FromCol is int fc && to is { } dest
+            ? MoveIntent.Slide(new Position(fr, fc), dest)
+            : new MoveIntent(null, to, null);
     }
 }

@@ -17,10 +17,14 @@ namespace Gewu.Application.Features.Rooms.MakeMove;
 /// 形状对不对最终由规则判,handler 不猜哪些棋种走子。
 /// </param>
 /// <param name="FromCol">起点列;见 <paramref name="FromRow"/>。</param>
+/// <param name="Text">
+/// 文本载荷(成语接龙的一个成语);**位置类棋种为 <c>null</c>**,此时四个坐标非空。
+/// </param>
 public sealed record MakeMoveCommand(
     UserId UserId,
     RoomId RoomId,
-    int Row,
-    int Col,
+    int? Row = null,
+    int? Col = null,
     int? FromRow = null,
-    int? FromCol = null) : IRequest<MoveDto>;
+    int? FromCol = null,
+    string? Text = null) : IRequest<MoveDto>;
