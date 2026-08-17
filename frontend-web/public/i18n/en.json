@@ -278,6 +278,9 @@
     "errors": {
       "concurrent-move-refetched": "Out of sync — board refreshed.",
       "generic": "Something went wrong. Please try again.",
+      "idiom-already-used": "That idiom has already been played this game.",
+      "idiom-does-not-link": "That does not link on — it must start with the previous idiom's last character.",
+      "idiom-not-found": "That is not an idiom in the dictionary.",
       "invalid-chat": "That message cannot be sent: it must not be empty or too long.",
       "invalid-move": "That move isn't allowed.",
       "network": "Network error — please try again.",
@@ -530,5 +533,17 @@
     "prev-page": "Previous",
     "next-page": "Next",
     "back-to-games": "← All games"
+  },
+  "idiom-chain": {
+    "board": {
+      "chain-label": "Chain so far",
+      "empty": "Nobody has opened yet — any idiom counts as the first move.",
+      "must-start-with": "The next idiom must start with:",
+      "opening-move": "Opening move: any idiom will do.",
+      "input-label": "The idiom you want to say",
+      "placeholder": "Type an idiom",
+      "submit": "Say it",
+      "waiting": "Waiting for your opponent…"
+    }
   }
 }

@@ -28,6 +28,9 @@ export type HubErrorKey =
   | 'game.errors.not-your-turn'
   | 'game.errors.invalid-move'
   | 'game.errors.self-check'
+  | 'game.errors.idiom-not-found'
+  | 'game.errors.idiom-does-not-link'
+  | 'game.errors.idiom-already-used'
   | 'game.errors.room-not-in-play'
   | 'game.errors.not-a-player'
   | 'game.errors.not-opponents-turn'
@@ -49,6 +52,12 @@ const BY_CODE: Readonly<Record<string, HubErrorKey>> = {
   'not-your-turn': 'game.errors.not-your-turn',
   'invalid-move': 'game.errors.invalid-move',
   'self-check': 'game.errors.self-check',
+  // 三条接龙规则各有自己的一行,而不是共用 invalid-move。象棋能共用是因为玩家看着盘面能
+  // 自己想明白;接龙没有盘面,而它的界面**故意不在客户端判合法性**,所以服务端的拒绝是
+  // 玩家了解规则的唯一途径 —— 「这一步不合法」说不出「不是成语」「接不上」「说过了」中的任何一种。
+  'idiom-not-found': 'game.errors.idiom-not-found',
+  'idiom-does-not-link': 'game.errors.idiom-does-not-link',
+  'idiom-already-used': 'game.errors.idiom-already-used',
   'room-not-in-play': 'game.errors.room-not-in-play',
   'not-a-player': 'game.errors.not-a-player',
   'not-opponents-turn': 'game.errors.not-opponents-turn',

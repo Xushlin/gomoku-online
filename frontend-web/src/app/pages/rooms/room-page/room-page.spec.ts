@@ -45,6 +45,17 @@ function makeRoomState() {
   };
 }
 
+/**
+ * NOTE: this is a bare class, **not** typed against `GameHubService`, so the
+ * compiler does not check it against the real contract. Adding `sayWord` to the
+ * abstract class left this double silently incomplete — nothing failed until a
+ * test actually walked the chain path, and then only at runtime.
+ *
+ * Binding it properly needs `makeRoomState` to return a real `RoomState` and all
+ * twelve members given signatures; that is a separate cleanup, logged in CLAUDE.md.
+ * Until then, the mechanism holding this together is "every hub method has a test
+ * that calls it" — which is why `says a word through the hub` below exists.
+ */
 class StubHub {
   readonly state = signal(null as ReturnType<typeof makeRoomState> | null);
   readonly connectionStatus = signal<'connected' | 'reconnecting' | 'disconnected' | 'connecting'>(
@@ -59,6 +70,7 @@ class StubHub {
   leaveRoom = vi.fn(async () => undefined);
   makeMove = vi.fn(async () => undefined);
   movePiece = vi.fn(async () => undefined);
+  sayWord = vi.fn(async () => undefined);
   sendChat = vi.fn(async () => undefined);
   urge = vi.fn(async () => undefined);
   reconnect = vi.fn(async () => undefined);
@@ -313,6 +325,51 @@ describe('RoomPage board selection', () => {
     const { fixture } = await mountWithGame('a-game-nobody-registered');
 
     expect((fixture.nativeElement as HTMLElement).querySelector('app-board')).toBeTruthy();
+  });
+
+  it('draws the chain board for a 成语接龙 room', async () => {
+    const { fixture } = await mountWithGame(
+      'idiom-chain',
+      StubGameCapabilities.boardless('idiom-chain'),
+    );
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-chain-board')).toBeTruthy();
+    expect(el.querySelector('app-board')).toBeNull();
+    expect(el.querySelector('app-xiangqi-board')).toBeNull();
+  });
+
+  it('says a word through the hub, never MakeMove or MovePiece', async () => {
+    // This is also the only thing checking that `StubHub` implements `sayWord` —
+    // the double is not typed against `GameHubService`, so a missing method here
+    // surfaces at runtime or not at all. See the note on StubHub.
+    const { fixture, hub } = await mountWithGame(
+      'idiom-chain',
+      StubGameCapabilities.boardless('idiom-chain'),
+    );
+    const el = fixture.nativeElement as HTMLElement;
+
+    const input = el.querySelector('input[type="text"]') as HTMLInputElement;
+    input.value = '一心一意';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    (el.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(hub.sayWord).toHaveBeenCalledWith('r-1', '一心一意');
+    expect(hub.makeMove).not.toHaveBeenCalled();
+    expect(hub.movePiece).not.toHaveBeenCalled();
+  });
+
+  it('does not paint the default 15x15 grid for a boardless game', async () => {
+    // "declared boardless" and "unknown key" both leave boardSizeFor() with nothing
+    // to return, and only the second should fall through to the default board.
+    const { fixture } = await mountWithGame(
+      'idiom-chain',
+      StubGameCapabilities.boardless('idiom-chain'),
+    );
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.board-cell')).toHaveLength(0);
   });
 
   it('sends a xiangqi move through MovePiece, never MakeMove', async () => {

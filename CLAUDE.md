@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **格物 / Gewu** — a multi-platform online game hall. Planned games: idiom games (成语纵横 / 成语接龙 / 猜成语), 五子棋, 一字棋, 中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what they all have in common.
 
-Five games ship today, and between them they establish the two kernels every later game reuses:
+Six games ship today, and between them they establish the two kernels every later game reuses:
 
 - **五子棋 (gomoku)** — the *match* kernel: players register, create/join rooms, play real-time matches (via SignalR) with room chat, spectator chat, and urge-opponent shortcuts; ELO-based ranking with special icons for the top three; human-vs-AI with multiple difficulties; game-record storage and replay.
 - **成语纵横 (idiom-crossword)** — the *puzzle* kernel: a level catalogue, server-authoritative attempts (the answer key never leaves the server), server-counted mistakes and hints, star scoring, and per-level best records.
@@ -24,7 +24,7 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
 ## Current phase
 
-**Five games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), 中国象棋 (the change that proved which match seams were actually general), and 华容道 (the one that did the same to the puzzle kernel). Detail:
+**Six games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), 中国象棋 (the change that proved which match seams were actually general), 华容道 (the one that did the same to the puzzle kernel), and 成语接龙 (the one with no board at all). Detail:
 
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
@@ -228,13 +228,23 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   Measured on the way past, outside this change's scope: **`/g/idiom-chain/lobby` already renders completely** — title, room list, create-room, ladder — while the manifest still says `planned`. The lobby seam's second consumer costs **zero lobby code**.
 
-Not yet done — platform roadmap, in this order:
+- [x] **`add-web-idiom-chain`** — 成语接龙 is playable at `/g/idiom-chain/lobby`. **Six games ship.** Verified by playing a real four-ply game, two plies typed into the actual input box, against a real opponent on a second SignalR connection.
 
-1. `add-web-idiom-chain` — 成语接龙 has rules and a transport, and still no way for a person to reach either. It needs a UI that is a word list rather than a grid, the manifest flipped to `available`, and i18n.
+  **The board seam's third and final shape, and the two-way `@if`'s own prediction came true.** That comment said a registry would trade typed bindings for dynamic components and that "if a third shape ever appears, extracting one then costs the same". It does: one `@else if`, six lines, both bindings still type-checked. The conclusion is unchanged and is now measured rather than forecast.
 
-   The **lobby** part is already done and measured — see `enforce-ai-availability`. What remains unproven is the *board* seam's third shape: `room-page` has a two-way `@if` whose own comment names 成语接龙 as the third and final one.
+  **`invalid-move` split into three codes**, paying the debt `add-idiom-chain-transport` logged. 象棋 can share one code because the player sees the board and works it out; 接龙 has no board, and its client deliberately judges nothing, so the server's refusal is the *only* channel through which a player learns the rules — and "not a word" / "doesn't link" / "already said" are three different corrections. Verified live: `idiom-does-not-link`, `idiom-not-found`, and `idiom-already-used` all arrive distinct. The third needed a genuine two-cycle from the dictionary (`一五一十 → 十不当一 → 一五一十`) so the repeat also *links*; a casually-built history tests the linking rule instead.
 
-   It also inherits one concrete debt: splitting `invalid-move` into codes a chain player can act on (see `add-idiom-chain-transport`).
+  **The board judges no legality, and that is this repo's third different answer to the same question.** `add-web-klotski` set the test — not *should the client know the rules* but *would knowing them produce a second truth that can diverge* — and 成语接龙 **splits** under it: two of three rules are decidable from what is on screen, the third needs 30,895 words the client should not carry. So it displays the required first character (that character is already rendered; reading it out is presentation) and gates nothing. A partly-authoritative input is worse than a non-authoritative one, and a stale-by-one-ply history would refuse legal words.
+
+  **The input must not cap at four characters** — measured, not assumed: 29,502 idioms are four characters and **1,393 are not**, running 3 to 15, some containing a full-width comma. `maxlength` mirrors the one cap the server has (`Move.Text`'s 64) and nothing else. The 375 px check was then run with the dictionary's longest entry actually on screen (`overflow: 0`, row 310 = 310) — at ply zero the same check reads 0 and proves nothing, which is `generalize-lobby`'s lesson in its exact original form.
+
+  **Splitting the codes immediately caught a test whose name lied.** `A_word_already_played_is_refused_even_though_it_links_on` used a history where the word did *not* link, so it was passing on the wrong rule — invisible while both rules threw one undifferentiated `InvalidMoveException`.
+
+  Two things found that are **not** defects but change what browser evidence is worth. `StubHub` is a bare class, not `implements GameHubService`, so adding a hub method leaves it silently incomplete — `satisfies` cannot fix it without typing all twelve members, so the mechanism holding it is "every hub method has a test that calls it". And **when the Browser pane is not displayed the page produces no frames, so zoneless `requestAnimationFrame`-scheduled change detection does not run**: I read a stale `disabled` attribute and a stale input value and briefly took both for bugs. Conclusions about DOM-attribute *timing* from a non-compositing pane are worthless; the authority there is a unit test calling `detectChanges()`. *"I did not see it" and "it does not happen" differ in both directions.*
+
+Not yet done — platform roadmap:
+
+1. `add-score-attack-core` + `add-tetris` (俄罗斯方块) — the last category with no kernel at all. Both existing kernels now have two real games each; this one has none.
 
 2. `add-score-attack-core` + `add-tetris` (俄罗斯方块) — the last category with no kernel at all.
 
@@ -251,6 +261,7 @@ Deferred follow-ups, each with a reason:
 - Puzzle level artefacts are stored **pretty-printed** in the database (`layoutJson` carries its indentation), so a 10-piece klotski layout ships 1.7 kB instead of ~0.5 kB. Pre-dates `add-klotski` — 成语纵横 does exactly the same — but both games now pay transfer cost for a reviewable artefact. Fixing it means compacting in the seeder, which is puzzle-core work.
 
 - `ng build` still reports `bundle initial exceeded maximum budget` — but by **350 bytes** (500.35 kB against a 500 kB budget), down from 37 kB after `generalize-lobby` moved the game lobby into a lazy chunk. It is a warning, not an error, so CI is green. Closing it now needs one small thing rather than an architectural change; be careful not to "fix" it by raising the budget, which converts a live signal into silence.
+- `StubHub` in `room-page.spec.ts` is a bare class, not `implements GameHubService`, so adding a hub method leaves the double silently incomplete — the compiler says nothing and only a test that calls the new method notices, at runtime. Binding it needs `makeRoomState` to return a real `RoomState` and all twelve members typed. Cheap, mechanical, and worth doing before a *fourth* hub move method ever appears.
 - `gomoku:*` → `gewu:*` localStorage keys — normative in five web specs, and renaming logs everyone out; needs a read-old/write-new shim.
 - `GomokuHub` → `MatchHub` and `/hubs/gomoku` → `/hubs/match`. `GameEndReason.Connected5` is **done** (`generalize-match-domain` renamed it to `Decided`); the hub name is what remains, and it rides along with lobby generalization, which must rewrite those specs anyway.
 - `logs/gomoku-.log` Serilog filename and the `GOMOKU_*` env-var prefix — both normative in specs (`observability`, `api-ops`). The env-var prefix is **not implemented**: `Program.cs` never calls `AddEnvironmentVariables("GOMOKU_")`, so the documented `GOMOKU_JWT__SIGNINGKEY` / `GOMOKU_CORS__ALLOWEDORIGINS__0` are silently ignored and only the unprefixed `JWT__SIGNINGKEY` works. That is a live ops trap, not just a naming wart — fix the code or the spec, but do not leave them disagreeing.

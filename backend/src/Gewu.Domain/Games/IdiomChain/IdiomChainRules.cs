@@ -71,17 +71,19 @@ public sealed class IdiomChainRules : IGameRules
         }
 
         // 位置类载荷在这里被挡下 —— 本棋种不在盘面上进行。
+        // 这一条保持缺省的 invalid-move：它不是三条规则之一，而是送错了形状。
         var word = intent.RequireText();
 
         if (!_lexicon.Contains(word))
         {
-            throw new InvalidMoveException($"'{word}' is not an idiom in the dictionary.");
+            throw InvalidMoveException.IdiomNotFound(
+                $"'{word}' is not an idiom in the dictionary.");
         }
 
         // 只按**字**接,不按读音。见本类下方的说明。
         if (LastWord(history) is { } previous && !LinksOnto(previous, word))
         {
-            throw new InvalidMoveException(
+            throw InvalidMoveException.IdiomDoesNotLink(
                 $"'{word}' must start with '{LastCharOf(previous)}', the last character of '{previous}'.");
         }
 
@@ -89,7 +91,8 @@ public sealed class IdiomChainRules : IGameRules
         {
             if (string.Equals(played.Text, word, StringComparison.Ordinal))
             {
-                throw new InvalidMoveException($"'{word}' has already been played this game.");
+                throw InvalidMoveException.IdiomAlreadyUsed(
+                    $"'{word}' has already been played this game.");
             }
         }
 

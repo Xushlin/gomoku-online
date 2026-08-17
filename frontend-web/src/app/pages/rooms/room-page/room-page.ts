@@ -14,6 +14,8 @@ import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
 import { gameEntryRoute, PLATFORM_HOME } from '../../../games/game-entry-route';
 import { GameCatalogService } from '../../../games/game-catalog.service';
+import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
+import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
 import { XiangqiBoard, type PieceMoveEvent } from '../../../games/xiangqi/board/xiangqi-board';
 import { Board } from './board/board';
@@ -30,7 +32,7 @@ const TICK_MS = 1_000;
 @Component({
   selector: 'app-room-page',
   standalone: true,
-  imports: [Board, XiangqiBoard, ChatPanel, RoomSidebar, RouterLink, TranslocoPipe],
+  imports: [Board, XiangqiBoard, ChainBoard, ChatPanel, RoomSidebar, RouterLink, TranslocoPipe],
   templateUrl: './room-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -91,13 +93,17 @@ export class RoomPage implements OnInit, OnDestroy {
   /**
    * Which board renderer this room needs.
    *
-   * A two-way `@if` in the template rather than a board-component registry. The
+   * A three-way `@if` in the template rather than a board-component registry. The
    * registries this app does keep (themes, locales, sound packs, board skins) exist
    * because adding an entry is a routine, expected operation. A board shape is not:
-   * the match family has exactly these two, and the only remaining match game
-   * (成语接龙) has no grid at all. A registry here would trade type-safe input and
-   * output bindings for dynamic components — a real guarantee for an extension that
-   * is not coming. If a third shape ever appears, extracting one then costs the same.
+   * the match family has exactly these three, and 成语接龙 was the last one.
+   *
+   * **This comment used to say there were two and predict that "if a third shape
+   * ever appears, extracting one then costs the same". The third shape arrived and
+   * the prediction held**: it was one `@else if` and six lines, both bindings still
+   * type-checked, while a registry would need dynamic components and would give up
+   * compile-time checking of `(wordSay)`. The conclusion is unchanged and is now
+   * measured rather than forecast.
    */
   /**
    * Where leaving this room goes — the game's own entry point.
@@ -111,6 +117,14 @@ export class RoomPage implements OnInit, OnDestroy {
   );
 
   protected readonly isXiangqi = computed(() => this.state()?.gameKey === XIANGQI_KEY);
+
+  /**
+   * Keyed off the game rather than off `boardSize() === null`, and that is the
+   * point: "declared boardless" and "this client does not know the key" both make
+   * `boardSizeFor` return nothing useful, but only the first has a renderer. An
+   * unknown key still falls through to the default grid.
+   */
+  protected readonly isIdiomChain = computed(() => this.state()?.gameKey === IDIOM_CHAIN_KEY);
 
   protected readonly mySide = computed<'black' | 'white' | 'spectator'>(() => {
     const s = this.state();
@@ -257,6 +271,10 @@ export class RoomPage implements OnInit, OnDestroy {
    * when a ply actually lands. A refused move almost always means "wrong target",
    * not "wrong piece".
    */
+  protected handleWordSay(word: string): void {
+    this.submitMove((id) => this.hub.sayWord(id, word));
+  }
+
   protected handlePieceMove(payload: PieceMoveEvent): void {
     this.submitMove((id) =>
       this.hub.movePiece(id, payload.from.row, payload.from.col, payload.to.row, payload.to.col),

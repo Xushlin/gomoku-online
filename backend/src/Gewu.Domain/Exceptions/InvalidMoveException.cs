@@ -38,4 +38,27 @@ public sealed class InvalidMoveException : DomainException
     /// </summary>
     /// <param name="message">人类散文,给日志看。</param>
     public static InvalidMoveException SelfCheck(string message) => new(message, "self-check");
+
+    // ── 成语接龙的三条规则 ────────────────────────────────────────────────────
+    //
+    // 三条各带自己的码,而不是共用 invalid-move。理由不是整洁:接龙的界面**故意不在客户端
+    // 判合法性**(见 web-idiom-chain),所以服务端的拒绝是玩家了解规则的**唯一**途径,而
+    // 「不是成语」「接不上」「说过了」是三种完全不同的纠正 —— 「这一步不合法」一种都说不出。
+    //
+    // 象棋能共用是因为玩家看着盘面能自己想明白;接龙没有盘面可看。
+
+    /// <summary>这个词不在词典里。</summary>
+    /// <param name="message">人类散文,给日志看。</param>
+    public static InvalidMoveException IdiomNotFound(string message)
+        => new(message, "idiom-not-found");
+
+    /// <summary>这个词的首字接不上上一个词的末字。</summary>
+    /// <param name="message">人类散文,给日志看。</param>
+    public static InvalidMoveException IdiomDoesNotLink(string message)
+        => new(message, "idiom-does-not-link");
+
+    /// <summary>这个词本局已经说过了。</summary>
+    /// <param name="message">人类散文,给日志看。</param>
+    public static InvalidMoveException IdiomAlreadyUsed(string message)
+        => new(message, "idiom-already-used");
 }

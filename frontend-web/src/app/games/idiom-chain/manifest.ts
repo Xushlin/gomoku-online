@@ -4,9 +4,10 @@ import type { GameManifest } from '../game-manifest';
 export const idiomChainManifest: GameManifest = {
   key: 'idiom-chain',
   category: 'match',
-  status: 'planned',
+  status: 'available',
   titleKey: 'games.idiom-chain.title',
   descriptionKey: 'games.idiom-chain.description',
   icon: '链',
   contentLocales: ['zh-CN'],
+  launchRoute: '/g/idiom-chain/lobby',
 };

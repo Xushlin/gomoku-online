@@ -55,13 +55,90 @@ public class DomainErrorCodeTests
         instance.Code.Should().MatchRegex(KebabCase.ToString());
     }
 
+    /// <summary>
+    /// 每一个**具名静态工厂**产出的码 —— 即 <c>public static</c>、无参数以外只收字符串、
+    /// 返回某个 <see cref="DomainException"/> 子类的方法。
+    /// <para>
+    /// 这一半此前**不在遍历范围内**。<c>Codes_are_unique</c> 走的是类型,而
+    /// <c>InvalidMoveException.SelfCheck</c> 不是一个类型 —— 所以 <c>self-check</c> 从
+    /// <c>add-web-xiangqi</c> 引入起,就从未被那条唯一性断言覆盖过。一个码溜过遍历是潜在问题;
+    /// 成语接龙一次要加三个,那就是把同一个洞扩大三倍。**先补遍历,再加码。**
+    /// </para>
+    /// </summary>
+    private static IReadOnlyList<(string Owner, string Code)> FactoryCodes()
+    {
+        var results = new List<(string, string)>();
+        foreach (var type in DomainExceptionTypes())
+        {
+            var factories = type
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => typeof(DomainException).IsAssignableFrom(m.ReturnType))
+                .Where(m => m.GetParameters().All(p => p.ParameterType == typeof(string)));
+
+            foreach (var factory in factories)
+            {
+                var args = factory.GetParameters().Select(object? (_) => "probe").ToArray();
+                var produced = (DomainException)factory.Invoke(null, args)!;
+                results.Add(($"{type.Name}.{factory.Name}", produced.Code));
+            }
+        }
+        return results;
+    }
+
+    [Fact]
+    public void There_are_factory_codes_to_check()
+    {
+        // 一个反射走空了的测试会全绿地什么都不验 —— 而这正是本文件已经记过一次的失效方式。
+        FactoryCodes().Should().HaveCountGreaterThanOrEqualTo(4);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllFactoryCodes))]
+    public void Every_factory_code_is_kebab_case(string owner, string code)
+    {
+        code.Should().MatchRegex(KebabCase.ToString(), $"{owner} produces it");
+    }
+
+    /// <summary>工厂码的 theory 数据。</summary>
+    public static TheoryData<string, string> AllFactoryCodes()
+    {
+        var data = new TheoryData<string, string>();
+        foreach (var (owner, code) in FactoryCodes())
+        {
+            data.Add(owner, code);
+        }
+        return data;
+    }
+
     [Fact]
     public void Codes_are_unique()
     {
         // 两个错误共用一个码,客户端就分不开它们,而症状是「某一类失败突然说错了话」。
-        var codes = DomainExceptionTypes().Select(t => Construct(t).Code).ToList();
+        //
+        // 遍历**类型与工厂两半**。只走类型时,`self-check` 与成语接龙那三个都在断言之外 ——
+        // 而工厂正是"这种拒绝需要自己的文案、但不值得多一个异常类型"时的既定做法,
+        // 也就是说,最需要唯一码的那些恰好都在洞里。
+        var codes = DomainExceptionTypes().Select(t => Construct(t).Code)
+            .Concat(FactoryCodes().Select(f => f.Code))
+            .ToList();
 
         codes.Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void The_idiom_chain_rules_have_three_distinct_codes()
+    {
+        // 「不是成语」「接不上」「说过了」是三种不同的纠正。接龙的界面故意不在客户端判合法性,
+        // 所以服务端的拒绝是玩家了解规则的唯一途径 —— 共用一个码等于什么都没说。
+        var codes = new[]
+        {
+            InvalidMoveException.IdiomNotFound("x").Code,
+            InvalidMoveException.IdiomDoesNotLink("x").Code,
+            InvalidMoveException.IdiomAlreadyUsed("x").Code,
+        };
+
+        codes.Should().Equal("idiom-not-found", "idiom-does-not-link", "idiom-already-used");
+        codes.Should().NotContain("invalid-move");
     }
 
     [Fact]

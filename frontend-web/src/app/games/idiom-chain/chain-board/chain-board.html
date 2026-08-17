@@ -1,0 +1,63 @@
+<div class="flex flex-col gap-4">
+  <!-- The chain so far. Entries can be 15 characters and can contain a full-width
+       comma, so every one wraps rather than trusting a fixed width. -->
+  <ol class="flex flex-col gap-2" [attr.aria-label]="'idiom-chain.board.chain-label' | transloco">
+    @for (move of moves(); track move.ply) {
+      <li
+        class="border-border bg-surface flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-card border px-3 py-2"
+      >
+        <span class="text-muted shrink-0 text-xs tabular-nums">{{ move.ply }}</span>
+        <span
+          class="shrink-0 text-xs"
+          [class.font-semibold]="move.stone === 'Black'"
+          >{{
+            (move.stone === 'Black' ? 'game.room.seat-black' : 'game.room.seat-white') | transloco
+          }}</span
+        >
+        <span class="min-w-0 flex-1 text-lg leading-snug break-words">{{ move.text }}</span>
+      </li>
+    } @empty {
+      <li class="text-muted rounded-card border-border border border-dashed px-3 py-6 text-center text-sm">
+        {{ 'idiom-chain.board.empty' | transloco }}
+      </li>
+    }
+  </ol>
+
+  @if (!isSpectator()) {
+    <div class="border-border bg-surface rounded-card flex flex-col gap-2 border p-3">
+      @if (requiredFirstChar(); as head) {
+        <p class="text-muted flex flex-wrap items-center gap-x-1 text-sm">
+          <span>{{ 'idiom-chain.board.must-start-with' | transloco }}</span>
+          <span class="text-primary text-xl leading-none font-semibold">{{ head }}</span>
+        </p>
+      } @else {
+        <p class="text-muted text-sm">{{ 'idiom-chain.board.opening-move' | transloco }}</p>
+      }
+
+      <form class="flex flex-wrap gap-2" (submit)="$event.preventDefault(); submit()">
+        <input
+          type="text"
+          class="border-border bg-bg text-text rounded-card min-w-0 flex-1 border px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default disabled:opacity-60"
+          [attr.maxlength]="maxWordLength"
+          [attr.aria-label]="'idiom-chain.board.input-label' | transloco"
+          [attr.placeholder]="'idiom-chain.board.placeholder' | transloco"
+          [disabled]="inputDisabled()"
+          [value]="draft()"
+          (input)="onInput($event)"
+          autocomplete="off"
+        />
+        <button
+          type="submit"
+          class="bg-primary text-bg rounded-card shrink-0 px-4 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default disabled:opacity-50"
+          [disabled]="!canSubmit()"
+        >
+          {{ 'idiom-chain.board.submit' | transloco }}
+        </button>
+      </form>
+
+      @if (inputDisabled() && !readonly()) {
+        <p class="text-muted text-xs">{{ 'idiom-chain.board.waiting' | transloco }}</p>
+      }
+    </div>
+  }
+</div>

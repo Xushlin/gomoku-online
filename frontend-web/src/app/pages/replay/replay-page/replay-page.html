@@ -80,6 +80,8 @@
         [submitting]="false"
         [readonly]="true"
       />
+    } @else if (isIdiomChain()) {
+      <app-chain-board [state]="boardState()" [mySide]="'spectator'" [readonly]="true" />
     } @else if (boardSize(); as size) {
       <app-board
         [state]="boardState()"
