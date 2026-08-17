@@ -66,7 +66,7 @@ describe('DefaultLobbyDataService', () => {
     const { http } = setup();
 
     http.expectOne('/api/presence/online-count');
-    http.expectOne('/api/rooms');
+    http.expectOne('/api/rooms?gameKey=gomoku');
     http.expectOne('/api/users/me/active-rooms');
     http.expectOne((r) => r.url === '/api/leaderboard');
     http.verify();
@@ -76,7 +76,7 @@ describe('DefaultLobbyDataService', () => {
     const { http, service } = setup();
 
     http.expectOne('/api/presence/online-count').flush({ count: 7 });
-    http.expectOne('/api/rooms').flush([]);
+    http.expectOne('/api/rooms?gameKey=gomoku').flush([]);
     http.expectOne('/api/users/me/active-rooms').flush([]);
     http.expectOne((r) => r.url === '/api/leaderboard').flush({
       items: [],
@@ -101,7 +101,7 @@ describe('DefaultLobbyDataService', () => {
     service.rooms.refresh();
     service.rooms.refresh();
 
-    const pending = http.match('/api/rooms');
+    const pending = http.match('/api/rooms?gameKey=gomoku');
     expect(pending.length).toBe(1);
     pending[0].flush([]);
 
@@ -121,7 +121,7 @@ describe('DefaultLobbyDataService', () => {
     const { http, service } = setup();
 
     http.expectOne('/api/presence/online-count').flush({ count: 3 });
-    http.expectOne('/api/rooms').flush([]);
+    http.expectOne('/api/rooms?gameKey=gomoku').flush([]);
     http.expectOne('/api/users/me/active-rooms').flush([]);
     http.expectOne((r) => r.url === '/api/leaderboard').flush(null, {
       status: 500,
@@ -140,7 +140,7 @@ describe('DefaultLobbyDataService', () => {
 
     // Drain initial calls.
     http.expectOne('/api/presence/online-count').flush({ count: 1 });
-    http.expectOne('/api/rooms').flush([]);
+    http.expectOne('/api/rooms?gameKey=gomoku').flush([]);
     http.expectOne('/api/users/me/active-rooms').flush([]);
     http.expectOne((r) => r.url === '/api/leaderboard').flush({
       items: [],
@@ -151,16 +151,16 @@ describe('DefaultLobbyDataService', () => {
 
     // Go hidden. No refresh should fire automatically.
     setVisibility('hidden');
-    http.expectNone('/api/rooms');
+    http.expectNone('/api/rooms?gameKey=gomoku');
 
     // Return to visible — because the polled slices were just fetched, the
     // stale check (> half interval) is false, so nothing fires here either.
     setVisibility('visible');
-    http.expectNone('/api/rooms');
+    http.expectNone('/api/rooms?gameKey=gomoku');
 
     // But an explicit refresh still works.
     service.rooms.refresh();
-    http.expectOne('/api/rooms').flush([]);
+    http.expectOne('/api/rooms?gameKey=gomoku').flush([]);
     http.verify();
 
     // And readings stay consistent.

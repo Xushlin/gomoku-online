@@ -36,14 +36,22 @@ function sampleRoom(overrides: Partial<RoomSummary> = {}): RoomSummary {
 }
 
 describe('RoomsApiService', () => {
-  it('list() GETs /api/rooms', () => {
+  it('list() GETs /api/rooms with the game key in the query string', () => {
     const { svc, http } = setup();
     let data: readonly RoomSummary[] | undefined;
-    svc.list().subscribe((v) => (data = v));
-    const req = http.expectOne('/api/rooms');
+    svc.list('gomoku').subscribe((v) => (data = v));
+    const req = http.expectOne('/api/rooms?gameKey=gomoku');
     expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('gameKey')).toBe('gomoku');
     req.flush([sampleRoom()]);
     expect(data?.length).toBe(1);
+    http.verify();
+  });
+
+  it('list() scopes to whichever game it is given', () => {
+    const { svc, http } = setup();
+    svc.list('idiom-chain').subscribe();
+    http.expectOne('/api/rooms?gameKey=idiom-chain').flush([]);
     http.verify();
   });
 
@@ -66,41 +74,32 @@ describe('RoomsApiService', () => {
     http.verify();
   });
 
-  it('create() POSTs { name } to /api/rooms', () => {
+  it('create() POSTs { name, gameKey } to /api/rooms', () => {
     const { svc, http } = setup();
-    svc.create('My room').subscribe();
+    svc.create('My room', 'gomoku').subscribe();
     const req = http.expectOne('/api/rooms');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: 'My room' });
+    expect(req.request.body).toEqual({ name: 'My room', gameKey: 'gomoku' });
     req.flush(sampleRoom({ name: 'My room' }));
     http.verify();
   });
 
-  it('createAiRoom() POSTs { name, difficulty } to /api/rooms/ai when humanSide omitted', () => {
+  it('createAiRoom() POSTs all four fields to /api/rooms/ai', () => {
     const { svc, http } = setup();
-    svc.createAiRoom('Hard match', 'Hard').subscribe();
-    const req = http.expectOne('/api/rooms/ai');
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: 'Hard match', difficulty: 'Hard' });
-    req.flush({});
-    http.verify();
-  });
-
-  it('createAiRoom() POSTs { name, difficulty, humanSide } when humanSide given', () => {
-    const { svc, http } = setup();
-    svc.createAiRoom('Defense', 'Medium', 'White').subscribe();
+    svc.createAiRoom('Defense', 'Medium', 'White', 'gomoku').subscribe();
     const req = http.expectOne('/api/rooms/ai');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({
       name: 'Defense',
       difficulty: 'Medium',
       humanSide: 'White',
+      gameKey: 'gomoku',
     });
     req.flush({});
     http.verify();
   });
 
-  it('createAiRoom() POSTs gameKey when one is given', () => {
+  it('createAiRoom() carries a non-gomoku game key', () => {
     const { svc, http } = setup();
     svc.createAiRoom('ttt', 'Hard', 'Black', 'tictactoe').subscribe();
     const req = http.expectOne('/api/rooms/ai');
@@ -114,15 +113,16 @@ describe('RoomsApiService', () => {
     http.verify();
   });
 
-  it('createAiRoom() omits gameKey entirely rather than sending null', () => {
-    // Sending an explicit undefined serialises as null, which would override the
-    // backend's gomoku default instead of letting it apply. The key must be absent.
+  it('createAiRoom() never omits the game key', () => {
+    // The body used to be assembled conditionally so an omitted key would let the
+    // server substitute gomoku. The server no longer substitutes anything, so an
+    // absent key is a 400 — and a body built from four required arguments cannot
+    // produce one.
     const { svc, http } = setup();
-    svc.createAiRoom('legacy', 'Easy').subscribe();
-    const req = http.expectOne('/api/rooms/ai');
-    expect('gameKey' in (req.request.body as object)).toBe(false);
-    expect('humanSide' in (req.request.body as object)).toBe(false);
-    req.flush({});
+    svc.createAiRoom('legacy', 'Easy', 'Black', 'gomoku').subscribe();
+    const body = http.expectOne('/api/rooms/ai').request.body as object;
+    expect('gameKey' in body).toBe(true);
+    expect('humanSide' in body).toBe(true);
     http.verify();
   });
 

@@ -47,6 +47,7 @@ var createResp = await http.PostAsJsonAsync("/api/rooms/ai", new
 {
     name = "AI smoke",
     difficulty = "Easy",
+    gameKey = "gomoku",
 });
 createResp.EnsureSuccessStatusCode();
 var room = await createResp.Content.ReadFromJsonAsync<RoomStateDto>()

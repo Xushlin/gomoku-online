@@ -59,7 +59,7 @@ describe('CreateRoomDialog', () => {
     };
     comp.form.setValue({ name: 'My room' });
     comp.submit();
-    expect(rooms.create).toHaveBeenCalledWith('My room');
+    expect(rooms.create).toHaveBeenCalledWith('My room', 'gomoku');
     expect(dialogRef.close).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'r-1' }),
     );
