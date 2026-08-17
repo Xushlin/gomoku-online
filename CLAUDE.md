@@ -192,13 +192,25 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   What this does **not** do is add the game. The seam is shaped against a rule set that is written down and not yet implemented — exactly how `generalize-match-domain` was shaped against 象棋 and `generalize-puzzle-rules` against 华容道. Both held; neither was *proven* until the game landed. `add-idiom-chain` is the only thing that can check this one.
 
+- [x] **`add-idiom-chain`** — 成语接龙's rules. Backend only; no hub path and no UI yet, the same shape `add-xiangqi` shipped in.
+
+  **The inherited acceptance criterion held: the match aggregate was not touched.** `IdiomChainThroughRoomTests` plays a real chain through the real `Room`, and it proves more than 象棋's equivalent did — 象棋 showed a *slide* payload could cross the aggregate; this shows a game with **no board, no coordinates, and rules that never decide a winner** crosses the same one. `MoveApplication` was built without an `EndReason` on the argument that "how it ended" has three kinds and rules are only one; this is the first game where rules are *never* the one.
+
+  **The registry list becoming a function paid off immediately.** 成语接龙's rules need a dictionary, so `BuiltInGameRules.All` could not stay a static list. The tempting alternative — register this game separately in DI — is the defect this repo has fixed twice: a hand-written list a walking test believes is the registry. Making it `All(lexicon)` instead meant the `IsRated ⇒ SupportsHumanVsHuman` walk and the create-room capability walk covered the new game **without one assertion changing**.
+
+  A port was corrected here rather than routed around. `add-idiom-dictionary` built `IIdiomRepository.FindByWordAsync` *for this game* — its doc comment says so — and it is implemented, tested, and still has no production caller. It also cannot be the one this game uses: it is `async`, while `IGameRules.Apply` is synchronous, in the Domain, and called from inside an aggregate method. **The port picked the right consumer and the wrong call path.** A synchronous `IIdiomLexicon` now sits beside it; nothing was deleted.
+
+  Two rule decisions, both recorded with reasons rather than left implicit. **同音不算接上** — matching by sound doubles the branching factor and moves adjudication to something the client cannot see (多音字 give one idiom several "last sounds"), while a character is checkable by both sides from the text alone. And **no AI** — a dictionary lookup makes a near-unbeatable bot trivial, bot games are rated, so a ladder would rank bot-farming; `IsRated` stands precisely because there is no bot to farm. That makes `IsRated` this game's one genuine *judgement*, so its reason is on the record: a real human opponent pool, and outcomes that track vocabulary.
+
+  Verified live, not deduced: `GET /api/games` reports `idiom-chain` with `rows: null, cols: null` — the boardless branch `generalize-match-payload` opened, reached by a real game for the first time — and `POST /api/rooms { gameKey: "idiom-chain" }` returns **201** while `xiangqi` still returns 400. Also checked that the lexicon holds **30,895** words: an empty dictionary would have made every step above look identical and rejected every idiom.
+
 Not yet done — platform roadmap, in this order:
 
-1. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, **the first real consumer of the generalized lobby**, and the first consumer of the textual move payload. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
+1. `add-web-idiom-chain` — 成语接龙 has rules and no way to reach them. It needs a **hub path for a textual move** (`GomokuHub` has `MakeMove` and `MovePiece`, both positional), the lobby at `/g/idiom-chain/lobby` — **the generalized lobby's first real consumer** — and a UI that is a word list rather than a grid.
 
-   Its rules, as written into `generalize-match-payload`'s proposal: a move is an idiom; it is legal if the dictionary has it, if its first character matches the last character of the previous idiom, and if nobody has said it yet this game; the game ends when a player cannot answer in time. Still to decide when implementing: whether 同音 counts as a match (the common house rule), and whether it gets an AI at all — a dictionary lookup makes one trivial, which is an argument both for and against.
+   The board seam is now proven by a real game; the **lobby** seam still is not. Only gomoku uses it. This is the change that tests it, and the mitigation remains structural: a lobby is a page parameterised by a string, not an interface a game implements.
 
-   Two seams are now parameterised but unproven, and this one game tests both. The lobby is a page parameterised by a string, not an interface a game implements, so there is no polymorphism to get wrong. The move payload is a genuine sum type and has more room to be wrong.
+2. `add-score-attack-core` + `add-tetris` (俄罗斯方块) — the last category with no kernel at all.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
 

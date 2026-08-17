@@ -127,7 +127,7 @@ public class MovePayloadTests
         // Walks the registry, so a game added later is covered by existing. The
         // negative half matters most: a game that fakes 0×0 would satisfy "has a
         // size" while not being a board game at all.
-        foreach (var rules in BuiltInGameRules.All)
+        foreach (var rules in BuiltInGameRules.All(IdiomLexicons.Small))
         {
             if (rules is IBoardGameRules board)
             {
@@ -136,6 +136,6 @@ public class MovePayloadTests
             }
         }
 
-        BuiltInGameRules.All.Should().Contain(r => r is IBoardGameRules);
+        BuiltInGameRules.All(IdiomLexicons.Small).Should().Contain(r => r is IBoardGameRules);
     }
 }

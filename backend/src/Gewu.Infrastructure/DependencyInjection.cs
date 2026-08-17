@@ -3,10 +3,12 @@ using Gewu.Domain.Ai;
 using Gewu.Domain.Games.IdiomCrossword;
 using Gewu.Domain.Games.Klotski;
 using Gewu.Domain.Games.Abstractions;
+using Gewu.Domain.Idioms;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.TicTacToe;
 using Gewu.Domain.Games.Xiangqi;
 using Gewu.Infrastructure.Games;
+using Gewu.Infrastructure.Idioms;
 using Gewu.Domain.Puzzles;
 using Gewu.Infrastructure.Ai;
 using Gewu.Infrastructure.Authentication;
@@ -57,13 +59,15 @@ public static class DependencyInjection
 
         // 棋盘对抗棋种。加一个连 N 子棋种就是下面再来一行 —— 连规则类都不用写。
         // 一字棋是这句话的第一次兑现:它整个棋种就是 (3, 3, 3) 这三个数。
-        // 从 BuiltInGameRules.All 注册 —— 那是**唯一**的一份内置棋种清单。
+        // 从 BuiltInGameRules.All(...) 注册 —— 那是**唯一**的一份内置棋种清单。
         // 在这里逐个写 AddSingleton 会造出第二份,而两份清单迟早不一致。
-        foreach (var rules in BuiltInGameRules.All)
-        {
-            services.AddSingleton(rules);
-        }
-        services.AddSingleton<IGameRulesRegistry, GameRulesRegistry>();
+        //
+        // 清单现在是个函数:成语接龙的规则要一本词典,而词典要读库。整份注册表因此
+        // 由一个工厂构造,词典在第一次需要规则时载入一次(约 3 万行单列读取),
+        // 之后落子路径上零 I/O。
+        services.AddSingleton<IIdiomLexicon>(DbIdiomLexiconFactory.Create);
+        services.AddSingleton<IGameRulesRegistry>(sp =>
+            new GameRulesRegistry(BuiltInGameRules.All(sp.GetRequiredService<IIdiomLexicon>())));
 
         // 棋种 AI。与规则分开注册,因为注册单位不同:规则是"怎么判胜",AI 是"怎么思考"
         // —— 一个棋种可以先有规则(人人对战)、后有 AI。

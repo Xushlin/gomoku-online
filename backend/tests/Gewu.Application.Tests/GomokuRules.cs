@@ -1,5 +1,6 @@
 using Gewu.Domain.Ai;
 using Gewu.Domain.Games.Abstractions;
+using Gewu.Domain.Idioms;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.TicTacToe;
 
@@ -16,6 +17,12 @@ namespace Gewu.Application.Tests;
 internal static class GomokuRules
 {
     /// <summary>
+    /// 测试用的小词典 —— 成语接龙的规则需要一本。用生产实现装几条词,而不是假一个口出来。
+    /// </summary>
+    internal static readonly IIdiomLexicon Lexicon = new InMemoryIdiomLexicon(
+        ["一心一意", "意气风发", "发号施令"]);
+
+    /// <summary>
     /// 与生产 DI 一致的注册表 —— 取自 <see cref="BuiltInGameRules.All"/>,与
     /// <c>DependencyInjection</c> **同一份**清单。
     /// <para>
@@ -29,7 +36,7 @@ internal static class GomokuRules
     /// </para>
     /// </summary>
     internal static readonly IGameRulesRegistry Registry =
-        new StaticRegistry([.. BuiltInGameRules.All]);
+        new StaticRegistry([.. BuiltInGameRules.All(Lexicon)]);
 
     /// <summary>
     /// 只登记五子棋的注册表 —— 给那些需要"解析不出来"这条路径的测试用
