@@ -1,0 +1,68 @@
+<div class="flex flex-col gap-4">
+  <div class="flex items-baseline justify-between gap-2">
+    <h1 class="text-xl font-semibold tracking-tight">{{ titleKey() | transloco }}</h1>
+    <a
+      class="text-primary text-xs font-medium hover:underline focus-visible:underline"
+      routerLink="/home"
+      >{{ 'lobby.game-lobby.back-to-home' | transloco }}</a
+    >
+  </div>
+
+  @if (!loaded()) {
+    <!-- Hold the page until the descriptor lands: "not loaded yet" and "not a
+         game" must not look the same, and one is one response away from the other. -->
+    <div
+      class="bg-surface border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4"
+      data-testid="game-lobby-skeleton"
+    >
+      <div class="bg-border h-5 w-40 animate-pulse rounded"></div>
+      <div class="bg-border h-24 w-full animate-pulse rounded"></div>
+    </div>
+  } @else if (unavailable() === 'unknown') {
+    <section
+      class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4"
+      data-testid="game-lobby-unknown"
+    >
+      <h2 class="text-base font-semibold">
+        {{ 'lobby.game-lobby.unavailable.unknown-title' | transloco }}
+      </h2>
+      <p class="text-muted text-sm">
+        {{ 'lobby.game-lobby.unavailable.unknown-body' | transloco }}
+      </p>
+      <a
+        class="bg-primary text-bg rounded-card self-start px-3 py-1.5 text-sm font-semibold"
+        routerLink="/games"
+        >{{ 'lobby.game-lobby.unavailable.unknown-cta' | transloco }}</a
+      >
+    </section>
+  } @else if (unavailable() === 'ai-only') {
+    <section
+      class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4"
+      data-testid="game-lobby-ai-only"
+    >
+      <h2 class="text-base font-semibold">
+        {{ 'lobby.game-lobby.unavailable.ai-only-title' | transloco }}
+      </h2>
+      <p class="text-muted text-sm">
+        {{ 'lobby.game-lobby.unavailable.ai-only-body' | transloco }}
+      </p>
+      <a
+        class="bg-primary text-bg rounded-card self-start px-3 py-1.5 text-sm font-semibold"
+        [routerLink]="aiOnlyRoute()"
+        >{{ 'lobby.game-lobby.unavailable.ai-only-cta' | transloco }}</a
+      >
+    </section>
+  } @else {
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div class="lg:col-span-2">
+        <app-active-rooms-card />
+      </div>
+      <div class="flex flex-col gap-4">
+        <app-ai-game-card />
+        @if (showLeaderboard()) {
+          <app-leaderboard-card />
+        }
+      </div>
+    </div>
+  }
+</div>

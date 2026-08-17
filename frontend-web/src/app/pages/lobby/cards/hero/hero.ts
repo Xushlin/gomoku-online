@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { LobbyDataService } from '../../../../core/lobby/lobby-data.service';
+import { HomeDataService } from '../../../../core/lobby/home-data.service';
 
 @Component({
   selector: 'app-hero-card',
@@ -12,6 +12,6 @@ import { LobbyDataService } from '../../../../core/lobby/lobby-data.service';
 })
 export class HeroCard {
   protected readonly auth = inject(AuthService);
-  private readonly data = inject(LobbyDataService);
+  private readonly data = inject(HomeDataService);
   protected readonly onlineCount = this.data.onlineCount;
 }

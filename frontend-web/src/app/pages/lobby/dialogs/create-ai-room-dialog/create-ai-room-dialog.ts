@@ -9,7 +9,7 @@ import type {
   RoomState,
 } from '../../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../../core/api/rooms-api.service';
-import { GOMOKU_KEY } from '../../../../games/gomoku/game-key';
+import { LOBBY_GAME_KEY } from '../../../../core/lobby/lobby-game-key';
 import { isProblemDetails } from '../../../../core/auth/problem-details';
 import { mapProblemDetailsToForm } from '../../../auth/shared/problem-details.mapper';
 
@@ -27,6 +27,7 @@ const NAME_PATTERN = /\S/;
 })
 export class CreateAiRoomDialog {
   private readonly rooms = inject(RoomsApiService);
+  private readonly gameKey = inject(LOBBY_GAME_KEY);
   private readonly dialogRef = inject<DialogRef<CreateAiRoomResult>>(DialogRef);
   private readonly fb = inject(FormBuilder);
 
@@ -74,7 +75,7 @@ export class CreateAiRoomDialog {
     this.submitting.set(true);
     this.bannerKey.set(null);
     const { name, difficulty, humanSide } = this.form.getRawValue();
-    this.rooms.createAiRoom(name.trim(), difficulty, humanSide, GOMOKU_KEY).subscribe({
+    this.rooms.createAiRoom(name.trim(), difficulty, humanSide, this.gameKey).subscribe({
       next: (state) => {
         this.submitting.set(false);
         this.dialogRef.close(state);

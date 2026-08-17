@@ -43,6 +43,19 @@ export class StubGameCapabilities extends GameCapabilitiesService {
     );
   }
 
+  /** Registered, but human-vs-AI only — 一字棋 and 象棋 are the real cases. */
+  static aiOnly(...keys: readonly string[]): StubGameCapabilities {
+    return new StubGameCapabilities(
+      keys.map((gameKey) => ({
+        gameKey,
+        isRated: false,
+        supportsHumanVsHuman: false,
+        rows: 3,
+        cols: 3,
+      })),
+    );
+  }
+
   /** A stub that has not finished loading — for the "hold the render" cases. */
   static pending(): StubGameCapabilities {
     const stub = new StubGameCapabilities();

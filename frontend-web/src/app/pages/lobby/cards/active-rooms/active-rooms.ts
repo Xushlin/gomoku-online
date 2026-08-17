@@ -1,5 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Injector, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomSummary } from '../../../../core/api/models/room.model';
@@ -22,6 +22,7 @@ export class ActiveRoomsCard {
   private readonly rooms = inject(RoomsApiService);
   private readonly router = inject(Router);
   private readonly dialog = inject(Dialog);
+  private readonly injector = inject(Injector);
 
   protected readonly slice = this.data.rooms;
   protected readonly navigating = signal<string | null>(null);
@@ -33,12 +34,16 @@ export class ActiveRoomsCard {
   protected openCreateDialog(): void {
     const ref = this.dialog.open<CreateRoomResult>(CreateRoomDialog, {
       ariaLabel: 'Create room',
+      // The dialog reads LOBBY_GAME_KEY, which lives on this page's injector.
+      // CDK would otherwise construct it against the root injector, where the
+      // token does not exist.
+      injector: this.injector,
     });
     ref.closed.subscribe((result) => {
-      if (result) {
-        this.data.rooms.refresh();
-        this.data.myRooms.refresh();
-      }
+      // Only this page's room list needs nudging. "My active rooms" moved to
+      // `/home`, which is not mounted right now and fetches on its own mount —
+      // there is nothing stale to correct.
+      if (result) this.data.rooms.refresh();
     });
   }
 

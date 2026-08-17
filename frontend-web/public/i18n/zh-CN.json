@@ -126,7 +126,8 @@
       "resume": "回到对局",
       "you-are-black": "你执黑",
       "you-are-white": "你执白",
-      "you-are-spectator": "围观中"
+      "you-are-spectator": "围观中",
+      "game-label": "棋种"
     },
     "leaderboard": {
       "title": "排行榜",
@@ -172,7 +173,8 @@
       "title": "最近对局",
       "view-all": "查看全部",
       "empty": "还没有已结束的对局 —— 来一局开启你的对局记录吧。",
-      "error": "最近对局加载失败。"
+      "error": "最近对局加载失败。",
+      "game-label": "棋种"
     },
     "ai-game": {
       "title": "人机对战",
@@ -195,6 +197,22 @@
         "generic": "AI 对局创建失败,请重试。",
         "network": "网络错误,请重试。"
       }
+    },
+    "game-lobby": {
+      "title": "大厅",
+      "back-to-home": "返回主页",
+      "unavailable": {
+        "unknown-title": "没有这个游戏",
+        "unknown-body": "本平台上没有叫这个名字的游戏。去看看有哪些可以玩。",
+        "unknown-cta": "浏览游戏",
+        "ai-only-title": "目前只有人机对战",
+        "ai-only-body": "这个游戏还没有人人对战，所以没有房间列表。你仍然可以和电脑下。",
+        "ai-only-cta": "和电脑下"
+      }
+    },
+    "games-strip": {
+      "title": "开始一局",
+      "all-games": "全部游戏"
     }
   },
   "game": {

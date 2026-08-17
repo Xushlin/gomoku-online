@@ -126,7 +126,8 @@
       "resume": "Resume",
       "you-are-black": "You are Black",
       "you-are-white": "You are White",
-      "you-are-spectator": "Spectating"
+      "you-are-spectator": "Spectating",
+      "game-label": "Game"
     },
     "leaderboard": {
       "title": "Top players",
@@ -172,7 +173,8 @@
       "title": "Recent games",
       "view-all": "View all",
       "empty": "No finished games yet — play one to start your history.",
-      "error": "Couldn't load your recent games."
+      "error": "Couldn't load your recent games.",
+      "game-label": "Game"
     },
     "ai-game": {
       "title": "Play vs AI",
@@ -195,6 +197,22 @@
         "generic": "Couldn't start the AI game. Please try again.",
         "network": "Network error — please try again."
       }
+    },
+    "game-lobby": {
+      "title": "Lobby",
+      "back-to-home": "Back to home",
+      "unavailable": {
+        "unknown-title": "No such game here",
+        "unknown-body": "This platform doesn't have a game with that name. Have a look at what is available.",
+        "unknown-cta": "Browse games",
+        "ai-only-title": "Against the computer only",
+        "ai-only-body": "This game doesn't have human-vs-human matches yet, so there is no room list. You can still play the computer.",
+        "ai-only-cta": "Play the computer"
+      }
+    },
+    "games-strip": {
+      "title": "Jump into a game",
+      "all-games": "All games"
     }
   },
   "game": {

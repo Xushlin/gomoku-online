@@ -43,9 +43,14 @@ export const routes: Routes = [
     loadComponent: () => import('./games/xiangqi/ai-game/ai-game').then((m) => m.XiangqiAiGame),
   },
   {
-    // Per-game ladder. `/home`'s leaderboard card stays pinned to gomoku —
-    // it belongs to gomoku's lobby, and generalising it means rewriting
-    // `/home` as a normative path across five web specs.
+    // One game's lobby. The key comes from the URL and nowhere else, so a
+    // lobby is shareable, bookmarkable and reload-safe.
+    path: 'g/:gameKey/lobby',
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/lobby/game-lobby').then((m) => m.GameLobby),
+  },
+  {
+    // Per-game ladder.
     path: 'g/:gameKey/leaderboard',
     canMatch: [authGuard],
     loadComponent: () =>

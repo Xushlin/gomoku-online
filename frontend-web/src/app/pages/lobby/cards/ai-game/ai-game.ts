@@ -1,5 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomState } from '../../../../core/api/models/room.model';
@@ -18,11 +18,14 @@ import {
 })
 export class AiGameCard {
   private readonly dialog = inject(Dialog);
+  private readonly injector = inject(Injector);
   private readonly router = inject(Router);
 
   protected open(): void {
     const ref = this.dialog.open<CreateAiRoomResult>(CreateAiRoomDialog, {
       ariaLabel: 'New AI game',
+      // See ActiveRoomsCard: the dialog resolves LOBBY_GAME_KEY from here.
+      injector: this.injector,
     });
     ref.closed.subscribe((result: RoomState | undefined) => {
       if (result) void this.router.navigateByUrl(`/rooms/${result.id}`);
