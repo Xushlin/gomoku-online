@@ -30,7 +30,7 @@ Web 客户端 SHALL 提供路由 `/g/:gameKey/leaderboard`,懒加载(`loadCompon
 
 ---
 
-### Requirement: `LeaderboardApiService` 的每个方法都必须点名棋种
+### Requirement: `LeaderboardApiService` 的 `gameKey` 是必填参数
 
 前端 SHALL 让 `LeaderboardApiService` 的两个方法都带必填 `gameKey`:
 

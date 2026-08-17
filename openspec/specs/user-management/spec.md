@@ -656,9 +656,10 @@ SHALL 取自该用户 `gomoku` 那一行的 `UserGameStats`。
 `SearchUsersQuery` 的形状 MUST 不变(`Search` / `Page` / `PageSize`),handler SHALL 用
 `FindGameStatsForAsync(..., "gomoku", ...)` 一次批量取这一页用户的战绩。
 
-**不加 `gameKey` 参数**,理由不是省事:找人卡片是**五子棋大厅**的一个组件
-(`pages/lobby/cards/find-player`),让它按棋种参数化等于开始泛化大厅 —— 那是 roadmap 上单独的
-一步,且会动到 `/home` 在五份 web spec 里的规范地位。一个变更做一件事。记为缺口,不是遗漏。
+**不加 `gameKey` 参数**。此前给的理由是「找人卡片是五子棋大厅的一个组件」,那条理由自
+`generalize-lobby` 起不再成立 —— 找人卡片在 `/home`,而 `/home` 是**平台主页**,不属于任何棋种。
+结论没变,而且现在更直接:搜索的对象是**人**,不是某个棋种里的人。顺带显示的战绩固定取
+`gomoku`,那是一个可以商榷的展示选择,不是本契约的一部分。
 
 没有五子棋战绩行的用户 MUST 仍然出现在搜索结果里(显示初始值)—— 搜索的是"人",
 不是"上过榜的人";找人卡片要能找到刚注册的人。这与排行榜的成员资格规则**刻意不同**。

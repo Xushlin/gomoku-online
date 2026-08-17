@@ -1,5 +1,23 @@
 # web-lobby Specification Delta
 
+## RENAMED Requirements
+
+四条 requirement 连**标题**一起改了 —— 大厅拆成两个页面之后,「大厅页」「四张卡片」
+「LobbyDataService」这些名字说的都不再是它们描述的东西。archive 的应用顺序是
+RENAMED → REMOVED → MODIFIED → ADDED,所以下面 MODIFIED 用的是新标题。
+
+- FROM: ### Requirement: `/home` 路由是受保护的大厅页,渲染 Lobby 组件
+- TO: ### Requirement: `/home` 路由是受保护的平台主页,渲染 Lobby 组件
+
+- FROM: ### Requirement: 四张卡片的可视契约 —— loading / empty / error / data 四态
+- TO: ### Requirement: `/home` 的卡片是账号范围的 —— loading / empty / error / data 四态
+
+- FROM: ### Requirement: `LobbyDataService` —— 页面级 Signal store + 每片独立轮询
+- TO: ### Requirement: 页面级 Signal store —— 两个服务共用一套轮询引擎
+
+- FROM: ### Requirement: 大厅 "Play vs AI" 卡片提供创建 AI 对局入口
+- TO: ### Requirement: "Play vs AI" 卡片提供创建 AI 对局入口
+
 ## MODIFIED Requirements
 
 ### Requirement: `/home` 路由是受保护的平台主页,渲染 Lobby 组件
