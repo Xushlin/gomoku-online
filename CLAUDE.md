@@ -174,15 +174,19 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   Found **in the browser, and only with data on screen**: at 375 px the room row overflowed 8 px, because Angular's default `preserveWhitespaces: false` strips the whitespace between adjacent inline spans and leaves the line with no break opportunity. Pre-existing, untouched markup — invisible because *every previous 375 px check ran against an empty room list*. **A "no horizontal scroll" check passes trivially on an empty list.**
 
+- [x] **`lobby-return-target`** — leaving a game returns to that game, not to `/home`. `gameEntryRoute(catalog, gameKey)` reads the manifest's `launchRoute`, falling back to `/home`.
+
+  The rule came out simpler than planned. Because `generalize-lobby` set gomoku's `launchRoute` to its lobby, **the manifest already answers the question** — no `supportsHumanVsHuman` branch, and no loading gate, because the catalogue is a static import while `GameCapabilitiesService` is not. Games with no lobby land on their own AI page, which is where you start another one.
+
+  Two things I had wrong, both corrected by looking rather than reasoning. The roadmap said **five** call sites; it is **three** — the other two fire when the room could not be loaded, so there is no game key to read and `/home` is the only honest answer. And the 404 navigation is not on the initial-load path at all: initial load renders the not-found panel, and only `rehydrate()` (reconnect, room gone) navigates. The first test aimed at the wrong path and failed; **it was right to fail.**
+
+  The replay page was in scope and is not: its only exit link lives in the 404 branch and was already correct. The alternative to dropping it was inventing a button nobody asked for so a spec I had written would come true.
+
 Not yet done — platform roadmap, in this order:
 
-1. `lobby-return-target` — `room-page` navigates to `/home` from five call sites (leave, dissolve, room-dissolved, 404, game-ended dialog). Now wrong for every game: you finish a match and land on a page with no trace of it. Split out of `generalize-lobby` because its two normative homes in `web-game-board` are among the longest requirements in the repo and a MODIFIED delta must reproduce a requirement whole — doubling that change's spec surface for something that blocks nothing was the wrong trade.
-
-2. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, and **the first real consumer of the generalized lobby**. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
+1. `add-idiom-chain` (成语接龙) — the first game that genuinely needs human-vs-human, and **the first real consumer of the generalized lobby**. Then `add-score-attack-core` + `add-tetris` (俄罗斯方块), the last category with no kernel at all.
 
    The lobby is parameterised but not yet *proven* general: only gomoku uses it today. The mitigation is structural rather than hopeful — a lobby is a page parameterised by a string, not an interface a game implements, so there is no polymorphism to get wrong. 成语接龙 is what actually tests it.
-
-   Sequencing note, and it is the repo's own lesson: generalizing the lobby with only gomoku using it is **again** shaping a seam against a single implementation. The mitigation is that a lobby is a page parameterised by a key, not an interface games implement — there is no polymorphism to get wrong. But nothing proves it general until 成语接龙 uses it, and that should be said plainly rather than assumed away.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
 

@@ -12,6 +12,8 @@ import { boardSizeFor } from '../../../games/board-size';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
+import { gameEntryRoute, PLATFORM_HOME } from '../../../games/game-entry-route';
+import { GameCatalogService } from '../../../games/game-catalog.service';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
 import { XiangqiBoard, type PieceMoveEvent } from '../../../games/xiangqi/board/xiangqi-board';
 import { Board } from './board/board';
@@ -41,6 +43,7 @@ export class RoomPage implements OnInit, OnDestroy {
   private readonly sound = inject(SoundService);
   private readonly dialog = inject(Dialog);
   private readonly capabilities = inject(GameCapabilitiesService);
+  private readonly catalog = inject(GameCatalogService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly state = this.hub.state;
@@ -96,6 +99,17 @@ export class RoomPage implements OnInit, OnDestroy {
    * output bindings for dynamic components — a real guarantee for an extension that
    * is not coming. If a third shape ever appears, extracting one then costs the same.
    */
+  /**
+   * Where leaving this room goes — the game's own entry point.
+   *
+   * Falls back to `/home` on its own when the state has not arrived, which is
+   * why the 404 path below spells out `PLATFORM_HOME` instead of relying on
+   * that: there the fallback is the answer, not a stand-in for one.
+   */
+  protected readonly exitRoute = computed(() =>
+    gameEntryRoute(this.catalog, this.state()?.gameKey),
+  );
+
   protected readonly isXiangqi = computed(() => this.state()?.gameKey === XIANGQI_KEY);
 
   protected readonly mySide = computed<'black' | 'white' | 'spectator'>(() => {
@@ -179,7 +193,7 @@ export class RoomPage implements OnInit, OnDestroy {
     });
     this.hub.roomDissolved$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => void this.router.navigateByUrl('/home'));
+      .subscribe(() => void this.router.navigateByUrl(this.exitRoute()));
     this.tickHandle = setInterval(() => this.now.set(Date.now()), TICK_MS);
     void this.initialLoad(id);
   }
@@ -216,7 +230,9 @@ export class RoomPage implements OnInit, OnDestroy {
       this.hub.applySnapshot(await firstValueFrom(this.rooms.getById(id)));
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 404) {
-        void this.router.navigateByUrl('/home');
+        // Not `exitRoute()`: the room never loaded, so there is no game
+        // key to read. `/home` is the only honest answer here.
+        void this.router.navigateByUrl(PLATFORM_HOME);
       }
     }
   }
@@ -302,7 +318,7 @@ export class RoomPage implements OnInit, OnDestroy {
       state?.status === 'Waiting' && myId && state.host.id === myId;
     const op = isHostOfWaiting ? this.rooms.dissolve(id) : this.rooms.leave(id);
     op.subscribe({
-      next: () => void this.router.navigateByUrl('/home'),
+      next: () => void this.router.navigateByUrl(this.exitRoute()),
       error: () => this.flashError('game.errors.generic'),
     });
   }
@@ -332,7 +348,7 @@ export class RoomPage implements OnInit, OnDestroy {
     const ref = this.dialog.open<GameEndedDialogResult>(GameEndedDialog, { data });
     ref.closed.subscribe((outcome) => {
       this.gameEndedDialogOpen = false;
-      if (outcome === 'home') void this.router.navigateByUrl('/home');
+      if (outcome === 'home') void this.router.navigateByUrl(this.exitRoute());
       else if (outcome === 'replay' && this.roomId)
         void this.router.navigateByUrl(`/replay/${this.roomId}`);
     });

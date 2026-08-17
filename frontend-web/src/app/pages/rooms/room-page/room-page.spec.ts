@@ -1,15 +1,19 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
+import {
+  DefaultGameCatalogService,
+  GameCatalogService,
+} from '../../../games/game-catalog.service';
 import { SoundService } from '../../../core/sound/sound.service';
 import { RoomPage } from './room-page';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
@@ -114,6 +118,7 @@ function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS
     ],
     providers: [
       { provide: GameCapabilitiesService, useValue: capabilities },
+      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: GameHubService, useValue: hub },
@@ -178,10 +183,69 @@ describe('RoomPage', () => {
     expect(text.toLowerCase()).toContain('reconnecting');
   });
 
-  it('roomDissolved$ emission navigates home', async () => {
+  it('roomDissolved$ emission returns to the game the room belonged to', async () => {
+    const { fixture, hub, router } = mount();
+    await Promise.resolve();
+    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' } as ReturnType<typeof makeRoomState>);
+    fixture.detectChanges();
+
+    hub.roomDissolved$.next({ roomId: 'r-1' });
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/g/gomoku/lobby');
+  });
+
+  it('a room whose game key the client cannot resolve falls back to the platform home', async () => {
+    // The stub room carries no gameKey, standing in for a server newer than this
+    // build. Guessing `/g/<key>/lobby` would route to a "no such game" page.
     const { hub, router } = mount();
     await Promise.resolve();
+
     hub.roomDissolved$.next({ roomId: 'r-1' });
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
+  });
+
+  it('leaving a room returns to that game, not the platform home', async () => {
+    const { fixture, hub, rooms, router } = mount();
+    await Promise.resolve();
+    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' } as ReturnType<typeof makeRoomState>);
+    fixture.detectChanges();
+
+    (fixture.componentInstance as unknown as { handleLeave: () => void }).handleLeave();
+
+    expect(rooms.leave).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/g/gomoku/lobby');
+  });
+
+  it('leaving an AI room of a game with no lobby returns to that game', async () => {
+    // 象棋 has no room list, but /g/xiangqi is where you start another one.
+    const { fixture, hub, router } = mount();
+    await Promise.resolve();
+    hub.state.set({ ...makeRoomState(), gameKey: 'xiangqi' } as ReturnType<typeof makeRoomState>);
+    fixture.detectChanges();
+
+    (fixture.componentInstance as unknown as { handleLeave: () => void }).handleLeave();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/g/xiangqi');
+  });
+
+  it('a room that vanished during a reconnect goes to the platform home', async () => {
+    // This is the only 404 that navigates: `initialLoad` renders the not-found
+    // panel instead. On rehydrate the room is gone, so there is no game key left
+    // to read — `exitRoute()` would answer from stale state, and `/home` is the
+    // honest answer.
+    const { fixture, hub, rooms, router } = mount();
+    await new Promise((r) => setTimeout(r, 0));
+    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' } as ReturnType<typeof makeRoomState>);
+    fixture.detectChanges();
+
+    rooms.getById.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    hub.connectionStatus.set('reconnecting');
+    fixture.detectChanges();
+    hub.connectionStatus.set('connected');
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r, 0));
+
     expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
   });
 });
