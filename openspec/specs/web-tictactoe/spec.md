@@ -9,7 +9,7 @@ TBD - created by archiving change add-web-tictactoe-ai. Update Purpose after arc
 
 未登录用户访问 MUST 被 `authGuard` 重定向到 `/login?returnUrl=/g/tictactoe`。
 
-本路由的加入 MUST NOT 改变任何既有路由、guard、重定向目标或落地页 —— `/home` 仍是登录后的落地页与五子棋大厅。本变更**刻意不做**一字棋的大厅、人人对战入口与排行榜卡片(见 design D5)。
+本路由的加入 MUST NOT 改变任何既有路由、guard、重定向目标或落地页 —— `/home` 仍是登录后的落地页(自 `generalize-lobby` 起它是**平台主页**,不再是五子棋大厅)。一字棋没有人人对战,所以 `/g/tictactoe` 这个人机页面就是它的全部入口;`/g/tictactoe/lobby` 会渲染「目前只有人机对战」并指回这里。
 
 #### Scenario: 懒加载
 - **WHEN** 检视 `app.routes.ts` 中的 `g/tictactoe` 条目

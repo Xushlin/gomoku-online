@@ -7,13 +7,11 @@ TBD - created by archiving change add-web-per-game-rating. Update Purpose after 
 
 Web 客户端 SHALL 提供路由 `/g/:gameKey/leaderboard`,懒加载(`loadComponent`)且受鉴权守卫保护,渲染该棋种的分页排行榜。
 
-`/g/<key>` 已经是每棋种的命名空间(`/g/tictactoe`、`/g/idiom-crossword`),榜跟着走。
+`/g/<key>` 已经是每棋种的命名空间(`/g/xiangqi`、`/g/gomoku/lobby`),榜跟着走。
 
-**`/home` 的排行榜卡片 MUST NOT 改动**,仍然钉死五子棋。它是**五子棋大厅**的一张卡片;给它加
-棋种切换等于开始泛化大厅,而 `/home` 在五份 web spec 里是规范路径。那是 roadmap 上单独的一步。
+排行榜**卡片**归 `/g/:gameKey/lobby`,棋种取自该路由参数。它此前钉死在 `/home` 上并钉死五子棋,理由是"泛化大厅是 roadmap 上单独的一步"——那一步已经走了(`generalize-lobby`)。
 
-副作用记录在案:有一段时间会有两个入口看同一个五子棋榜(`/home` 的卡片与
-`/g/gomoku/leaderboard`)。这是**已知重复**,不是遗漏 —— 大厅泛化那一步会消掉它。
+此前记录在案的副作用「有一段时间会有两个入口看同一个五子棋榜」**已消除**:`/home` 不再有榜卡,`/g/gomoku/lobby` 的卡片与 `/g/gomoku/leaderboard` 的整页是"摘要"与"全量分页"的关系,不是两个入口看同一份东西。
 
 #### Scenario: 路由懒加载
 - **WHEN** 用户首次导航到 `/g/gomoku/leaderboard`
@@ -23,9 +21,15 @@ Web 客户端 SHALL 提供路由 `/g/:gameKey/leaderboard`,懒加载(`loadCompon
 - **WHEN** 未登录用户访问该路由
 - **THEN** 走既有鉴权守卫,重定向到登录页
 
-#### Scenario: `/home` 卡片不受影响
-- **WHEN** 审阅 `/home` 的排行榜卡片
-- **THEN** 它仍然不带 `gameKey` 调用,仍然显示五子棋前若干名
+#### Scenario: `/home` 不再有榜卡
+- **WHEN** 审阅 `/home`
+- **THEN** MUST NOT 存在排行榜卡片,也 MUST NOT 发出 `GET /api/leaderboard`
+
+#### Scenario: 大厅卡片跟随路由棋种
+- **WHEN** 用户打开 `/g/gomoku/lobby`
+- **THEN** 榜卡调 `top('gomoku', 10)`;打开另一个计分棋种的大厅时,同一段代码以那个键取数
+
+---
 
 ### Requirement: 排行榜页四态齐全,且空态说人话
 
@@ -56,9 +60,9 @@ Web 客户端 SHALL 提供路由 `/g/:gameKey/leaderboard`,懒加载(`loadCompon
 
 ### Requirement: `LeaderboardApiService` 的 `gameKey` 是必填参数
 
-`LeaderboardApiService` 的方法签名 MUST 把 `gameKey` 作为**必填**参数:
+前端 SHALL 让 `LeaderboardApiService` 的两个方法都带必填 `gameKey`:
 
-```
+```ts
 abstract top(gameKey: string, count: number): Observable<readonly LeaderboardEntry[]>;
 abstract getPage(gameKey: string, page: number, pageSize: number)
     : Observable<PagedResult<LeaderboardEntry>>;
@@ -67,19 +71,17 @@ abstract getPage(gameKey: string, page: number, pageSize: number)
 服务层 MUST NOT 提供缺省棋种 —— 与后端 `GetLeaderboardQuery.GameKey` 必填同一条纪律:
 **服务不猜自己在被问哪个棋种**。
 
-后端的缺省之所以存在,是因为 controller 是向后兼容的边界(已发布客户端不送这个参数)。前端没有
-这层义务:每个调用点都知道自己在看哪个棋种,让服务替它猜,只会把一个"忘了传"变成
-"悄悄给了五子棋的数据" —— 而那个错误在屏幕上是看不出来的。
+每个调用点都知道自己在看哪个棋种,让服务替它猜,只会把一个"忘了传"变成"悄悄给了五子棋的数据"——而那个错误在屏幕上是看不出来的。
 
-`/home` 的卡片因此显式传 `'gomoku'`,把它此刻的钉死变成**代码里写着的事实**而不是省略造成的默认。
+大厅的榜卡因此传路由里的棋种键,而不是任何字面量。
 
 #### Scenario: URL 带上棋种
 - **WHEN** 调 `getPage('xiangqi', 2, 20)`
 - **THEN** 请求 URL 为 `/api/leaderboard?gameKey=xiangqi&page=2&pageSize=20`(参数顺序不限)
 
-#### Scenario: 大厅卡片显式钉死
-- **WHEN** 审阅 `/home` 排行榜卡片的调用
-- **THEN** 它显式传 `'gomoku'`,MUST NOT 依赖任何缺省
+#### Scenario: 大厅卡片用路由的键
+- **WHEN** 审阅 `/g/:gameKey/lobby` 榜卡的调用
+- **THEN** 它传路由参数,MUST NOT 出现 `'gomoku'` 字面量,MUST NOT 依赖任何缺省
 
 ### Requirement: Rank 是全局名次,前三名图标沿用既有规则
 
