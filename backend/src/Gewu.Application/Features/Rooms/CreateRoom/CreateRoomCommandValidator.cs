@@ -6,7 +6,10 @@ namespace Gewu.Application.Features.Rooms.CreateRoom;
 
 /// <summary>
 /// <see cref="CreateRoomCommand"/> 校验器:Name 非空,trim 后 3–50 字符;
-/// GameKey 必须是已登记的棋种。
+/// GameKey 必须是已登记**且开放人人对战**的棋种。
+/// <para>
+/// 第二条是本命令独有的 —— 它建的是真人房。<c>CreateAiRoomCommandValidator</c> 只有第一条。
+/// </para>
 /// </summary>
 public sealed class CreateRoomCommandValidator : AbstractValidator<CreateRoomCommand>
 {
@@ -20,5 +23,6 @@ public sealed class CreateRoomCommandValidator : AbstractValidator<CreateRoomCom
             .WithMessage("Room name length must be between 3 and 50 characters.");
 
         RuleFor(x => x.GameKey).MustBeARegisteredGameKey(rules);
+        RuleFor(x => x.GameKey).MustSupportHumanVsHuman(rules);
     }
 }

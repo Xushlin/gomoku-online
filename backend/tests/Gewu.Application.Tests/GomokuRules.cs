@@ -16,19 +16,27 @@ namespace Gewu.Application.Tests;
 internal static class GomokuRules
 {
     /// <summary>
-    /// 与生产 DI 一致的注册表:五子棋 + 一字棋。
+    /// 与生产 DI 一致的注册表 —— 取自 <see cref="BuiltInGameRules.All"/>,与
+    /// <c>DependencyInjection</c> **同一份**清单。
     /// <para>
-    /// 名字里的 "Gomoku" 是历史包袱 —— 这个 helper 现在服务全部内置棋种。
-    /// 留着不改是因为它只被测试引用,改名会让本变更的 diff 里多出一堆与一字棋无关的噪声,
-    /// 而本变更的 diff 大小本身就是要被拿来读的数据(见 tasks §7)。
+    /// 它此前手写成 <c>{ Gomoku, TicTacToe }</c>,注释却写着"与生产 DI 一致"。象棋自
+    /// <c>add-xiangqi</c> 起就在生产注册表里,于是本项目的每一条按键解析规则的测试,都在
+    /// 一个没有象棋的世界里跑,而注释让人相信不是这样。这正是 <c>add-xiangqi</c> 已经
+    /// 修过一次的那个缺陷 —— 它建了 <c>All</c> 这份唯一清单,却没回头把这个夹具接上去。
+    /// </para>
+    /// <para>
+    /// 名字里的 "Gomoku" 是历史包袱 —— 这个 helper 服务全部内置棋种。
     /// </para>
     /// </summary>
     internal static readonly IGameRulesRegistry Registry =
-        new StaticRegistry(BuiltInGameRules.Gomoku, BuiltInGameRules.TicTacToe);
+        new StaticRegistry([.. BuiltInGameRules.All]);
 
     /// <summary>
     /// 只登记五子棋的注册表 —— 给那些需要"解析不出来"这条路径的测试用
     /// (房间指向本构建不认识的棋种 → 404)。
+    /// <para>
+    /// 这一个**故意**是手写的残缺清单,那正是它的用途;上面那个不是。
+    /// </para>
     /// </summary>
     internal static readonly IGameRulesRegistry GomokuOnly =
         new StaticRegistry(BuiltInGameRules.Gomoku);
