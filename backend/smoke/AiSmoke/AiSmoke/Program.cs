@@ -12,7 +12,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.SignalR.Client;
 
-const string BaseUrl = "http://localhost:5145";
+// 地址从环境变量取,默认仍是本地开发端口 —— 手跑的用法一个字不变。
+// 硬编码它曾是这个 smoke "只能人手跑"的原因之一,而**一个不跑的测试等于没有测试**。
+var BaseUrl = Environment.GetEnvironmentVariable("SMOKE_BASE_URL") ?? "http://localhost:5145";
 var http = new HttpClient { BaseAddress = new Uri(BaseUrl) };
 
 var passed = 0;
@@ -140,6 +142,16 @@ Console.WriteLine("=== 8. Per-game rating ===");
 var games = await http.GetFromJsonAsync<List<GameDescriptor>>("/api/games");
 Assert(games is not null && games.Any(g => g.GameKey == "gomoku" && g.IsRated), "gomoku is rated");
 Assert(games is not null && games.Any(g => g.GameKey == "tictactoe" && !g.IsRated), "tictactoe is not rated");
+// enable-xiangqi-human-play 之后:象棋计分,一字棋是唯一不计分的对战棋种。
+Assert(games is not null && games.Any(g => g.GameKey == "xiangqi" && g.IsRated && g.SupportsHumanVsHuman),
+    "xiangqi is rated and open to human play");
+Assert(games is not null && games.Count(g => !g.IsRated) == 1, "tictactoe is the only unrated versus game");
+// generalize-match-payload 开出的无盘面分支,由成语接龙第一次真正走到。
+Assert(games is not null && games.Any(g => g.GameKey == "idiom-chain" && g.Rows is null && g.Cols is null),
+    "idiom-chain reports no board");
+// enforce-ai-availability:成语接龙故意没有机器人。
+Assert(games is not null && games.Any(g => g.GameKey == "idiom-chain" && !g.SupportsAi),
+    "idiom-chain has no AI");
 
 var tttBoard = await http.GetFromJsonAsync<PagedResult<LeaderboardEntry>>(
     "/api/leaderboard?gameKey=tictactoe");
@@ -169,5 +181,12 @@ record MoveMadePayload(int Ply, int Row, int Col, string Stone, DateTime PlayedA
 record GameEndedPayload(string Result, Guid? WinnerUserId, DateTime EndedAt);
 record LeaderboardEntry(int Rank, Guid UserId, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws);
 record PagedResult<T>(List<T> Items, int Total, int Page, int PageSize);
-record GameDescriptor(string GameKey, bool IsRated, bool SupportsHumanVsHuman, int Rows, int Cols);
+// Rows / Cols 必须可空:generalize-match-payload 起,无盘面的棋种(成语接龙)报 null。
+// SupportsAi 是 enforce-ai-availability 加的。
+//
+// **这一行此前是 `int Rows, int Cols`,于是本 smoke 在步骤 8 运行时崩溃** —— 编译得过,
+// 因为它只是个 DTO;跑起来就炸,因为 /api/games 里真有 null。没人发现,因为它不在 CI 里。
+// 这正是把它接进 CI 的最强论据,而且它是自己给出的。
+record GameDescriptor(
+    string GameKey, bool IsRated, bool SupportsHumanVsHuman, bool SupportsAi, int? Rows, int? Cols);
 record UserPublicProfileDto(Guid Id, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws, DateTime CreatedAt);
