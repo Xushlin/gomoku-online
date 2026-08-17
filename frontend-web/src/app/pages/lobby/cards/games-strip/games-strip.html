@@ -1,0 +1,29 @@
+<section
+  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col gap-3 border p-4"
+>
+  <div class="flex items-baseline justify-between gap-2">
+    <h2 class="text-base font-semibold tracking-tight">
+      {{ 'lobby.games-strip.title' | transloco }}
+    </h2>
+    <a
+      class="text-primary text-xs font-medium hover:underline focus-visible:underline"
+      routerLink="/games"
+      >{{ 'lobby.games-strip.all-games' | transloco }}</a
+    >
+  </div>
+
+  <ul class="flex flex-wrap gap-2">
+    @for (game of games; track game.key) {
+      <li>
+        <a
+          class="border-border bg-bg text-text rounded-card hover:border-primary focus-visible:border-primary flex items-center gap-2 border px-3 py-2 text-sm transition-colors"
+          [routerLink]="game.launchRoute"
+          [attr.data-game-key]="game.key"
+        >
+          <span aria-hidden="true" class="text-base leading-none">{{ game.icon }}</span>
+          <span>{{ game.titleKey | transloco }}</span>
+        </a>
+      </li>
+    }
+  </ul>
+</section>

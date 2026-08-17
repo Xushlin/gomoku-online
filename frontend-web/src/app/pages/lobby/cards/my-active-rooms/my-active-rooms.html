@@ -39,7 +39,7 @@
               <span class="truncate text-sm font-semibold">{{ room.name }}</span>
               <span class="text-muted text-xs">
                 {{ sideKey(room) | transloco }}
-                <span class="mx-1">·</span>
+                <span>·</span>
                 @if (room.status === 'Waiting') {
                   {{ 'lobby.rooms.status-waiting' | transloco }}
                 } @else if (room.status === 'Playing') {

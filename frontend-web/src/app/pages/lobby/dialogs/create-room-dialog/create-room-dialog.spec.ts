@@ -2,6 +2,7 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { LOBBY_GAME_KEY } from '../../../../core/lobby/lobby-game-key';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -41,6 +42,7 @@ function mount() {
       provideHttpClientTesting(),
       { provide: RoomsApiService, useValue: rooms },
       { provide: DialogRef, useValue: dialogRef },
+      { provide: LOBBY_GAME_KEY, useValue: 'gomoku' },
     ],
   });
   const fixture = TestBed.createComponent(CreateRoomDialog);

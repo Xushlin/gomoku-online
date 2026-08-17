@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomSummary } from '../../../../core/api/models/room.model';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { LobbyDataService } from '../../../../core/lobby/lobby-data.service';
+import { HomeDataService } from '../../../../core/lobby/home-data.service';
 
 type Side = 'black' | 'white' | 'spectator';
 
@@ -15,7 +15,7 @@ type Side = 'black' | 'white' | 'spectator';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MyActiveRoomsCard {
-  private readonly data = inject(LobbyDataService);
+  private readonly data = inject(HomeDataService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
