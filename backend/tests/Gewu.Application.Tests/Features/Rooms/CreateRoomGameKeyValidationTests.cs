@@ -59,9 +59,24 @@ public class CreateRoomGameKeyValidationTests
         ai.Errors.Should().Contain(e => e.PropertyName == nameof(CreateAiRoomCommand.GameKey));
     }
 
+    /// <summary>
+    /// 无人人对战的棋种被拒真人房。
+    /// <para>
+    /// <b>这条 Theory 此前还有一个 <c>[InlineData(GameKeys.Xiangqi)]</c>,而
+    /// <c>enable-xiangqi-human-play</c> 让它变成假的。</b> 举例用的棋种会随能力变化而失效,
+    /// 而这个仓库刚为同一件事付过账:<c>enforce-human-vs-human</c> 发现本文件同时断言了洞的两半 ——
+    /// 一半是洞本身、一半自 <c>add-xiangqi</c> 起就是假的 —— 而它一直是绿的。
+    /// </para>
+    /// <para>
+    /// 那次能一直绿是因为夹具里没有象棋;这次会立刻变红,因为夹具已经接到
+    /// <c>BuiltInGameRules.All</c> 上了。**同一个缺陷的第二次,由第一次修的机制当场拦下。**
+    /// </para>
+    /// <para>
+    /// 一字棋现在是这一侧唯一的样本 —— 见 <see cref="BuiltInGameRules.TicTacToe"/> 的说明。
+    /// </para>
+    /// </summary>
     [Theory]
     [InlineData(GameKeys.TicTacToe)]
-    [InlineData(GameKeys.Xiangqi)]
     public void A_game_without_human_play_is_refused_a_human_room_but_allowed_an_ai_room(string gameKey)
     {
         var human = Human.Validate(HumanRoom(gameKey));
@@ -73,6 +88,26 @@ public class CreateRoomGameKeyValidationTests
 
         // 人机正是这些棋种支持的玩法。在这条路径上也拦住,等于把它们逐出平台。
         Ai.Validate(AiRoom(gameKey)).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Xiangqi_now_opens_both_a_human_room_and_an_ai_room()
+    {
+        // 象棋此前只有人机。大厅泛化之后它两条路径都开 —— 而它此前**不**开人人对战这件事
+        // 在四个地方被当成正确断言钉住过,这是其中一处的正面替代。
+        Human.Validate(HumanRoom(GameKeys.Xiangqi)).IsValid.Should().BeTrue();
+        Ai.Validate(AiRoom(GameKeys.Xiangqi)).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Exactly_one_registered_game_still_refuses_human_play()
+    {
+        // 象棋翻过去之后,一字棋是拒绝那一侧**唯一**的样本。哪天它也开了人人对战,
+        // 下面那条遍历断言("两种结果都要出现过")会立刻变红 —— 那是想要的:
+        // 它会说"这条遍历现在只走一边了",而不是全绿地什么都不验。
+        var refusing = GomokuRules.Registry.All.Where(r => !r.SupportsHumanVsHuman).ToList();
+
+        refusing.Should().ContainSingle().Which.GameKey.Should().Be(GameKeys.TicTacToe);
     }
 
     /// <summary>

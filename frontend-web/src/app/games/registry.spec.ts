@@ -41,12 +41,15 @@ describe('GAME_REGISTRY', () => {
     expect(crossword?.contentLocales).toEqual(['zh-CN']);
   });
 
-  it('has 中国象棋 available at its own route', () => {
+  it('has 中国象棋 available, entering through its lobby', () => {
     const xiangqi = GAME_REGISTRY.find((g) => g.key === 'xiangqi');
 
     expect(xiangqi?.status).toBe('available');
     expect(xiangqi?.category).toBe('match');
-    expect(xiangqi?.launchRoute).toBe('/g/xiangqi');
+    // The lobby, not `/g/xiangqi`. Human-vs-human since `enable-xiangqi-human-play`,
+    // so the entry is a room list like gomoku's; the AI page stays reachable from
+    // the lobby's own card.
+    expect(xiangqi?.launchRoute).toBe('/g/xiangqi/lobby');
     // No board dimensions here: 象棋's are 10×9, they come from GET /api/games,
     // and its board component hardcodes them anyway because an intersection
     // board is not a parameterisation of a grid of cells. A manifest copy would

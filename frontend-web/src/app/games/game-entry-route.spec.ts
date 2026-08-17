@@ -11,10 +11,16 @@ describe('gameEntryRoute', () => {
   });
 
   it('sends a game without a lobby to its own entry page', () => {
-    // 象棋 and 一字棋 have no human-vs-human mode, so no room list — but their
-    // AI page is where you start another one, which is what "back" means here.
-    expect(gameEntryRoute(catalog, 'xiangqi')).toBe('/g/xiangqi');
+    // 一字棋 has no human-vs-human mode, so no room list — but its AI page is where
+    // you start another one, which is what "back" means here.
+    //
+    // This case used to name 象棋 too, and `enable-xiangqi-human-play` made that
+    // half false. 一字棋 is now the only game on this path.
     expect(gameEntryRoute(catalog, 'tictactoe')).toBe('/g/tictactoe');
+  });
+
+  it('sends a xiangqi player to the xiangqi lobby, like gomoku', () => {
+    expect(gameEntryRoute(catalog, 'xiangqi')).toBe('/g/xiangqi/lobby');
   });
 
   it('falls back to the platform home for a key this client does not know', () => {
