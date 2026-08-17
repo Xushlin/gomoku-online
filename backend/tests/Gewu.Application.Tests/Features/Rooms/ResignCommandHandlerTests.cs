@@ -52,8 +52,7 @@ public class ResignCommandHandlerTests
         _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
 
         // Notifier:RoomStateChanged + GameEnded 各一次,**不**发 MoveMade
-        _notifier.Verify(n => n.RoomStateChangedAsync(room.Id, It.IsAny<RoomStateDto>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        _notifier.Verify(n => n.RoomStateChangedAsync(It.IsAny<Room>(), It.IsAny<IReadOnlyDictionary<Guid, string>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.GameEndedAsync(room.Id,
             It.Is<GameEndedDto>(d => d.EndReason == GameEndReason.Resigned && d.Result == GameResult.WhiteWin),
             It.IsAny<CancellationToken>()), Times.Once);

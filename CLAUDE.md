@@ -254,15 +254,21 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
   **The verification found a pre-existing authorization defect and did not fix it.** `in-room-chat` says the Spectator channel is visible to spectators only. Writing is enforced; *reading* leaks on two of three paths — `GET /api/rooms/{id}` returns every message regardless of caller, and the `RoomState` broadcast pushes one DTO to the whole room group. Measured both, not inferred. **The one path that is correct (`ChatMessage` events, routed per channel) is precisely why the other two went unnoticed**: `ChatPanel` hides the spectator tab from players, so the screen looks right while the data sits in their client. Present since `in-room-chat`; 象棋 did not make it reachable, only visible, because reproducing it needs human-vs-human *and* spectators at once. Fixed separately as a pure spec-compliance bug — see the roadmap.
 
+- [x] **`fix-spectator-chat-leak`** — the leak `enable-xiangqi-human-play` measured, closed on all three paths. Pure spec-compliance fix, no proposal.
+
+  `in-room-chat` said the Spectator channel is spectators-only; the write side enforced it and **all three read sides did not**. The fix is three mechanisms, each chosen so the next person cannot forget it:
+
+  - `ToState` takes a **required** `RoomView`. No default value — a default makes "forgot to say" and "deliberately gave everything" identical in the source, which is the shape the defect lived in. The compiler then listed all nine call sites, and three of them turned out to be projecting a snapshot used only for the broadcast: those lines deleted themselves.
+  - `IRoomNotifier.RoomStateChangedAsync` takes the **aggregate, not a DTO**, and projects both views itself. Handing each handler the job of projecting twice is handing each handler a chance to forget.
+  - `JoinRoom` derives the subgroup from the aggregate via `GetRoomRoleQuery`. `JoinSpectatorGroup` validates and is a silent no-op for non-spectators — "I am not a spectator yet" is not an error.
+
+  **I got the grouping wrong first, in a way only the exhaustiveness question exposes.** I split on *player* vs spectator, which left a connection that had entered the room but not yet clicked Watch in *neither* subgroup — it would have received no `RoomState` at all. Groups must be **mutually exclusive and exhaustive**; the group is therefore `non-spectators`, and `RoomView.For` keys off `IsSpectator`, not `!IsPlayer`. That one change fixed both the missing broadcast and a REST/broadcast inconsistency at once.
+
+  Verified by re-running the three probes that found it: players now see 1 message (room channel) where spectators see 3; a player calling `JoinSpectatorGroup` gets a silent no-op and 0 live spectator messages; and a real move produces **1 broadcast frame with 0 spectator messages for the player, 1 frame with 1 for the spectator**. That last pairing matters — the first attempt reported "0 frames, 0 messages", and **zero frames is not zero leakage, it is no measurement.** Mutation-checked: removing the trim turns three tests red. Frontend: zero changes.
+
 Not yet done — platform roadmap:
 
-1. **`fix-spectator-chat-leak`** — the defect above. `ToState` must trim by caller, and the `RoomState` broadcast must split (there is no players-only SignalR group today), which touches `web-game-board`'s reconnect protocol. Pure bug fix against an existing spec, so no proposal needed.
-
-
-
-1. `add-score-attack-core` + `add-tetris` (俄罗斯方块) — the last category with no kernel at all. Both existing kernels now have two real games each; this one has none.
-
-2. `add-score-attack-core` + `add-tetris` (俄罗斯方块) — the last category with no kernel at all.
+1. `add-score-attack-core` + `add-tetris` (俄罗斯方块) — the last category with no kernel at all. Both existing kernels now have two real games each; this one has none. **Paused at the user's request** while 象棋 got human play and the spectator side was proven.
 
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
 

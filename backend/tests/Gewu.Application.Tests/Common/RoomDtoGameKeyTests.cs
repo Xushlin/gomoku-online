@@ -37,7 +37,7 @@ public class RoomDtoGameKeyTests
         var guest = RoomsFixtures.NewUser("Bob", "bob@example.com");
         var room = RoomsFixtures.PlayingRoom(host, guest, "a room", gameKey);
 
-        room.ToState(NoNames, turnTimeoutSeconds: 60).GameKey.Should().Be(gameKey);
+        room.ToState(NoNames, turnTimeoutSeconds: 60, RoomView.ForSpectators).GameKey.Should().Be(gameKey);
     }
 
     [Fact]

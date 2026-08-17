@@ -89,7 +89,7 @@ public sealed class RoomsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<RoomStateDto>> Get(Guid id, CancellationToken cancellationToken)
     {
-        var state = await _mediator.Send(new GetRoomStateQuery(new RoomId(id)), cancellationToken);
+        var state = await _mediator.Send(new GetRoomStateQuery(new RoomId(id), GetUserId()), cancellationToken);
         return Ok(state);
     }
 

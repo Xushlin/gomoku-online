@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Gewu.Application.Abstractions;
+using Gewu.Application.Features.Rooms.GetRoomRole;
 using Gewu.Application.Features.Rooms.MakeMove;
 using Gewu.Application.Features.Rooms.SendChatMessage;
 using Gewu.Application.Features.Rooms.UrgeOpponent;
@@ -69,6 +70,15 @@ public sealed class GomokuHub : Hub
     {
         var id = new RoomId(roomId);
         await Groups.AddToGroupAsync(Context.ConnectionId, RoomGroupName(id));
+
+        // 身份取自**聚合**,不取自客户端自报。spec 一直是这么写的
+        // (「若调用方已是该房间的玩家或围观者…则额外加入子群」),而实现此前是客户端
+        // 自己调 JoinSpectatorGroup —— 于是玩家把自己塞进围观子群就能实时收到吐槽。
+        var role = await _mediator.Send(new GetRoomRoleQuery(GetUserId(), id), Context.ConnectionAborted);
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            role == RoomRole.Spectator ? SpectatorsGroupName(id) : NonSpectatorsGroupName(id));
+
         await _tracker.AssociateRoomAsync(Context.ConnectionId, id);
     }
 
@@ -78,12 +88,37 @@ public sealed class GomokuHub : Hub
         var id = new RoomId(roomId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomGroupName(id));
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, SpectatorsGroupName(id));
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, NonSpectatorsGroupName(id));
         await _tracker.DissociateRoomAsync(Context.ConnectionId, id);
     }
 
-    /// <summary>把当前连接加入某房间的围观者子 group(前端在确认自己是围观者身份后调用)。</summary>
-    public Task JoinSpectatorGroup(Guid roomId)
-        => Groups.AddToGroupAsync(Context.ConnectionId, SpectatorsGroupName(new RoomId(roomId)));
+    /// <summary>
+    /// 把当前连接加入某房间的围观者子 group。
+    /// <para>
+    /// <b>身份由服务端查聚合确认,不采信调用方自报。</b> 此前这个方法无条件加群,于是任何持有
+    /// JWT 的人 —— 包括这局的**玩家** —— 调一次就能实时收到围观频道的全部消息。实测过:
+    /// <c>JoinSpectatorGroup -> OK</c>,紧接着玩家就收到了本不该给他的那条评论。
+    /// </para>
+    /// <para>
+    /// 保留这个方法(而不是完全交给 <see cref="JoinRoom"/>)是为了重连与"先看看再决定围观"
+    /// 这两条路径:围观者可能在 <c>JoinRoom</c> 之后才 <c>POST /spectate</c>。它现在是幂等的、
+    /// 且对非围观者是**静默无操作** —— 抛异常会把"我还不是围观者"变成一个需要客户端处理的错误,
+    /// 而那不是错误。
+    /// </para>
+    /// </summary>
+    /// <param name="roomId">房间。</param>
+    public async Task JoinSpectatorGroup(Guid roomId)
+    {
+        var id = new RoomId(roomId);
+        var role = await _mediator.Send(new GetRoomRoleQuery(GetUserId(), id), Context.ConnectionAborted);
+        if (role == RoomRole.Spectator)
+        {
+            // 先出后进:两个子群 MUST 互斥,否则这个连接会收到两份快照,
+            // 而后到的那一份覆盖前一份 —— 于是"看得到围观区"变成一件靠到达顺序的事。
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, NonSpectatorsGroupName(id));
+            await Groups.AddToGroupAsync(Context.ConnectionId, SpectatorsGroupName(id));
+        }
+    }
 
     /// <summary>
     /// 落子 —— **落子类**棋种(五子棋 / 一字棋)的走子入口。签名一个字没改。
@@ -152,6 +187,22 @@ public sealed class GomokuHub : Hub
 
     internal static string RoomGroupName(RoomId id) => $"room:{id.Value}";
     internal static string SpectatorsGroupName(RoomId id) => $"room:{id.Value}:spectators";
+
+    /// <summary>
+    /// **非围观者**的子群 —— 玩家,以及进了房但还没围观的连接。
+    /// <para>
+    /// 加它是因为 <c>RoomState</c> 广播要发两份:这一份不含围观频道。此前只有
+    /// <c>room:{id}</c>(全体)与 <c>room:{id}:spectators</c>(仅围观者),没有这一侧,
+    /// 于是那一份只能推给全体 —— 围观者的吐槽就这样进了玩家的客户端。
+    /// </para>
+    /// <para>
+    /// 它叫"非围观者"而不是"玩家",是因为它必须**穷尽**另一侧:两个子群加起来要覆盖房间里
+    /// 每一个连接,否则有人收不到任何快照。我第一版按"玩家"分,结果一个还没点围观的旁观连接
+    /// 两个组都不在,实时更新就断了。**分组要么互斥且穷尽,要么就有人掉在缝里。**
+    /// </para>
+    /// </summary>
+    /// <param name="id">房间。</param>
+    internal static string NonSpectatorsGroupName(RoomId id) => $"room:{id.Value}:non-spectators";
 
     private UserId GetUserId()
     {

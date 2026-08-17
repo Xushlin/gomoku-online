@@ -29,6 +29,6 @@ public sealed class GetRoomStateQueryHandler : IRequestHandler<GetRoomStateQuery
             ?? throw new RoomNotFoundException($"Room '{request.RoomId.Value}' was not found.");
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        return room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
+        return room.ToState(usernames, _gameOptions.TurnTimeoutSeconds, RoomView.For(room, request.ViewerId));
     }
 }

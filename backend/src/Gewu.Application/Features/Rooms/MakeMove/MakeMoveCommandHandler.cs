@@ -82,9 +82,8 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             outcome.Move.Text);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds);
 
-        await _notifier.RoomStateChangedAsync(room.Id, state, cancellationToken);
+        await _notifier.RoomStateChangedAsync(room, usernames, _gameOptions.TurnTimeoutSeconds, cancellationToken);
         await _notifier.MoveMadeAsync(room.Id, moveDto, cancellationToken);
 
         if (outcome.Result != GameResult.Ongoing)

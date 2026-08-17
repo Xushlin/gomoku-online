@@ -1,4 +1,5 @@
 using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Enums;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 
@@ -34,14 +35,24 @@ public static class RoomMapping
     public static RoomStateDto ToState(
         this Room room,
         IReadOnlyDictionary<Guid, string> usernames,
-        int turnTimeoutSeconds)
+        int turnTimeoutSeconds,
+        RoomView view)
     {
         var specDtos = room.Spectators
             .Select(id => UserSummary(id, usernames))
             .ToList()
             .AsReadOnly();
 
+        // 围观频道**只给围观者**。这里是那条规则在读取侧唯一的实现处。
+        //
+        // 它此前不存在:`ToState` 原样返回全部消息,于是任何玩家调 GET /api/rooms/{id}
+        // 或收一次 RoomState 广播,就拿到了对手围观区的全部内容。屏幕上看不出来 ——
+        // ChatPanel 用 @if (isSpectator()) 藏掉了那个 Tab,而数据早就在客户端里。
+        //
+        // `view` 是**必需参数**,不是可选的:每个调用点都必须说出这份快照给谁看。
+        // 一个可选参数会让"忘了传"和"故意给全部"长得一样。
         var chatDtos = room.ChatMessages
+            .Where(m => view.IncludeSpectatorChat || m.Channel != ChatChannel.Spectator)
             .OrderBy(m => m.SentAt)
             .Select(m => new ChatMessageDto(
                 m.Id, m.SenderUserId.Value, m.SenderUsername, m.Content, m.Channel, m.SentAt))
