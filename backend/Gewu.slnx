@@ -5,6 +5,9 @@
     <Project Path="src/Gewu.Domain/Gewu.Domain.csproj" />
     <Project Path="src/Gewu.Infrastructure/Gewu.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/smoke/">
+    <Project Path="smoke/AiSmoke/AiSmoke/AiSmoke.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Gewu.Application.Tests/Gewu.Application.Tests.csproj" />
     <Project Path="tests/Gewu.Domain.Tests/Gewu.Domain.Tests.csproj" />

@@ -39,6 +39,44 @@ jobs:
       - name: Test
         run: dotnet test Gewu.slnx --configuration Release --no-build --verbosity normal
 
+      # 端到端 smoke:唯一走**真实 SignalR 传输**的覆盖。
+      #
+      # 它此前不在 Gewu.slnx 里、CI 从不构建它、地址硬编码在 5145,于是只有人手才跑得动 ——
+      # 而一个不跑的测试等于没有测试。它的价值不是假设:SignalR 参数个数那个缺陷
+      # (generalize-match-domain)三层单测全绿,是这个 smoke 抓到的,因为它不知道那次重构存在。
+      #
+      # 它是 console app 而不是 xUnit,所以 `dotnet test` 不认它;这里单独跑,靠退出码判定
+      # (Program.cs 末尾 Environment.Exit(failed == 0 ? 0 : 1))。
+      - name: E2E smoke (real SignalR transport)
+        env:
+          # Development 才会 migrate + 灌种子(含机器人账号),见 Program.cs。
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://localhost:5145
+          ConnectionStrings__Default: Data Source=/tmp/gewu-smoke.db
+          # 必须是合法 base64,否则启动即 FormatException。
+          JWT__SIGNINGKEY: Kx7pQm2vRtY9wLzA4bNcHf6JdSgE1uXoPi0rTvWy8kM=
+          SMOKE_BASE_URL: http://localhost:5145
+        run: |
+          rm -f /tmp/gewu-smoke.db
+          dotnet run --project src/Gewu.Api --configuration Release --no-build --no-launch-profile > /tmp/api.log 2>&1 &
+          API_PID=$!
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5145/health > /dev/null && break
+            sleep 2
+          done
+          if ! curl -sf http://localhost:5145/health > /dev/null; then
+            echo "API never became ready — last 40 lines:"; tail -40 /tmp/api.log; kill $API_PID; exit 1
+          fi
+          set +e
+          dotnet run --project smoke/AiSmoke/AiSmoke --configuration Release --no-build
+          SMOKE_EXIT=$?
+          set -e
+          kill $API_PID 2>/dev/null || true
+          if [ $SMOKE_EXIT -ne 0 ]; then
+            echo "smoke failed — API log tail:"; tail -40 /tmp/api.log
+          fi
+          exit $SMOKE_EXIT
+
   web:
     name: web (Angular 21)
     runs-on: ubuntu-latest
