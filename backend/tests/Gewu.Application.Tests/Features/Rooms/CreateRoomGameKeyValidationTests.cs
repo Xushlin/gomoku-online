@@ -23,7 +23,8 @@ namespace Gewu.Application.Tests.Features.Rooms;
 public class CreateRoomGameKeyValidationTests
 {
     private static readonly CreateRoomCommandValidator Human = new(GomokuRules.Registry);
-    private static readonly CreateAiRoomCommandValidator Ai = new(GomokuRules.Registry);
+    private static readonly CreateAiRoomCommandValidator Ai =
+        new(GomokuRules.Registry, GomokuRules.AiRegistry);
 
     /// <summary>本平台上不存在的棋种 —— 围棋不在七款规划之内。</summary>
     private const string NotOnThePlatform = "go";
@@ -113,6 +114,97 @@ public class CreateRoomGameKeyValidationTests
         // Gewu.Application.Tests 里都不存在。这条断言让那件事无法再悄悄发生。
         GomokuRules.Registry.All.Select(r => r.GameKey)
             .Should().BeEquivalentTo(BuiltInGameRules.All(GomokuRules.Lexicon).Select(r => r.GameKey));
+    }
+
+    [Fact]
+    public void The_test_ai_registry_is_the_one_production_registers()
+    {
+        // 上面那条的对侧。它此前不存在,而 AI 夹具正以完全相同的方式漂着:手写两项、
+        // 注释自称与生产一致、象棋 AI 自 add-xiangqi-ai 起就不在里面 —— 同一个文件,隔七行。
+        // 上一次只修了规则那半,没回头看这半。**造出机制不等于采用机制。**
+        BuiltInGameAis.All.Select(f => f.GameKey)
+            .Should().OnlyHaveUniqueItems()
+            .And.Contain(GameKeys.Xiangqi, "象棋 AI 从 add-xiangqi-ai 起就在生产 DI 里");
+
+        foreach (var factory in BuiltInGameAis.All)
+        {
+            GomokuRules.AiRegistry.For(factory.GameKey).Should().NotBeNull();
+        }
+    }
+
+    [Theory]
+    [InlineData(GameKeys.Gomoku)]
+    [InlineData(GameKeys.TicTacToe)]
+    [InlineData(GameKeys.Xiangqi)]
+    public void A_game_with_an_ai_can_open_an_ai_room(string gameKey)
+    {
+        Ai.Validate(AiRoom(gameKey)).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_game_without_an_ai_is_refused_an_ai_room_but_allowed_a_human_room()
+    {
+        // 成语接龙**故意**没有 AI:查词典就能写出近乎不可战胜的机器人,而机器人对局计分。
+        // 在此之前这条没人拦:POST /api/rooms/ai 回 201,房间进 Playing 且轮到一个不存在的
+        // 机器人,60 秒后超时判真人胜 —— 计分棋种,于是零手棋换一场胜利与约 +46 ELO。实测。
+        var ai = Ai.Validate(AiRoom(GameKeys.IdiomChain));
+
+        ai.IsValid.Should().BeFalse();
+        ai.Errors.Should().Contain(e => e.PropertyName == nameof(CreateAiRoomCommand.GameKey));
+
+        // 人人对战正是这个棋种存在的理由。在那条路径上拦住等于把它逐出平台。
+        Human.Validate(HumanRoom(GameKeys.IdiomChain)).IsValid.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// AI 房的判定遍历 <see cref="IGameAiRegistry"/> 本身 —— 加第五款棋会自动被覆盖。
+    /// <para>
+    /// 这一条此前**根本不存在**,而它不存在的原因正是缺陷能活到今天的原因:在成语接龙之前,
+    /// 每一个已登记棋种都有 AI。**一条从未遇到过反例的规则,与一条没人检查的规则,长得一模一样。**
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void The_ai_verdict_tracks_the_ai_registry_across_the_whole_registry()
+    {
+        var withAi = 0;
+        var withoutAi = 0;
+
+        foreach (var rules in GomokuRules.Registry.All)
+        {
+            var hasAi = GomokuRules.AiRegistry.For(rules.GameKey) is not null;
+
+            Ai.Validate(AiRoom(rules.GameKey)).IsValid.Should().Be(
+                hasAi,
+                "'{0}' {1} an AI factory",
+                rules.GameKey,
+                hasAi ? "has" : "has no");
+
+            if (hasAi) withAi++;
+            else withoutAi++;
+        }
+
+        withAi.Should().BeGreaterThan(0, "otherwise the loop never exercised the accept path");
+        withoutAi.Should().BeGreaterThan(0, "otherwise the loop never exercised the refuse path");
+    }
+
+    [Fact]
+    public void The_ai_verdict_comes_from_the_registry_not_a_hardcoded_list()
+    {
+        // 只登记五子棋 AI 的注册表里,一字棋的 AI 房必须被拒 —— 若 validator 内联了白名单,
+        // 它会照样放行。
+        var gomokuAiOnly = new CreateAiRoomCommandValidator(GomokuRules.Registry, GomokuRules.GomokuAiOnly);
+
+        gomokuAiOnly.Validate(AiRoom(GameKeys.Gomoku)).IsValid.Should().BeTrue();
+        gomokuAiOnly.Validate(AiRoom(GameKeys.TicTacToe)).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void An_unregistered_key_reports_one_error_on_the_ai_path_too()
+    {
+        // 「没这个棋」与「这个棋没有 AI」在键解析不出来时是同一件事的两种说法。
+        var result = Ai.Validate(AiRoom(NotOnThePlatform));
+
+        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(CreateAiRoomCommand.GameKey));
     }
 
     [Fact]

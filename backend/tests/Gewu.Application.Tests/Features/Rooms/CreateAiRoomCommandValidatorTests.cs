@@ -6,7 +6,7 @@ namespace Gewu.Application.Tests.Features.Rooms;
 
 public class CreateAiRoomCommandValidatorTests
 {
-    private readonly CreateAiRoomCommandValidator _validator = new(GomokuRules.Registry);
+    private readonly CreateAiRoomCommandValidator _validator = new(GomokuRules.Registry, GomokuRules.AiRegistry);
 
     [Theory]
     [InlineData("")]

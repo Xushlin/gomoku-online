@@ -12,6 +12,7 @@ const GOMOKU: GameDescriptor = {
   gameKey: 'gomoku',
   isRated: true,
   supportsHumanVsHuman: true,
+  supportsAi: true,
   rows: 15,
   cols: 15,
 };
@@ -20,6 +21,7 @@ const TICTACTOE: GameDescriptor = {
   gameKey: 'tictactoe',
   isRated: false,
   supportsHumanVsHuman: false,
+  supportsAi: true,
   rows: 3,
   cols: 3,
 };

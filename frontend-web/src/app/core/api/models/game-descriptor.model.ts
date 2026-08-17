@@ -26,6 +26,18 @@ export interface GameDescriptor {
   readonly supportsHumanVsHuman: boolean;
 
   /**
+   * Whether this game has a computer opponent — projected from
+   * `IGameAiRegistry`, the same registry `POST /api/rooms/ai` validates against,
+   * so what the client shows and what the server accepts cannot disagree.
+   *
+   * 成语接龙 is the first game with human play and no AI, and the reason it
+   * needs a field rather than an assumption is not cosmetic: before this was
+   * enforced, creating an AI room for it produced a live rated game against a
+   * bot that could never move, which the turn timeout then awarded to the human.
+   */
+  readonly supportsAi: boolean;
+
+  /**
    * Board rows — `null` when the game has **no board at all** (成语接龙).
    *
    * That is a different claim from "this client does not know the game", and the

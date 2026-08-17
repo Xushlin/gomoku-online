@@ -80,6 +80,22 @@ export class GameLobby implements OnInit {
    */
   protected readonly showLeaderboard = computed(() => !!this.descriptor()?.isRated);
 
+  /**
+   * The AI card is hidden for games with no computer opponent.
+   *
+   * This spot used to render unconditionally, with a written argument that the
+   * branch could not be tested until a game had human play and no AI. That
+   * argument was right to defer and wrong about the stakes: it reasoned about
+   * the *card*, while `POST /api/rooms/ai` never looked at whether a lobby
+   * existed. Creating an AI room for 成语接龙 returned 201, seated a bot that
+   * could not move, and let the turn timeout hand the human a rated win.
+   *
+   * So hiding this is presentation. The defence is the server-side validator —
+   * see `enforce-ai-availability`. Deleting this line must not make the exploit
+   * reachable again, and does not.
+   */
+  protected readonly showAiCard = computed(() => !!this.descriptor()?.supportsAi);
+
   ngOnInit(): void {
     this.capabilities.ensureLoaded();
   }

@@ -1,4 +1,5 @@
 using Gewu.Application.Features.Games.GetGameDescriptors;
+using Gewu.Domain.Enums;
 using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Tests.Features.Games;
@@ -15,7 +16,7 @@ public class GetGameDescriptorsQueryHandlerTests
 {
     private static readonly IGameRulesRegistry Registry = GomokuRules.Registry;
 
-    private static GetGameDescriptorsQueryHandler Build() => new(Registry);
+    private static GetGameDescriptorsQueryHandler Build() => new(Registry, GomokuRules.AiRegistry);
 
     [Fact]
     public async Task Returns_one_entry_per_registered_game_no_more_no_less()
@@ -38,9 +39,41 @@ public class GetGameDescriptorsQueryHandlerTests
             var dto = items.Single(i => i.GameKey == rules.GameKey);
             dto.IsRated.Should().Be(rules.IsRated);
             dto.SupportsHumanVsHuman.Should().Be(rules.SupportsHumanVsHuman);
+            // SupportsAi 对着 AI 注册表比,不对着规则比 —— 规则不知道自己有没有机器人,
+            // 而让它「知道」就是在同一件事上开第二个真源。
+            dto.SupportsAi.Should().Be(GomokuRules.AiRegistry.For(rules.GameKey) is not null);
             // 尺寸当且仅当规则有盘面时非空。
             dto.Rows.Should().Be((rules as IBoardGameRules)?.Rows);
             dto.Cols.Should().Be((rules as IBoardGameRules)?.Cols);
+        }
+    }
+
+    [Fact]
+    public async Task A_game_with_an_ai_says_so_and_one_without_says_so()
+    {
+        var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
+
+        items.Single(i => i.GameKey == GameKeys.Gomoku).SupportsAi.Should().BeTrue();
+        items.Single(i => i.GameKey == GameKeys.IdiomChain).SupportsAi.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task The_descriptor_and_the_ai_room_validator_read_the_same_registry()
+    {
+        // 客户端按 supportsAi 决定画不画那个按钮,服务端按同一份注册表决定接不接受。
+        // 两者只要来源不同,就会有一天出现一个永远 400 的按钮 —— 这条断言让它们不可能不同。
+        var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
+        var validator = new Gewu.Application.Features.Rooms.CreateAiRoom.CreateAiRoomCommandValidator(
+            GomokuRules.Registry, GomokuRules.AiRegistry);
+
+        foreach (var dto in items)
+        {
+            var command = new Gewu.Application.Features.Rooms.CreateAiRoom.CreateAiRoomCommand(
+                Gewu.Domain.Users.UserId.NewId(), "a valid name",
+                Gewu.Domain.Ai.BotDifficulty.Easy, Stone.Black, dto.GameKey);
+
+            validator.Validate(command).IsValid.Should().Be(
+                dto.SupportsAi, "'{0}' publishes supportsAi == {1}", dto.GameKey, dto.SupportsAi);
         }
     }
 
@@ -84,7 +117,7 @@ public class GetGameDescriptorsQueryHandlerTests
     [Fact]
     public async Task A_registry_with_one_game_yields_one_entry()
     {
-        var items = await new GetGameDescriptorsQueryHandler(GomokuRules.GomokuOnly)
+        var items = await new GetGameDescriptorsQueryHandler(GomokuRules.GomokuOnly, GomokuRules.AiRegistry)
             .Handle(new GetGameDescriptorsQuery(), default);
 
         items.Should().ContainSingle().Which.GameKey.Should().Be(GameKeys.Gomoku);
@@ -97,11 +130,14 @@ public class GetGameDescriptorsQueryHandlerTests
         // 把一个对将来的棋种无意义的字段放进对外契约,只会让客户端学着去读它。
         await Task.CompletedTask;
 
+        // 断言的是**整个**属性集合而不是「不含 WinLength」—— 加字段时它会红,那正是想要的:
+        // 对外契约多一个字段该是一次有意的决定,不是一次顺手的提交。
         typeof(Gewu.Application.Common.DTOs.GameDescriptorDto)
             .GetProperties()
             .Select(p => p.Name)
             .Should().BeEquivalentTo(new[]
             {
+                nameof(Gewu.Application.Common.DTOs.GameDescriptorDto.SupportsAi),
                 "GameKey", "IsRated", "SupportsHumanVsHuman", "Rows", "Cols",
             });
     }
