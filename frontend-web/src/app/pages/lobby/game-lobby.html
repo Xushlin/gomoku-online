@@ -58,7 +58,9 @@
         <app-active-rooms-card />
       </div>
       <div class="flex flex-col gap-4">
-        <app-ai-game-card />
+        @if (showAiCard()) {
+          <app-ai-game-card />
+        }
         @if (showLeaderboard()) {
           <app-leaderboard-card />
         }

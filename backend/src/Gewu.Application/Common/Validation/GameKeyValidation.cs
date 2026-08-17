@@ -1,4 +1,5 @@
 using FluentValidation;
+using Gewu.Domain.Ai;
 using Gewu.Domain.Games.Abstractions;
 
 namespace Gewu.Application.Common.Validation;
@@ -63,4 +64,36 @@ public static class GameKeyValidation
         => rule
             .Must(key => key is null || registry.For(key) is not { SupportsHumanVsHuman: false })
             .WithMessage("'{PropertyValue}' has no human-vs-human mode on this platform.");
+
+    /// <summary>
+    /// 要求该棋种真的有 AI,即 <see cref="IGameAiRegistry.For"/> 能解析出一个工厂。
+    /// <para>
+    /// 判据取自**注册表本身**,而不是 <see cref="IGameRules"/> 上一个手写的 <c>SupportsAi</c>
+    /// 布尔。理由与 <c>IsRated</c> 当初被约束成不变量是同一条:一个复述结构性事实的手写布尔
+    /// 是一个**判断**,而判断会过期且不报错。注册表就是那个事实 —— 哪天给某个棋种登记了 AI,
+    /// 本条自动放行,没有第二处要记得改。
+    /// </para>
+    /// <para>
+    /// <b>这条规则此前不存在,后果是一个计分漏洞而不只是一个多余的房间。</b> 实测:
+    /// <c>POST /api/rooms/ai { gameKey: "idiom-chain", humanSide: White }</c> 返回 201,房间进入
+    /// <c>Playing</c> 且轮到一个不存在的机器人;<c>AiMoveWorker</c> 每 1500 ms 抛一次
+    /// <c>RoomNotFoundException</c>;60 秒后 <c>TurnTimeoutWorker</c> 判那个走不了的一方超时告负。
+    /// 成语接龙计分,于是真人凭**零手棋**拿到一场胜利与约 +46 ELO,可无限重复。
+    /// </para>
+    /// <para>
+    /// 只挂在 <b>AI 房</b>路径上。真人房不受约束 —— 成语接龙开放人人对战,那正是它该有的玩法。
+    /// </para>
+    /// <para>
+    /// 键解析不出规则时本条**静默通过** —— 那种情况由 <see cref="MustBeARegisteredGameKey"/>
+    /// 报出。同一个字段为同一件事报两条错误,只会让调用方以为要改两处。
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">被校验的命令类型。</typeparam>
+    /// <param name="rules">棋种规则注册表 —— 用来分辨"没这个棋"与"这个棋没有 AI"。</param>
+    /// <param name="ai">AI 工厂注册表 —— "这个棋种会不会思考"的唯一真源。</param>
+    public static IRuleBuilderOptions<T, string> MustHaveAnAi<T>(
+        this IRuleBuilder<T, string> rule, IGameRulesRegistry rules, IGameAiRegistry ai)
+        => rule
+            .Must(key => key is null || rules.For(key) is null || ai.For(key) is not null)
+            .WithMessage("'{PropertyValue}' has no computer opponent on this platform.");
 }

@@ -70,10 +70,14 @@ public static class DependencyInjection
             new GameRulesRegistry(BuiltInGameRules.All(sp.GetRequiredService<IIdiomLexicon>())));
 
         // 棋种 AI。与规则分开注册,因为注册单位不同:规则是"怎么判胜",AI 是"怎么思考"
-        // —— 一个棋种可以先有规则(人人对战)、后有 AI。
-        services.AddSingleton<IGameAiFactory, GomokuAiFactory>();
-        services.AddSingleton<IGameAiFactory, TicTacToeAiFactory>();
-        services.AddSingleton<IGameAiFactory, XiangqiAiFactory>();
+        // —— 一个棋种可以先有规则(人人对战)、后有 AI。成语接龙**故意**停在前一半。
+        //
+        // 清单在 BuiltInGameAis.All,与规则那份同理:这里逐个 AddSingleton、测试夹具再手写一份,
+        // 是这个仓库已经修过两次的缺陷,而它第二次复发就在隔壁的 GomokuRules.AiRegistry 里。
+        foreach (var factory in BuiltInGameAis.All)
+        {
+            services.AddSingleton(factory);
+        }
         services.AddSingleton<IGameAiRegistry, GameAiRegistry>();
 
         // 关卡类游戏。加一个游戏就是这两行:一个 IPuzzleRules 实现 + 一处注册。

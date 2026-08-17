@@ -1,5 +1,6 @@
 using FluentValidation;
 using Gewu.Application.Common.Validation;
+using Gewu.Domain.Ai;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Games.Abstractions;
 
@@ -16,7 +17,8 @@ public sealed class CreateAiRoomCommandValidator : AbstractValidator<CreateAiRoo
 {
     /// <summary>构造校验规则。</summary>
     /// <param name="rules">棋种规则注册表 —— 判断"这是不是本平台的棋"的唯一真源。</param>
-    public CreateAiRoomCommandValidator(IGameRulesRegistry rules)
+    /// <param name="ai">AI 工厂注册表 —— 判断"这个棋种有没有机器人"的唯一真源。</param>
+    public CreateAiRoomCommandValidator(IGameRulesRegistry rules, IGameAiRegistry ai)
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Room name is required.")
@@ -28,5 +30,6 @@ public sealed class CreateAiRoomCommandValidator : AbstractValidator<CreateAiRoo
             .WithMessage("HumanSide must be Black or White.");
 
         RuleFor(x => x.GameKey).MustBeARegisteredGameKey(rules);
+        RuleFor(x => x.GameKey).MustHaveAnAi(rules, ai);
     }
 }

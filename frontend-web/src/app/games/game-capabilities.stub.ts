@@ -24,6 +24,7 @@ export class StubGameCapabilities extends GameCapabilitiesService {
         gameKey,
         isRated: true,
         supportsHumanVsHuman: true,
+        supportsAi: true,
         rows: 15,
         cols: 15,
       })),
@@ -37,6 +38,7 @@ export class StubGameCapabilities extends GameCapabilitiesService {
         gameKey,
         isRated: false,
         supportsHumanVsHuman: false,
+        supportsAi: true,
         rows,
         cols,
       })),
@@ -50,6 +52,7 @@ export class StubGameCapabilities extends GameCapabilitiesService {
         gameKey,
         isRated: false,
         supportsHumanVsHuman: false,
+        supportsAi: true,
         rows: 3,
         cols: 3,
       })),
@@ -59,9 +62,10 @@ export class StubGameCapabilities extends GameCapabilitiesService {
   /**
    * A registered game with **no board** — 成语接龙's shape.
    *
-   * No shipped game reports this yet, which is exactly why it needs a stub: the
-   * branch that distinguishes "boardless" from "unknown key" is unreachable in a
-   * browser until the game lands, so a unit test is the only thing holding it.
+   * It also carries `supportsAi: false`, because 成语接龙 is boardless *and*
+   * botless and those two facts arrive together. A dictionary lookup makes a
+   * near-unbeatable bot trivial, bot games are rated, so a ladder over a
+   * bot-playable chain would rank whoever farmed the bot hardest.
    */
   static boardless(...keys: readonly string[]): StubGameCapabilities {
     return new StubGameCapabilities(
@@ -69,6 +73,7 @@ export class StubGameCapabilities extends GameCapabilitiesService {
         gameKey,
         isRated: false,
         supportsHumanVsHuman: true,
+        supportsAi: false,
         rows: null,
         cols: null,
       })),

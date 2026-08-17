@@ -19,11 +19,18 @@ namespace Gewu.Application.Common.DTOs;
 /// <param name="GameKey">棋种键,与房间的 <c>GameKey</c>、前端游戏注册表中的 key 一致。</param>
 /// <param name="IsRated">对局结束时是否结算 ELO —— 亦即"这个棋种有没有排行榜"。</param>
 /// <param name="SupportsHumanVsHuman">平台是否为它提供人人对战入口。</param>
+/// <param name="SupportsAi">
+/// 这个棋种有没有机器人 —— 投影自 <c>IGameAiRegistry.For(gameKey) is not null</c>,与
+/// <c>POST /api/rooms/ai</c> 的校验读**同一份**注册表,所以客户端看到的与服务端会接受的
+/// 不可能不一致。它不是 <c>IGameRules</c> 上的一个手写布尔:那会是同一件事的第二个真源,
+/// 而它失配的症状是**一个永远 400 的按钮**。
+/// </param>
 /// <param name="Rows">行数。</param>
 /// <param name="Cols">列数。</param>
 public sealed record GameDescriptorDto(
     string GameKey,
     bool IsRated,
     bool SupportsHumanVsHuman,
+    bool SupportsAi,
     int? Rows,
     int? Cols);

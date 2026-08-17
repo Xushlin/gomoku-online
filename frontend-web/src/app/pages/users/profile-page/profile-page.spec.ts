@@ -171,8 +171,8 @@ describe('ProfilePage', () => {
   it('the switcher lists rated games only', () => {
     const { fixture } = mount({
       capabilities: new StubGameCapabilities([
-        { gameKey: 'gomoku', isRated: true, supportsHumanVsHuman: true, rows: 15, cols: 15 },
-        { gameKey: 'tictactoe', isRated: false, supportsHumanVsHuman: false, rows: 3, cols: 3 },
+        { gameKey: 'gomoku', isRated: true, supportsHumanVsHuman: true, supportsAi: true, rows: 15, cols: 15 },
+        { gameKey: 'tictactoe', isRated: false, supportsHumanVsHuman: false, supportsAi: true, rows: 3, cols: 3 },
       ]),
     });
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';

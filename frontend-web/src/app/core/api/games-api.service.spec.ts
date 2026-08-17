@@ -33,8 +33,8 @@ describe('GamesApiService', () => {
   it('passes the descriptors straight through', () => {
     const { svc, http } = setup();
     const payload = [
-      { gameKey: 'gomoku', isRated: true, supportsHumanVsHuman: true, rows: 15, cols: 15 },
-      { gameKey: 'tictactoe', isRated: false, supportsHumanVsHuman: false, rows: 3, cols: 3 },
+      { gameKey: 'gomoku', isRated: true, supportsHumanVsHuman: true, supportsAi: true, rows: 15, cols: 15 },
+      { gameKey: 'tictactoe', isRated: false, supportsHumanVsHuman: false, supportsAi: true, rows: 3, cols: 3 },
     ];
     let data: unknown;
     svc.list().subscribe((v) => (data = v));

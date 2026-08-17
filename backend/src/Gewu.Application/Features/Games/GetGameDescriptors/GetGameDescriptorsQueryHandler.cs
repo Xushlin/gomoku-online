@@ -1,4 +1,5 @@
 using Gewu.Application.Common.DTOs;
+using Gewu.Domain.Ai;
 using Gewu.Domain.Games.Abstractions;
 using MediatR;
 
@@ -25,11 +26,13 @@ public sealed class GetGameDescriptorsQueryHandler
     : IRequestHandler<GetGameDescriptorsQuery, IReadOnlyList<GameDescriptorDto>>
 {
     private readonly IGameRulesRegistry _rules;
+    private readonly IGameAiRegistry _ai;
 
     /// <inheritdoc />
-    public GetGameDescriptorsQueryHandler(IGameRulesRegistry rules)
+    public GetGameDescriptorsQueryHandler(IGameRulesRegistry rules, IGameAiRegistry ai)
     {
         _rules = rules;
+        _ai = ai;
     }
 
     /// <inheritdoc />
@@ -42,6 +45,9 @@ public sealed class GetGameDescriptorsQueryHandler
                 GameKey: r.GameKey,
                 IsRated: r.IsRated,
                 SupportsHumanVsHuman: r.SupportsHumanVsHuman,
+                // 问 AI 注册表,不问规则。规则不知道自己有没有机器人,而让它"知道"就是
+                // 在同一件事上开第二个真源 —— 那正是 IsRated 当初被约束成不变量的理由。
+                SupportsAi: _ai.For(r.GameKey) is not null,
                 // 有盘面才有尺寸。无盘面的棋种在这里是 null,而不是 0 —— 客户端把
                 // "没有盘面"与"不认识这个键"当作两件事处理。
                 Rows: (r as IBoardGameRules)?.Rows,

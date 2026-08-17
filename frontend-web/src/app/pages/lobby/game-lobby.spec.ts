@@ -71,12 +71,30 @@ describe('GameLobby', () => {
     // A permanently empty board reads as "nobody has played this yet", which is
     // a different claim from "this game has no ladder".
     const capabilities = new StubGameCapabilities([
-      { gameKey: 'friendly', isRated: false, supportsHumanVsHuman: true, rows: 9, cols: 9 },
+      { gameKey: 'friendly', isRated: false, supportsHumanVsHuman: true, supportsAi: true, rows: 9, cols: 9 },
     ]);
     const { html } = mount('friendly', capabilities);
 
     expect(html()).toContain('app-active-rooms-card');
     expect(html()).not.toContain('app-leaderboard-card');
+  });
+
+  it('hides the AI card for a game with no computer opponent', () => {
+    // 成语接龙's shape: human play, no bot. This card used to render for every
+    // game, on a written argument that no game could yet contradict it. The
+    // argument was about the card; the hole was in POST /api/rooms/ai, which
+    // returned 201 and let a turn timeout pay out ELO for a game nobody played.
+    const { html } = mount('idiom-chain', StubGameCapabilities.boardless('idiom-chain'));
+
+    expect(html()).toContain('app-active-rooms-card');
+    expect(html()).not.toContain('app-ai-game-card');
+  });
+
+  it('decides nothing about the AI card before the descriptors arrive', () => {
+    const { html } = mount('gomoku', StubGameCapabilities.pending());
+
+    expect(html()).toContain('game-lobby-skeleton');
+    expect(html()).not.toContain('app-ai-game-card');
   });
 
   it('explains an AI-only game instead of listing rooms', () => {

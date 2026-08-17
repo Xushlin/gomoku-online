@@ -48,9 +48,18 @@ internal static class GomokuRules
     internal static readonly IGameRulesRegistry GomokuOnly =
         new StaticRegistry(BuiltInGameRules.Gomoku);
 
-    /// <summary>与生产 DI 一致的 AI 注册表:五子棋 + 一字棋,用的是真工厂。</summary>
+    /// <summary>
+    /// 与生产 DI 一致的 AI 注册表 —— 取自 <see cref="BuiltInGameAis.All"/>,与
+    /// <c>DependencyInjection</c> **同一份**清单。
+    /// <para>
+    /// 它此前手写成 <c>{ GomokuAiFactory, TicTacToeAiFactory }</c>,注释却写着「与生产 DI 一致」。
+    /// 象棋 AI 自 <c>add-xiangqi-ai</c> 起就在生产注册表里,于是整个 Gewu.Application.Tests 都在
+    /// 一个「象棋没有 AI」的世界里跑。这与 <see cref="Registry"/> 上一次修掉的是同一个缺陷,
+    /// 在同一个文件里,隔了七行 —— <c>enforce-human-vs-human</c> 修了规则那半,没回头看 AI 这半。
+    /// </para>
+    /// </summary>
     internal static readonly IGameAiRegistry AiRegistry =
-        new StaticAiRegistry(new GomokuAiFactory(), new TicTacToeAiFactory());
+        new StaticAiRegistry([.. BuiltInGameAis.All]);
 
     /// <summary>只登记五子棋 AI 的注册表 —— 给"这个棋种没有 AI"那条 404 路径用。</summary>
     internal static readonly IGameAiRegistry GomokuAiOnly =
