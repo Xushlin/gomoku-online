@@ -1188,7 +1188,9 @@ Validator MUST 通过注入的 `IGameRulesRegistry` 判断,MUST NOT 内联一份
 
 ### Requirement: 领域错误带稳定错误码,并以 `HubException` 送达客户端
 
-每一个被 API 有意映射的领域异常 SHALL 继承 `DomainException` 并携带一个稳定的 kebab-case `Code`(如 `not-your-turn`、`invalid-move`、`self-check`)。
+每一个被 API 有意映射的领域异常 SHALL 继承 `DomainException` 并携带一个稳定的 kebab-case `Code`(如 `not-your-turn`、`invalid-move`、`self-check`、`idiom-not-found`)。
+
+码 MAY 来自**具名静态工厂**而不是一个独立类型:一种拒绝需要自己的文案、却不值得为它多一个异常类型时,`InvalidMoveException.SelfCheck(...)` 那样的工厂是既定做法。成语接龙的三条规则各用一个(`idiom-not-found` / `idiom-does-not-link` / `idiom-already-used`)——「不是成语」「接不上」「说过了」是三种不同的纠正,一个码说不出任何一种。
 
 码是这个错误的**身份**;消息仍然是给日志看的人类散文,MUST NOT 被客户端展示。
 
@@ -1234,8 +1236,13 @@ SignalR hub SHALL 通过一个过滤器把 `DomainException` 转成 `HubExceptio
 - **THEN** 过滤器 MUST NOT 把它转成 `HubException`;它按既有方式处理(生产下客户端只得到通用错误)
 
 #### Scenario: 码唯一
-- **WHEN** 遍历所有 `DomainException` 子类
+- **WHEN** 遍历所有 `DomainException` 子类**以及每一个返回该类型的 public static 工厂方法**
 - **THEN** 它们的 `Code` 两两不同,且都非空
+
+#### Scenario: 工厂产出的码也在遍历范围内
+- **WHEN** 新增一个像 `SelfCheck` 那样的具名静态工厂,给它一个已被占用的码
+- **THEN** 上一条 MUST 失败 —— 遍历只走类型时,`self-check` 从引入起就从未被自己的唯一性断言覆盖过,
+  而多三个工厂就是把同一个洞扩大三倍
 
 ### Requirement: 一步棋要么是位置,要么是文本,不能既是又不是
 
