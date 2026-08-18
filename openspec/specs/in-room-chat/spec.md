@@ -7,10 +7,7 @@
 SignalR 事件:`ChatMessage`(按频道广播)与 `UrgeReceived`(仅被催方)。持久化:`ChatMessages` 表 `(RoomId, SentAt)` 索引便于分页;催促事件 **不入库**,仅推送。
 
 实现位于 `backend/src/Gewu.Domain/Rooms/`(`Room.PostChatMessage` / `Room.UrgeOpponent` 领域方法、`ChatMessage` 子实体、`ChatChannel` 枚举)、`backend/src/Gewu.Application/Features/Rooms/SendChatMessage` 与 `UrgeOpponent`(CQRS handlers)、`backend/src/Gewu.Api/Hubs/`(SignalR 路由)。
-
 ## Requirements
-
-
 ### Requirement: `ChatChannel` 枚举区分房间频道与围观频道
 
 系统 SHALL 定义 `enum ChatChannel { Room=0, Spectator=1 }`。`Room` 频道对房间内所有人(玩家 + 围观者)可见;`Spectator` 频道**仅围观者**可见(玩家看不到围观者吐槽)。
@@ -187,15 +184,13 @@ Validator 失败时 `ValidationBehavior` 抛 `ValidationException`,最终 HTTP 4
 
 ### Requirement: 催促事件仅推给被催玩家
 
-`UrgeOpponentCommand` Handler 成功后 MUST 调 `IRoomNotifier.OpponentUrgedAsync(roomId, urgedUserId, payload)`。SignalR 实现 MUST 用 `IHubContext<GomokuHub>.Clients.User(urgedUserId.ToString()).SendAsync("UrgeReceived", payload)` —— **只发给被催那一方**,不广播给房间。
+`UrgeOpponentCommand` Handler 成功后 MUST 调 `IRoomNotifier.OpponentUrgedAsync(roomId, urgedUserId, payload)`。SignalR 实现 MUST 用 `IHubContext<MatchHub>.Clients.User(urgedUserId.ToString()).SendAsync("UrgeReceived", payload)` —— **只发给被催那一方**,不广播给房间。
 
 `payload` 至少包含 `{ fromUserId, fromUsername, sentAt }`。
 
 #### Scenario: 仅被催方收到
 - **WHEN** 黑方成功催促白方
 - **THEN** `Clients.User(whitePlayerId).SendAsync("UrgeReceived", ...)` 被调一次;`Clients.Group("room:{roomId}").SendAsync` 不被触发
-
----
 
 ### Requirement: 催促异常的 HTTP 映射
 
@@ -227,3 +222,4 @@ Infrastructure SHALL 把 `ChatMessage` 映射到表 `ChatMessages`,列:`Id (PK)`
 #### Scenario: 用户名快照
 - **WHEN** 发送消息时 `User.Username == "Alice"`,之后用户改名为 `Alicia`
 - **THEN** 已存消息的 `SenderUsername` 仍为 `"Alice"`(历史不变)
+

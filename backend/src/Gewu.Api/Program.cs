@@ -59,7 +59,8 @@ builder.Host.UseSerilog((ctx, services, lc) => lc
 
 // CORS:给前端(Angular @ :4200 等)放行指定 origin。
 // "Cors:AllowedOrigins" 段缺失时保守默认 = 完全拒绝跨域(空数组)。
-// Production 通过 env var GOMOKU_CORS__ALLOWEDORIGINS__0 = https://gomoku.example.com 覆盖。
+// Production 通过 env var Cors__AllowedOrigins__0 = https://gewu.example.com 覆盖。
+// (无前缀 —— GOMOKU_ 前缀从未实现,实测被静默忽略,见 fix-spec-api-ops-env-prefix。)
 var corsOptions = builder.Configuration.GetSection("Cors").Get<CorsOptions>() ?? new CorsOptions();
 builder.Services.AddCors(options =>
 {
@@ -240,7 +241,7 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 // SignalR 握手只发生一次;长连接内 Hub 调用走 WebSocket 帧,不重复计入 HTTP rate limit。
-app.MapHub<GomokuHub>("/hubs/gomoku").DisableRateLimiting();
+app.MapHub<MatchHub>("/hubs/match").DisableRateLimiting();
 
 // Health endpoints(无 [Authorize],供运维探针;高频访问,豁免限流)
 app.MapHealthChecks("/health").DisableRateLimiting(); // liveness:纯 200,不检 DB

@@ -15,7 +15,6 @@ compare-and-swap 循环原子递减,归零时 `TryRemove`。
 迁移进来以符合 Clean Arch)、`backend/src/Gewu.Api/Hubs/ConnectionTracker.cs`(实现;留在
 Api 层作为 SignalR-adjacent infrastructure 单件)、`Features/Presence/GetOnlineCount/` 与
 `Features/Presence/IsUserOnline/`(MediatR 查询)、`backend/src/Gewu.Api/Controllers/PresenceController.cs`。
-
 ## Requirements
 ### Requirement: `IConnectionTracker` 承担跨 SignalR 连接的用户在线状态追踪
 
@@ -35,7 +34,7 @@ Application 层 SHALL 在 `Gewu.Application/Abstractions/IConnectionTracker.cs` 
 计数为 0 时移除 key(原子 TryRemove / TryUpdate 避免竞态)。同用户多标签 / 多设备多连接
 算一个"在线",最后一条连接断开才变"离线"。
 
-现有 `GomokuHub` 调用点(`OnConnectedAsync` / `OnDisconnectedAsync`)无需改动,只改 `using`。
+现有 `MatchHub` 调用点(`OnConnectedAsync` / `OnDisconnectedAsync`)无需改动,只改 `using`。
 
 #### Scenario: 接口位置
 - **WHEN** 审阅 `Gewu.Application/Abstractions/IConnectionTracker.cs`
@@ -52,8 +51,6 @@ Application 层 SHALL 在 `Gewu.Application/Abstractions/IConnectionTracker.cs` 
 #### Scenario: 并发 Track / Untrack 正确
 - **WHEN** 多线程同时 Track / Untrack 同一 UserId(concurrent incr / decr)
 - **THEN** 最终引用计数与实际活连接数一致;无"计数变 -1 永远 offline"或"key 永不移除"的卡死
-
----
 
 ### Requirement: `GetOnlineCountQuery` 返回在线用户数
 

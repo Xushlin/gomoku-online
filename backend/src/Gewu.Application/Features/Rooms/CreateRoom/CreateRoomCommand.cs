@@ -8,8 +8,9 @@ namespace Gewu.Application.Features.Rooms.CreateRoom;
 /// 创建房间,调用方成为 Host 和黑方。返回房间摘要。
 /// <para>
 /// <paramref name="GameKey"/> 是**必填**的 —— Application 层不猜自己在被问哪个棋种。
-/// HTTP 层对缺省的兼容处理(缺省填 <c>gomoku</c>)只存在于 controller,理由见
-/// <c>add-tictactoe</c> design D3:那个妥协应该待在一个能被看见的地方。
+/// <c>RoomsController</c> 也不猜:<c>require-room-game-key</c> 删掉了那里的
+/// <c>?? GameKeys.Gomoku</c>,因为它是为「已发布的客户端」写的兼容层,而那是**零个**。
+/// 于是"这一局是什么棋"这件事,从请求到聚合只有一个地方写着。
 /// </para>
 /// </summary>
 /// <param name="HostUserId">创建者。</param>

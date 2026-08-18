@@ -54,7 +54,7 @@ describe('DefaultAuthService', () => {
     expect(auth.user()?.username).toBe('alice');
     expect(auth.accessTokenExpiresAt()).toBeInstanceOf(Date);
     expect(auth.isAuthenticated()).toBe(true);
-    expect(localStorage.getItem('gomoku:refresh')).toBe('refresh-xyz');
+    expect(localStorage.getItem('gewu:refresh')).toBe('refresh-xyz');
 
     http.verify();
   });
@@ -85,7 +85,7 @@ describe('DefaultAuthService', () => {
     expect(auth.accessToken()).toBeNull();
     expect(auth.user()).toBeNull();
     expect(auth.isAuthenticated()).toBe(false);
-    expect(localStorage.getItem('gomoku:refresh')).toBeNull();
+    expect(localStorage.getItem('gewu:refresh')).toBeNull();
     http.verify();
   });
 
@@ -112,7 +112,7 @@ describe('DefaultAuthService', () => {
     req.flush(null, { status: 204, statusText: 'No Content' });
 
     expect(auth.isAuthenticated()).toBe(false);
-    expect(localStorage.getItem('gomoku:refresh')).toBeNull();
+    expect(localStorage.getItem('gewu:refresh')).toBeNull();
     http.verify();
   });
 
@@ -127,7 +127,7 @@ describe('DefaultAuthService', () => {
 
   it('bootstrap() with a valid refresh populates state before resolve', async () => {
     const { auth, http } = setup();
-    localStorage.setItem('gomoku:refresh', 'refresh-original');
+    localStorage.setItem('gewu:refresh', 'refresh-original');
 
     const bootstrapPromise = auth.bootstrap();
     const req = http.expectOne('/api/auth/refresh');
@@ -137,13 +137,13 @@ describe('DefaultAuthService', () => {
     await bootstrapPromise;
     expect(auth.isAuthenticated()).toBe(true);
     expect(auth.accessToken()).toBe('access-new');
-    expect(localStorage.getItem('gomoku:refresh')).toBe('refresh-new');
+    expect(localStorage.getItem('gewu:refresh')).toBe('refresh-new');
     http.verify();
   });
 
   it('bootstrap() with an invalid refresh clears storage and resolves unauthenticated', async () => {
     const { auth, http } = setup();
-    localStorage.setItem('gomoku:refresh', 'refresh-stale');
+    localStorage.setItem('gewu:refresh', 'refresh-stale');
 
     const bootstrapPromise = auth.bootstrap();
     http.expectOne('/api/auth/refresh').flush(
@@ -153,7 +153,7 @@ describe('DefaultAuthService', () => {
 
     await bootstrapPromise;
     expect(auth.isAuthenticated()).toBe(false);
-    expect(localStorage.getItem('gomoku:refresh')).toBeNull();
+    expect(localStorage.getItem('gewu:refresh')).toBeNull();
     http.verify();
   });
 });

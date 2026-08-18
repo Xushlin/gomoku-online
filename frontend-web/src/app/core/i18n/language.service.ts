@@ -7,7 +7,7 @@ import {
   type SupportedLocale,
 } from './supported-locales';
 
-const LANG_STORAGE_KEY = 'gomoku:lang';
+const LANG_STORAGE_KEY = 'gewu:lang';
 
 /**
  * Cross-cutting i18n API. Wraps TranslocoService so consumers see Signals

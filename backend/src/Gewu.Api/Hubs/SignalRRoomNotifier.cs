@@ -13,10 +13,10 @@ namespace Gewu.Api.Hubs;
 /// </summary>
 public sealed class SignalRRoomNotifier : IRoomNotifier
 {
-    private readonly IHubContext<GomokuHub> _hub;
+    private readonly IHubContext<MatchHub> _hub;
 
     /// <inheritdoc />
-    public SignalRRoomNotifier(IHubContext<GomokuHub> hub)
+    public SignalRRoomNotifier(IHubContext<MatchHub> hub)
     {
         _hub = hub;
     }
@@ -47,42 +47,42 @@ public sealed class SignalRRoomNotifier : IRoomNotifier
         var forNonSpectators = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForNonSpectators);
         var forSpectators = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForSpectators);
 
-        await _hub.Clients.Group(GomokuHub.NonSpectatorsGroupName(room.Id))
+        await _hub.Clients.Group(MatchHub.NonSpectatorsGroupName(room.Id))
             .SendAsync("RoomState", forNonSpectators, ct);
-        await _hub.Clients.Group(GomokuHub.SpectatorsGroupName(room.Id))
+        await _hub.Clients.Group(MatchHub.SpectatorsGroupName(room.Id))
             .SendAsync("RoomState", forSpectators, ct);
     }
 
     /// <inheritdoc />
     public Task PlayerJoinedAsync(RoomId roomId, UserSummaryDto user, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId)).SendAsync("PlayerJoined", user, ct);
+        _hub.Clients.Group(MatchHub.RoomGroupName(roomId)).SendAsync("PlayerJoined", user, ct);
 
     /// <inheritdoc />
     public Task PlayerLeftAsync(RoomId roomId, UserSummaryDto user, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId)).SendAsync("PlayerLeft", user, ct);
+        _hub.Clients.Group(MatchHub.RoomGroupName(roomId)).SendAsync("PlayerLeft", user, ct);
 
     /// <inheritdoc />
     public Task SpectatorJoinedAsync(RoomId roomId, UserSummaryDto user, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId)).SendAsync("SpectatorJoined", user, ct);
+        _hub.Clients.Group(MatchHub.RoomGroupName(roomId)).SendAsync("SpectatorJoined", user, ct);
 
     /// <inheritdoc />
     public Task SpectatorLeftAsync(RoomId roomId, UserSummaryDto user, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId)).SendAsync("SpectatorLeft", user, ct);
+        _hub.Clients.Group(MatchHub.RoomGroupName(roomId)).SendAsync("SpectatorLeft", user, ct);
 
     /// <inheritdoc />
     public Task MoveMadeAsync(RoomId roomId, MoveDto move, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId)).SendAsync("MoveMade", move, ct);
+        _hub.Clients.Group(MatchHub.RoomGroupName(roomId)).SendAsync("MoveMade", move, ct);
 
     /// <inheritdoc />
     public Task GameEndedAsync(RoomId roomId, GameEndedDto payload, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId)).SendAsync("GameEnded", payload, ct);
+        _hub.Clients.Group(MatchHub.RoomGroupName(roomId)).SendAsync("GameEnded", payload, ct);
 
     /// <inheritdoc />
     public Task ChatMessagePostedAsync(RoomId roomId, ChatChannel channel, ChatMessageDto message, CancellationToken ct)
     {
         var group = channel == ChatChannel.Spectator
-            ? GomokuHub.SpectatorsGroupName(roomId)
-            : GomokuHub.RoomGroupName(roomId);
+            ? MatchHub.SpectatorsGroupName(roomId)
+            : MatchHub.RoomGroupName(roomId);
         return _hub.Clients.Group(group).SendAsync("ChatMessage", message, ct);
     }
 
@@ -92,6 +92,6 @@ public sealed class SignalRRoomNotifier : IRoomNotifier
 
     /// <inheritdoc />
     public Task RoomDissolvedAsync(RoomId roomId, CancellationToken ct) =>
-        _hub.Clients.Group(GomokuHub.RoomGroupName(roomId))
+        _hub.Clients.Group(MatchHub.RoomGroupName(roomId))
             .SendAsync("RoomDissolved", new { RoomId = roomId.Value }, ct);
 }

@@ -11,7 +11,7 @@ public sealed class CorsOptions
 
     /// <summary>
     /// 允许的跨域 origin 列表(完整 scheme+host+port)。空数组 = 完全禁止跨域(保守默认)。
-    /// Production 通常用 env var <c>GOMOKU_CORS__ALLOWEDORIGINS__0=https://gomoku.example.com</c> 覆盖。
+    /// Production 通常用 env var <c>Cors__AllowedOrigins__0=https://gewu.example.com</c> 覆盖。
     /// </summary>
     public string[] AllowedOrigins { get; set; } = Array.Empty<string>();
 }

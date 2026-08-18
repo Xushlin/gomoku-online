@@ -42,7 +42,7 @@ describe('DefaultThemeService', () => {
     svc.activate('system');
 
     expect(document.documentElement.dataset['theme']).toBe('system');
-    expect(localStorage.getItem('gomoku:theme')).toBe('system');
+    expect(localStorage.getItem('gewu:theme')).toBe('system');
     expect(svc.themeName()).toBe('system');
     expect(svc.isDark()).toBe(beforeDark);
   });
@@ -54,13 +54,13 @@ describe('DefaultThemeService', () => {
     svc.setDark(true);
 
     expect(document.documentElement.classList.contains('dark')).toBe(true);
-    expect(localStorage.getItem('gomoku:dark')).toBe('1');
+    expect(localStorage.getItem('gewu:dark')).toBe('1');
     expect(svc.isDark()).toBe(true);
     expect(svc.themeName()).toBe(beforeName);
   });
 
   it('initial resolution: localStorage dark value wins over OS prefers-color-scheme', () => {
-    localStorage.setItem('gomoku:dark', '0');
+    localStorage.setItem('gewu:dark', '0');
     stubMatchMedia(true);
 
     const svc = createService();
@@ -69,12 +69,12 @@ describe('DefaultThemeService', () => {
   });
 
   it('initial resolution: invalid theme name in localStorage falls back to material and overwrites', () => {
-    localStorage.setItem('gomoku:theme', 'nonexistent-theme');
+    localStorage.setItem('gewu:theme', 'nonexistent-theme');
 
     const svc = createService();
 
     expect(svc.themeName()).toBe('material');
-    expect(localStorage.getItem('gomoku:theme')).toBe('material');
+    expect(localStorage.getItem('gewu:theme')).toBe('material');
   });
 
   it('availableThemes() exposes the two registered themes', () => {

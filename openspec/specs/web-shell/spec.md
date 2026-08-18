@@ -153,13 +153,11 @@ header MUST NOT 通过 `flex-wrap` 换行来规避溢出:header 是 `sticky top-
 
 #### Scenario: 切换后 SoundService 状态翻转
 - **WHEN** 用户点 toggle
-- **THEN** `sound.muted()` 翻转;按钮文本 / `aria-checked` 同步更新;`localStorage.gomoku:sound-muted` 写入新值
+- **THEN** `sound.muted()` 翻转;按钮文本 / `aria-checked` 同步更新;`localStorage.gewu:sound-muted` 写入新值
 
 #### Scenario: 刷新后状态保留
 - **WHEN** 用户切到 muted 后刷新页面
 - **THEN** toggle 显示 "Off";`sound.muted() === true`
-
----
 
 ### Requirement: i18n —— `header.sound.*` 双语对齐
 
@@ -189,7 +187,7 @@ flatten 后两份 JSON 的 key 集合 MUST 完全相等(零漂移)。
 
 #### Scenario: 选择切换 + 持久化
 - **WHEN** 用户点 chiptune
-- **THEN** `sound.activate('chiptune')` 被调一次;`sound.packName() === 'chiptune'`;`localStorage.gomoku:sound-pack === 'chiptune'`
+- **THEN** `sound.activate('chiptune')` 被调一次;`sound.packName() === 'chiptune'`;`localStorage.gewu:sound-pack === 'chiptune'`
 
 #### Scenario: 选择后预览
 - **WHEN** `muted() === false`,用户点 chiptune
@@ -198,8 +196,6 @@ flatten 后两份 JSON 的 key 集合 MUST 完全相等(零漂移)。
 #### Scenario: muted 时不预览
 - **WHEN** `muted() === true`,用户点 chiptune
 - **THEN** `sound.activate('chiptune')` 被调;`sound.play` MUST NOT 被调
-
----
 
 ### Requirement: i18n —— `header.sound-pack.*` 双语对齐
 
