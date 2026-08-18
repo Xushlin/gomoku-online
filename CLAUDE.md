@@ -330,7 +330,13 @@ Deferred follow-ups, each with a reason:
 
   A measurement mistake of mine on the way: I first read `EXIT=0` from a crashing run, because `$?` after `dotnet run … | tail -30` is *tail's* exit code. **A pipe eats the exit code you were trying to measure.**
 
-- Puzzle level artefacts are stored **pretty-printed** in the database (`layoutJson` carries its indentation), so a 10-piece klotski layout ships 1.7 kB instead of ~0.5 kB. Pre-dates `add-klotski` — 成语纵横 does exactly the same — but both games now pay transfer cost for a reviewable artefact. Fixing it means compacting in the seeder, which is puzzle-core work.
+- **Puzzle level artefacts are now stored compactly** — see `compact-puzzle-artefacts`. `PuzzleLevelSeeder` used `JsonElement.GetRawText()`, which returns the *source text slice*, so the committed artefact's indentation was copied verbatim into `LayoutJson` and then served on every level load. Measured on a real dev database: **58% of the stored bytes were whitespace**. Same-build A/B on the endpoint itself: 成语纵横 level 10 went **6,389 B → 2,321 B**.
+
+  The artefact files stay indented, and that is the point: **that copy is for a human to review, the column is for a machine to send, and their correct formats differ.** The old bug was one function treating the two as the same thing.
+
+  Two traps are recorded in the spec. `Utf8JsonWriter`'s default encoder escapes every non-ASCII character, so 成语 and 曹操 would become `\uXXXX` — *larger* than the whitespace saved, and unreadable in a DB browser; `UnsafeRelaxedJsonEscaping` is required, and the "unsafe" in its name only concerns HTML interpolation, which this JSON never sees. And **the size assertion is not decoration**: swap the encoder back and both "semantically identical" and "no insignificant whitespace" still pass — only size regresses. Mutation-checked, so a semantics-only suite would have gone green on that regression.
+
+  Existing dev databases keep their pretty-printed rows, because the seeder is a no-op once levels exist. Not worth a data migration: a local DB can be deleted, and there is no deployed one.
 
 - **The `bundle initial exceeded maximum budget` warning is gone** — 504.65 kB → **470.37 kB** against the unchanged 500 kB budget (transfer 132.15 → 124.70 kB). See `close-bundle-budget`.
 
