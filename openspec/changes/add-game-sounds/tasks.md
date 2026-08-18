@@ -64,6 +64,11 @@
 - [x] 6.5 `testing/sound.ts` 的 `stubSoundService()`,`extends SoundService`;三处 stub 换过来。
       **换的时候确认了那条缺陷是真的**:`room-page.spec.ts` 的 stub 从音量滑杆落地那天起
       就缺 `volume` 与 `setVolume`,而 `useValue` 是 `any`,所以一直没人报。
+
+      **这里我先写错了一句**:说「整个音效功能零行为测试」。不对 —— `header.spec.ts` 断言过
+      两次 `sound.play`(切 pack 的试听,以及静音时不试听)。真正成立的说法窄一些,
+      但要点不变:**没有任何一条属于游戏事件的声音被断言过**,落子 / 胜 / 负 / 平 / 催促
+      五个事件在 `room-page.spec.ts` 里全靠一个没人看的 `vi.fn()`。
 - [x] 6.6 `announce.spec.ts` —— 逐种组合断言优先级。
 - [x] 6.7 `play.spec.ts` —— 硬降播 `move-place`;移动 / 旋转 / 暂停不播;爆顶播 `game-lose`;
       **真的从 UI 消掉一行**播 `line-clear`(见下)。
