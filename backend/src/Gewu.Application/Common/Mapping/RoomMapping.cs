@@ -64,13 +64,13 @@ public static class RoomMapping
         {
             var orderedMoves = room.Game.Moves.OrderBy(mv => mv.Ply).ToList();
             var moves = orderedMoves
-                .Select(mv => new MoveDto(mv.Ply, mv.Row, mv.Col, mv.Stone, mv.PlayedAt, mv.FromRow, mv.FromCol, mv.Text))
+                .Select(mv => new MoveDto(mv.Ply, mv.Row, mv.Col, SeatWire.ToStone(mv.Seat), mv.PlayedAt, mv.FromRow, mv.FromCol, mv.Text))
                 .ToList()
                 .AsReadOnly();
             var turnStartedAt = orderedMoves.LastOrDefault()?.PlayedAt ?? room.Game.StartedAt;
             gameDto = new GameSnapshotDto(
                 Id: room.Game.Id,
-                CurrentTurn: room.Game.CurrentTurn,
+                CurrentTurn: SeatWire.ToStone(room.Game.CurrentTurn),
                 StartedAt: room.Game.StartedAt,
                 EndedAt: room.Game.EndedAt,
                 Result: room.Game.Result,

@@ -1,4 +1,5 @@
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.Abstractions;
 using PersistedMove = Gewu.Domain.Rooms.Move;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,7 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
         var gameId = Guid.NewGuid();
         var roomId = Guid.NewGuid();
         var hostId = Guid.NewGuid();
+        var side = await MoveSideColumn.DetectAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"""
             INSERT INTO Users (Id, Email, Username, PasswordHash, IsActive, IsBot, CreatedAt, RowVersion)
@@ -58,8 +60,8 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
             INSERT INTO Games (Id, RoomId, StartedAt, CurrentTurn, RowVersion)
             VALUES ('{Sql(gameId)}', '{Sql(roomId)}', '{Now:o}', 1, randomblob(16));
 
-            INSERT INTO Moves (Id, GameId, Ply, Row, Col, Stone, PlayedAt) VALUES
-              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 1, 7, 7, 1, '{Now:o}');
+            INSERT INTO Moves (Id, GameId, Ply, Row, Col, {side.Name}, PlayedAt) VALUES
+              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 1, 7, 7, {side.First}, '{Now:o}');
             """;
         await cmd.ExecuteNonQueryAsync();
         return gameId;
@@ -67,10 +69,11 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
 
     private async Task InsertTextualMoveAsync(Guid gameId)
     {
+        var side = await MoveSideColumn.DetectAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"""
-            INSERT INTO Moves (Id, GameId, Ply, Row, Col, Text, Stone, PlayedAt)
-            VALUES ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 2, NULL, NULL, '一心一意', 2, '{Now.AddSeconds(1):o}');
+            INSERT INTO Moves (Id, GameId, Ply, Row, Col, Text, {side.Name}, PlayedAt)
+            VALUES ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 2, NULL, NULL, '一心一意', {side.Second}, '{Now.AddSeconds(1):o}');
             """;
         await cmd.ExecuteNonQueryAsync();
     }
@@ -90,7 +93,7 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
         move.Ply.Should().Be(1);
         move.Row.Should().Be(7);
         move.Col.Should().Be(7);
-        move.Stone.Should().Be(Stone.Black);
+        move.Seat.Should().Be(BoardSeats.FirstSeat);
         move.Text.Should().BeNull();
     }
 

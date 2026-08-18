@@ -26,7 +26,7 @@ public class RoomJoinLeaveTests
         room.WhitePlayerId.Should().Be(bobId);
         room.Status.Should().Be(RoomStatus.Playing);
         room.Game.Should().NotBeNull();
-        room.Game!.CurrentTurn.Should().Be(Stone.Black);
+        room.Game!.CurrentTurn.Should().Be(BoardSeats.FirstSeat);
         room.Game.StartedAt.Should().Be(Now.AddMinutes(1));
     }
 

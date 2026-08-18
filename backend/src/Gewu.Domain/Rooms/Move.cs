@@ -54,8 +54,14 @@ public sealed class Move
     /// </summary>
     public string? Text { get; private set; }
 
-    /// <summary>落子棋色(<see cref="Stone.Black"/> 或 <see cref="Stone.White"/>)。</summary>
-    public Stone Stone { get; private set; }
+    /// <summary>
+    /// 出手的座位号,<c>0</c> 到 <c>SeatCount - 1</c>。
+    /// <para>
+    /// 此前这里是 <c>Stone</c>。内核不再知道一个棋种有几个人,也不再知道"黑白"是什么 ——
+    /// 棋盘类棋种在**自己的规则内部**把座位 0/1 映回 <c>Stone.Black</c> / <c>Stone.White</c>。
+    /// </para>
+    /// </summary>
+    public int Seat { get; private set; }
 
     /// <summary>落子时刻(UTC)。</summary>
     public DateTime PlayedAt { get; private set; }
@@ -63,7 +69,7 @@ public sealed class Move
     // EF 物化用。
     private Move() { }
 
-    internal Move(Guid gameId, int ply, MoveIntent intent, Stone stone, DateTime playedAt)
+    internal Move(Guid gameId, int ply, MoveIntent intent, int seat, DateTime playedAt)
     {
         Id = Guid.NewGuid();
         GameId = gameId;
@@ -75,7 +81,7 @@ public sealed class Move
         Row = intent.To?.Row;
         Col = intent.To?.Col;
         Text = intent.Text;
-        Stone = stone;
+        Seat = seat;
         PlayedAt = playedAt;
     }
 
@@ -88,5 +94,5 @@ public sealed class Move
         => FromRow is int r && FromCol is int c ? new Position(r, c) : null;
 
     /// <summary>把本步还原成规则看得懂的形状,供 <c>IGameRules.Apply</c> 的历史使用。</summary>
-    public PlayedMove ToPlayedMove() => new(FromPosition(), ToPosition(), Text, Stone);
+    public PlayedMove ToPlayedMove() => new(FromPosition(), ToPosition(), Text, Seat);
 }

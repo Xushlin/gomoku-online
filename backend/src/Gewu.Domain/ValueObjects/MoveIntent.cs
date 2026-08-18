@@ -67,8 +67,8 @@ public readonly record struct MoveIntent(Position? From, Position? To, string? T
 /// <param name="From">起点;落子类与文本类为 <c>null</c>。</param>
 /// <param name="To">终点 / 落点;文本类为 <c>null</c>。</param>
 /// <param name="Text">这一步的文本;位置类为 <c>null</c>。</param>
-/// <param name="Side">走这一步的一方,<see cref="Stone.Black"/> 或 <see cref="Stone.White"/>。</param>
-public readonly record struct PlayedMove(Position? From, Position? To, string? Text, Stone Side)
+/// <param name="Seat">走这一步的座位号,<c>0</c> 到 <c>SeatCount - 1</c>。</param>
+public readonly record struct PlayedMove(Position? From, Position? To, string? Text, int Seat)
 {
     /// <summary>起点;落子类与文本类为 <c>null</c>。</summary>
     public Position? From { get; } = MovePayload.Validate(From, To, Text).from;
@@ -82,14 +82,14 @@ public readonly record struct PlayedMove(Position? From, Position? To, string? T
     /// <summary>位置类的一步。</summary>
     /// <param name="from">起点;落子类为 <c>null</c>。</param>
     /// <param name="to">终点 / 落点。</param>
-    /// <param name="side">走这一步的一方。</param>
-    public static PlayedMove Positional(Position? from, Position to, Stone side)
-        => new(from, to, null, side);
+    /// <param name="seat">走这一步的座位号。</param>
+    public static PlayedMove Positional(Position? from, Position to, int seat)
+        => new(from, to, null, seat);
 
     /// <summary>文本类的一步。</summary>
     /// <param name="text">这一步的文本。</param>
-    /// <param name="side">走这一步的一方。</param>
-    public static PlayedMove Said(string text, Stone side) => new(null, null, text, side);
+    /// <param name="seat">走这一步的座位号。</param>
+    public static PlayedMove Said(string text, int seat) => new(null, null, text, seat);
 }
 
 /// <summary>

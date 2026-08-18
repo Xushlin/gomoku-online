@@ -20,11 +20,14 @@ public class XiangqiAiTests
     private static readonly IGameAiFactory Factory = new XiangqiAiFactory();
 
     /// <summary>红方 —— 先手。</summary>
-    private const Stone Red = Stone.Black;
+    private static readonly int Red = BoardSeats.FirstSeat;
+
+    /// <summary>同一方,棋色形式。AI 与 <c>LegalMoves</c> 这一侧仍然说棋色。</summary>
+    private static readonly Stone RedStone = BoardSeats.ToStone(BoardSeats.FirstSeat);
 
     private static Position P(int r, int c) => new(r, c);
 
-    private static PlayedMove Put(int fr, int fc, int tr, int tc, Stone side)
+    private static PlayedMove Put(int fr, int fc, int tr, int tc, int side)
         => PlayedMove.Positional(P(fr, fc), P(tr, tc), side);
 
     private static IBoardGameAi Ai(BotDifficulty difficulty, int seed = 1)
@@ -39,7 +42,7 @@ public class XiangqiAiTests
     [MemberData(nameof(AllDifficulties))]
     public void Every_difficulty_opens_with_a_legal_move(BotDifficulty difficulty)
     {
-        var move = Ai(difficulty).SelectMove([], Red);
+        var move = Ai(difficulty).SelectMove([], RedStone);
 
         // 判据不是「看起来像一步棋」,而是**规则接受它**。
         Rules.Invoking(r => r.Apply([], move, Red)).Should().NotThrow();
@@ -58,14 +61,14 @@ public class XiangqiAiTests
 
         for (var ply = 0; ply < 12; ply++)
         {
-            var move = ai.SelectMove(history, side);
+            var move = ai.SelectMove(history, BoardSeats.ToStone(side));
             var result = Rules.Apply(history, move, side);   // 非法就抛
             history.Add(PlayedMove.Positional(move.From, move.To!.Value, side));
             if (result.Result != GameResult.Ongoing)
             {
                 break;
             }
-            side = side == Stone.Black ? Stone.White : Stone.Black;
+            side = side == BoardSeats.FirstSeat ? BoardSeats.SecondSeat : BoardSeats.FirstSeat;
         }
 
         history.Should().NotBeEmpty();
@@ -80,10 +83,10 @@ public class XiangqiAiTests
         var history = new List<PlayedMove>
         {
             Put(6, 4, 6, 3, Red),          // 红兵让开 4 列
-            Put(0, 0, 4, 4, Stone.White),  // 黑车直照红帅
+            Put(0, 0, 4, 4, BoardSeats.SecondSeat),  // 黑车直照红帅
         };
 
-        var move = Ai(difficulty).SelectMove(history, Red);
+        var move = Ai(difficulty).SelectMove(history, RedStone);
 
         Rules.Invoking(r => r.Apply(history, move, Red)).Should().NotThrow();
     }
@@ -101,10 +104,10 @@ public class XiangqiAiTests
         var history = new List<PlayedMove>
         {
             Put(6, 0, 6, 1, Red),          // 红兵让开 0 列
-            Put(0, 0, 5, 0, Stone.White),  // 黑车送到 (5,0),红车 (9,0) 直吃
+            Put(0, 0, 5, 0, BoardSeats.SecondSeat),  // 黑车送到 (5,0),红车 (9,0) 直吃
         };
 
-        var move = Ai(difficulty).SelectMove(history, Red);
+        var move = Ai(difficulty).SelectMove(history, RedStone);
 
         move.To.Should().Be(P(5, 0), "白送的车该被吃掉");
         move.From.Should().Be(P(9, 0));
@@ -117,10 +120,10 @@ public class XiangqiAiTests
         var history = new List<PlayedMove>
         {
             Put(6, 0, 6, 1, Red),
-            Put(0, 0, 5, 0, Stone.White),
+            Put(0, 0, 5, 0, BoardSeats.SecondSeat),
         };
 
-        var move = Ai(BotDifficulty.Easy).SelectMove(history, Red);
+        var move = Ai(BotDifficulty.Easy).SelectMove(history, RedStone);
 
         Rules.Invoking(r => r.Apply(history, move, Red)).Should().NotThrow();
     }
@@ -140,8 +143,8 @@ public class XiangqiAiTests
     [Fact]
     public void The_same_seed_gives_the_same_move()
     {
-        var a = Factory.Create(BotDifficulty.Medium, new Random(42)).SelectMove([], Red);
-        var b = Factory.Create(BotDifficulty.Medium, new Random(42)).SelectMove([], Red);
+        var a = Factory.Create(BotDifficulty.Medium, new Random(42)).SelectMove([], RedStone);
+        var b = Factory.Create(BotDifficulty.Medium, new Random(42)).SelectMove([], RedStone);
 
         a.Should().Be(b);
     }
@@ -153,14 +156,14 @@ public class XiangqiAiTests
         var history = new List<PlayedMove>
         {
             // 清空黑方除将以外的子(叠进坟场格),再用红兵吃掉幸存者。
-            Put(0, 0, 5, 4, Stone.White), Put(0, 1, 5, 4, Stone.White),
-            Put(0, 2, 5, 4, Stone.White), Put(0, 3, 5, 4, Stone.White),
-            Put(0, 5, 5, 4, Stone.White), Put(0, 6, 5, 4, Stone.White),
-            Put(0, 7, 5, 4, Stone.White), Put(0, 8, 5, 4, Stone.White),
-            Put(2, 1, 5, 4, Stone.White), Put(2, 7, 5, 4, Stone.White),
-            Put(3, 0, 5, 4, Stone.White), Put(3, 2, 5, 4, Stone.White),
-            Put(3, 4, 5, 4, Stone.White), Put(3, 6, 5, 4, Stone.White),
-            Put(3, 8, 5, 4, Stone.White),
+            Put(0, 0, 5, 4, BoardSeats.SecondSeat), Put(0, 1, 5, 4, BoardSeats.SecondSeat),
+            Put(0, 2, 5, 4, BoardSeats.SecondSeat), Put(0, 3, 5, 4, BoardSeats.SecondSeat),
+            Put(0, 5, 5, 4, BoardSeats.SecondSeat), Put(0, 6, 5, 4, BoardSeats.SecondSeat),
+            Put(0, 7, 5, 4, BoardSeats.SecondSeat), Put(0, 8, 5, 4, BoardSeats.SecondSeat),
+            Put(2, 1, 5, 4, BoardSeats.SecondSeat), Put(2, 7, 5, 4, BoardSeats.SecondSeat),
+            Put(3, 0, 5, 4, BoardSeats.SecondSeat), Put(3, 2, 5, 4, BoardSeats.SecondSeat),
+            Put(3, 4, 5, 4, BoardSeats.SecondSeat), Put(3, 6, 5, 4, BoardSeats.SecondSeat),
+            Put(3, 8, 5, 4, BoardSeats.SecondSeat),
             Put(6, 4, 5, 4, Red),          // 红兵吃掉幸存者,并留在 4 列挡住照面
             Put(6, 0, 6, 1, Red),          // 让开 0 列
             Put(9, 8, 2, 5, Red),          // 红车封 5 列
@@ -189,7 +192,7 @@ public class XiangqiAiTests
     {
         // AI 从 LegalMoves 里挑,所以这条等价于「AI 的候选集合里没有一步是规则会拒的」。
         // 两份枚举一旦分叉,表现就是机器人走出非法着法 —— 用户看到的是它卡住了。
-        var moves = Rules.LegalMoves([], Red);
+        var moves = Rules.LegalMoves([], RedStone);
 
         moves.Should().NotBeEmpty();
         foreach (var move in moves)
@@ -203,6 +206,6 @@ public class XiangqiAiTests
     {
         // 中国象棋开局红方共 44 着 —— 这是个可以独立查证的数,比「非空」有信息量得多:
         // 少一条说明某种棋子的走法漏了,多一条说明多生成了不该有的。
-        Rules.LegalMoves([], Red).Should().HaveCount(44);
+        Rules.LegalMoves([], RedStone).Should().HaveCount(44);
     }
 }

@@ -28,6 +28,19 @@ public interface IGameRules
     string GameKey { get; }
 
     /// <summary>
+    /// 本棋种需要几个座位。现有实现全部为 2。
+    /// <para>
+    /// 这不是"平台能力"声明,而是**棋种形状**,与 <c>Rows</c> / <c>Cols</c> 同类 —— 所以它不计入
+    /// 本接口顶部那条「能力声明超过三个就抽成 <c>GameCapabilities</c>」的门槛。
+    /// </para>
+    /// <para>
+    /// 内核靠它轮转:<c>(seat + 1) % SeatCount</c>。在它之前那一行是
+    /// <c>stone == Stone.Black ? Stone.White : Stone.Black</c> —— 整个两人假设就是那一行。
+    /// </para>
+    /// </summary>
+    int SeatCount { get; }
+
+    /// <summary>
     /// 本棋种是否存在**人类对手池** —— 平台有没有为它提供人人对战入口。
     /// <para>
     /// 这是一个**结构性事实**,不是判断。它与 <see cref="IsRated"/> 分开,是因为判断会过期
@@ -94,7 +107,7 @@ public interface IGameRules
     /// <param name="intent">这一步想怎么走。</param>
     /// <param name="side">走这一步的一方。</param>
     /// <exception cref="Exceptions.InvalidMoveException">这一步不合法。</exception>
-    MoveApplication Apply(IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side);
+    MoveApplication Apply(IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat);
 }
 
 /// <summary>

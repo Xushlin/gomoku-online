@@ -29,7 +29,7 @@ public class ExecuteBotMoveCommandHandlerTests
         var room = RoomsFixtures.PlayingRoom(host, bot); // host=Black, bot=White
         // 当前回合 == Black(host)—— bot 不该走。先让 host 走一步,回合变成 White。
         room.PlayMove(host.Id, MoveIntent.Place(new Gewu.Domain.ValueObjects.Position(7, 7)), RoomsFixtures.Now.AddSeconds(2), BuiltInGameRules.Gomoku);
-        room.Game!.CurrentTurn.Should().Be(Stone.White); // 确认轮到白方(bot)
+        room.Game!.CurrentTurn.Should().Be(Room.SecondSeat); // 确认轮到后手座位(bot)
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         _sender.Setup(s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()))

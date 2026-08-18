@@ -14,12 +14,12 @@ public class IdiomChainRulesTests
 {
     private static readonly IdiomChainRules Rules = new(IdiomLexicons.Small);
 
-    private const Stone First = Stone.Black;
-    private const Stone Second = Stone.White;
+    private static readonly int First = BoardSeats.FirstSeat;
+    private static readonly int Second = BoardSeats.SecondSeat;
 
-    private static PlayedMove Said(string word, Stone side) => PlayedMove.Said(word, side);
+    private static PlayedMove Said(string word, int side) => PlayedMove.Said(word, side);
 
-    private static MoveApplication Apply(IReadOnlyList<PlayedMove> history, string word, Stone side)
+    private static MoveApplication Apply(IReadOnlyList<PlayedMove> history, string word, int side)
         => Rules.Apply(history, MoveIntent.Say(word), side);
 
     [Fact]
@@ -144,11 +144,24 @@ public class IdiomChainRulesTests
     }
 
     [Fact]
-    public void An_empty_side_is_refused()
+    public void The_seat_is_not_consulted_at_all()
     {
-        var act = () => Apply([], "画蛇添足", Stone.Empty);
+        // 这条测试此前叫 An_empty_side_is_refused,断言 `Stone.Empty` 被拒。
+        //
+        // 那个守卫存在的理由是 `Stone.Empty` 是一个**可表达的非值** —— 用一个合法取值去表示
+        // "不适用",正是本内核明令禁止的形状。座位号没有这样的取值:越界就只是越界。
+        //
+        // 而对一个**根本不读出手方**的棋种,越界的座位号没有任何东西可以弄坏。所以这里不再
+        // 断言它被拒,而是把那条设计决定钉住:成语接龙接不接得上,只取决于历史里的最后一个字。
+        // 加一个范围检查会是内核已经保证过的事实的第二份实现。
+        var history = new List<PlayedMove> { Said("一心一意", First) };
 
-        act.Should().Throw<InvalidMoveException>();
+        var sameSeatAgain = Apply(history, "意气风发", First);
+        var otherSeat = Apply(history, "意气风发", Second);
+        var seatThatDoesNotExist = Apply(history, "意气风发", 7);
+
+        sameSeatAgain.Result.Should().Be(otherSeat.Result);
+        seatThatDoesNotExist.Result.Should().Be(otherSeat.Result);
     }
 
     /// <summary>从测试程序集向上找到解决方案根 —— 源码断言要读文件。</summary>

@@ -97,7 +97,7 @@ public sealed class AiMoveWorker : BackgroundService
                 }
 
                 // 找出当前回合对应的 bot UserId
-                var botId = room.Game.CurrentTurn == Stone.Black
+                var botId = room.Game.CurrentTurn == Gewu.Domain.Rooms.Room.FirstSeat
                     ? room.BlackPlayerId
                     : room.WhitePlayerId!.Value;
 

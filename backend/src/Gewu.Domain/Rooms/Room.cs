@@ -49,6 +49,12 @@ public sealed class Room
     public UserId HostUserId { get; private set; }
 
     /// <summary>黑方玩家(创建时即 Host)。</summary>
+    /// <summary>先手座位号 —— 目前就是 <c>BlackPlayerId</c> 那个座位。</summary>
+    public static readonly int FirstSeat = 0;
+
+    /// <summary>后手座位号。</summary>
+    public static readonly int SecondSeat = 1;
+
     public UserId BlackPlayerId { get; private set; }
 
     /// <summary>白方玩家;Waiting 状态下为 <c>null</c>。</summary>
@@ -293,6 +299,22 @@ public sealed class Room
     /// <param name="intent">这一步想怎么走;落子类棋种的 <c>From</c> 为 <c>null</c>。</param>
     /// <param name="now">走子时刻(UTC)。</param>
     /// <param name="rules">本房间棋种的规则。</param>
+    /// <summary>
+    /// 这个用户坐在几号座位?不是玩家则 <c>null</c>。
+    /// <para>
+    /// 三处需要"这人是第几号"的地方(落子、催促、以后的出牌)此前各写了一遍同样的
+    /// if/else if/else。合成一处,是因为那三份里任何一份漏掉一个座位,表现都是
+    /// "某个座位的人被当成不是玩家" —— 而座位变多之后,漏的概率随座位数涨。
+    /// </para>
+    /// </summary>
+    /// <param name="userId">用户。</param>
+    public int? SeatOf(UserId userId)
+    {
+        if (userId == BlackPlayerId) return FirstSeat;
+        if (WhitePlayerId is not null && userId == WhitePlayerId.Value) return SecondSeat;
+        return null;
+    }
+
     public MoveOutcome PlayMove(UserId userId, MoveIntent intent, DateTime now, IGameRules rules)
     {
         if (Status != RoomStatus.Playing)
@@ -307,34 +329,23 @@ public sealed class Room
             throw new RoomNotInPlayException("Room is in Playing state but has no Game instance.");
         }
 
-        Stone playerStone;
-        if (userId == BlackPlayerId)
-        {
-            playerStone = Stone.Black;
-        }
-        else if (WhitePlayerId is not null && userId == WhitePlayerId.Value)
-        {
-            playerStone = Stone.White;
-        }
-        else
-        {
-            throw new NotAPlayerException($"User {userId.Value} is not a player in this room.");
-        }
+        var seat = SeatOf(userId)
+            ?? throw new NotAPlayerException($"User {userId.Value} is not a player in this room.");
 
-        if (playerStone != Game.CurrentTurn)
+        if (seat != Game.CurrentTurn)
         {
             throw new NotYourTurnException(
-                $"It is not {playerStone}'s turn; current turn is {Game.CurrentTurn}.");
+                $"It is not seat {seat}'s turn; current turn is seat {Game.CurrentTurn}.");
         }
 
         // 盘面语义整个属于规则:越界、重复落子、走法合不合规,全部由 Apply 回答。
         // 聚合根到这里为止只验了三件事——房间在不在对局中、这人是不是玩家、是不是他的回合。
         // 非法则抛 InvalidMoveException 向上冒泡(对外仍是 409),而 Game 的 Moves
         // 在此之前尚未追加,聚合状态不变。
-        var application = rules.Apply(Game.History(), intent, playerStone);
+        var application = rules.Apply(Game.History(), intent, seat);
         var result = application.Result;
 
-        var appended = Game.RecordMove(intent, playerStone, now);
+        var appended = Game.RecordMove(intent, seat, rules.SeatCount, now);
 
         if (result != GameResult.Ongoing)
         {
@@ -433,7 +444,7 @@ public sealed class Room
 
         UserId winnerUserId;
         GameResult winnerResult;
-        if (Game.CurrentTurn == Stone.Black)
+        if (Game.CurrentTurn == FirstSeat)
         {
             winnerUserId = WhitePlayerId!.Value;
             winnerResult = GameResult.WhiteWin;
@@ -503,25 +514,12 @@ public sealed class Room
             throw new RoomNotInPlayException("Room is in Playing state but has no Game instance.");
         }
 
-        Stone senderStone;
-        UserId urgedUser;
-        if (senderId == BlackPlayerId)
-        {
-            senderStone = Stone.Black;
-            urgedUser = WhitePlayerId!.Value;
-        }
-        else if (WhitePlayerId is not null && senderId == WhitePlayerId.Value)
-        {
-            senderStone = Stone.White;
-            urgedUser = BlackPlayerId;
-        }
-        else
-        {
-            throw new NotAPlayerException(
+        var senderSeat = SeatOf(senderId)
+            ?? throw new NotAPlayerException(
                 $"User {senderId.Value} is not a player and cannot urge.");
-        }
+        var urgedUser = senderSeat == FirstSeat ? WhitePlayerId!.Value : BlackPlayerId;
 
-        if (senderStone == Game.CurrentTurn)
+        if (senderSeat == Game.CurrentTurn)
         {
             throw new NotOpponentsTurnException(
                 "It is your own turn; nothing to urge.");

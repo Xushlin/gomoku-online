@@ -31,21 +31,22 @@ public class RoomDelegatesBoardRulesTests
         public string GameKey => "spy";
         public int Rows => 9;
         public int Cols => 9;
+        public int SeatCount => 2;
         public bool SupportsHumanVsHuman => true;
         public bool IsRated => true;
 
         public int Calls { get; private set; }
         public MoveIntent? LastIntent { get; private set; }
-        public Stone LastSide { get; private set; }
+        public int LastSeat { get; private set; }
         public int LastHistoryCount { get; private set; }
         public Exception? Throw { get; set; }
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side)
+            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
         {
             Calls++;
             LastIntent = intent;
-            LastSide = side;
+            LastSeat = seat;
             LastHistoryCount = history.Count;
             if (Throw is not null)
             {
@@ -74,7 +75,7 @@ public class RoomDelegatesBoardRulesTests
         room.PlayMove(white, MoveIntent.Place(new Position(2, 2)), Now.AddSeconds(3), rules);
 
         rules.Calls.Should().Be(2);
-        rules.LastSide.Should().Be(Stone.White);
+        rules.LastSeat.Should().Be(BoardSeats.SecondSeat);
         rules.LastIntent.Should().Be(MoveIntent.Place(new Position(2, 2)));
         rules.LastHistoryCount.Should().Be(1, "第二步看到的历史里应该只有第一步");
     }
@@ -116,7 +117,7 @@ public class RoomDelegatesBoardRulesTests
 
         act.Should().Throw<InvalidMoveException>();
         room.Game!.Moves.Should().BeEmpty();
-        room.Game.CurrentTurn.Should().Be(Stone.Black, "回合不该因为一步非法走子而翻转");
+        room.Game.CurrentTurn.Should().Be(BoardSeats.FirstSeat, "回合不该因为一步非法走子而翻转");
         room.Status.Should().Be(RoomStatus.Playing);
     }
 
@@ -165,7 +166,7 @@ public class RoomDelegatesBoardRulesTests
         stored.Col.Should().Be(2);
 
         room.Game.History().Single().Should()
-            .Be(PlayedMove.Positional(new Position(0, 1), new Position(2, 2), Stone.Black));
+            .Be(PlayedMove.Positional(new Position(0, 1), new Position(2, 2), BoardSeats.FirstSeat));
     }
 
     [Fact]

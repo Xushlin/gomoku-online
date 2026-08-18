@@ -25,7 +25,7 @@ public class NInARowRulesTests
     {
         try
         {
-            rules.Apply([], MoveIntent.Place(position), Stone.Black);
+            rules.Apply([], MoveIntent.Place(position), BoardSeats.FirstSeat);
             return true;
         }
         catch (InvalidMoveException)

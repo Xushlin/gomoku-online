@@ -49,6 +49,9 @@ public sealed class XiangqiRules : IBoardGameRules
     /// 推迟**,而触发条件已经到了。
     /// </para>
     /// </summary>
+    /// <inheritdoc />
+    public int SeatCount => BoardSeats.SeatCount;
+
     public bool SupportsHumanVsHuman => true;
 
     /// <summary>
@@ -71,8 +74,11 @@ public sealed class XiangqiRules : IBoardGameRules
 
     /// <inheritdoc />
     public MoveApplication Apply(
-        IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side)
+        IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
     {
+        // 座位 0 = 先手 = 红。「Stone.Black 就是红」那条读法在这里落成结构。
+        var side = BoardSeats.ToStone(seat);
+
         if (side == Stone.Empty)
         {
             throw new InvalidMoveException("Move side cannot be Stone.Empty; use Black or White.");

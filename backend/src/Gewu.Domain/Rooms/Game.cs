@@ -42,8 +42,14 @@ public sealed class Game
     /// </summary>
     public GameEndReason? EndReason { get; private set; }
 
-    /// <summary>当前回合应该下的棋色。初始为 <see cref="Stone.Black"/>。</summary>
-    public Stone CurrentTurn { get; private set; }
+    /// <summary>
+    /// 当前该出手的**座位号**,<c>0</c> 到 <c>SeatCount - 1</c>;初始为 <c>0</c>(先手座位)。
+    /// <para>
+    /// 此前是 <c>Stone</c>,而轮转是 <c>stone == Black ? White : Black</c> —— 那一行就是整个
+    /// 两人假设。现在是 <c>(seat + 1) % seatCount</c>,而座位数由规则说。
+    /// </para>
+    /// </summary>
+    public int CurrentTurn { get; private set; }
 
     /// <summary>
     /// 乐观并发令牌。SQLite 没有原生 rowversion,由 Domain 在每次状态变更后手动更新;
@@ -53,6 +59,9 @@ public sealed class Game
 
     /// <summary>按 Ply 排序的历史 Moves(只读视图 —— 外部 MUST NOT 修改)。</summary>
     public IReadOnlyCollection<Move> Moves => _moves;
+
+    /// <summary>先手座位号。五子棋的"黑先"、象棋的"红先"都是这一个座位的显示读法。</summary>
+    public static readonly int FirstSeat = 0;
 
     // EF 物化用。
     private Game() { }
@@ -66,7 +75,7 @@ public sealed class Game
         Result = null;
         WinnerUserId = null;
         EndReason = null;
-        CurrentTurn = Stone.Black;
+        CurrentTurn = FirstSeat;
         RowVersion = Guid.NewGuid().ToByteArray();
     }
 
@@ -86,12 +95,12 @@ public sealed class Game
     /// <summary>
     /// 在对局内记录一步棋(仅由 <see cref="Room.PlayMove"/> 调用)。更新 <see cref="CurrentTurn"/>。
     /// </summary>
-    internal Move RecordMove(MoveIntent intent, Stone stone, DateTime playedAt)
+    internal Move RecordMove(MoveIntent intent, int seat, int seatCount, DateTime playedAt)
     {
         var nextPly = _moves.Count + 1;
-        var move = new Move(Id, nextPly, intent, stone, playedAt);
+        var move = new Move(Id, nextPly, intent, seat, playedAt);
         _moves.Add(move);
-        CurrentTurn = stone == Stone.Black ? Stone.White : Stone.Black;
+        CurrentTurn = (seat + 1) % seatCount;
         TouchRowVersion();
         return move;
     }
