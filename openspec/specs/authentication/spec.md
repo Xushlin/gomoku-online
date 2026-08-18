@@ -60,7 +60,7 @@ HTTP 端点:`POST /api/auth/{register,login,refresh,logout}`。实现位于 `bac
 - `jti` = 每次签发唯一的 `Guid`
 - `iat` / `exp` 标准字段
 
-`iss`(Issuer)MUST = `"gomoku-online"`,`aud`(Audience)MUST = `"gomoku-online-clients"`。过期时间 MUST = 签发时刻 + 15 分钟。签名密钥长度 MUST ≥ 32 字节。
+`iss`(Issuer)MUST = `"gewu"`,`aud`(Audience)MUST = `"gewu-clients"`。过期时间 MUST = 签发时刻 + 15 分钟。签名密钥长度 MUST ≥ 32 字节。
 
 Api 层 JWT Bearer 中间件 MUST 同时校验 `Issuer`、`Audience`、`Lifetime`、`SigningKey`;`ClockSkew` MUST = 30 秒。
 

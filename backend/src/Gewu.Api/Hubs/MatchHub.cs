@@ -19,14 +19,14 @@ namespace Gewu.Api.Hubs;
 /// <c>IRoomNotifier</c> 广播。
 /// </summary>
 [Authorize]
-public sealed class GomokuHub : Hub
+public sealed class MatchHub : Hub
 {
     private readonly ISender _mediator;
     private readonly IConnectionTracker _tracker;
-    private readonly ILogger<GomokuHub> _logger;
+    private readonly ILogger<MatchHub> _logger;
 
     /// <inheritdoc />
-    public GomokuHub(ISender mediator, IConnectionTracker tracker, ILogger<GomokuHub> logger)
+    public MatchHub(ISender mediator, IConnectionTracker tracker, ILogger<MatchHub> logger)
     {
         _mediator = mediator;
         _tracker = tracker;

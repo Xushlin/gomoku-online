@@ -107,7 +107,7 @@ export const SIGNALR_LOADER = new InjectionToken<SignalRLoader>('SIGNALR_LOADER'
   },
 });
 
-export const GAME_HUB_URL = '/hubs/gomoku';
+export const GAME_HUB_URL = '/hubs/match';
 
 @Injectable()
 export class DefaultGameHubService extends GameHubService {

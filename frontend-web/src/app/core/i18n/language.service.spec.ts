@@ -43,12 +43,12 @@ describe('DefaultLanguageService', () => {
     svc.use('zh-CN');
 
     expect(transloco.setActiveLang).toHaveBeenLastCalledWith('zh-CN');
-    expect(localStorage.getItem('gomoku:lang')).toBe('zh-CN');
+    expect(localStorage.getItem('gewu:lang')).toBe('zh-CN');
     expect(svc.current()).toBe('zh-CN');
   });
 
   it('initial resolution: localStorage wins over navigator.language', () => {
-    localStorage.setItem('gomoku:lang', 'en');
+    localStorage.setItem('gewu:lang', 'en');
 
     const { svc } = createService('zh-CN');
 

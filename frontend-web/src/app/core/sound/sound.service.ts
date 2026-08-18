@@ -4,9 +4,9 @@ import { minimalPack } from './packs/minimal';
 import { woodPack } from './packs/wood';
 import type { SoundEventName, SoundPack } from './sound.tokens';
 
-const MUTED_STORAGE_KEY = 'gomoku:sound-muted';
-const PACK_STORAGE_KEY = 'gomoku:sound-pack';
-const VOLUME_STORAGE_KEY = 'gomoku:sound-volume';
+const MUTED_STORAGE_KEY = 'gewu:sound-muted';
+const PACK_STORAGE_KEY = 'gewu:sound-pack';
+const VOLUME_STORAGE_KEY = 'gewu:sound-volume';
 const DEFAULT_PACK = 'wood';
 const DEFAULT_VOLUME = 100;
 

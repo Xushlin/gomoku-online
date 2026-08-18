@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DefaultSoundService, SoundService } from './sound.service';
 import type { SoundPack } from './sound.tokens';
 
-const STORAGE_MUTED = 'gomoku:sound-muted';
-const STORAGE_PACK = 'gomoku:sound-pack';
-const STORAGE_VOLUME = 'gomoku:sound-volume';
+const STORAGE_MUTED = 'gewu:sound-muted';
+const STORAGE_PACK = 'gewu:sound-pack';
+const STORAGE_VOLUME = 'gewu:sound-volume';
 
 class FakeAudioContextSpy {
   createGain = vi.fn(() => ({

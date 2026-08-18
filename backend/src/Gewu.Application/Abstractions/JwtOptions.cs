@@ -8,10 +8,10 @@ namespace Gewu.Application.Abstractions;
 public sealed class JwtOptions
 {
     /// <summary>JWT <c>iss</c>。</summary>
-    public string Issuer { get; set; } = "gomoku-online";
+    public string Issuer { get; set; } = "gewu";
 
     /// <summary>JWT <c>aud</c>。</summary>
-    public string Audience { get; set; } = "gomoku-online-clients";
+    public string Audience { get; set; } = "gewu-clients";
 
     /// <summary>HS256 对称签名密钥,base64 编码,≥ 32 字节(解码后)。</summary>
     public string SigningKey { get; set; } = string.Empty;

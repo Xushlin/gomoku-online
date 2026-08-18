@@ -14,8 +14,8 @@ public class RegisterCommandHandlerTests
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly IOptions<JwtOptions> _jwt = Options.Create(new JwtOptions
     {
-        Issuer = "gomoku-online",
-        Audience = "gomoku-online-clients",
+        Issuer = "gewu",
+        Audience = "gewu-clients",
         SigningKey = "dummy",
         AccessTokenLifetimeMinutes = 15,
         RefreshTokenLifetimeDays = 7,

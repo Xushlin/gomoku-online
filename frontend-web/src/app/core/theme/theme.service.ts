@@ -4,8 +4,8 @@ import { inkTokens } from './themes/ink';
 import { systemTokens } from './themes/system';
 import type { ThemeTokens } from './theme.tokens';
 
-const THEME_STORAGE_KEY = 'gomoku:theme';
-const DARK_STORAGE_KEY = 'gomoku:dark';
+const THEME_STORAGE_KEY = 'gewu:theme';
+const DARK_STORAGE_KEY = 'gewu:dark';
 const DEFAULT_THEME = 'material';
 
 /**

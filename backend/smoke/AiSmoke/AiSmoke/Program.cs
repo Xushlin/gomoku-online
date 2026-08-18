@@ -1,7 +1,7 @@
 // E2E smoke test for add-ai-opponent.
 // 1. Register Alice (fresh email with unique suffix).
 // 2. POST /api/rooms/ai -> bot joins as White, status=Playing.
-// 3. Connect to /hubs/gomoku, JoinRoom.
+// 3. Connect to /hubs/match, JoinRoom.
 // 4. Alice MakeMove(7,7) -> expect MoveMade for Alice, then MoveMade from bot within ~3s.
 // 5. Play several moves, verify bot responds each turn.
 // 6. GET /api/rooms/{id} at the end to observe final state.
@@ -62,7 +62,7 @@ Assert(room.Game?.Moves.Count == 0, "moves empty");
 
 Console.WriteLine("=== 3. Connect SignalR, JoinRoom ===");
 var hub = new HubConnectionBuilder()
-    .WithUrl($"{BaseUrl}/hubs/gomoku?access_token={regBody.AccessToken}")
+    .WithUrl($"{BaseUrl}/hubs/match?access_token={regBody.AccessToken}")
     .Build();
 
 var moveQueue = new System.Collections.Concurrent.ConcurrentQueue<MoveMadePayload>();

@@ -4,7 +4,7 @@
 
 房间生命周期与对局推进的核心能力:`Room` 聚合根(承载玩家、围观者、对局、聊天、催促时间戳)、`Game` 子实体(当前回合、结果、胜方、Moves 历史)、`Move` 子实体(按 Ply 递增)、`RoomSpectator` 联结实体,以及把 `gomoku-domain` 的 `Board` / 判胜接入对局流程的规则。
 
-HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id}/{join,leave}`、`POST/DELETE /api/rooms/{id}/spectate`。SignalR 表面:`/hubs/gomoku` 的五个客户端方法(`JoinRoom` / `LeaveRoom` / `MakeMove` / `SendChat` / `Urge`)与服务端事件(`RoomState` / `PlayerJoined` / `PlayerLeft` / `SpectatorJoined` / `SpectatorLeft` / `MoveMade` / `GameEnded` / `ChatMessage` / `UrgeReceived`)。
+HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id}/{join,leave}`、`POST/DELETE /api/rooms/{id}/spectate`。SignalR 表面:`/hubs/match` 的五个客户端方法(`JoinRoom` / `LeaveRoom` / `MakeMove` / `SendChat` / `Urge`)与服务端事件(`RoomState` / `PlayerJoined` / `PlayerLeft` / `SpectatorJoined` / `SpectatorLeft` / `MoveMade` / `GameEnded` / `ChatMessage` / `UrgeReceived`)。
 
 实现位于 `backend/src/Gewu.Domain/Rooms/`(聚合)、`backend/src/Gewu.Application/Features/Rooms/`(CQRS handlers)、`backend/src/Gewu.Infrastructure/Persistence/`(EF 映射与仓储)、`backend/src/Gewu.Api/Hubs/`(SignalR Hub 与 IRoomNotifier 实现)。
 ## Requirements
@@ -216,7 +216,7 @@ HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id
 
 ### Requirement: 并发落子由 EF 乐观并发保护
 
-`Game` 实体 MUST 配 `RowVersion` 列并在 EF 配置中 `.IsRowVersion()`。当两个 `MakeMoveCommand` handler 对同一 `Game` 并发 `SaveChangesAsync`,一者 MUST 得到 `DbUpdateConcurrencyException`;Api 层异常中间件 MUST 将其映射为 HTTP 409 + `ProblemDetails`,`type = "https://gomoku-online/errors/concurrent-move"`。
+`Game` 实体 MUST 配 `RowVersion` 列并在 EF 配置中 `.IsRowVersion()`。当两个 `MakeMoveCommand` handler 对同一 `Game` 并发 `SaveChangesAsync`,一者 MUST 得到 `DbUpdateConcurrencyException`;Api 层异常中间件 MUST 将其映射为 HTTP 409 + `ProblemDetails`,`type = "https://gewu/errors/concurrent-move"`。
 
 #### Scenario: 并发争抢
 - **WHEN** 两个请求携带相同的 `RoomId` 和不同的 `Position`,几乎同时到达
@@ -309,9 +309,9 @@ Api 层 SHALL 暴露以下端点(均要求 `Authorize`):
 - **WHEN** `POST /api/rooms/ai` 送 `{ name, difficulty, gameKey }` 而不带 `humanSide`
 - **THEN** HTTP 201,真人执黑 —— 本条与棋种的必填不对称,是有意为之
 
-### Requirement: SignalR Hub `GomokuHub` 路由实时操作,但不写入业务逻辑
+### Requirement: SignalR Hub `MatchHub` 路由实时操作,但不写入业务逻辑
 
-系统 SHALL 在 `/hubs/gomoku` 暴露 `GomokuHub`(`[Authorize]`)。Hub 客户端方法:
+系统 SHALL 在 `/hubs/match` 暴露 `MatchHub`(`[Authorize]`)。Hub 客户端方法:
 
 - `JoinRoom(Guid roomId)` —— 把当前 connection 加入 SignalR group `room:{roomId}`,并按**聚合里的身份**额外加入恰好一个子群:围观者进 `room:{roomId}:spectators`,其余(玩家,以及进了房但还没围观的连接)进 `room:{roomId}:non-spectators`。身份由 `GetRoomRoleQuery` 从聚合解析,MUST NOT 采信客户端自报。不会修改 `Room` 聚合。
 
@@ -341,7 +341,7 @@ Api 层 SHALL 暴露以下端点(均要求 `Authorize`):
 Hub 方法 MUST NOT 访问 `DbContext`、MUST NOT 直接发送 SignalR 消息(事件由 `IRoomNotifier` 在 Handler 完成后触发)。
 
 #### Scenario: 未登录连接被拒
-- **WHEN** 不带有效 JWT 的客户端尝试连接 `/hubs/gomoku`
+- **WHEN** 不带有效 JWT 的客户端尝试连接 `/hubs/match`
 - **THEN** 连接被 SignalR 中间件以 401 拒绝
 
 #### Scenario: Hub 方法透传到 Handler
@@ -372,7 +372,7 @@ Application 层 SHALL 定义 `IRoomNotifier` 契约,至少含:
 - `ChatMessagePostedAsync(RoomId, ChatChannel, ChatMessageDto)`
 - `OpponentUrgedAsync(RoomId, UserId urgedUser, UrgeDto payload)`
 
-Handler MUST 在 `SaveChangesAsync` **之后** 调用 `IRoomNotifier`,且 MUST NOT 在事务内调用(避免"事件发了但事务回滚"的不一致)。Api 层实现 `SignalRRoomNotifier : IRoomNotifier`,用 `IHubContext<GomokuHub>` 把事件发到对应 SignalR group。
+Handler MUST 在 `SaveChangesAsync` **之后** 调用 `IRoomNotifier`,且 MUST NOT 在事务内调用(避免"事件发了但事务回滚"的不一致)。Api 层实现 `SignalRRoomNotifier : IRoomNotifier`,用 `IHubContext<MatchHub>` 把事件发到对应 SignalR group。
 
 #### Scenario: 落子成功后的事件顺序
 - **WHEN** `MakeMoveCommand` 成功持久化
@@ -389,7 +389,7 @@ Handler MUST 在 `SaveChangesAsync` **之后** 调用 `IRoomNotifier`,且 MUST N
 Api 层 SHALL 配置 `AddJwtBearer.Events.OnMessageReceived`,若请求路径以 `/hubs` 开头,则从 query 参数 `access_token` 读取 JWT 赋给 `ctx.Token`;其他路径保持默认(Authorization 头)。
 
 #### Scenario: WebSocket 握手鉴权
-- **WHEN** 客户端以 `GET /hubs/gomoku?access_token=<jwt>` 发起握手
+- **WHEN** 客户端以 `GET /hubs/match?access_token=<jwt>` 发起握手
 - **THEN** JWT 被正确识别,`HubCallerContext.UserIdentifier == jwt.sub`;未带或 token 非法时连接被拒(401)
 
 #### Scenario: 非 Hub 路径不受影响
@@ -400,7 +400,7 @@ Api 层 SHALL 配置 `AddJwtBearer.Events.OnMessageReceived`,若请求路径以 
 
 ### Requirement: 相关领域异常与其 HTTP 映射
 
-系统 SHALL 把 `DbUpdateConcurrencyException`(来自 EF)映射为 HTTP 409 + `ProblemDetails`(`type: "https://gomoku-online/errors/concurrent-move"`)。本次修订 MUST 把该映射的覆盖面从原先"仅 Room/Game 并发"扩展到"Room/Game **与** User 聚合并发冲突";两种情况下 EF 抛出同一异常类型,Api 中间件 MUST NOT 为二者引入不同的 `ProblemDetails.type`。
+系统 SHALL 把 `DbUpdateConcurrencyException`(来自 EF)映射为 HTTP 409 + `ProblemDetails`(`type: "https://gewu/errors/concurrent-move"`)。本次修订 MUST 把该映射的覆盖面从原先"仅 Room/Game 并发"扩展到"Room/Game **与** User 聚合并发冲突";两种情况下 EF 抛出同一异常类型,Api 中间件 MUST NOT 为二者引入不同的 `ProblemDetails.type`。
 
 - 既有(`add-rooms-and-gameplay` 引入):Room / Game 并发冲突(由 `Game.RowVersion` 保护)。
 - **新增**(`add-concurrency-hardening`):User 聚合 `RecordGameResult` 写入冲突(由 `User.RowVersion` 保护)。
@@ -413,7 +413,7 @@ Api 层 SHALL 配置 `AddJwtBearer.Events.OnMessageReceived`,若请求路径以 
 
 #### Scenario: 并发落子冲突(覆盖既有)
 - **WHEN** 两个玩家几乎同时调 `MakeMove`,EF 在 `SaveChangesAsync` 抛 `DbUpdateConcurrencyException`(Game.RowVersion 冲突)
-- **THEN** HTTP 409,`ProblemDetails.type == "https://gomoku-online/errors/concurrent-move"`
+- **THEN** HTTP 409,`ProblemDetails.type == "https://gewu/errors/concurrent-move"`
 
 #### Scenario: 并发战绩更新冲突(本次新增)
 - **WHEN** 两个对局结束事务并发更新同一 User 的战绩(Alice 同时是两盘的黑方,两盘都触发 ResignCommand / TurnTimeoutCommand 几乎同刻完成)
@@ -793,7 +793,7 @@ Handler 流程:
 此命令 **不**暴露 REST 端点、**不**路由 SignalR Hub;仅 `TurnTimeoutWorker` 通过 `ISender.Send` 发送。
 
 #### Scenario: 命令不可经 HTTP 触发
-- **WHEN** 审阅 `RoomsController` / `GomokuHub`
+- **WHEN** 审阅 `RoomsController` / `MatchHub`
 - **THEN** 无任何 action / method 构造或分发 `TurnTimeoutCommand`
 
 #### Scenario: Worker 成功触发

@@ -4,7 +4,7 @@ import { classicSkin } from './skins/classic';
 import { midnightSkin } from './skins/midnight';
 import { woodSkin } from './skins/wood';
 
-const SKIN_STORAGE_KEY = 'gomoku:board-skin';
+const SKIN_STORAGE_KEY = 'gewu:board-skin';
 const DEFAULT_SKIN = 'wood';
 
 /**

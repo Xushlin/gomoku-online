@@ -8,7 +8,7 @@ import {
 
 function setup(stored: string | null = null) {
   localStorage.clear();
-  if (stored !== null) localStorage.setItem('gomoku:board-skin', stored);
+  if (stored !== null) localStorage.setItem('gewu:board-skin', stored);
   // Reset the <html> attribute between tests
   document.documentElement.removeAttribute('data-board-skin');
   TestBed.resetTestingModule();
@@ -48,7 +48,7 @@ describe('DefaultBoardSkinService', () => {
     const { svc, doc } = setup();
     svc.activate('midnight');
     expect(doc.documentElement.dataset['boardSkin']).toBe('midnight');
-    expect(localStorage.getItem('gomoku:board-skin')).toBe('midnight');
+    expect(localStorage.getItem('gewu:board-skin')).toBe('midnight');
     const { svc: next } = setup('midnight');
     expect(next.skinName()).toBe('midnight');
   });
@@ -63,7 +63,7 @@ describe('DefaultBoardSkinService', () => {
     svc.activate('classic');
     expect(svc.skinName()).toBe('classic');
     expect(doc.documentElement.dataset['boardSkin']).toBe('classic');
-    expect(localStorage.getItem('gomoku:board-skin')).toBe('classic');
+    expect(localStorage.getItem('gewu:board-skin')).toBe('classic');
   });
 
   it('activate() on an unregistered name is a no-op', () => {

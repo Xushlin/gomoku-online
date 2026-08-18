@@ -15,7 +15,7 @@ import {
 } from './auth-response.model';
 import type { UserDto } from './user.model';
 
-const REFRESH_STORAGE_KEY = 'gomoku:refresh';
+const REFRESH_STORAGE_KEY = 'gewu:refresh';
 const BOOTSTRAP_TIMEOUT_MS = 5_000;
 
 /**
