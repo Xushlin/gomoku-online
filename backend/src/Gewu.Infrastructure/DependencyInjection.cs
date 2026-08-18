@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IIdiomRepository, IdiomRepository>();
         services.AddScoped<IdiomSeeder>();
         services.AddScoped<IPuzzleRepository, PuzzleRepository>();
+        services.AddScoped<IScoreRunRepository, ScoreRunRepository>();
 
         // puzzle-core 刻意不注册任何 IPuzzleRules —— 关卡类游戏各自注册自己的规则。
         // 在 成语纵横 落地前,注册表对任何 gameKey 都返回 null,handler 映射为 404。
@@ -100,6 +101,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddSingleton<IAiRandomProvider, AiRandomProvider>();
+        services.AddSingleton<ISeedProvider, SystemSeedProvider>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
