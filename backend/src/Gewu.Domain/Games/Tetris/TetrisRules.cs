@@ -34,6 +34,14 @@ public readonly record struct TetrisOutcome(int Score, int Lines, int Level);
 /// </summary>
 public static class TetrisRules
 {
+    /// <summary>
+    /// 游戏键。放在规则类上,与 <c>KlotskiRules.GameKey</c> 同一位置 —— 游戏自己声明自己的键。
+    /// <para>
+    /// 它**不在** <c>GameKeys</c> 里,因为那批常量是对战棋种的键;计分类不进对战注册表。
+    /// </para>
+    /// </summary>
+    public const string GameKey = "tetris";
+
     /// <summary>场地列数。</summary>
     public const int Columns = 10;
 

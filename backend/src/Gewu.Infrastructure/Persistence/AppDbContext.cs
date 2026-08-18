@@ -1,6 +1,7 @@
 using Gewu.Domain.Idioms;
 using Gewu.Domain.Puzzles;
 using Gewu.Domain.Rooms;
+using Gewu.Domain.ScoreRuns;
 using Gewu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Move = Gewu.Domain.Rooms.Move;
@@ -54,6 +55,9 @@ public sealed class AppDbContext : DbContext
 
     /// <summary>每人每关的最好成绩。</summary>
     public DbSet<PuzzleLevelProgress> PuzzleLevelProgress => Set<PuzzleLevelProgress>();
+
+    /// <summary>计分类单局 —— score-attack 的权威单位。</summary>
+    public DbSet<ScoreRun> ScoreRuns => Set<ScoreRun>();
 
     /// <inheritdoc />
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
