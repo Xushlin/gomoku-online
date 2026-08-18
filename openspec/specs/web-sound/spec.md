@@ -28,9 +28,9 @@ abstract class SoundService {
 `DefaultSoundService` SHALL:
 
 - 构造时注册内置 `wood` pack(见下条 Requirement),并把它设为默认 active pack。
-- 从 `localStorage` 读 `gewu:sound-muted`(`'1'` → muted、`'0'` → not muted、缺省 → not muted)。
-- 从 `localStorage` 读 `gewu:sound-pack`,如该 pack 已注册则激活,否则 fall back 到 `wood`。
-- 从 `localStorage` 读 `gewu:sound-volume`,解析为 `[0, 100]` 区间整数;缺省、非数字或越界值一律 fall back 到 `100`(与历史行为等响)。
+- 从 `localStorage` 读 `gomoku:sound-muted`(`'1'` → muted、`'0'` → not muted、缺省 → not muted)。
+- 从 `localStorage` 读 `gomoku:sound-pack`,如该 pack 已注册则激活,否则 fall back 到 `wood`。
+- 从 `localStorage` 读 `gomoku:sound-volume`,解析为 `[0, 100]` 区间整数;缺省、非数字或越界值一律 fall back 到 `100`(与历史行为等响)。
 - `setMuted`、`setVolume` 与 `activate` MUST 立即写入 `localStorage`。
 - `setVolume(v)` MUST 将输入 clamp 到 `[0, 100]` 并取整后再存储 / 应用;若 AudioContext 已构造,MUST 同步更新 master GainNode。
 - master GainNode 的增益 MUST 按感知曲线映射:`gain = (volume / 100)²`(volume 100 → gain 1,与历史行为一致);lazy 构造 AudioContext 时 MUST 用当前 volume 初始化增益,而非字面量 `1`。
@@ -44,18 +44,18 @@ abstract class SoundService {
 
 #### Scenario: muted 状态持久化
 - **WHEN** 用户调 `sound.setMuted(true)`,重启 app
-- **THEN** `localStorage.getItem('gewu:sound-muted') === '1'`;新一次 service 构造后 `sound.muted()` 返回 true
+- **THEN** `localStorage.getItem('gomoku:sound-muted') === '1'`;新一次 service 构造后 `sound.muted()` 返回 true
 
 #### Scenario: volume 持久化与恢复
 - **WHEN** 用户调 `sound.setVolume(40)`,重启 app
-- **THEN** `localStorage.getItem('gewu:sound-volume') === '40'`;新一次 service 构造后 `sound.volume()` 返回 40
+- **THEN** `localStorage.getItem('gomoku:sound-volume') === '40'`;新一次 service 构造后 `sound.volume()` 返回 40
 
 #### Scenario: volume 越界输入被 clamp
 - **WHEN** 调 `sound.setVolume(150)` 或 `sound.setVolume(-5)` 或 `sound.setVolume(33.7)`
 - **THEN** `sound.volume()` 分别返回 100、0、34(四舍五入);存储值与 signal 一致
 
 #### Scenario: localStorage 垃圾值 fall back 100
-- **WHEN** `localStorage['gewu:sound-volume']` 为 `'abc'`、`'-3'` 或 `'999'`,service 构造
+- **WHEN** `localStorage['gomoku:sound-volume']` 为 `'abc'`、`'-3'` 或 `'999'`,service 构造
 - **THEN** `sound.volume()` 返回 100
 
 #### Scenario: muted 时 play 早返
@@ -195,7 +195,7 @@ square 波的 peak gain MUST 比同类 sine 波低约 30–50%(per design D2),�
 
 `DefaultSoundService` 构造时 SHALL 调用 `register('wood', woodPack)` 与 `register('chiptune', chiptunePack)`,均注册成功。`availablePacks()` MUST 返回包含 `'wood'` 与 `'chiptune'` 的数组。
 
-初始 active pack 解析顺序仍为:`localStorage('gewu:sound-pack')` → 已注册 → 否则 `'wood'`。
+初始 active pack 解析顺序仍为:`localStorage('gomoku:sound-pack')` → 已注册 → 否则 `'wood'`。
 
 #### Scenario: 默认 packs 数 ≥ 2
 - **WHEN** 全新 service 构造
@@ -241,7 +241,7 @@ square 波的 peak gain MUST 比同类 sine 波低约 30–50%(per design D2),�
 
 `DefaultSoundService` 构造时 SHALL 调用 `register('wood', woodPack)`、`register('chiptune', chiptunePack)` 与 `register('minimal', minimalPack)`,均注册成功。`availablePacks()` MUST 返回包含三者的数组。
 
-初始 active pack 解析顺序仍为:`localStorage('gewu:sound-pack')` → 已注册 → 否则 `'wood'`。
+初始 active pack 解析顺序仍为:`localStorage('gomoku:sound-pack')` → 已注册 → 否则 `'wood'`。
 
 #### Scenario: 默认 packs 数 ≥ 3
 - **WHEN** 全新 service 构造

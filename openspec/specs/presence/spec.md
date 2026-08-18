@@ -35,7 +35,7 @@ Application 层 SHALL 在 `Gewu.Application/Abstractions/IConnectionTracker.cs` 
 计数为 0 时移除 key(原子 TryRemove / TryUpdate 避免竞态)。同用户多标签 / 多设备多连接
 算一个"在线",最后一条连接断开才变"离线"。
 
-现有 `MatchHub` 调用点(`OnConnectedAsync` / `OnDisconnectedAsync`)无需改动,只改 `using`。
+现有 `GomokuHub` 调用点(`OnConnectedAsync` / `OnDisconnectedAsync`)无需改动,只改 `using`。
 
 #### Scenario: 接口位置
 - **WHEN** 审阅 `Gewu.Application/Abstractions/IConnectionTracker.cs`

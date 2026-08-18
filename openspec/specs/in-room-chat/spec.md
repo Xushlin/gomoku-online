@@ -187,7 +187,7 @@ Validator 失败时 `ValidationBehavior` 抛 `ValidationException`,最终 HTTP 4
 
 ### Requirement: 催促事件仅推给被催玩家
 
-`UrgeOpponentCommand` Handler 成功后 MUST 调 `IRoomNotifier.OpponentUrgedAsync(roomId, urgedUserId, payload)`。SignalR 实现 MUST 用 `IHubContext<MatchHub>.Clients.User(urgedUserId.ToString()).SendAsync("UrgeReceived", payload)` —— **只发给被催那一方**,不广播给房间。
+`UrgeOpponentCommand` Handler 成功后 MUST 调 `IRoomNotifier.OpponentUrgedAsync(roomId, urgedUserId, payload)`。SignalR 实现 MUST 用 `IHubContext<GomokuHub>.Clients.User(urgedUserId.ToString()).SendAsync("UrgeReceived", payload)` —— **只发给被催那一方**,不广播给房间。
 
 `payload` 至少包含 `{ fromUserId, fromUsername, sentAt }`。
 

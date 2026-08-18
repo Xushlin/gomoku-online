@@ -67,7 +67,7 @@ HTTP 管道中 `app.UseCors(CorsOptions.PolicyName)` MUST 排在 `UseAuthenticat
 - **THEN** 该 origin **不在**白名单里 —— preflight 响应不含 `Access-Control-Allow-Origin`。这一条是**故意**写下来的:它此前是本要求承诺过的行为,而承诺从未成立,而一个"文档化了却被静默忽略"的配置项比没有文档更糟
 
 #### Scenario: CORS 与 SignalR 兼容
-- **WHEN** 前端从白名单 origin 发 WebSocket 握手到 `/hubs/match?access_token=...`
+- **WHEN** 前端从白名单 origin 发 WebSocket 握手到 `/hubs/gomoku?access_token=...`
 - **THEN** 握手成功;CORS 中间件不拦 WebSocket upgrade 请求
 
 ### Requirement: `/health` 端点作为 liveness probe
@@ -190,7 +190,7 @@ Api 层 SHALL 通过 ASP.NET Core `RateLimiter` 中间件限制每 IP 的请求�
 `/health` 与 `/health/ready`(由 `api-ops` 能力暴露)MUST 调用 `.DisableRateLimiting()` 豁免,
 避免运维探针(k8s / docker / load balancer)高频触发限流导致误判"容器不健康"。
 
-`/hubs/match` SignalR Hub 端点 MUST 调用 `.DisableRateLimiting()` 豁免 —— WebSocket upgrade
+`/hubs/gomoku` SignalR Hub 端点 MUST 调用 `.DisableRateLimiting()` 豁免 —— WebSocket upgrade
 只发生一次,长连接内部的 Hub invocation 走 WebSocket 帧,不重复计入 HTTP 限流。
 
 #### Scenario: health 高频 probe 不被限流
@@ -198,7 +198,7 @@ Api 层 SHALL 通过 ASP.NET Core `RateLimiter` 中间件限制每 IP 的请求�
 - **THEN** 全部 HTTP 200,不出现 429
 
 #### Scenario: SignalR 握手不计入 global 配额
-- **WHEN** 同一 IP 的前端先连 `/hubs/match` 再对 `/api/rooms` 发 100 次请求
+- **WHEN** 同一 IP 的前端先连 `/hubs/gomoku` 再对 `/api/rooms` 发 100 次请求
 - **THEN** `/api/rooms` 的第 100 次仍属于 global 的 100 条配额内(握手不占位)
 
 ---
