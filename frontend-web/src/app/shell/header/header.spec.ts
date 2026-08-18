@@ -86,13 +86,25 @@ function mount(opts: { muted?: boolean; lang?: SupportedLocale } = {}) {
   return { fixture, sound };
 }
 
-/** Open the sound-pack CDK menu and return the volume slider inside it. */
-function openVolumeSlider(fixture: ReturnType<typeof TestBed.createComponent>) {
+/** Open the sound-pack CDK menu. Items render into an overlay attached to the body. */
+function openSoundPackMenu(fixture: ReturnType<typeof TestBed.createComponent>): void {
   const trigger = fixture.nativeElement.querySelector(
     'button[aria-label="header.sound-pack.label"]',
   ) as HTMLButtonElement;
   trigger.click();
   fixture.detectChanges();
+}
+
+/** The labels of the menu items, in render order. */
+function soundPackMenuItems(): string[] {
+  return [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map((el) =>
+    (el.textContent ?? '').trim(),
+  );
+}
+
+/** Open the sound-pack CDK menu and return the volume slider inside it. */
+function openVolumeSlider(fixture: ReturnType<typeof TestBed.createComponent>) {
+  openSoundPackMenu(fixture);
   // CDK menus render into an overlay container attached to the body.
   return document.querySelector(
     'input[type="range"][aria-label="header.sound.volume"]',
@@ -111,6 +123,18 @@ describe('Header volume slider', () => {
   afterEach(() => {
     // Drop any overlay leftovers so menus from one test don't leak into the next.
     document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove());
+  });
+
+  it('lists one menu item per registered pack, in that order', () => {
+    // Derived from `availablePacks()`, never a literal count. The spec used to say
+    // "lists `wood` and `chiptune`, two items", which was wrong from the day the
+    // third pack shipped — and nothing here had ever counted them.
+    const { fixture, sound } = mount();
+    openSoundPackMenu(fixture);
+
+    const expected = sound.availablePacks().map((name) => `header.sound-pack.${name}`);
+    expect(expected.length).toBeGreaterThan(1);
+    expect(soundPackMenuItems()).toEqual(expected);
   });
 
   it('renders inside the sound-pack menu with an aria-label', () => {
