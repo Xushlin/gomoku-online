@@ -3,7 +3,8 @@
 // 2. POST /api/rooms/ai -> bot joins as White, status=Playing.
 // 3. Connect to /hubs/match, JoinRoom.
 // 4. Alice MakeMove(7,7) -> expect MoveMade for Alice, then MoveMade from bot within ~3s.
-// 5. Play several moves, verify bot responds each turn.
+// 5. Play several moves on squares read off the live board, verify bot responds each turn.
+// 6b. Resign -> the game ends deterministically, so step 7 has a rated result to find.
 // 6. GET /api/rooms/{id} at the end to observe final state.
 // 7. GET /api/leaderboard -> Alice appears, bot does NOT.
 // 8. GET /api/games + per-game leaderboard / profile queries.
@@ -77,9 +78,31 @@ var hub = new HubConnectionBuilder()
 
 var moveQueue = new System.Collections.Concurrent.ConcurrentQueue<MoveMadePayload>();
 var moveSignal = new SemaphoreSlim(0);
+
+// Every square either side has taken, as observed over the wire.
+//
+// This exists because the smoke used to play a *hardcoded* column — (7,7), (6,7),
+// (5,7), (4,7), (3,7) — on a board it does not own. When the bot took one of those
+// four, Alice's next `MakeMove` came back `invalid-move` and the run died on an
+// assertion about the bot, having caught nothing but its own collision. That is what
+// happened in CI: the bot played (6,7), Alice's very next intended square.
+//
+// **The rate is low, and I first wrote the wrong reason for it here.** I claimed Easy
+// plays adjacent to the last stone, so (6,7) was likely. Measured instead — 60 bot
+// moves over 12 runs — its choices are scattered across the whole board and *not one*
+// landed in that set of four. So the collision is roughly `1 - (1 - 4/225)^4`, about
+// 7% per run: a low-rate flake that had simply been passing, until it did not.
+//
+// The fix does not depend on the rate. This step exists to show "the bot keeps
+// replying", and that needs *a* legal move, never a particular one.
+var occupied = new HashSet<(int Row, int Col)>();
 hub.On<MoveMadePayload>("MoveMade", payload =>
 {
     Console.WriteLine($"  <- MoveMade ply={payload.Ply} ({payload.Row},{payload.Col}) stone={payload.Stone}");
+    lock (occupied)
+    {
+        occupied.Add((payload.Row, payload.Col));
+    }
     moveQueue.Enqueue(payload);
     moveSignal.Release();
 });
@@ -109,9 +132,34 @@ Assert(botMove.Stone == "White", "bot responded as White");
 Assert(botMove.Ply == 2, "bot move ply == 2");
 
 Console.WriteLine("=== 5. Play several more rounds — verify bot keeps moving ===");
-var humanSteps = new (int, int)[] { (6, 7), (5, 7), (4, 7), (3, 7) };
-foreach (var (r, c) in humanSteps)
+
+// Pick an empty square rather than trusting a fixed list.
+//
+// **Even columns only**, and that is structural rather than a coincidence: two of
+// Alice's stones can then never be adjacent, so she can never make five in a row
+// however many rounds this loop runs. Scanning every cell instead would hand her four
+// consecutive ones — one short of winning — and the next person to raise the round
+// count would end the game early and break the "bot keeps replying" assertion with no
+// hint as to why.
+(int Row, int Col) NextFree()
 {
+    lock (occupied)
+    {
+        for (var r = 0; r < 15; r++)
+        {
+            for (var c = 0; c < 15; c += 2)
+            {
+                if (!occupied.Contains((r, c))) return (r, c);
+            }
+        }
+    }
+    throw new InvalidOperationException("no free even-column square — not this smoke's job");
+}
+
+for (var round = 0; round < 4; round++)
+{
+    var (r, c) = NextFree();
+    Console.WriteLine($"  -> Alice plays ({r},{c})");
     await hub.InvokeAsync("MakeMove", room.Id, r, c);
     await NextMoveAsync(MoveTimeout); // Alice's echo
     // If Alice just won, there's no bot move. Check by GET state after loop.
@@ -131,6 +179,22 @@ Console.WriteLine("=== 6. Final state ===");
 var finalState = await http.GetFromJsonAsync<RoomStateDto>($"/api/rooms/{room.Id}");
 Console.WriteLine($"  status={finalState!.Status} moves={finalState.Game?.Moves.Count} result={finalState.Game?.Result}");
 Assert(finalState.Game!.Moves.Count >= 4, "at least 4 moves played");
+
+Console.WriteLine("=== 6b. Resign, so the game ends on purpose ===");
+// The leaderboard step below needs a *finished rated game*, and this is how it gets
+// one. It used to arrive by accident: Alice played a straight column of five, so she
+// won — when the bot did not happen to block her. Two different things were riding on
+// one coincidence, which is why a square collision in step 5 surfaced as
+// "Alice appears in leaderboard" failing.
+//
+// Resigning is deterministic, and a loss records ELO exactly as a win does. It also
+// covers an endpoint nothing else here touches.
+var resign = await http.PostAsync($"/api/rooms/{room.Id}/resign", content: null);
+Assert(resign.IsSuccessStatusCode, $"resign accepted (was {(int)resign.StatusCode})");
+
+var afterResign = await http.GetFromJsonAsync<RoomStateDto>($"/api/rooms/{room.Id}");
+Console.WriteLine($"  status={afterResign!.Status} result={afterResign.Game?.Result}");
+Assert(afterResign.Game?.EndedAt is not null, "game finished after resign");
 
 Console.WriteLine("=== 7. Leaderboard excludes bots ===");
 // PagedResult<T>, not a bare array: the endpoint gained paging in
