@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SoundService } from '../../core/sound/sound.service';
+import { stubSoundService } from '../../testing/sound';
 import { BoardSkinService } from '../../core/theme/board-skin.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { Header } from './header';
@@ -93,20 +94,7 @@ function mount(opts: { authenticated?: boolean } = {}) {
     ],
     providers: [
       provideRouter([]),
-      {
-        provide: SoundService,
-        useValue: {
-          muted: signal(false),
-          volume: signal(100),
-          packName: signal('wood'),
-          play: vi.fn(),
-          setMuted: vi.fn(),
-          setVolume: vi.fn(),
-          register: vi.fn(),
-          activate: vi.fn(),
-          availablePacks: () => PACKS,
-        },
-      },
+      { provide: SoundService, useValue: stubSoundService({ packs: PACKS }) },
       { provide: LanguageService, useValue: { current: signal('en'), use: vi.fn() } },
       {
         provide: ThemeService,

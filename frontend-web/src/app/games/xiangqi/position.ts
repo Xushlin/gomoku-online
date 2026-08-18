@@ -141,3 +141,30 @@ export function positionAfter(moves: readonly MoveDto[]): XiangqiPosition {
 
   return cells;
 }
+
+/**
+ * Did the last ply in `moves` capture a piece?
+ *
+ * Answered from the board this client already has to compute in order to draw
+ * anything — `INITIAL_POSITION` plus every earlier ply — so it introduces no
+ * second source of truth. "Was the destination occupied" is a fact the board
+ * component reads on every frame anyway.
+ *
+ * Replays the history *minus the last ply* rather than tracking captures as they
+ * arrive, because the caller may be looking at a snapshot it did not watch
+ * accumulate: a REST hydration or a reconnect hands over the whole list at once.
+ *
+ * Plies with no origin (the shape a *placement* game produces) return `false`
+ * rather than throwing — same rule `positionAfter` follows for a mismatched
+ * history: draw a board that may be wrong, never blank the page.
+ */
+export function lastMoveCaptured(moves: readonly MoveDto[]): boolean {
+  const last = moves.at(-1);
+  if (!last) return false;
+
+  const { fromRow, fromCol, row, col } = last;
+  if (fromRow == null || fromCol == null || row == null || col == null) return false;
+  if (!inBounds(row, col)) return false;
+
+  return pieceAt(positionAfter(moves.slice(0, -1)), row, col) !== null;
+}

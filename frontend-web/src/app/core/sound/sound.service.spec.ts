@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BUILT_IN_PACKS } from './packs';
 import { DefaultSoundService, SoundService } from './sound.service';
 import type { SoundPack } from './sound.tokens';
 
@@ -47,12 +48,18 @@ describe('DefaultSoundService', () => {
     expect(svc.packName()).toBe('wood');
   });
 
-  it('registers wood + chiptune + minimal by default', () => {
+  it('registers exactly the built-in pack list, in its order', () => {
+    // Item-by-item against `BUILT_IN_PACKS` rather than three `toContain`s: the
+    // service walks that object, so this is the assertion that the walk is
+    // complete. Three `toContain`s pass just as happily when a fourth pack has
+    // been added and forgotten — the same shape as the hand-written registry
+    // fixtures this repo has had to fix three times.
+    //
+    // Order matters too: it is the order the header's pack menu renders.
     const svc = setup();
-    const packs = svc.availablePacks();
-    expect(packs).toContain('wood');
-    expect(packs).toContain('chiptune');
-    expect(packs).toContain('minimal');
+
+    expect(svc.availablePacks()).toEqual(Object.keys(BUILT_IN_PACKS));
+    expect(svc.availablePacks()).toEqual(['wood', 'chiptune', 'minimal']);
   });
 
   it('activate(minimal) persists and survives reconstruction', () => {

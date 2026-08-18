@@ -8,6 +8,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import type { SupportedLocale } from '../../core/i18n/supported-locales';
 import { SoundService } from '../../core/sound/sound.service';
+import { stubSoundService } from '../../testing/sound';
 import { BoardSkinService } from '../../core/theme/board-skin.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { Header } from './header';
@@ -21,19 +22,7 @@ const langs = {
   'zh-CN': { header: { brand: '格物' } },
 };
 
-function soundStub(opts: { muted?: boolean } = {}) {
-  return {
-    muted: signal(opts.muted ?? false),
-    volume: signal(100),
-    packName: signal('wood'),
-    play: vi.fn(),
-    setMuted: vi.fn(),
-    setVolume: vi.fn(),
-    register: vi.fn(),
-    activate: vi.fn(),
-    availablePacks: () => ['wood', 'chiptune', 'minimal'] as const,
-  };
-}
+const soundStub = stubSoundService;
 
 function mount(opts: { muted?: boolean; lang?: SupportedLocale } = {}) {
   const lang = opts.lang ?? 'en';

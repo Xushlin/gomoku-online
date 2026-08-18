@@ -12,6 +12,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import type {
   ChatChannel,
   GameEndedDto,
+  MoveDto,
   RoomState,
   UrgeDto,
 } from '../../../core/api/models/room.model';
@@ -24,6 +25,7 @@ import {
   GameCatalogService,
 } from '../../../games/game-catalog.service';
 import { SoundService } from '../../../core/sound/sound.service';
+import { playedEvents, stubSoundService } from '../../../testing/sound';
 import { RoomPage } from './room-page';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { StubGameCapabilities } from '../../../games/game-capabilities.stub';
@@ -147,6 +149,7 @@ function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS
   const hub = new StubHub();
   const rooms = new StubRoomsApi();
   const router = routerStub();
+  const sound = stubSoundService();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [
@@ -163,18 +166,7 @@ function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: GameHubService, useValue: hub },
-      {
-        provide: SoundService,
-        useValue: {
-          play: vi.fn(),
-          muted: signal(false),
-          packName: signal('wood'),
-          setMuted: vi.fn(),
-          register: vi.fn(),
-          activate: vi.fn(),
-          availablePacks: () => ['wood'],
-        },
-      },
+      { provide: SoundService, useValue: sound },
       { provide: RoomsApiService, useValue: rooms },
       { provide: Router, useValue: router },
       { provide: ActivatedRoute, useValue: activatedRoute(id) },
@@ -191,7 +183,7 @@ function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS
   });
   const fixture = TestBed.createComponent(RoomPage);
   fixture.detectChanges();
-  return { fixture, hub, rooms, router };
+  return { fixture, hub, rooms, router, sound };
 }
 
 describe('RoomPage', () => {
@@ -430,5 +422,85 @@ describe('RoomPage board selection', () => {
 
     expect(hub.movePiece).toHaveBeenCalledWith('r-1', 9, 0, 8, 0);
     expect(hub.makeMove).not.toHaveBeenCalled();
+  });
+
+  describe('sound', () => {
+    // 红 soldier up its file, 黑 soldier down the same one, then 红 takes it. Real
+    // 象棋: soldiers capture straight ahead and 红 moves towards row 0.
+    const RED_ADVANCE: MoveDto = {
+      ply: 1, fromRow: 6, fromCol: 0, row: 5, col: 0, stone: 'Black', playedAt: 'x',
+    };
+    const BLACK_ADVANCE: MoveDto = {
+      ply: 2, fromRow: 3, fromCol: 0, row: 4, col: 0, stone: 'White', playedAt: 'x',
+    };
+    const RED_CAPTURES: MoveDto = {
+      ply: 3, fromRow: 5, fromCol: 0, row: 4, col: 0, stone: 'Black', playedAt: 'x',
+    };
+
+    const roomWith = (gameKey: string, moves: readonly MoveDto[]): RoomState => {
+      const base = makeRoomState();
+      return { ...base, gameKey, game: { ...base.game!, moves } };
+    };
+
+    it('plays move-place when a stone is placed', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+
+      hub.state.set(
+        roomWith('gomoku', [{ ply: 1, row: 7, col: 7, stone: 'Black', playedAt: 'x' }]),
+      );
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual(['move-place']);
+    });
+
+    it('plays capture when a 象棋 move takes a piece', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+
+      hub.state.set(roomWith('xiangqi', [RED_ADVANCE, BLACK_ADVANCE, RED_CAPTURES]));
+      fixture.detectChanges();
+
+      // "He moved" and "he took my 車" are two different pieces of news.
+      expect(playedEvents(sound)).toEqual(['capture']);
+    });
+
+    it('plays move-place when a 象棋 move takes nothing', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+
+      hub.state.set(roomWith('xiangqi', [RED_ADVANCE]));
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual(['move-place']);
+    });
+
+    it('never plays capture for a game without captures', async () => {
+      // 成语接龙's plies carry no coordinates at all, so a capture check that ran on
+      // them would be answering a question the game does not have.
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+
+      hub.state.set(
+        roomWith('idiom-chain', [
+          { ply: 1, row: null, col: null, text: '一五一十', stone: 'Black', playedAt: 'x' },
+        ]),
+      );
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual(['move-place']);
+    });
+
+    it('says nothing on the first state it ever sees', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+      sound.play.mockClear();
+
+      // Same count as the state already observed — a reconnect, not a new move.
+      hub.state.set(roomWith('gomoku', []));
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual([]);
+    });
   });
 });

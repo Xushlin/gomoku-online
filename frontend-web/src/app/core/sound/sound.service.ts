@@ -1,7 +1,5 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
-import { chiptunePack } from './packs/chiptune';
-import { minimalPack } from './packs/minimal';
-import { woodPack } from './packs/wood';
+import { BUILT_IN_PACKS } from './packs';
 import type { SoundEventName, SoundPack } from './sound.tokens';
 
 const MUTED_STORAGE_KEY = 'gewu:sound-muted';
@@ -24,8 +22,8 @@ const DEFAULT_VOLUME = 100;
  * downstream of one). Construction failure (jsdom, --no-audio flag, locked-
  * down browser) is silently absorbed; subsequent `play()`s are no-ops.
  *
- * Adding a new sound pack = a new TS file under `packs/` + a `register(...)`
- * call here. Components stay untouched — they emit the same closed set of
+ * Adding a new sound pack = a new TS file under `packs/` + one entry in
+ * `BUILT_IN_PACKS`. Components stay untouched — they emit the same closed set of
  * `SoundEventName`s, packs decide what those events sound like.
  */
 export abstract class SoundService {
@@ -61,9 +59,10 @@ export class DefaultSoundService extends SoundService {
 
   constructor() {
     super();
-    this.register(DEFAULT_PACK, woodPack);
-    this.register('chiptune', chiptunePack);
-    this.register('minimal', minimalPack);
+    // One list, walked — not three calls that a test fixture then re-writes by hand.
+    for (const [name, pack] of Object.entries(BUILT_IN_PACKS)) {
+      this.register(name, pack);
+    }
 
     this._muted.set(this.readMuted());
     this._volume.set(this.resolveInitialVolume());

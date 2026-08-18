@@ -5,18 +5,20 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
-import type { GameEndedDto } from '../../../core/api/models/room.model';
+import type { GameEndedDto, MoveDto } from '../../../core/api/models/room.model';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { boardSizeFor } from '../../../games/board-size';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { GameHubService } from '../../../core/realtime/game-hub.service';
 import { SoundService } from '../../../core/sound/sound.service';
+import type { SoundEventName } from '../../../core/sound/sound.tokens';
 import { gameEntryRoute, PLATFORM_HOME } from '../../../games/game-entry-route';
 import { GameCatalogService } from '../../../games/game-catalog.service';
 import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
+import { lastMoveCaptured } from '../../../games/xiangqi/position';
 import { XiangqiBoard, type PieceMoveEvent } from '../../../games/xiangqi/board/xiangqi-board';
 import { Board } from './board/board';
 import { ChatPanel, type SendChatPayload } from './chat/chat-panel';
@@ -165,14 +167,36 @@ export class RoomPage implements OnInit, OnDestroy {
       this.lastStatus = status;
     });
     effect(() => {
-      const n = this.state()?.game?.moves.length ?? 0;
+      const moves = this.state()?.game?.moves ?? [];
+      const n = moves.length;
       if (this.previousMoveCount === -1) {
         this.previousMoveCount = n;
         return;
       }
-      if (n > this.previousMoveCount) this.sound.play('move-place');
+      if (n > this.previousMoveCount) this.sound.play(this.moveSound(moves));
       this.previousMoveCount = n;
     });
+  }
+
+  /**
+   * Which sound the move that just arrived earned.
+   *
+   * In 象棋 "he moved" and "he took my 車" are two different pieces of news, and the
+   * client already knows which one it is: the board it draws is
+   * `INITIAL_POSITION` + every ply, so whether the destination was occupied is a
+   * fact it reads on every frame. Nothing new is computed and no second truth is
+   * created — see {@link lastMoveCaptured}.
+   *
+   * A per-game branch rather than a registry: 象棋 is the only game here with
+   * captures, and *a switch with one arm is a switch*. This component already
+   * branches on `isXiangqi()` / `isIdiomChain()` to pick a board.
+   *
+   * Every other game plays `move-place`, 成语接龙 included — that event means "a
+   * move landed", and what it sounds like is the pack's business.
+   */
+  private moveSound(moves: readonly MoveDto[]): SoundEventName {
+    if (!this.isXiangqi()) return 'move-place';
+    return lastMoveCaptured(moves) ? 'capture' : 'move-place';
   }
 
   private playGameEndSound(ended: GameEndedDto): void {
