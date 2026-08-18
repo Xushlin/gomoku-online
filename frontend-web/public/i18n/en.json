@@ -356,7 +356,8 @@
     "category-match": "Versus",
     "category-puzzle": "Puzzle",
     "category-score": "Score attack",
-    "leaderboard-link": "Leaderboard"
+    "leaderboard-link": "Leaderboard",
+    "scores-link": "High scores"
   },
   "games": {
     "gomoku": {
@@ -545,5 +546,54 @@
       "submit": "Say it",
       "waiting": "Waiting for your opponent…"
     }
+  },
+  "tetris": {
+    "subtitle": "Stack the falling blocks, clear lines, climb the board. Pieces only fall straight down — you cannot slide one under an overhang.",
+    "start": "Start a run",
+    "starting": "Asking the server for a seed…",
+    "retry": "Try again",
+    "submitting": "Scoring…",
+    "play-again": "Play again",
+    "pause": "Pause",
+    "resume": "Resume",
+    "score": "Score",
+    "lines": "Lines",
+    "level": "Level",
+    "next": "Next",
+    "scores-link": "High scores",
+    "keys": "Keyboard: ← → to move, ↑ to rotate, ↓ soft drop, Space hard drop, P to pause.",
+    "no-tuck": "A piece can only fall straight down its column, so it cannot be tucked under an overhang — that is exactly how the server replays it.",
+    "final-score": "{{score}} points",
+    "final-detail": "{{lines}} lines cleared, reached level {{level}}.",
+    "server-confirmed": "This score comes from the server replaying your placements.",
+    "no-placements": "No piece was placed, so there is no score.",
+    "control-left": "Move left",
+    "control-right": "Move right",
+    "control-rotate": "Rotate",
+    "control-soft-drop": "Soft drop",
+    "control-hard-drop": "Hard drop",
+    "error-start-failed": "Could not start — no seed from the server, so this run would have nowhere to go. Try again.",
+    "error-submit-failed": "Scoring failed and nothing was recorded. Try again."
+  },
+  "scores": {
+    "title": "{{game}} high scores",
+    "back-to-game": "Back to the game",
+    "window-group": "Time range",
+    "window-week": "This week",
+    "window-month": "This month",
+    "window-all": "All time",
+    "loading": "Loading…",
+    "load-failed": "Could not load the board. Try again.",
+    "retry": "Try again",
+    "empty": "Nobody has played in this range yet.",
+    "caption": "High scores: each player's best run in the range.",
+    "rank": "Rank",
+    "player": "Player",
+    "score": "Score",
+    "lines": "Lines",
+    "level": "Level",
+    "prev": "Previous",
+    "next": "Next",
+    "page-of": "Page {{page}} of {{total}}"
   }
 }

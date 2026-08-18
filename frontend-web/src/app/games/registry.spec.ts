@@ -56,6 +56,25 @@ describe('GAME_REGISTRY', () => {
     // have been read by nobody — see board-size.spec.ts.
   });
 
+  it('has 俄罗斯方块 available at its own route', () => {
+    const tetris = GAME_REGISTRY.find((g) => g.key === 'tetris');
+
+    expect(tetris?.status).toBe('available');
+    // The only score-attack game — and the only sample keeping the catalogue's
+    // "score games get a high-scores link" branch from being a no-op.
+    expect(tetris?.category).toBe('score');
+    expect(tetris?.launchRoute).toBe('/g/tetris');
+    // Nothing here is language-bound: blocks and numbers.
+    expect(tetris?.contentLocales).toEqual(['zh-CN', 'en']);
+  });
+
+  it('still has exactly one score-attack game', () => {
+    // `ScoreAttackGames` on the server is a one-armed switch on purpose. If a second
+    // score game appears, that switch becomes a registry — and this test is where
+    // the reminder lands.
+    expect(GAME_REGISTRY.filter((g) => g.category === 'score')).toHaveLength(1);
+  });
+
   it('uses kebab-case keys', () => {
     for (const game of GAME_REGISTRY) {
       expect(game.key).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
