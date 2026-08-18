@@ -315,7 +315,13 @@ Discipline: **do not start a new game until the previous one is archived.** Seve
 
 Deferred follow-ups, each with a reason:
 
-- `squash-migration-baseline` — squash the 11 migrations into one. Needs deltas because `ai-opponent` has requirements named after `AddBotSupport` / `AddHardBotAccount`, `room-and-gameplay` after `AddGameEndReason`, and `user-management` now names `AddUserGameStats` / `DropUserRatingColumns` — the last pair with a normative ordering constraint the squash must preserve. Cheap while the DB is still local-only (no production data exists).
+- **`squash-migration-baseline` — measured and declined.** Off the deferred list: decided against, with the numbers, so nobody re-litigates it.
+
+  Its own justification only ever argued the *cost of doing it* ("cheap while the DB is still local-only"), never the *benefit*. Measured: the 14 migrations' entire SQL is **400 lines that apply in 259 ms** to a fresh SQLite file. A squashed baseline emits a subset of that DDL, so it saves on the order of **100 ms, once, per fresh database**. The 5.3 s that `dotnet ef database update` actually takes is `dotnet ef` host startup, which a squash does not touch at all.
+
+  Against that: **16 tests across 3 files stop being expressible.** `UserGameStatsBackfillTests`, `MoveOriginMigrationTests` and `MoveTextPayloadMigrationTests` each call `IMigrator.MigrateAsync` with a *named intermediate* stop (`DropUserRatingColumns`, `AddMoveOrigin`), because "did the data move correctly" is only observable between expand and contract — after the contract half the source columns are gone and an assertion is just checking against itself. Squash and those stops cease to exist. Four spec requirements describing intermediate states go with them, including the two that encode bugs this repo actually got bitten by: `AddRoomGameKey`'s `defaultValue: ""` (every existing room's `GameKey` becomes an empty string, so no room resolves its rules) and `DropUserRatingColumns`'s `Down` with `defaultValue: 0` (everyone restored at rating 0).
+
+  **Trading a 100 ms one-off for deleting the only tests that guard hand-written data migrations is a bad trade at any file count.** If a real reason appears — a provider change, a hundred migrations, an actual deployment — reopen it. The conditional 「若有人压缩迁移,这个先后同样 MUST NOT 颠倒」 constraints in `user-management` stay where they are for exactly that day.
 - **`backend/smoke/AiSmoke` now runs in CI** — see `ci/run-ai-smoke`. It is in `Gewu.slnx`, its base URL comes from `SMOKE_BASE_URL`, and the `backend` job starts the API against a scratch SQLite file, waits on `/health`, runs the smoke, and fails on its exit code.
 
   **It was broken when it was picked up, and it broke in exactly the way its own note predicted.** `require-room-game-key` had run it green (17 passed); `generalize-match-payload` then made `GameDescriptor.Rows/Cols` nullable, and AiSmoke's DTO still declared non-nullable `int` — so it compiled fine and crashed at runtime on step 8 the moment a boardless game existed. Nobody noticed, because nothing ran it. **That is the strongest argument for wiring it in, and the smoke supplied it itself.**
@@ -534,11 +540,23 @@ dotnet ef migrations remove \
   --project src/Gewu.Infrastructure \
   --startup-project src/Gewu.Api
 
-# Generate an idempotent SQL script for review / production apply
-dotnet ef migrations script --idempotent \
+# Generate a SQL script for review.
+#
+# NOTE: **--idempotent does not work here.** EF throws
+#   NotSupportedException: Generating idempotent scripts for migrations is not
+#   currently supported for SQLite
+# and writes no file at all. This block used to say `--idempotent`, and it had
+# never once worked — measured, not assumed.
+dotnet ef migrations script \
   --project src/Gewu.Infrastructure \
   --startup-project src/Gewu.Api \
   -o migrations.sql
+
+# Just the delta between two migrations. This form *is* supported on SQLite.
+dotnet ef migrations script AddMoveOrigin AddScoreRuns \
+  --project src/Gewu.Infrastructure \
+  --startup-project src/Gewu.Api \
+  -o delta.sql
 ```
 
 Rule: never edit a migration that has already been merged to `main` — add a new one instead.
