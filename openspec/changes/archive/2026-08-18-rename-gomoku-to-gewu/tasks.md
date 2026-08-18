@@ -29,7 +29,17 @@
 
 - [x] 5.1 `dotnet build` 0 warning;`dotnet test` 全绿;`npm run lint` + `npm run test:ci` 全绿。
 - [x] 5.2 全仓搜索:平台级 `gomoku` 归零(排除 bin/obj/logs 与游戏键的合法用法)。
-- [x] 5.3 真实 HTTP + SignalR:登录、连 `/hubs/match`、下一手 —— 旧 token 应当失效。
+- [x] 5.3 真实 HTTP 实测:
+
+```
+JWT iss = gewu | aud = gewu-clients
+POST /hubs/match/negotiate   -> 200
+POST /hubs/gomoku/negotiate  -> 404      ← 旧路径确实没了
+日志文件                      -> gewu-20260818.log
+```
+
+  旧路径回 404 这一条要紧:它证明的不是"新路径通了",而是"**旧路径真的移走了**" ——
+  两个都通会是最糟的结果,因为那意味着改名只加了一个别名,而没人会发现旧的还在。
 - [x] 5.4 AiSmoke 在 CI 里通过。
 
 ## 6. 实测
