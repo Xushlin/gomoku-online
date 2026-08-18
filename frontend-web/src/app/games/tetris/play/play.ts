@@ -10,10 +10,12 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { ScoreRunResult } from '../../../core/api/models/score-run.model';
 import { ScoreRunsApiService } from '../../../core/api/score-runs-api.service';
+import { SoundService } from '../../../core/sound/sound.service';
 import { TetrisBoard, type RenderedCell } from '../board/tetris-board';
 import { COLUMNS, ROWS } from '../engine/field';
 import { gravityIntervalMs, TetrisGame } from '../engine/game';
 import { TETRIS_KEY } from '../game-key';
+import { soundForStep, type TetrisProgress } from './announce';
 
 /**
  * `idle` is before the first run; `over` means the field topped out and we are
@@ -24,6 +26,9 @@ import { TETRIS_KEY } from '../game-key';
 type Phase = 'idle' | 'starting' | 'playing' | 'paused' | 'submitting' | 'finished' | 'error';
 
 const CELL_COUNT = ROWS * COLUMNS;
+
+/** Before a run exists. Level is 1 because that is what an idle board displays. */
+const IDLE_PROGRESS: TetrisProgress = { locks: 0, lines: 0, level: 1, over: false };
 
 /**
  * 俄罗斯方块 play page.
@@ -51,6 +56,7 @@ const CELL_COUNT = ROWS * COLUMNS;
 })
 export class TetrisPlay {
   private readonly api = inject(ScoreRunsApiService);
+  private readonly sound = inject(SoundService);
 
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorKey = signal<string | null>(null);
@@ -61,6 +67,8 @@ export class TetrisPlay {
   private game: TetrisGame | null = null;
   private runId: string | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** Last announced progress — the same shape as `RoomPage`'s `previousMoveCount`. */
+  private heard: TetrisProgress = IDLE_PROGRESS;
 
   protected readonly tetrisKey = TETRIS_KEY;
 
@@ -100,6 +108,8 @@ export class TetrisPlay {
       next: (run) => {
         this.runId = run.runId;
         this.game = new TetrisGame(run.seed);
+        // Baseline before any sound: the first piece appearing is not an event.
+        this.heard = this.progress();
         this.version.update((v) => v + 1);
         this.phase.set('playing');
         this.scheduleTick();
@@ -195,6 +205,7 @@ export class TetrisPlay {
 
   private afterGravity(): void {
     this.version.update((v) => v + 1);
+    this.announce();
     if (this.game?.over) {
       this.stopTimer();
       this.submit();
@@ -231,6 +242,30 @@ export class TetrisPlay {
         this.phase.set('error');
       },
     });
+  }
+
+  /**
+   * Play at most one sound for whatever the last gravity step did.
+   *
+   * Only called from {@link afterGravity}, which is the only path that can lock a
+   * piece — a lateral move or a rotation changes nothing worth hearing.
+   */
+  private announce(): void {
+    const after = this.progress();
+    const event = soundForStep(this.heard, after);
+    this.heard = after;
+    if (event) this.sound.play(event);
+  }
+
+  private progress(): TetrisProgress {
+    const game = this.game;
+    if (!game) return IDLE_PROGRESS;
+    return {
+      locks: game.placements.length,
+      lines: game.lines,
+      level: game.level,
+      over: game.over,
+    };
   }
 
   private stopTimer(): void {

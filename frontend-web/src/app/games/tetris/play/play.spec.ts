@@ -11,6 +11,10 @@ import type {
   SubmitScoreRunBody,
 } from '../../../core/api/models/score-run.model';
 import { ScoreRunsApiService } from '../../../core/api/score-runs-api.service';
+import { SoundService } from '../../../core/sound/sound.service';
+import { playedEvents, stubSoundService, type StubSoundService } from '../../../testing/sound';
+import { COLUMNS } from '../engine/field';
+import { TetrisGame } from '../engine/game';
 import { TetrisPlay } from './play';
 
 const SEED = 20260818;
@@ -93,10 +97,12 @@ class StubApi extends ScoreRunsApiService {
 
 describe('TetrisPlay', () => {
   let api: StubApi;
+  let sound: StubSoundService;
   let fixture: ComponentFixture<TetrisPlay>;
 
   beforeEach(() => {
     api = new StubApi();
+    sound = stubSoundService();
     TestBed.configureTestingModule({
       imports: [
         TetrisPlay,
@@ -106,7 +112,11 @@ describe('TetrisPlay', () => {
           preloadLangs: true,
         }),
       ],
-      providers: [provideRouter([]), { provide: ScoreRunsApiService, useValue: api }],
+      providers: [
+        provideRouter([]),
+        { provide: ScoreRunsApiService, useValue: api },
+        { provide: SoundService, useValue: sound },
+      ],
     });
     fixture = TestBed.createComponent(TetrisPlay);
     fixture.detectChanges();
@@ -119,6 +129,19 @@ describe('TetrisPlay', () => {
     if (!button) throw new Error(`no button matching "${label}"`);
     button.click();
     fixture.detectChanges();
+  };
+  /** Left / rotate / right / soft drop are icon buttons — only aria-label identifies them. */
+  const clickAria = (label: string): void => {
+    const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+    const button = buttons.find((b) => b.getAttribute('aria-label') === label);
+    if (!button) throw new Error(`no button labelled "${label}"`);
+    button.click();
+    fixture.detectChanges();
+  };
+  /** The three `<dd>`s in the stats panel: score, lines, level. */
+  const stats = () => {
+    const dds = [...fixture.nativeElement.querySelectorAll('dd')] as HTMLElement[];
+    return dds.slice(0, 3).map((dd) => Number(dd.textContent?.trim()));
   };
   const filledCells = () =>
     [...fixture.nativeElement.querySelectorAll('app-tetris-board div div')].filter((el) =>
@@ -260,4 +283,126 @@ describe('TetrisPlay', () => {
       .filter((i) => i >= 0)
       .join(',');
   }
+
+  describe('sound', () => {
+    it('says nothing before the first piece falls', () => {
+      click('Start a run');
+
+      // A piece appearing is not an event. The baseline snapshot is taken here.
+      expect(playedEvents(sound)).toEqual([]);
+    });
+
+    it('plays move-place when a piece locks', () => {
+      click('Start a run');
+
+      click('Hard drop');
+
+      expect(playedEvents(sound)).toEqual(['move-place']);
+    });
+
+    it('stays silent while the piece is only being steered', () => {
+      click('Start a run');
+
+      clickAria('Move left');
+      clickAria('Move right');
+      clickAria('Rotate');
+      click('Pause');
+      click('Resume');
+
+      // Sound reports what happened, not what was pressed.
+      expect(playedEvents(sound)).toEqual([]);
+    });
+
+    it('plays game-lose when the field tops out', () => {
+      click('Start a run');
+      for (let i = 0; i < 400 && api.submitted.length === 0; i++) {
+        click('Hard drop');
+      }
+
+      const played = playedEvents(sound);
+      expect(played.at(-1)).toBe('game-lose');
+      // Every earlier piece was a plain lock: dropping down one column never
+      // completes a row.
+      expect(new Set(played.slice(0, -1))).toEqual(new Set(['move-place']));
+    });
+
+    it('plays line-clear on a row actually cleared through the UI', () => {
+      // Gravity would lock a piece mid-sequence and desynchronise the shadow game
+      // below; nothing here needs the timer.
+      vi.useFakeTimers();
+      try {
+        click('Start a run');
+
+        // A shadow game on the same seed decides where each piece should go, and
+        // both games then receive the identical action sequence — so they stay in
+        // lockstep, which the stats check below verifies rather than assumes.
+        const shadow = new TetrisGame(SEED);
+        let guard = 0;
+        while (shadow.lines === 0 && !shadow.over && guard++ < 40) {
+          const plan = greedyPlan(shadow);
+          for (let i = 0; i < COLUMNS; i++) {
+            shadow.moveLeft();
+            clickAria('Move left');
+          }
+          for (let i = 0; i < plan.rotation; i++) {
+            shadow.rotate();
+            clickAria('Rotate');
+          }
+          for (let i = 0; i < plan.column; i++) {
+            shadow.moveRight();
+            clickAria('Move right');
+          }
+          shadow.hardDrop();
+          click('Hard drop');
+
+          expect(stats(), 'UI and shadow must stay in lockstep').toEqual([
+            shadow.score,
+            shadow.lines,
+            shadow.level,
+          ]);
+        }
+
+        // Without this the whole test could pass having cleared nothing — the exact
+        // way the engine's own invariant tests once passed on `0 === 0`.
+        expect(shadow.lines, 'the driver must actually clear a row').toBeGreaterThan(0);
+        expect(playedEvents(sound).at(-1)).toBe('line-clear');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });
+
+/**
+ * Lowest-landing greedy choice for the current piece, explored on a shadow game.
+ *
+ * Exploration is free while no gravity has moved the piece: it sits at the spawn
+ * row with nothing above it, so every lateral move is legal. Ends with the piece
+ * back at column 0 and rotation 0 (four rotations is a full cycle), which is the
+ * starting point the caller replays the plan from.
+ */
+function greedyPlan(shadow: TetrisGame): { rotation: number; column: number } {
+  let best = { rotation: 0, column: 0, depth: -1 };
+
+  for (let r = 0; r < 4; r++) {
+    while (shadow.moveLeft()) {
+      /* to the far left */
+    }
+    for (;;) {
+      const ghost = shadow.ghostCells();
+      if (ghost.length > 0) {
+        const depth = Math.max(...ghost.map((c) => c.row));
+        if (depth > best.depth) {
+          best = { rotation: shadow.active!.rotation, column: shadow.active!.column, depth };
+        }
+      }
+      if (!shadow.moveRight()) break;
+    }
+    while (shadow.moveLeft()) {
+      /* back to column 0 before rotating, or a wide rotation is refused at the wall */
+    }
+    shadow.rotate();
+  }
+
+  return { rotation: best.rotation, column: best.column };
+}

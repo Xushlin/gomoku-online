@@ -4,6 +4,7 @@ import {
   BLACK,
   cellIndex,
   INITIAL_POSITION,
+  lastMoveCaptured,
   pieceAt,
   positionAfter,
   RED,
@@ -186,5 +187,89 @@ describe('cellIndex', () => {
     expect(cellIndex(0, 8)).toBe(8);
     expect(cellIndex(1, 0)).toBe(9);
     expect(cellIndex(9, 8)).toBe(89);
+  });
+});
+
+/**
+ * 红 soldier walks up its file, 黑 soldier walks down the same one, then 红 takes it.
+ * Real 象棋: soldiers capture straight ahead, and 红 moves towards row 0.
+ */
+const SOLDIER_ADVANCE: MoveDto = {
+  ply: 1,
+  fromRow: 6,
+  fromCol: 0,
+  row: 5,
+  col: 0,
+  stone: 'Black',
+  playedAt: 'x',
+};
+const BLACK_ADVANCE: MoveDto = {
+  ply: 2,
+  fromRow: 3,
+  fromCol: 0,
+  row: 4,
+  col: 0,
+  stone: 'White',
+  playedAt: 'x',
+};
+const THE_CAPTURE: MoveDto = {
+  ply: 3,
+  fromRow: 5,
+  fromCol: 0,
+  row: 4,
+  col: 0,
+  stone: 'Black',
+  playedAt: 'x',
+};
+
+describe('lastMoveCaptured', () => {
+  it('is false with no moves at all', () => {
+    expect(lastMoveCaptured([])).toBe(false);
+  });
+
+  it('is false for a move onto an empty point', () => {
+    expect(lastMoveCaptured([SOLDIER_ADVANCE])).toBe(false);
+  });
+
+  it('is true for a move onto an occupied point', () => {
+    expect(lastMoveCaptured([SOLDIER_ADVANCE, BLACK_ADVANCE, THE_CAPTURE])).toBe(true);
+  });
+
+  it('looks at the last move only, not at whether any move ever captured', () => {
+    const quietAfterwards: MoveDto = {
+      ply: 4,
+      fromRow: 0,
+      fromCol: 1,
+      row: 2,
+      col: 2,
+      stone: 'White',
+      playedAt: 'x',
+    };
+
+    expect(
+      lastMoveCaptured([SOLDIER_ADVANCE, BLACK_ADVANCE, THE_CAPTURE, quietAfterwards]),
+    ).toBe(false);
+  });
+
+  it('is false for a ply with no origin', () => {
+    // The shape a placement game produces. Same rule `positionAfter` follows: a
+    // mismatched history draws a board that may be wrong, it never throws.
+    const placement: MoveDto = { ply: 1, row: 4, col: 0, stone: 'Black', playedAt: 'x' };
+
+    expect(lastMoveCaptured([placement])).toBe(false);
+  });
+
+  it('is false for a destination off the board', () => {
+    const nonsense: MoveDto = {
+      ply: 1,
+      fromRow: 6,
+      fromCol: 0,
+      row: 99,
+      col: 0,
+      stone: 'Black',
+      playedAt: 'x',
+    };
+
+    expect(lastMoveCaptured([nonsense])).toBe(false);
   });
 });

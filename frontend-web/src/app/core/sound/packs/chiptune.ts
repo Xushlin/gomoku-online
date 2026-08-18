@@ -1,4 +1,4 @@
-import type { SoundEventName, SoundPack } from '../sound.tokens';
+import { unhandledSoundEvent, type SoundEventName, type SoundPack } from '../sound.tokens';
 
 /**
  * Chiptune sound pack — 8-bit-style synthesis using only square and
@@ -10,13 +10,17 @@ import type { SoundEventName, SoundPack } from '../sound.tokens';
  * loudness in line with `wood`.
  *
  * Event design:
- *   - move-place : square click ~50 ms, ~150 Hz, fast attack/decay
- *   - urge       : triangle sweep 300 → 700 Hz over 100 ms (8-bit alert)
- *   - game-win   : ascending square arpeggio C5/E5/G5 + flourish C6
- *                  ("level up" feel)
- *   - game-lose  : square descending 640 → 160 Hz over 700 ms
- *                  ("game over" feel)
- *   - game-draw  : two triangle 440 Hz pulses, neutral
+ *   - move-place      : square click ~50 ms, ~150 Hz, fast attack/decay
+ *   - capture         : square descending 220 → 80 Hz over 90 ms — a bite taken
+ *   - line-clear      : four-step ascending square blips
+ *   - line-clear-quad : six-step run with a triangle note on top
+ *   - level-up        : two ascending triangle notes
+ *   - urge            : triangle sweep 300 → 700 Hz over 100 ms (8-bit alert)
+ *   - game-win        : ascending square arpeggio C5/E5/G5 + flourish C6
+ *                       ("level up" feel)
+ *   - game-lose       : square descending 640 → 160 Hz over 700 ms
+ *                       ("game over" feel)
+ *   - game-draw       : two triangle 440 Hz pulses, neutral
  *
  * MUST NOT use sawtooth (too harsh for the events on this list).
  */
@@ -26,6 +30,27 @@ export const chiptunePack: SoundPack = {
     switch (event) {
       case 'move-place':
         playMovePlace(ctx, masterGain, now);
+        return;
+      case 'capture':
+        playCapture(ctx, masterGain, now);
+        return;
+      case 'line-clear':
+        playRun(ctx, masterGain, now, [659.25, 830.61, 987.77, 1244.51], 'square', 0.045, 0.16);
+        return;
+      case 'line-clear-quad':
+        playRun(
+          ctx,
+          masterGain,
+          now,
+          [659.25, 830.61, 987.77, 1244.51, 1479.98, 1975.53],
+          'square',
+          0.05,
+          0.17,
+        );
+        playRun(ctx, masterGain, now + 0.3, [2093.0], 'triangle', 0.16, 0.14);
+        return;
+      case 'level-up':
+        playRun(ctx, masterGain, now, [783.99, 1046.5], 'triangle', 0.1, 0.2);
         return;
       case 'urge':
         playUrge(ctx, masterGain, now);
@@ -39,9 +64,55 @@ export const chiptunePack: SoundPack = {
       case 'game-draw':
         playDraw(ctx, masterGain, now);
         return;
+      default:
+        return unhandledSoundEvent(event);
     }
   },
 };
+
+/**
+ * Fast square descent. A capture is the one thing in 象棋 a player must not
+ * mistake for a quiet move, so this shares no code with `playMovePlace`.
+ */
+function playCapture(ctx: AudioContext, dest: GainNode, now: number): void {
+  const duration = 0.09;
+  const osc = ctx.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(220, now);
+  osc.frequency.exponentialRampToValueAtTime(80, now + duration);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.17, now + 0.006);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+  osc.connect(gain).connect(dest);
+  osc.start(now);
+  osc.stop(now + duration + 0.02);
+}
+
+/** Stepped blip run — the 8-bit shape for "something good just happened". */
+function playRun(
+  ctx: AudioContext,
+  dest: GainNode,
+  now: number,
+  freqs: readonly number[],
+  type: OscillatorType,
+  noteDur: number,
+  peak: number,
+): void {
+  freqs.forEach((freq, i) => {
+    const start = now + i * noteDur;
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.value = freq;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(peak, start + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + noteDur);
+    osc.connect(gain).connect(dest);
+    osc.start(start);
+    osc.stop(start + noteDur + 0.02);
+  });
+}
 
 function playMovePlace(ctx: AudioContext, dest: GainNode, now: number): void {
   const duration = 0.05;

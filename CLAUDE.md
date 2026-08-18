@@ -30,7 +30,7 @@ Games fall into three categories that deliberately do **not** share one aggregat
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
 - [x] **Backend MVP** — auth, rooms, gameplay, AI (Easy / Medium / Hard, with side-picker), ELO, replay, presence, observability, rate limiting. Live specs in `openspec/specs/`.
-- [x] **Web client v1** (`frontend-web/`) — Angular 21, Tailwind v4, Material/CDK, Transloco (`zh-CN` + `en`). Auth pages, lobby, real-time game board, replay player, public profiles, find-player search, AI room creation with side-picker, sound effects (Wood + Chiptune packs), board skins (Wood + Classic), themes (Material + System + Ink) × dark/light, presence dots.
+- [x] **Web client v1** (`frontend-web/`) — Angular 21, Tailwind v4, Material/CDK, Transloco (`zh-CN` + `en`). Auth pages, lobby, real-time game board, replay player, public profiles, find-player search, AI room creation with side-picker, sound effects (Wood + Chiptune + Minimal packs), board skins (Wood + Classic), themes (Material + System + Ink) × dark/light, presence dots.
 - [x] GitHub Actions CI runs on every push and PR (`backend` + `web` jobs in parallel).
 - [x] **`add-platform-catalog`** — `GameManifest` registry (`src/app/games/index.ts`) + the `/games` catalogue page. Adding a game to the catalogue = one manifest entry + two i18n keys.
 - [x] **Idiom vertical** — `add-idiom-dictionary` (30,895 curated idioms committed at `backend/data/idioms.curated.json`), `add-puzzle-core` (`PuzzleLevel` / `PuzzleAttempt` / `PuzzleLevelProgress` + the `IPuzzleRules` registry, server-authoritative, answer key never leaves the server), `add-idiom-crossword` + `add-web-idiom-crossword` (成语纵横, 12 generated levels, playable at `/g/idiom-crossword`).
@@ -311,6 +311,26 @@ Not yet done — platform roadmap:
 
   Also worth keeping: the 375 px check was run **with 44 blocks on the field** (`generalize-lobby`'s lesson — an empty field passes trivially), and no wall kicks, because a kick that helped would land the piece exactly where the server cannot reproduce it.
 
+- [x] **`add-game-sounds`** — 俄罗斯方块 makes sound, and 象棋's captures stop sounding like quiet moves. Backend: **zero changes**.
+
+  **The 象棋 half of the request had already shipped, and the interesting part is why nobody could tell.** Its move sound comes from `RoomPage`, which fires on `moves.length` changing and never asks which game it is — so `add-web-xiangqi` inherited落子/胜/负/平/催促 for free. What was missing was narrower and worse: **a capture and a quiet slide were the same sound**, in the one game where「他动了一步」and「他吃了我的車」are different news. The client already knew which: `positionAfter(moves)` is how it draws the board, so "was the destination occupied" is a fact it reads every frame. `lastMoveCaptured` just asks it. One branch on `isXiangqi()`, not a registry — *a switch with one arm is a switch*.
+
+  **A mechanism this repo believed in was measured and found absent — in a comment that contradicted itself.** `sound.tokens.ts` said adding an event "requires editing this union (TS exhaustiveness then forces every registered pack to render it — **or fall through silently**)". Only the second half was true: a sixth member with all three packs untouched compiled at **exit 0**, because `play` returns `void` and a missing `case` just runs off the end. `web-sound` even had a Scenario asserting「**WHEN** TS 编译期」. That was survivable while five voices never changed; this change adds 4 events × 3 packs, where a forgotten arm reads as *"tetris makes no noise under the chiptune pack"* — findable only by a human auditioning each pack.
+
+  Two derived mechanisms replaced it. `SOUND_EVENTS` is now the array and `SoundEventName` is derived from it, so the runtime list a walking test uses cannot fall behind the union; and every pack's `switch` ends in `default: return unhandledSoundEvent(event)` with `event: never`, so a missing arm **fails to compile naming the event**. Mutation-checked in both directions: before, exit 0; after, three errors at `wood.ts(54,36)`, `chiptune.ts(68,36)`, `minimal.ts(63,36)`.
+
+  **The positive control is the part worth keeping.** The first probe ran `tsc -p tsconfig.json` — which is `"files": []` plus `references`, so `--listFilesOnly` counts **zero files**. The probe "passed" and so did the control; only the control's *passing* exposed that nothing was being compiled. *A tool that verifies a mechanism can itself be measuring nothing.*
+
+  Tetris reuses two events and adds none of its own for them: a lock is `move-place` (it *is* "a move landed") and a top-out is `game-lose` (a score-attack run only ever ends by topping out, and the descending sting is exactly that). What genuinely had no analogue is a line clear — and a four-row clear gets its **own** event, because `LINE_SCORES`' 100-vs-800 gap "is the whole 'save up for a tetris' decision" and a sound that ignores it contradicts the scoreboard. The rule that decided the whole set: **sound reports what happened, not what you pressed** — no keypress makes a noise. One sound per gravity step by precedence `over > level-up > quad > clear > lock`, with level-up outranking a quad because it *changes the game* (gravity speeds up) while a quad is a reward already on screen.
+
+  The engine was not touched. It is a pure state machine, so the component observes two `{locks, lines, level, over}` snapshots — `RoomPage`'s `previousMoveCount` pattern — and a pure `soundForStep` decides. That is also what makes a real four-row clear or level-up assertable at all, since reaching either through the UI takes a solver or ten cleared rows.
+
+  **Three empty shells were closed on the way, and one of them was a real absence:** `wood.ts` and `chiptune.ts` had **no tests at all** (only `minimal` did, over a hand-written `ALL_EVENTS` — a fourth copy of the list this repo has fixed three times); `BUILT_IN_PACKS` now feeds DI *and* the walking spec, the `BuiltInGameRules.All` pattern's third application; and `room-page.spec.ts`'s `SoundService` stub — an untyped object literal, `useValue` being `any` — had been **missing `volume` and `setVolume` since the volume slider shipped**, with every `play: vi.fn()` in the codebase unasserted. So the entire sound feature had never had one behavioural test. `stubSoundService()` now `extends SoundService`.
+
+  Writing chiptune I made exactly the mistake the new "no two events build the same graph" assertion exists for: its `line-clear` was `game-win`'s notes played twice as fast. Distinguishable to a fingerprint, near-identical to an ear.
+
+  **Browser evidence, and its limit.** Same room, same pack, same AudioContext, sole variable the destination: a capture (红炮 taking 黑马, `aria-label` confirming the horse became a cannon) builds `buf 1 / filter 1 / osc 1`; a soldier stepping to an empty point builds `buf 1 / filter 1 / osc 0`. On `/g/tetris`: starting a run creates **zero** AudioContexts, a lock builds wood's `move-place` graph under a real context in state `running`, a top-out builds a different one, and `ctxs` never exceeds 1. **A line clear could not be reached in the browser** — the pane does not composite, so zoneless change detection does not run synchronously and every DOM read after a keypress is stale, which is precisely what a play-agent needs; three driver attempts stacked 132 blocks 18 rows deep with *every row one cell short*. That claim rests on the unit test that drives a real clear through the component with a shadow game and a positive control. **"I did not see it" and "it does not happen" differ in both directions.**
+
 Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished.
 
 Deferred follow-ups, each with a reason:
@@ -510,7 +530,7 @@ Dialogs / popovers / overlays MUST use **Angular CDK** (`@angular/cdk/dialog` or
 - Component styles MUST reference CSS variables, never literal colors. "This button uses theme-blue" = `var(--color-primary)`, not `#2962FF`.
 - Adding a new theme = drop one tokens file + one `ThemeService.register(...)` call. No component changes.
 
-The same registry pattern applies to **board skins** (`BoardSkinService`, currently `wood` + `classic`) and **sound packs** (`SoundService`, currently `wood` + `chiptune`).
+The same registry pattern applies to **board skins** (`BoardSkinService`, currently `wood` + `classic`) and **sound packs** (`SoundService`, currently `wood` + `chiptune` + `minimal`, listed once in `core/sound/packs/index.ts`).
 
 ### Frontend tests
 

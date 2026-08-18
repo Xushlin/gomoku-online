@@ -1,4 +1,4 @@
-import type { SoundEventName, SoundPack } from '../sound.tokens';
+import { unhandledSoundEvent, type SoundEventName, type SoundPack } from '../sound.tokens';
 
 /**
  * Minimal sound pack — the quiet alternative. Identity: soft, short, sine-only
@@ -7,11 +7,16 @@ import type { SoundEventName, SoundPack } from '../sound.tokens';
  * volume; durations stay under 400 ms total, the stone click under 80 ms.
  *
  * Event design:
- *   - move-place : single soft sine click, 660 Hz, ≤ 80 ms
- *   - urge       : two short 880 Hz clicks, 80 ms apart
- *   - game-win   : understated two-note rise C5 → G5
- *   - game-lose  : two-note fall G4 → C4
- *   - game-draw  : one neutral 440 Hz pulse
+ *   - move-place      : single soft sine click, 660 Hz, ≤ 80 ms
+ *   - capture         : two falling clicks, 660 → 440 Hz, 60 ms apart
+ *   - line-clear      : two-note rise E5 → B5 — deliberately not game-win's
+ *                       C5 → G5, or the two events would read as the same one
+ *   - line-clear-quad : three-note rise E5 → B5 → E6, still inside 400 ms
+ *   - level-up        : one high C6 pulse
+ *   - urge            : two short 880 Hz clicks, 80 ms apart
+ *   - game-win        : understated two-note rise C5 → G5
+ *   - game-lose       : two-note fall G4 → C4
+ *   - game-draw       : one neutral 440 Hz pulse
  *
  * Same contract as every pack: synchronous, no external resources, every node
  * auto-stops via `osc.stop(when)`, never throws.
@@ -22,6 +27,22 @@ export const minimalPack: SoundPack = {
     switch (event) {
       case 'move-place':
         click(ctx, masterGain, now, 660, 0.07, 0.16);
+        return;
+      case 'capture':
+        click(ctx, masterGain, now, 660, 0.05, 0.16);
+        click(ctx, masterGain, now + 0.06, 440, 0.06, 0.16);
+        return;
+      case 'line-clear':
+        note(ctx, masterGain, now, 659.25, 0.1, 0.14); // E5
+        note(ctx, masterGain, now + 0.11, 987.77, 0.1, 0.14); // B5
+        return;
+      case 'line-clear-quad':
+        note(ctx, masterGain, now, 659.25, 0.1, 0.15); // E5
+        note(ctx, masterGain, now + 0.11, 987.77, 0.1, 0.15); // B5
+        note(ctx, masterGain, now + 0.22, 1318.51, 0.1, 0.15); // E6
+        return;
+      case 'level-up':
+        note(ctx, masterGain, now, 1046.5, 0.14, 0.15); // C6
         return;
       case 'urge':
         click(ctx, masterGain, now, 880, 0.05, 0.15);
@@ -38,6 +59,8 @@ export const minimalPack: SoundPack = {
       case 'game-draw':
         note(ctx, masterGain, now, 440, 0.12, 0.11);
         return;
+      default:
+        return unhandledSoundEvent(event);
     }
   },
 };
