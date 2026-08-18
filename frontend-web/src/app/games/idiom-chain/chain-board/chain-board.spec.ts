@@ -3,6 +3,7 @@ import { TranslocoTestingModule } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { MoveDto, RoomState } from '../../../core/api/models/room.model';
+import { WRAPPING_UTILITIES, wrapsLongWords } from '../../../testing/wrapping';
 import { ChainBoard } from './chain-board';
 
 function said(ply: number, text: string, stone: 'Black' | 'White'): MoveDto {
@@ -76,6 +77,22 @@ describe('ChainBoard', () => {
     expect(items).toHaveLength(2);
     expect(items[0].textContent).toContain('一心一意');
     expect(items[1].textContent).toContain('意气风发');
+  });
+
+  it('breaks the longest dictionary idiom instead of widening the page', () => {
+    // 成语接龙's own change measured this: 1,393 of the 30,895 idioms are not four
+    // characters, running 3 to 15 — so the row really can be long, and it only stays
+    // inside 375 px because the text wraps. Same shape of guard as the chat panel:
+    // it catches the utility being deleted from the markup, not the stylesheet
+    // dropping it.
+    const el = mount([said(1, '风'.repeat(15), 'Black')]);
+    const text = el.querySelector('ol li span.break-words, ol li span:last-of-type');
+
+    expect(text, 'the idiom text should render').toBeTruthy();
+    expect(
+      wrapsLongWords(text),
+      `the idiom text needs one of: ${WRAPPING_UTILITIES.join(', ')}`,
+    ).toBe(true);
   });
 
   it('shows the character the next word must start with', () => {
