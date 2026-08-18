@@ -17,6 +17,16 @@ using Microsoft.AspNetCore.SignalR.Client;
 var BaseUrl = Environment.GetEnvironmentVariable("SMOKE_BASE_URL") ?? "http://localhost:5145";
 var http = new HttpClient { BaseAddress = new Uri(BaseUrl) };
 
+// 等一手棋最多多久。
+//
+// 本地 Release 跑完 21 条断言只要十几秒,5 秒绰绰有余;放宽到 10 秒是为了 CI ——
+// ubuntu runner 忙的时候冷启动更慢,而这个 smoke 的失败方式一旦变成"偶发红",
+// 它就会被当成噪音,那等于又回到没人信它的状态。
+//
+// 代价是**真卡住时反馈慢一倍**。这个取舍值得,因为这里的假阴性(偶发超时)会侵蚀信任,
+// 而假阳性的代价只是多等 5 秒。
+var MoveTimeout = TimeSpan.FromSeconds(10);
+
 var passed = 0;
 var failed = 0;
 void Assert(bool cond, string name)
@@ -92,9 +102,9 @@ async Task<MoveMadePayload> NextMoveAsync(TimeSpan timeout)
 
 Console.WriteLine("=== 4. Alice plays (7,7); wait for bot response ===");
 await hub.InvokeAsync("MakeMove", room.Id, 7, 7);
-var aliceMove = await NextMoveAsync(TimeSpan.FromSeconds(5));
+var aliceMove = await NextMoveAsync(MoveTimeout);
 Assert(aliceMove.Stone == "Black" && aliceMove.Row == 7 && aliceMove.Col == 7, "Alice's move echoed back");
-var botMove = await NextMoveAsync(TimeSpan.FromSeconds(5));
+var botMove = await NextMoveAsync(MoveTimeout);
 Assert(botMove.Stone == "White", "bot responded as White");
 Assert(botMove.Ply == 2, "bot move ply == 2");
 
@@ -103,11 +113,11 @@ var humanSteps = new (int, int)[] { (6, 7), (5, 7), (4, 7), (3, 7) };
 foreach (var (r, c) in humanSteps)
 {
     await hub.InvokeAsync("MakeMove", room.Id, r, c);
-    await NextMoveAsync(TimeSpan.FromSeconds(5)); // Alice's echo
+    await NextMoveAsync(MoveTimeout); // Alice's echo
     // If Alice just won, there's no bot move. Check by GET state after loop.
     try
     {
-        var mv = await NextMoveAsync(TimeSpan.FromSeconds(5));
+        var mv = await NextMoveAsync(MoveTimeout);
         Console.WriteLine($"  after Alice({r},{c}): bot responded ({mv.Row},{mv.Col})");
     }
     catch (TimeoutException)
