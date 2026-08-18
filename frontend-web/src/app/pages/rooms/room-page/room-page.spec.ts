@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { signal } from '@angular/core';
+import { signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
@@ -9,7 +9,16 @@ import { of, Subject, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { GameHubService } from '../../../core/realtime/game-hub.service';
+import type {
+  ChatChannel,
+  GameEndedDto,
+  RoomState,
+  UrgeDto,
+} from '../../../core/api/models/room.model';
+import {
+  GameHubService,
+  type RoomDissolvedDto,
+} from '../../../core/realtime/game-hub.service';
 import {
   DefaultGameCatalogService,
   GameCatalogService,
@@ -19,10 +28,14 @@ import { RoomPage } from './room-page';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { StubGameCapabilities } from '../../../games/game-capabilities.stub';
 
-function makeRoomState() {
+function makeRoomState(): RoomState {
   return {
     id: 'r-1',
     name: 'Alice room',
+    // Was missing entirely while this helper was untyped, so every test ran with
+    // `gameKey: undefined` and `boardSizeFor` quietly handed back its 15x15 default
+    // — which happens to be gomoku's, so nothing looked wrong.
+    gameKey: 'gomoku',
     status: 'Playing' as const,
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
@@ -46,34 +59,50 @@ function makeRoomState() {
 }
 
 /**
- * NOTE: this is a bare class, **not** typed against `GameHubService`, so the
- * compiler does not check it against the real contract. Adding `sayWord` to the
- * abstract class left this double silently incomplete — nothing failed until a
- * test actually walked the chain path, and then only at runtime.
+ * The hub double, **bound to the real contract** via `implements GameHubService`.
  *
- * Binding it properly needs `makeRoomState` to return a real `RoomState` and all
- * twelve members given signatures; that is a separate cleanup, logged in CLAUDE.md.
- * Until then, the mechanism holding this together is "every hub method has a test
- * that calls it" — which is why `says a word through the hub` below exists.
+ * It used to be a bare class, and that cost something concrete: adding `sayWord` to
+ * the abstract class left this double silently incomplete, and nothing failed until
+ * a test happened to walk the chain path — at runtime, not at compile time. The
+ * mechanism holding it together was "every hub method has a test that calls it",
+ * which is a habit rather than a check.
+ *
+ * Binding it was logged as blocked on `makeRoomState` returning a real `RoomState`.
+ * Doing that turned up the reason it mattered: the helper had **no `gameKey` at
+ * all**, so every room test in this file ran against `undefined` and got
+ * `boardSizeFor`'s 15x15 fallback. That fallback is gomoku's own size, which is
+ * exactly why it never looked wrong.
+ *
+ * Now a fifteenth abstract member cannot be added without this file failing to
+ * compile.
  */
-class StubHub {
-  readonly state = signal(null as ReturnType<typeof makeRoomState> | null);
-  readonly connectionStatus = signal<'connected' | 'reconnecting' | 'disconnected' | 'connecting'>(
-    'connected',
+class StubHub implements GameHubService {
+  readonly state: WritableSignal<RoomState | null> = signal<RoomState | null>(null);
+  readonly connectionStatus = signal<
+    'connected' | 'reconnecting' | 'disconnected' | 'connecting'
+  >('connected');
+  readonly gameEnded = signal<GameEndedDto | null>(null);
+  readonly urged$ = new Subject<UrgeDto>();
+  readonly roomDissolved$ = new Subject<RoomDissolvedDto>();
+  // `vi.fn<T>` declares the signature without naming parameters the body ignores —
+  // the type is still checked against `GameHubService`, and there is nothing for the
+  // unused-args rule to complain about.
+  applySnapshot = vi.fn((s: RoomState) => this.state.set(s));
+  joinRoom = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  joinSpectatorGroup = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  leaveRoom = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  makeMove = vi.fn<(roomId: string, row: number, col: number) => Promise<void>>(
+    async () => undefined,
   );
-  readonly gameEnded = signal(null);
-  readonly urged$ = new Subject();
-  readonly roomDissolved$ = new Subject();
-  applySnapshot = vi.fn((s: ReturnType<typeof makeRoomState>) => this.state.set(s));
-  joinRoom = vi.fn(async () => undefined);
-  joinSpectatorGroup = vi.fn(async () => undefined);
-  leaveRoom = vi.fn(async () => undefined);
-  makeMove = vi.fn(async () => undefined);
-  movePiece = vi.fn(async () => undefined);
-  sayWord = vi.fn(async () => undefined);
-  sendChat = vi.fn(async () => undefined);
-  urge = vi.fn(async () => undefined);
-  reconnect = vi.fn(async () => undefined);
+  movePiece = vi.fn<
+    (roomId: string, fromRow: number, fromCol: number, row: number, col: number) => Promise<void>
+  >(async () => undefined);
+  sayWord = vi.fn<(roomId: string, word: string) => Promise<void>>(async () => undefined);
+  sendChat = vi.fn<(roomId: string, content: string, channel: ChatChannel) => Promise<void>>(
+    async () => undefined,
+  );
+  urge = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  reconnect = vi.fn<() => Promise<void>>(async () => undefined);
 }
 
 class StubRoomsApi {
@@ -198,7 +227,7 @@ describe('RoomPage', () => {
   it('roomDissolved$ emission returns to the game the room belonged to', async () => {
     const { fixture, hub, router } = mount();
     await Promise.resolve();
-    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' } as ReturnType<typeof makeRoomState>);
+    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' });
     fixture.detectChanges();
 
     hub.roomDissolved$.next({ roomId: 'r-1' });
@@ -207,10 +236,16 @@ describe('RoomPage', () => {
   });
 
   it('a room whose game key the client cannot resolve falls back to the platform home', async () => {
-    // The stub room carries no gameKey, standing in for a server newer than this
-    // build. Guessing `/g/<key>/lobby` would route to a "no such game" page.
-    const { hub, router } = mount();
+    // A server newer than this build sends a key the registry lacks, and guessing
+    // `/g/<key>/lobby` would route to a "no such game" page.
+    //
+    // This used to lean on `makeRoomState()` having no `gameKey` at all. That was a
+    // weaker version of the same test *and* the wrong scenario: the field is not
+    // optional on the wire, so `undefined` is not something a server can produce.
+    const { fixture, hub, router } = mount();
     await Promise.resolve();
+    hub.state.set({ ...makeRoomState(), gameKey: 'a-game-nobody-registered' });
+    fixture.detectChanges();
 
     hub.roomDissolved$.next({ roomId: 'r-1' });
 
@@ -220,7 +255,7 @@ describe('RoomPage', () => {
   it('leaving a room returns to that game, not the platform home', async () => {
     const { fixture, hub, rooms, router } = mount();
     await Promise.resolve();
-    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' } as ReturnType<typeof makeRoomState>);
+    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' });
     fixture.detectChanges();
 
     (fixture.componentInstance as unknown as { handleLeave: () => void }).handleLeave();
@@ -235,7 +270,7 @@ describe('RoomPage', () => {
     // 一字棋 is the only game left on this path.
     const { fixture, hub, router } = mount();
     await Promise.resolve();
-    hub.state.set({ ...makeRoomState(), gameKey: 'tictactoe' } as ReturnType<typeof makeRoomState>);
+    hub.state.set({ ...makeRoomState(), gameKey: 'tictactoe' });
     fixture.detectChanges();
 
     (fixture.componentInstance as unknown as { handleLeave: () => void }).handleLeave();
@@ -246,7 +281,7 @@ describe('RoomPage', () => {
   it('leaving a xiangqi room now returns to its lobby', async () => {
     const { fixture, hub, router } = mount();
     await Promise.resolve();
-    hub.state.set({ ...makeRoomState(), gameKey: 'xiangqi' } as ReturnType<typeof makeRoomState>);
+    hub.state.set({ ...makeRoomState(), gameKey: 'xiangqi' });
     fixture.detectChanges();
 
     (fixture.componentInstance as unknown as { handleLeave: () => void }).handleLeave();
@@ -261,7 +296,7 @@ describe('RoomPage', () => {
     // honest answer.
     const { fixture, hub, rooms, router } = mount();
     await new Promise((r) => setTimeout(r, 0));
-    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' } as ReturnType<typeof makeRoomState>);
+    hub.state.set({ ...makeRoomState(), gameKey: 'gomoku' });
     fixture.detectChanges();
 
     rooms.getById.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
@@ -284,14 +319,11 @@ describe('RoomPage', () => {
 describe('RoomPage board selection', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
-  async function mountWithGame(
-    gameKey: string | undefined,
-    capabilities?: GameCapabilitiesService,
-  ) {
+  async function mountWithGame(gameKey: string, capabilities?: GameCapabilitiesService) {
     const mounted = mount('r-1', capabilities);
     await Promise.resolve();
     await Promise.resolve();
-    mounted.hub.state.set({ ...makeRoomState(), gameKey } as ReturnType<typeof makeRoomState>);
+    mounted.hub.state.set({ ...makeRoomState(), gameKey });
     mounted.fixture.detectChanges();
     return mounted;
   }
