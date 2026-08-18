@@ -54,6 +54,13 @@
                   >{{ 'catalog.leaderboard-link' | transloco }}</a
                 >
               }
+              @if (hasScoreBoard(game)) {
+                <a
+                  [routerLink]="['/g', game.key, 'scores']"
+                  class="text-primary focus-visible:outline-primary relative z-10 ml-auto text-xs underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >{{ 'catalog.scores-link' | transloco }}</a
+                >
+              }
             </span>
           </div>
         } @else {

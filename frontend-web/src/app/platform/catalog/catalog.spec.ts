@@ -52,12 +52,26 @@ const AVAILABLE_UNRATED: GameManifest = {
   launchRoute: '/g/tictactoe',
 };
 
+const AVAILABLE_SCORE: GameManifest = {
+  key: 'tetris',
+  category: 'score',
+  status: 'available',
+  titleKey: 'games.tetris.title',
+  descriptionKey: 'games.tetris.description',
+  icon: '块',
+  contentLocales: ['zh-CN', 'en'],
+  launchRoute: '/g/tetris',
+};
+
+const PLANNED_SCORE: GameManifest = { ...AVAILABLE_SCORE, status: 'planned', launchRoute: undefined };
+
 const langs = {
   en: {
     catalog: {
       title: 'Games',
       subtitle: 'sub',
       'coming-soon': 'Coming soon',
+      'scores-link': 'High scores',
       'chinese-only': 'Chinese content',
       'category-match': 'Versus',
       'category-puzzle': 'Puzzle',
@@ -195,6 +209,37 @@ describe('Catalog', () => {
   it('gives a planned game NO leaderboard link even if the key is rated', () => {
     const fixture = renderCatalog([PLANNED_ZH_ONLY], 'en', StubGameCapabilities.rated('idiom-crossword'));
     expect(cards(fixture)[0].querySelector('a[href$="/leaderboard"]')).toBeNull();
+  });
+
+  it('adds a high-scores link to an available score-attack game', () => {
+    // Gated on `category`, not on a server flag — and that is not a relapse into
+    // client-side copies. `isRated` is a server judgement whose stale copy points at
+    // a permanently empty ladder; `category` is declared here, already drives the
+    // grouping, and there is no server flag to read at all (tetris has no
+    // `IGameRules`, so `GET /api/games` never describes it).
+    const fixture = renderCatalog([AVAILABLE_SCORE], 'en');
+    const link = cards(fixture)[0].querySelector('a[href="/g/tetris/scores"]');
+
+    expect(link).not.toBeNull();
+    expect(link!.textContent).toContain('High scores');
+  });
+
+  it('gives a match game NO high-scores link', () => {
+    const fixture = renderCatalog([AVAILABLE], 'en', StubGameCapabilities.rated('gomoku'));
+
+    expect(cards(fixture)[0].querySelector('a[href$="/scores"]')).toBeNull();
+  });
+
+  it('gives a puzzle game NO high-scores link', () => {
+    const fixture = renderCatalog([AVAILABLE_PUZZLE], 'en');
+
+    expect(cards(fixture)[0].querySelector('a[href$="/scores"]')).toBeNull();
+  });
+
+  it('gives a planned score game NO high-scores link', () => {
+    const fixture = renderCatalog([PLANNED_SCORE], 'en');
+
+    expect(cards(fixture)[0].querySelector('a[href$="/scores"]')).toBeNull();
   });
 
   it('renders no leaderboard links at all before capabilities load', () => {

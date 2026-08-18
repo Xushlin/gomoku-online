@@ -70,6 +70,21 @@ export const routes: Routes = [
     loadComponent: () => import('./games/idiom-crossword/play/play').then((m) => m.Play),
   },
   {
+    path: 'g/tetris',
+    canMatch: [authGuard],
+    loadComponent: () => import('./games/tetris/play/play').then((m) => m.TetrisPlay),
+  },
+  {
+    // A score-attack ladder. Deliberately not `g/:gameKey/leaderboard`: that one is
+    // the ELO ladder, whose rows and endpoint are both different.
+    path: 'g/:gameKey/scores',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./pages/scores/score-leaderboard-page/score-leaderboard-page').then(
+        (m) => m.ScoreLeaderboardPage,
+      ),
+  },
+  {
     path: 'g/klotski',
     canMatch: [authGuard],
     loadComponent: () =>

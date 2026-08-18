@@ -51,6 +51,22 @@ export class Catalog implements OnInit {
     return game.status === 'available' && this.capabilities.of(game.key)?.isRated === true;
   }
 
+  /**
+   * Whether this card gets a "high scores" link — playable today *and* in the
+   * score-attack category.
+   *
+   * Unlike {@link hasLadder} this reads the manifest, and that is not a relapse
+   * into client-side copies of server facts. `isRated` is a server judgement with
+   * no client-side counterpart, and a stale copy of it points at a permanently
+   * empty ladder. `category` is not a copy of anything: it is declared here, the
+   * catalogue already groups by it, and a score-attack game has a score ladder by
+   * definition. There is also no server flag to read — tetris has no `IGameRules`,
+   * so `GET /api/games` does not describe it at all.
+   */
+  protected hasScoreBoard(game: GameManifest): boolean {
+    return game.status === 'available' && game.category === 'score';
+  }
+
   /** `catalog.category-match` / `-puzzle` / `-score`. */
   protected categoryKey(game: GameManifest): string {
     return `catalog.category-${game.category}`;

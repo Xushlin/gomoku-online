@@ -356,7 +356,8 @@
     "category-match": "对战",
     "category-puzzle": "闯关",
     "category-score": "计分",
-    "leaderboard-link": "排行榜"
+    "leaderboard-link": "排行榜",
+    "scores-link": "分数榜"
   },
   "games": {
     "gomoku": {
@@ -545,5 +546,54 @@
       "submit": "说出",
       "waiting": "等对手接上……"
     }
+  },
+  "tetris": {
+    "subtitle": "堆好落下的方块，消行，冲榜。方块只能直着落下——挪不到悬空块底下。",
+    "start": "开始一局",
+    "starting": "正在向服务端要种子…",
+    "retry": "重试",
+    "submitting": "正在结算…",
+    "play-again": "再来一局",
+    "pause": "暂停",
+    "resume": "继续",
+    "score": "分数",
+    "lines": "消行",
+    "level": "等级",
+    "next": "下一个",
+    "scores-link": "分数榜",
+    "keys": "键盘：← → 移动，↑ 旋转，↓ 软降，空格硬降，P 暂停。",
+    "no-tuck": "方块只能从本列直着落下，所以塞不到悬空块底下——服务端就是这么重放的。",
+    "final-score": "本局 {{score}} 分",
+    "final-detail": "消了 {{lines}} 行，到第 {{level}} 级。",
+    "server-confirmed": "这个分数由服务端重放你的落子序列算出。",
+    "no-placements": "这一局一个方块都没落下，没有成绩。",
+    "control-left": "左移",
+    "control-right": "右移",
+    "control-rotate": "旋转",
+    "control-soft-drop": "软降",
+    "control-hard-drop": "硬降",
+    "error-start-failed": "开局失败——没拿到服务端的种子，这一局无处提交。请重试。",
+    "error-submit-failed": "结算失败，成绩没有记录。请重试。"
+  },
+  "scores": {
+    "title": "{{game}} 分数榜",
+    "back-to-game": "回到游戏",
+    "window-group": "时间范围",
+    "window-week": "本周",
+    "window-month": "本月",
+    "window-all": "全部",
+    "loading": "加载中…",
+    "load-failed": "榜单加载失败，请重试。",
+    "retry": "重试",
+    "empty": "这个范围内还没有人玩过。",
+    "caption": "分数榜：每位玩家在该范围内的最好成绩。",
+    "rank": "名次",
+    "player": "玩家",
+    "score": "分数",
+    "lines": "消行",
+    "level": "等级",
+    "prev": "上一页",
+    "next": "下一页",
+    "page-of": "第 {{page}} / {{total}} 页"
   }
 }

@@ -1,0 +1,155 @@
+<div class="mx-auto flex w-full max-w-md flex-col gap-4">
+  <header class="flex items-baseline justify-between gap-3">
+    <h1 class="text-text text-xl font-semibold tracking-tight">
+      {{ 'games.tetris.title' | transloco }}
+    </h1>
+    <a
+      [routerLink]="['/g', tetrisKey, 'scores']"
+      class="text-muted hover:text-text focus-visible:outline-primary rounded text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      {{ 'tetris.scores-link' | transloco }}
+    </a>
+  </header>
+
+  <!--
+    Status line before the board, and the board itself is aria-hidden: the numbers
+    are what a screen reader can use, a 200-cell grid is not.
+  -->
+  <dl class="text-text grid grid-cols-3 gap-2 text-sm" aria-live="polite">
+    <div class="bg-surface border-border rounded-card border px-3 py-2">
+      <dt class="text-muted text-xs">{{ 'tetris.score' | transloco }}</dt>
+      <dd class="font-semibold tabular-nums">{{ score() }}</dd>
+    </div>
+    <div class="bg-surface border-border rounded-card border px-3 py-2">
+      <dt class="text-muted text-xs">{{ 'tetris.lines' | transloco }}</dt>
+      <dd class="font-semibold tabular-nums">{{ lines() }}</dd>
+    </div>
+    <div class="bg-surface border-border rounded-card border px-3 py-2">
+      <dt class="text-muted text-xs">{{ 'tetris.level' | transloco }}</dt>
+      <dd class="font-semibold tabular-nums">{{ level() }}</dd>
+    </div>
+  </dl>
+
+  <app-tetris-board [cells]="cells()" [nextPiece]="nextPiece()" />
+
+  @switch (phase()) {
+    @case ('idle') {
+      <p class="text-muted text-sm">{{ 'tetris.subtitle' | transloco }}</p>
+      <button
+        type="button"
+        class="bg-primary rounded-card focus-visible:outline-primary self-start px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+        (click)="start()"
+      >
+        {{ 'tetris.start' | transloco }}
+      </button>
+    }
+    @case ('starting') {
+      <p class="text-muted text-sm">{{ 'tetris.starting' | transloco }}</p>
+    }
+    @case ('error') {
+      <p class="text-danger text-sm" role="alert">{{ errorKey()! | transloco }}</p>
+      <button
+        type="button"
+        class="border-border text-text rounded-card focus-visible:outline-primary self-start border px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+        (click)="start()"
+      >
+        {{ 'tetris.retry' | transloco }}
+      </button>
+    }
+    @case ('submitting') {
+      <p class="text-muted text-sm">{{ 'tetris.submitting' | transloco }}</p>
+    }
+    @case ('finished') {
+      <!--
+        The server's numbers, not the client's. The running score above was a
+        preview; this is what the leaderboard received.
+      -->
+      @if (result(); as r) {
+        <div class="bg-surface border-border rounded-card border p-4">
+          <p class="text-text font-semibold">
+            {{ 'tetris.final-score' | transloco: { score: r.score } }}
+          </p>
+          <p class="text-muted mt-1 text-sm">
+            {{ 'tetris.final-detail' | transloco: { lines: r.lines, level: r.level } }}
+          </p>
+          <p class="text-muted mt-1 text-xs">{{ 'tetris.server-confirmed' | transloco }}</p>
+        </div>
+      } @else {
+        <p class="text-muted text-sm">{{ 'tetris.no-placements' | transloco }}</p>
+      }
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="bg-primary rounded-card focus-visible:outline-primary px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+          (click)="start()"
+        >
+          {{ 'tetris.play-again' | transloco }}
+        </button>
+        <a
+          [routerLink]="['/g', tetrisKey, 'scores']"
+          class="border-border text-text rounded-card focus-visible:outline-primary border px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {{ 'tetris.scores-link' | transloco }}
+        </a>
+      </div>
+    }
+    @default {
+      <!--
+        Touch controls. Real <button>s, not divs with handlers: 375 px has no arrow
+        keys, and a keyboard user must not meet a second, focus-trapping control set.
+      -->
+      <div class="grid grid-cols-4 gap-2">
+        <button
+          type="button"
+          class="bg-surface border-border text-text rounded-card focus-visible:outline-primary border py-3 text-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+          [attr.aria-label]="'tetris.control-left' | transloco"
+          (click)="move(-1)"
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          class="bg-surface border-border text-text rounded-card focus-visible:outline-primary border py-3 text-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+          [attr.aria-label]="'tetris.control-rotate' | transloco"
+          (click)="rotate()"
+        >
+          ⟳
+        </button>
+        <button
+          type="button"
+          class="bg-surface border-border text-text rounded-card focus-visible:outline-primary border py-3 text-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+          [attr.aria-label]="'tetris.control-right' | transloco"
+          (click)="move(1)"
+        >
+          →
+        </button>
+        <button
+          type="button"
+          class="bg-surface border-border text-text rounded-card focus-visible:outline-primary border py-3 text-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+          [attr.aria-label]="'tetris.control-soft-drop' | transloco"
+          (click)="softDrop()"
+        >
+          ↓
+        </button>
+      </div>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="bg-primary rounded-card focus-visible:outline-primary flex-1 py-3 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+          (click)="hardDrop()"
+        >
+          {{ 'tetris.control-hard-drop' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="bg-surface border-border text-text rounded-card focus-visible:outline-primary border px-4 py-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+          (click)="togglePause()"
+        >
+          {{ (phase() === 'paused' ? 'tetris.resume' : 'tetris.pause') | transloco }}
+        </button>
+      </div>
+      <p class="text-muted text-xs">{{ 'tetris.keys' | transloco }}</p>
+      <p class="text-muted text-xs">{{ 'tetris.no-tuck' | transloco }}</p>
+    }
+  }
+</div>
