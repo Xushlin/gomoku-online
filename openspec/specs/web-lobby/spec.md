@@ -683,14 +683,16 @@ Web 客户端 SHALL 提供路由 `/g/:gameKey/lobby`,懒加载(`loadComponent`)�
 - **THEN** 显示"本平台没有这个游戏" + 指向 `/games` 的链接;MUST NOT 发出房间列表请求;MUST NOT 重定向
 
 #### Scenario: 只有人机的棋种
+- **WHEN** 用户访问 `/g/tictactoe/lobby`
+- **THEN** 显示"目前只有人机对战" + 指向 `/g/tictactoe` 的链接;MUST NOT 渲染 Active rooms 卡片
+
+#### Scenario: 象棋不再走这条路
 - **WHEN** 用户访问 `/g/xiangqi/lobby`
-- **THEN** 显示"目前只有人机对战" + 指向 `/g/xiangqi` 的链接;MUST NOT 渲染 Active rooms 卡片
+- **THEN** 渲染完整大厅(房间列表 + 人机卡 + 排行榜),MUST NOT 显示"目前只有人机对战"。**本场景此前正是以象棋举例的**,而象棋自 `enable-xiangqi-human-play` 起开放人人对战 —— 一字棋现在是这条路径唯一的真实用例
 
 #### Scenario: 描述符未到时不下结论
 - **WHEN** `capabilities.loaded()` 为 false
 - **THEN** 页面显示骨架,MUST NOT 显示上述任何一种说明面板
-
----
 
 ### Requirement: `/home` 的游戏入口条
 
