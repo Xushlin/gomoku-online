@@ -4,8 +4,13 @@
 
 标题本身含平台旧名。应用顺序 RENAMED → REMOVED → MODIFIED → ADDED,所以下面 MODIFIED 用的是新标题。
 
-- FROM: ### Requirement: Token 存储策略 —— access 仅内存,refresh 在 `localStorage['gomoku:refresh']`
-- TO: ### Requirement: Token 存储策略 —— access 仅内存,refresh 在 `localStorage['gewu:refresh']`
+**FROM 行末尾那个双反引号不是笔误。** `openspec archive` 解析 `- FROM:` / `- TO:` 时会吃掉末尾
+一个反引号,而 live 里这条标题正好以 `` ` `` 结尾 —— 不补一个就报 `source not found`。
+这是实测出来的:补一个之后 RENAMED 通过,报错前移到 MODIFIED 阶段。
+新标题因此**故意不以反引号结尾**,让这条将来不再踩同一个坑。
+
+- FROM: ### Requirement: Token 存储策略 —— access 仅内存,refresh 在 `localStorage['gomoku:refresh']``
+- TO: ### Requirement: Token 存储策略 —— access 仅内存,refresh 存在 localStorage 的 gewu:refresh 键
 
 
 ## MODIFIED Requirements
@@ -43,7 +48,7 @@
 - **WHEN** `login` / `register` / `refresh` / `changePassword` / `logout` 完成
 - **THEN** 返回值 MUST 是 `Observable<void>`;service 本身 IS state,调用方读取 `user()` / `accessToken()` 而不是 Observable 的 payload
 
-### Requirement: Token 存储策略 —— access 仅内存,refresh 在 `localStorage['gewu:refresh']`
+### Requirement: Token 存储策略 —— access 仅内存,refresh 存在 localStorage 的 gewu:refresh 键
 
 `DefaultAuthService` SHALL 按如下存储 access token 和 refresh token:
 

@@ -21,7 +21,7 @@ TBD - created by archiving change add-web-auth-pages. Update Purpose after archi
 所有 state-changing 方法在成功 HTTP 响应后 MUST 在**同一 microtask** 内同时更新 `accessToken`、`user`、`accessTokenExpiresAt` 三个 signal,不得出现"accessToken 已设但 user 仍为 null"的中间态。组件 MUST 通过 `inject(AuthService)` 消费,MUST NOT 直接 `inject(DefaultAuthService)`。
 
 #### Scenario: 初始状态
-- **WHEN** app 启动且 `localStorage['gomoku:refresh']` 不存在
+- **WHEN** app 启动且 `localStorage['gewu:refresh']` 不存在
 - **THEN** `accessToken() === null`、`user() === null`、`isAuthenticated() === false`
 
 #### Scenario: 抽象类 DI 可替换
@@ -36,60 +36,29 @@ TBD - created by archiving change add-web-auth-pages. Update Purpose after archi
 - **WHEN** `login` / `register` / `refresh` / `changePassword` / `logout` 完成
 - **THEN** 返回值 MUST 是 `Observable<void>`;service 本身 IS state,调用方读取 `user()` / `accessToken()` 而不是 Observable 的 payload
 
----
-
-### Requirement: Token 存储策略 —— access 仅内存,refresh 在 `localStorage['gomoku:refresh']`
-
-`DefaultAuthService` SHALL 按如下存储 access token 和 refresh token:
-
-- **Access token**: 仅存在 `accessToken` signal 中,MUST NOT 写入 `localStorage` / `sessionStorage` / `IndexedDB` / Cookie / 任何持久化存储。
-- **Refresh token**: 在 `login` / `register` / `refresh` 成功后写入 `localStorage['gomoku:refresh']`;在 `logout` 成功或 `refresh` 最终失败后 MUST `localStorage.removeItem('gomoku:refresh')`。
-
-service / interceptor / page 任何地方 MUST NOT `console.log` / `console.debug` 打印 refresh token 或 access token 的原文。
-
-#### Scenario: access token 不落盘
-- **WHEN** 登录成功后搜索所有 Web Storage API
-- **THEN** `localStorage` 与 `sessionStorage` 的任何 value 都不等于当前的 access token 字符串
-
-#### Scenario: refresh token 持久化
-- **WHEN** `login` 成功
-- **THEN** `localStorage.getItem('gomoku:refresh')` MUST 返回后端返回的 refresh token 字符串
-
-#### Scenario: logout 清除 refresh token
-- **WHEN** `logout` 完成(无论网络调用成功与否,见下文 logout 容错)
-- **THEN** `localStorage.getItem('gomoku:refresh') === null`
-
-#### Scenario: 日志不泄漏 token
-- **WHEN** 审阅 `src/app/core/auth/` 下所有 `console.*` 调用与 `Serilog`-style 日志
-- **THEN** 均 MUST NOT 直接或间接打印 token 原文
-
----
-
 ### Requirement: 启动期 session 恢复 —— `bootstrap()` 在首次渲染前完成
 
 `DefaultAuthService.bootstrap()` SHALL:
 
-1. 若 `localStorage['gomoku:refresh']` 为空 → 立即 resolve,state 保持 unauthenticated;
+1. 若 `localStorage['gewu:refresh']` 为空 → 立即 resolve,state 保持 unauthenticated;
 2. 若存在 → 调 `POST /api/auth/refresh { refreshToken }`:
    - 成功:填入 `accessToken` / `user` / `accessTokenExpiresAt`;写入新的 refresh token;resolve;
-   - 失败(任何 4xx / 5xx / 网络错误):`localStorage.removeItem('gomoku:refresh')`,state 保持 unauthenticated,resolve(**MUST NOT** reject —— 启动不应被 refresh 失败阻塞);
+   - 失败(任何 4xx / 5xx / 网络错误):`localStorage.removeItem('gewu:refresh')`,state 保持 unauthenticated,resolve(**MUST NOT** reject —— 启动不应被 refresh 失败阻塞);
 3. 5 秒内未完成 → 放弃等待,视同失败(避免网络慢时页面卡死)。
 
 `app.config.ts` 的 `provideAppInitializer` SHALL 把 `bootstrap()` 与 i18n preload 并行 `await`,保证首屏渲染前 auth state 已就绪。
 
 #### Scenario: 有效 refresh token → 启动直接登录
-- **WHEN** `localStorage['gomoku:refresh']` 为一枚后端尚未吊销的 token;app 启动
+- **WHEN** `localStorage['gewu:refresh']` 为一枚后端尚未吊销的 token;app 启动
 - **THEN** 首屏渲染时 `isAuthenticated() === true`,header 显示用户名;不存在"先 anonymous 再切 authenticated"的可见跳变
 
 #### Scenario: 失效 refresh token → 启动仍完成
-- **WHEN** `localStorage['gomoku:refresh']` 为一枚过期或已吊销的 token
+- **WHEN** `localStorage['gewu:refresh']` 为一枚过期或已吊销的 token
 - **THEN** `POST /api/auth/refresh` 收到 401;`bootstrap()` 清理 localStorage 后 resolve;app 正常启动,`isAuthenticated() === false`
 
 #### Scenario: 网络故障 5 秒超时
 - **WHEN** `POST /api/auth/refresh` 长时间挂起不返回
 - **THEN** 最多 5 秒后 `bootstrap()` MUST resolve,state 保持启动前的值(unauthenticated),localStorage 的 refresh token MUST 保留(不确定是否有效,下次网络好时再尝试)
-
----
 
 ### Requirement: `authInterceptor` 附加 Bearer + 401 静默刷新重试
 
@@ -134,7 +103,7 @@ service / interceptor / page 任何地方 MUST NOT `console.log` / `console.debu
 
 #### Scenario: refresh 失败 → 清状态 + 跳转 login
 - **WHEN** 401 触发的 refresh 自身回 401
-- **THEN** `accessToken()` 被清为 `null`、`user()` 清为 `null`、`localStorage['gomoku:refresh']` 被删除、`Router.navigateByUrl` 被调用,参数形如 `/login?returnUrl=<origURL>`
+- **THEN** `accessToken()` 被清为 `null`、`user()` 清为 `null`、`localStorage['gewu:refresh']` 被删除、`Router.navigateByUrl` 被调用,参数形如 `/login?returnUrl=<origURL>`
 
 #### Scenario: 重试仍 401,不再嵌套 refresh
 - **WHEN** 重试后的请求再次回 401
@@ -143,8 +112,6 @@ service / interceptor / page 任何地方 MUST NOT `console.log` / `console.debu
 #### Scenario: `/api/auth/refresh` 回 401 不递归
 - **WHEN** `refresh()` 自身的 HTTP 调用回 401
 - **THEN** interceptor MUST NOT 尝试对这个 refresh 请求再次 refresh;按"refresh 失败"路径处理
-
----
 
 ### Requirement: 路由守卫 —— `authGuard` + `guestGuard`,functional `CanMatchFn`
 
@@ -232,13 +199,11 @@ service / interceptor / page 任何地方 MUST NOT `console.log` / `console.debu
 
 #### Scenario: Change-Password 成功 → 强制重登
 - **WHEN** 调 `changePassword` 收到 204
-- **THEN** AuthService 本地 state 清空;`localStorage['gomoku:refresh']` 删除;路由跳到 `/login?flash=password-changed`;`/login` 页面顶部显示成功提示
+- **THEN** AuthService 本地 state 清空;`localStorage['gewu:refresh']` 删除;路由跳到 `/login?flash=password-changed`;`/login` 页面顶部显示成功提示
 
 #### Scenario: 提交期间按钮禁用
 - **WHEN** 表单 in-flight(Observable 未完成)
 - **THEN** submit button 的 `disabled` 属性 MUST 为 true;再次点击 MUST NOT 触发第二次网络请求
-
----
 
 ### Requirement: `passwordPolicyValidator` 与后端 `RegisterCommandValidator` 同规则
 
@@ -364,11 +329,11 @@ mapProblemDetailsToForm(form: FormGroup, problem: ProblemDetails): boolean
 
 `DefaultAuthService.logout()` SHALL:
 
-1. 读取当前 `localStorage['gomoku:refresh']`;
+1. 读取当前 `localStorage['gewu:refresh']`;
 2. 发 `POST /api/auth/logout { refreshToken }`(后端接 204,幂等);
 3. **无论** HTTP 调用成功与否,都 MUST 执行:
    - 清空 `accessToken` / `user` / `accessTokenExpiresAt` 三个 signal;
-   - `localStorage.removeItem('gomoku:refresh')`。
+   - `localStorage.removeItem('gewu:refresh')`。
 
 即:客户端 logout 从不失败。网络错误只影响"是否通知了服务端",不影响"本地状态是否清理"。
 
@@ -383,4 +348,29 @@ mapProblemDetailsToForm(form: FormGroup, problem: ProblemDetails): boolean
 #### Scenario: 幂等重复 logout
 - **WHEN** 已 logout 后再次调 `logout()`(此时 `refreshToken` 可能为 null)
 - **THEN** MUST NOT 崩;若 `refreshToken === null` 可跳过 HTTP 调用直接完成本地清理
+
+### Requirement: Token 存储策略 —— access 仅内存,refresh 存在 localStorage 的 gewu:refresh 键
+
+`DefaultAuthService` SHALL 按如下存储 access token 和 refresh token:
+
+- **Access token**: 仅存在 `accessToken` signal 中,MUST NOT 写入 `localStorage` / `sessionStorage` / `IndexedDB` / Cookie / 任何持久化存储。
+- **Refresh token**: 在 `login` / `register` / `refresh` 成功后写入 `localStorage['gewu:refresh']`;在 `logout` 成功或 `refresh` 最终失败后 MUST `localStorage.removeItem('gewu:refresh')`。
+
+service / interceptor / page 任何地方 MUST NOT `console.log` / `console.debug` 打印 refresh token 或 access token 的原文。
+
+#### Scenario: access token 不落盘
+- **WHEN** 登录成功后搜索所有 Web Storage API
+- **THEN** `localStorage` 与 `sessionStorage` 的任何 value 都不等于当前的 access token 字符串
+
+#### Scenario: refresh token 持久化
+- **WHEN** `login` 成功
+- **THEN** `localStorage.getItem('gewu:refresh')` MUST 返回后端返回的 refresh token 字符串
+
+#### Scenario: logout 清除 refresh token
+- **WHEN** `logout` 完成(无论网络调用成功与否,见下文 logout 容错)
+- **THEN** `localStorage.getItem('gewu:refresh') === null`
+
+#### Scenario: 日志不泄漏 token
+- **WHEN** 审阅 `src/app/core/auth/` 下所有 `console.*` 调用与 `Serilog`-style 日志
+- **THEN** 均 MUST NOT 直接或间接打印 token 原文
 

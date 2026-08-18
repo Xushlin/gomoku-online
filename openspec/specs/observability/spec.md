@@ -19,7 +19,6 @@ Application / Domain 层严格**不依赖** Serilog 包,只通过 `Microsoft.Ext
 `backend/src/Gewu.Api/Middleware/CorrelationIdMiddleware.cs`、`backend/src/Gewu.Api/Program.cs`
 (`Host.UseSerilog` + `UseSerilogRequestLogging` + 管道注册)、`backend/src/Gewu.Api/Hubs/GomokuHub.cs`
 (连接日志 scope)、`backend/src/Gewu.Api/appsettings.json` 的 `"Serilog"` 段。
-
 ## Requirements
 ### Requirement: Serilog 作为日志后端,与 `ILogger<T>` 兼容
 
@@ -28,7 +27,7 @@ Application / Domain 层严格**不依赖** Serilog 包,只通过 `Microsoft.Ext
 Serilog 配置 MUST 从 `appsettings.json` 的 `"Serilog"` 段读取(`ReadFrom.Configuration`),而非硬编码。允许 `appsettings.Development.json` 覆盖 MinimumLevel 为 `Debug`。
 
 #### Scenario: 现有 ILogger 调用无缝切换
-- **WHEN** 审阅 `ExceptionHandlingMiddleware` / `AiMoveWorker` / `TurnTimeoutWorker` / `SignalRRoomNotifier` / `GomokuHub` 的代码
+- **WHEN** 审阅 `ExceptionHandlingMiddleware` / `AiMoveWorker` / `TurnTimeoutWorker` / `SignalRRoomNotifier` / `MatchHub` 的代码
 - **THEN** 本次变更前后,`ILogger<T>` 的使用方式**完全一致**;只是输出被 Serilog 接管
 
 #### Scenario: 启动期日志
@@ -38,8 +37,6 @@ Serilog 配置 MUST 从 `appsettings.json` 的 `"Serilog"` 段读取(`ReadFrom.C
 #### Scenario: 配置读取
 - **WHEN** `appsettings.json` 的 `"Serilog"` 段定义了 sink / MinimumLevel / Override
 - **THEN** 运行时按该配置生效;无需代码改动即可调整级别 / 关闭 File sink 等
-
----
 
 ### Requirement: 每 HTTP 请求由 `X-Correlation-Id` 头标识并贯穿日志
 
@@ -104,12 +101,12 @@ Application 层 SHALL 在 `Gewu.Application/Features/Common/Behaviors/LoggingBeh
 
 ### Requirement: SignalR 连接的 UserId / ConnectionId 进入日志 scope
 
-`GomokuHub` 的 `OnConnectedAsync` / `OnDisconnectedAsync` MUST 在 `LogContext.PushProperty("ConnectionId", Context.ConnectionId)` + `PushProperty("UserId", Context.UserIdentifier ?? "anonymous")` 的 scope 里 log 连接开启 / 关闭事件。
+`MatchHub` 的 `OnConnectedAsync` / `OnDisconnectedAsync` MUST 在 `LogContext.PushProperty("ConnectionId", Context.ConnectionId)` + `PushProperty("UserId", Context.UserIdentifier ?? "anonymous")` 的 scope 里 log 连接开启 / 关闭事件。
 
 断开时若 `exception != null` 用 `LogWarning(exception, ...)`;否则 `LogInformation(...)`。
 
 #### Scenario: 连接打开日志
-- **WHEN** SignalR 客户端成功连接 `/hubs/gomoku`
+- **WHEN** SignalR 客户端成功连接 `/hubs/match`
 - **THEN** Console / File 日志含一条 "SignalR connection opened",带 structured 字段 `ConnectionId` 与 `UserId`
 
 #### Scenario: 异常断开 Warning
@@ -119,8 +116,6 @@ Application 层 SHALL 在 `Gewu.Application/Features/Common/Behaviors/LoggingBeh
 #### Scenario: 正常断开 Information
 - **WHEN** 客户端主动 disconnect
 - **THEN** 日志级别为 Information,含 ConnectionId + UserId,**不**含 exception
-
----
 
 ### Requirement: 敏感字段不写入日志
 
@@ -151,7 +146,7 @@ Api 的 `appsettings.json` `"Serilog"` 段 MUST 至少配置:
 
 - **Console sink**:`outputTemplate` 含 CorrelationId 字段以便本地阅读。
 - **File sink**:
-  - 路径 `logs/gomoku-.log`(按 `RollingInterval.Day`)
+  - 路径 `logs/gewu-.log`(按 `RollingInterval.Day`)
   - `retainedFileCountLimit: 7`(保留最近 7 天)
   - `formatter: CompactJsonFormatter`(生产 grep / 导入 ELK 可直接解析)
 - **Enrichers**:`FromLogContext`(必须,否则 CorrelationId / UserId 不会出现)、`WithMachineName`、`WithEnvironmentName`、以及 `.Enrich.WithProperty("ApplicationName", "Gewu.Api")`。
@@ -163,7 +158,7 @@ Api 的 `appsettings.json` `"Serilog"` 段 MUST 至少配置:
 
 #### Scenario: File 日志是 JSON
 - **WHEN** 应用运行后一条日志被写入
-- **THEN** `logs/gomoku-<YYYYMMDD>.log` 的每一行 MUST 是合法 JSON object,至少含 `@t`(时间戳)+ `@mt`(message template)+ `@l`(level)+ `CorrelationId`(若该条日志在请求 scope 内)+ `MachineName` + `EnvironmentName`
+- **THEN** `logs/gewu-<YYYYMMDD>.log` 的每一行 MUST 是合法 JSON object,至少含 `@t`(时间戳)+ `@mt`(message template)+ `@l`(level)+ `CorrelationId`(若该条日志在请求 scope 内)+ `MachineName` + `EnvironmentName`
 
 #### Scenario: Console 日志带 CorrelationId
 - **WHEN** 应用运行时观察 Console 输出
@@ -172,8 +167,6 @@ Api 的 `appsettings.json` `"Serilog"` 段 MUST 至少配置:
 #### Scenario: 第 8 天的日志文件被自动清理
 - **WHEN** `retainedFileCountLimit = 7`、应用已运行超过 8 天
 - **THEN** 文件数 ≤ 7;最旧的被 Serilog 自动删除
-
----
 
 ### Requirement: Application 层不新增 Serilog 依赖
 

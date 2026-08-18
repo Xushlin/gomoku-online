@@ -21,7 +21,7 @@ abstract class BoardSkinService {
 `DefaultBoardSkinService` SHALL:
 
 - 构造时注册全部内置 skins,并应用初始 skin。
-- 初始 skin 解析顺序:`localStorage('gomoku:board-skin')` → 已注册 → 否则默认 `'wood'`;读到未注册的脏值时重写为默认值。
+- 初始 skin 解析顺序:`localStorage('gewu:board-skin')` → 已注册 → 否则默认 `'wood'`;读到未注册的脏值时重写为默认值。
 - `activate(name)` MUST 设置 `<html data-board-skin="...">` 并写入 `localStorage`;未注册的 name MUST 被忽略(`console.warn`,不抛错)。
 - `localStorage` 读写抛出(隐私模式 / 配额)MUST 静默吞掉。
 
@@ -36,8 +36,6 @@ abstract class BoardSkinService {
 #### Scenario: 未注册 skin 被忽略
 - **WHEN** 调 `activate('nonexistent')`
 - **THEN** `skinName()` 不变;不抛错
-
----
 
 ### Requirement: 皮肤绘制走 CSS 变量,组件零感知
 
