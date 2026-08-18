@@ -6,8 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
@@ -18,10 +17,23 @@ const DEBOUNCE_MS = 250;
 const MIN_CHARS = 3;
 const MAX_RESULTS = 5;
 
+/**
+ * Find a player by name, on the platform home.
+ *
+ * The input is a plain signal rather than a `FormControl`, and that is a **bundle**
+ * decision, not a style one: this card was the *only* eagerly-loaded consumer of
+ * `@angular/forms` — the auth pages, the lobby dialogs and the chat panel are all
+ * behind lazy routes — so one debounced text box was pulling **34 kB** of forms
+ * machinery into the initial bundle. Measured, not guessed: it is what took the
+ * initial chunk from 504.65 kB (4.65 kB over the 500 kB budget) to under it.
+ *
+ * Nothing about the behaviour changes: same 250 ms debounce, same 3-character
+ * minimum, same de-duplication of repeated queries.
+ */
 @Component({
   selector: 'app-find-player-card',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslocoPipe],
+  imports: [TranslocoPipe],
   templateUrl: './find-player.html',
   styles: [':host { display: block; width: 100%; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,9 +42,12 @@ export class FindPlayerCard {
   private readonly users = inject(UsersApiService);
   private readonly router = inject(Router);
 
-  protected readonly inputCtrl = new FormControl('', { nonNullable: true });
+  /** What is in the box right now — bound with `[value]` + `(input)`. */
+  protected readonly text = signal('');
+
+  /** The debounced, de-duplicated, trimmed query that actually drives the search. */
   private readonly query = toSignal(
-    this.inputCtrl.valueChanges.pipe(
+    toObservable(this.text).pipe(
       debounceTime(DEBOUNCE_MS),
       distinctUntilChanged(),
       map((v) => v.trim()),
@@ -85,8 +100,12 @@ export class FindPlayerCard {
     });
   }
 
+  protected onInput(event: Event): void {
+    this.text.set((event.target as HTMLInputElement).value);
+  }
+
   protected pick(user: UserPublicProfileDto): void {
-    this.inputCtrl.reset('');
+    this.text.set('');
     this.results.set([]);
     this.searched.set(false);
     void this.router.navigateByUrl(`/users/${user.id}`);

@@ -84,26 +84,25 @@ class StubHub implements GameHubService {
   readonly gameEnded = signal<GameEndedDto | null>(null);
   readonly urged$ = new Subject<UrgeDto>();
   readonly roomDissolved$ = new Subject<RoomDissolvedDto>();
+  // `vi.fn<T>` declares the signature without naming parameters the body ignores —
+  // the type is still checked against `GameHubService`, and there is nothing for the
+  // unused-args rule to complain about.
   applySnapshot = vi.fn((s: RoomState) => this.state.set(s));
-  joinRoom = vi.fn(async (_roomId: string) => undefined);
-  joinSpectatorGroup = vi.fn(async (_roomId: string) => undefined);
-  leaveRoom = vi.fn(async (_roomId: string) => undefined);
-  makeMove = vi.fn(async (_roomId: string, _row: number, _col: number) => undefined);
-  movePiece = vi.fn(
-    async (
-      _roomId: string,
-      _fromRow: number,
-      _fromCol: number,
-      _row: number,
-      _col: number,
-    ) => undefined,
+  joinRoom = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  joinSpectatorGroup = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  leaveRoom = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  makeMove = vi.fn<(roomId: string, row: number, col: number) => Promise<void>>(
+    async () => undefined,
   );
-  sayWord = vi.fn(async (_roomId: string, _word: string) => undefined);
-  sendChat = vi.fn(
-    async (_roomId: string, _content: string, _channel: ChatChannel) => undefined,
+  movePiece = vi.fn<
+    (roomId: string, fromRow: number, fromCol: number, row: number, col: number) => Promise<void>
+  >(async () => undefined);
+  sayWord = vi.fn<(roomId: string, word: string) => Promise<void>>(async () => undefined);
+  sendChat = vi.fn<(roomId: string, content: string, channel: ChatChannel) => Promise<void>>(
+    async () => undefined,
   );
-  urge = vi.fn(async (_roomId: string) => undefined);
-  reconnect = vi.fn(async () => undefined);
+  urge = vi.fn<(roomId: string) => Promise<void>>(async () => undefined);
+  reconnect = vi.fn<() => Promise<void>>(async () => undefined);
 }
 
 class StubRoomsApi {
