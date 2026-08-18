@@ -300,8 +300,12 @@ Api 层 SHALL 暴露以下端点(均要求 `Authorize`):
 - **THEN** HTTP 200 + 空数组 —— 集合端点上"没有这种房间"与"没有这个棋种"对调用方无区别,MUST NOT 报错
 
 #### Scenario: 已登记但无人人对战的棋种建真人房被拒
+- **WHEN** `POST /api/rooms` 送 `{ name, gameKey: "tictactoe" }`
+- **THEN** HTTP 400 —— 理由是 `SupportsHumanVsHuman == false`,**不是**"这个棋种不存在"
+
+#### Scenario: 象棋现在开得出真人房
 - **WHEN** `POST /api/rooms` 送 `{ name, gameKey: "xiangqi" }`
-- **THEN** HTTP 400 —— 理由是 `SupportsHumanVsHuman == false`,**不是**"这个棋种不存在"。象棋自 `add-xiangqi` 起就已登记,任何仍以它举例"未登记"的场景都是过期的
+- **THEN** HTTP 201 —— 象棋自 `enable-xiangqi-human-play` 起开放人人对战。**本条此前举的例子就是象棋,而它已经过期。** 举例用的棋种会随能力变化而失效,而一条把过期事实钉成正确的断言会一直是绿的 —— `enforce-human-vs-human` 为这件事付过一次账
 
 #### Scenario: 缺省的边仍然被补全
 - **WHEN** `POST /api/rooms/ai` 送 `{ name, difficulty, gameKey }` 而不带 `humanSide`

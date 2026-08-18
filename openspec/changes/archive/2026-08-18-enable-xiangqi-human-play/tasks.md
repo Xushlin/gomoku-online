@@ -119,3 +119,45 @@ white  (player)    sees 3: (同上)
 `RoomState` 广播拆成分群两份(今天没有"仅玩家"的 group),那会动到 `web-game-board`
 的重连协议。它符合仓库规矩里的「纯 bug fix:代码不符合既有 spec,直接修,不需要新提案」,
 紧接本变更单独交付。
+
+## 补记:这次归档迟了 36 个 commit
+
+代码在 **PR #54** 合并,change 目录跟着进了同一个 PR,然后**归档这一步被漏掉了**。发现它是在
+回答「现在还有哪些没做」的时候顺手列 `openspec/changes/` —— 不是任何检查报出来的。
+
+期间活的 spec 树一直在说反话:`openspec/specs/xiangqi/spec.md` 写着
+「象棋今天**不计分**,因为它还没有对手」、`SupportsHumanVsHuman == false` 与 `IsRated == false`,
+而 `XiangqiRules` 两个都是 `true`。**这正是本变更自己要消灭的那种东西** ——
+它的论点是「一个没有机制维持的结构性事实就只是个判断,而判断会无声过期」,
+而它的结论就以过期的形式在 spec 里躺了 36 个 commit。
+
+`in-room-chat` 那条 ADDED 还有一层:它断言「玩家 MUST NOT 收到围观频道的消息」,
+而这在 #54 当天**是假的** —— 本变更自己量出了那个泄漏并留给了 `fix-spectator-chat-leak`。
+换句话说,如果当时就归档,活的 spec 会断言一件当时不成立的事。今天它成立了,所以照原样应用是对的。
+迟归档在这一条上恰好帮了忙,但那是运气,不是设计。
+
+### 我先预测要手工合并,量完发现不用
+
+回答用户时我说 `room-and-gameplay`(自 #54 起 4 个 commit)和 `in-room-chat`(5 个)
+已经被后人动过,MODIFIED 是整条替换,所以直接 archive 会把 `fix-spectator-chat-leak`
+的东西回退掉,得手工合并。
+
+**逐条比对之后:四个 MODIFIED 目标的正文与 #54 当天逐字节相同。** 那些后续 commit 动的是
+同一文件里**别的** requirement。于是这次是干净应用,一行都不用合。
+
+> 按文件数和按 requirement 数,不是同一个数。
+
+这和本变更自己记下的那条完全同形 —— 当时是「按 grep 数和按失败测试数不是同一个数」。
+同一个错误,换了一个计量单位。
+
+`in-room-chat` 自 #54 起多出的两条 requirement(围观读取侧的强制、375 px 长内容换行)
+与这条 ADDED 不冲突,ADDED 也不会覆盖任何东西。
+
+### 一条被证伪的安全感:strict 校验证明不了 spec 是真的
+
+同一棵树、同一条命令,归档前后都是 **37 passed, 0 failed**。也就是说
+`openspec validate --specs --strict` 对着一份「象棋不计分」的 spec 和一份「象棋计分」的代码,
+一样报全绿。它校验的是**形状**,不是**真伪**。
+
+所以「37 项 spec strict 通过」这句话此后不该被当成"spec 与代码一致"的证据 ——
+本次之前我自己在几份报告里就是这么用的。
