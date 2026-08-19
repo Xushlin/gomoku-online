@@ -18,6 +18,7 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
     private readonly IRoomNotifier _notifier;
     private readonly GameOptions _gameOptions;
     private readonly IGameRulesRegistry _rules;
+    private readonly ISeedProvider _seeds;
 
     /// <inheritdoc />
     public JoinRoomCommandHandler(
@@ -27,7 +28,8 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
         IUnitOfWork uow,
         IRoomNotifier notifier,
         IOptions<GameOptions> gameOptions,
-        IGameRulesRegistry rules)
+        IGameRulesRegistry rules,
+        ISeedProvider seeds)
     {
         _rooms = rooms;
         _users = users;
@@ -36,6 +38,7 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
         _notifier = notifier;
         _gameOptions = gameOptions.Value;
         _rules = rules;
+        _seeds = seeds;
     }
 
     /// <inheritdoc />
@@ -50,7 +53,8 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
 
-        room.JoinAsPlayer(request.UserId, _clock.UtcNow, rules);
+        room.JoinAsPlayer(
+            request.UserId, _clock.UtcNow, rules, MatchSetup.For(rules, _seeds));
         await _uow.SaveChangesAsync(cancellationToken);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);

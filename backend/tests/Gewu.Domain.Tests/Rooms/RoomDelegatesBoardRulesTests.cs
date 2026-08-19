@@ -61,7 +61,7 @@ public class RoomDelegatesBoardRulesTests
         var black = UserId.NewId();
         var white = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "spy room", black, Now, "spy");
-        room.JoinAsPlayer(white, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(white, Now.AddSeconds(1), BuiltInGameRules.Gomoku, setup: null);
         return (room, black, white);
     }
 

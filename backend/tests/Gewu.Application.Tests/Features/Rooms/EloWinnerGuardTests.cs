@@ -72,8 +72,8 @@ public class EloWinnerGuardTests
         var third = RoomsFixtures.NewUser("Carol", "carol@example.com");
 
         var room = Room.Create(RoomId.NewId(), "three", host.Id, RoomsFixtures.Now, ThreeSeatKey);
-        room.JoinAsPlayer(second.Id, RoomsFixtures.Now.AddSeconds(1), rules);
-        room.JoinAsPlayer(third.Id, RoomsFixtures.Now.AddSeconds(2), rules);
+        room.JoinAsPlayer(second.Id, RoomsFixtures.Now.AddSeconds(1), rules, setup: null);
+        room.JoinAsPlayer(third.Id, RoomsFixtures.Now.AddSeconds(2), rules, setup: null);
         room.Status.Should().Be(RoomStatus.Playing, "三个座位坐满才开局");
 
         RoomsFixtures.SetupUserLookup(_users, host, second, third);

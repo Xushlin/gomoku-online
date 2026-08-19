@@ -46,7 +46,7 @@ public sealed class RoomRepositorySeatsTests : IAsyncLifetime
         _guest = UserId.NewId();
 
         var playing = Room.Create(RoomId.NewId(), "playing", _host, Now, GameKeys.Gomoku);
-        playing.JoinAsPlayer(_guest, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        playing.JoinAsPlayer(_guest, Now.AddSeconds(1), BuiltInGameRules.Gomoku, setup: null);
         _playingId = playing.Id;
 
         var waiting = Room.Create(RoomId.NewId(), "waiting", _host, Now, GameKeys.Gomoku);

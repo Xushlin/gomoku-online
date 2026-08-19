@@ -15,7 +15,7 @@ public class RoomPlayMoveTests
         black = UserId.NewId();
         white = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "Match", black, Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(white, Now.AddMinutes(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(white, Now.AddMinutes(1), BuiltInGameRules.Gomoku, setup: null);
         return room;
     }
 

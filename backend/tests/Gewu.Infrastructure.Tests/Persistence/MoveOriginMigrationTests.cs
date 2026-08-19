@@ -143,7 +143,7 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
             UserId.NewId(), new Email("b@example.com"), new Username("Bob"), "h", Now);
         db.Users.AddRange(host, guest);
         var room = Room.Create(RoomId.NewId(), "origin room", host.Id, Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(guest.Id, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(guest.Id, Now.AddSeconds(1), BuiltInGameRules.Gomoku, setup: null);
         db.Rooms.Add(room);
         await db.SaveChangesAsync();
 
