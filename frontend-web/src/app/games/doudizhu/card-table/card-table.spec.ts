@@ -97,6 +97,15 @@ function handButtons(fixture: ReturnType<typeof mount>): HTMLButtonElement[] {
   return [...root(fixture).querySelectorAll<HTMLButtonElement>('[role="group"] button')];
 }
 
+/** 另外那些座位。我自己那一格没有 `data-direction` —— 它不在环绕的格子里。 */
+function otherSeats(fixture: ReturnType<typeof mount>): HTMLElement[] {
+  return [...root(fixture).querySelectorAll<HTMLElement>('[data-direction]')];
+}
+
+function styleOf(el: Element): string {
+  return el.getAttribute('style') ?? '';
+}
+
 function actionButtons(fixture: ReturnType<typeof mount>): HTMLButtonElement[] {
   return [...root(fixture).querySelectorAll<HTMLButtonElement>('button')].filter(
     (b) => !b.closest('[role="group"]'),
@@ -244,10 +253,128 @@ describe('CardTable', () => {
     fixture.componentInstance.state.set(room(seatView({ handCounts: [5, 3, 9] }), 1));
     fixture.detectChanges();
 
-    // 断言读 `data-seat` / `data-count` 而不是文本:测试里的 transloco 没有翻译表,
-    // 所以插值过的文字全是键名 —— **一条读那段文字的断言会永远通过或永远失败,而两种都没在验东西**。
-    const seats = [...root(fixture).querySelectorAll('ul li')];
-    expect(seats.map((li) => li.getAttribute('data-seat'))).toEqual(['2', '0']);
-    expect(seats.map((li) => li.getAttribute('data-count'))).toEqual(['9', '5']);
+    // 断言读 `data-*` 而不是文本:测试里的 transloco 没有翻译表,所以插值过的文字全是键名 ——
+    // **一条读那段文字的断言会永远通过或永远失败,而两种都没在验东西**。
+    const seats = otherSeats(fixture);
+    expect(seats.map((el) => el.getAttribute('data-seat'))).toEqual(['2', '0']);
+    expect(seats.map((el) => el.getAttribute('data-count'))).toEqual(['9', '5']);
+    // 下家在右手边 —— 出牌逆时针,俯视时下方的逆时针下一位在右。
+    expect(seats.map((el) => el.getAttribute('data-direction'))).toEqual(['right', 'left']);
+  });
+});
+
+describe('CardTable — 牌桌与动作', () => {
+  let fixture: ReturnType<typeof mount>;
+
+  beforeEach(() => {
+    fixture = mount();
+  });
+
+  it('binds the suit image and the fan geometry onto every card', () => {
+    // **这条守的是一个静默失败**:`--ddz-pip` 是一个 `[style.--x]` 绑定,若被 Angular 清洗掉,
+    // 花色会一声不响地不见 —— 而屏幕上仍然是一张有角标的牌,所以没人会立刻发现。
+    const cards = handButtons(fixture);
+    expect(cards).toHaveLength(3);
+    expect(styleOf(cards[0])).toContain('--ddz-pip: url("/cards/club.png")');
+    expect(styleOf(cards[1])).toContain('--ddz-pip: url("/cards/diamond.png")');
+    expect(styleOf(cards[2])).toContain('--ddz-pip: url("/cards/heart.png")');
+
+    // 发牌动画的散开几何全在 CSS 里算,而它要的三个数就是这三个。
+    expect(styleOf(cards[0])).toContain('--ddz-i: 0');
+    expect(styleOf(cards[2])).toContain('--ddz-i: 2');
+    for (const card of cards) expect(styleOf(card)).toContain('--ddz-n: 3');
+
+    const hand = root(fixture).querySelector('.ddz-hand')!;
+    expect(styleOf(hand)).toContain('--ddz-gaps: 2');
+  });
+
+  it('never gives a card of mine a joker pip, and never gives a joker one', () => {
+    fixture.componentInstance.state.set(room(seatView({ myHand: 'A@#', handCounts: [3, 17, 17] })));
+    fixture.detectChanges();
+
+    const cards = handButtons(fixture);
+    expect(styleOf(cards[0])).toContain('--ddz-pip');
+    // 王没有花色 —— 给它凑一个,就是用一个合法值表示「不适用」。
+    expect(styleOf(cards[1])).not.toContain('--ddz-pip');
+    expect(styleOf(cards[2])).not.toContain('--ddz-pip');
+    expect(root(fixture).querySelectorAll('.ddz-card__joker')).toHaveLength(2);
+  });
+
+  it("shows an opponent's hand as backs and never as faces", () => {
+    // 服务端逐张裁剪过,所以客户端手上本来就没有那些牌 —— 这条断言是「画法没有把它们变出来」。
+    const seats = otherSeats(fixture);
+    const first = seats[0];
+    expect(first.getAttribute('data-count')).toBe('17');
+    expect(first.querySelectorAll('.ddz-card--back')).toHaveLength(17);
+    expect([...first.querySelectorAll('*')].filter((el) => styleOf(el).includes('--ddz-pip'))).toEqual(
+      [],
+    );
+  });
+
+  it('keeps the kitty face down while bidding and turns it face up after', () => {
+    fixture.componentInstance.state.set(
+      room(seatView({ phase: 'Bidding', landlord: null, kitty: null })),
+    );
+    fixture.detectChanges();
+    const hidden = root(fixture).querySelector('.ddz-kitty')!;
+    expect(hidden.querySelectorAll('.ddz-card--back')).toHaveLength(3);
+
+    fixture.componentInstance.state.set(room(seatView({ kitty: 'DEF' })));
+    fixture.detectChanges();
+    const shown = root(fixture).querySelector('.ddz-kitty')!;
+    expect(shown.querySelectorAll('.ddz-card--back')).toHaveLength(0);
+    expect(shown.querySelectorAll('.ddz-card')).toHaveLength(3);
+  });
+
+  it('marks which direction the hand on the table flew in from', () => {
+    fixture.componentInstance.mySeat.set(0);
+    fixture.componentInstance.state.set(room(seatView({ tableSeat: 1, tableCards: 'Q' })));
+    fixture.detectChanges();
+    expect(root(fixture).querySelector('.ddz-played')!.getAttribute('data-from')).toBe('right');
+
+    fixture.componentInstance.state.set(room(seatView({ tableSeat: 2, tableCards: 'Q' })));
+    fixture.detectChanges();
+    expect(root(fixture).querySelector('.ddz-played')!.getAttribute('data-from')).toBe('left');
+  });
+
+  it('puts a pass in a bubble beside the seat, and a play only on the table', () => {
+    const state = room(seatView({ tableSeat: 1, tableCards: 'Q' }));
+    fixture.componentInstance.state.set({
+      ...state,
+      game: {
+        ...state.game!,
+        moves: [
+          { ply: 1, row: null, col: null, text: 'play:Q', seat: 1, playedAt: 'x' },
+          { ply: 2, row: null, col: null, text: 'pass', seat: 2, playedAt: 'x' },
+        ],
+      },
+    });
+    fixture.detectChanges();
+
+    const bubbles = [...root(fixture).querySelectorAll('.ddz-bubble')];
+    // 出牌那家没有气泡 —— 牌就在桌心,同一件事说两遍会让人去找两者的差别。
+    expect(bubbles).toHaveLength(1);
+    expect(bubbles[0].closest('[data-seat]')!.getAttribute('data-seat')).toBe('2');
+  });
+
+  it('badges the landlord', () => {
+    fixture.componentInstance.mySeat.set(1);
+    fixture.componentInstance.state.set(room(seatView({ landlord: 2 }), 1));
+    fixture.detectChanges();
+
+    const badged = [...root(fixture).querySelectorAll('.ddz-landlord')].map((el) =>
+      el.closest('[data-seat]')!.getAttribute('data-seat'),
+    );
+    expect(badged).toEqual(['2']);
+  });
+
+  it('seats a spectator without a hand but with both opponents visible', () => {
+    fixture.componentInstance.mySeat.set(null);
+    fixture.componentInstance.state.set(room(seatView({ myHand: '' })));
+    fixture.detectChanges();
+
+    // 围观者从 0 号座位的椅子上看,所以另外两家是 1 与 2。
+    expect(otherSeats(fixture).map((el) => el.getAttribute('data-seat'))).toEqual(['1', '2']);
+    expect(handButtons(fixture)).toHaveLength(0);
   });
 });

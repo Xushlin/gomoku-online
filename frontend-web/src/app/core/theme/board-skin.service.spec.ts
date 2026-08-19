@@ -84,6 +84,18 @@ describe('DefaultBoardSkinService', () => {
         whiteShadow: 'none',
       },
       pieces: { bg: '#f3e3c0', red: '#b3261e', black: '#241d16' },
+      // 这份 fixture 在 `cards` / `felt` 加进 BoardSkinTokens 的那一刻编译不过了 ——
+      // 那正是机制在工作:一个新皮肤**不可能**漏掉扑克牌与桌面的 token。
+      // add-web-xiangqi 加 `pieces` 时是同一处红的。
+      cards: {
+        face: '#fff',
+        faceEdge: '#ccc',
+        red: '#c00',
+        black: '#111',
+        back: '#369',
+        backEdge: '#eee',
+      },
+      felt: { bg: '#1d5333', edge: '#6b4423', radius: '0', shadow: 'none', text: '#fff', textMuted: '#ccc' },
       lastMove: { ring: '#f00' },
     });
     expect(svc.availableSkins()).toContain('bamboo');

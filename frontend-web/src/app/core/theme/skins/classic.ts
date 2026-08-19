@@ -31,6 +31,22 @@ export const classicSkin: BoardSkinTokens = {
     red: '#c0392b',
     black: 'var(--color-text)',
   },
+  cards: {
+    face: 'var(--color-bg)',
+    faceEdge: 'var(--color-border)',
+    red: '#c0392b',
+    black: 'var(--color-text)',
+    backEdge: 'var(--color-border)',
+    back: 'linear-gradient(160deg, color-mix(in srgb, var(--color-primary) 70%, black), color-mix(in srgb, var(--color-primary) 35%, black))',
+  },
+  felt: {
+    bg: 'color-mix(in srgb, var(--color-surface) 88%, var(--color-text))',
+    edge: 'var(--color-border)',
+    radius: 'var(--radius-card)',
+    shadow: '0 2px 8px rgb(0 0 0 / 0.08)',
+    text: 'var(--color-text)',
+    textMuted: 'var(--color-muted)',
+  },
   lastMove: {
     ring: 'var(--color-primary)',
   },

@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:ci": "ng test --watch=false",
-    "lint": "ng lint"
+    "lint": "ng lint && npm run check:styles",
+    "check:styles": "node scripts/check-styles.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.3",
