@@ -74,11 +74,15 @@ public interface IDealtGameRules : IGameRules
 ```
 public interface ITimeoutFallbackRules : IGameRules
 {
-    MoveIntent MoveOnTimeout(IReadOnlyList<PlayedMove> history, int seat);
+    MoveIntent MoveOnTimeout(MatchState state, int seat);
 }
 ```
 
 只有"超时不该判负"的棋种实现它。五子棋、一字棋、中国象棋、成语接龙**一行不动** —— 两个座位下"判他负、对手胜"是清楚且唯一的答案。
+
+分出一个接口而不是给 `IGameRules` 加成员,理由与 `IBoardGameRules` / `IDealtGameRules` 相同:**骗人的实现是下一个人删不掉的东西**。
+
+它收 `MatchState` 而 MUST NOT 只收历史。兜底动作可能需要**服务端侧的对局设置**:斗地主首出时要出"手上最小的一张单牌",而手牌在发牌里,不在历史里。
 
 `MoveOnTimeout` MUST 是纯函数,MUST NOT 有副作用,并 MUST 返回一个该座位在该局面下**合法**的一步。它的返回值 MUST 与真人走的一步走同一条路 —— 即由 `IGameRules.Apply` 校验并判定结果。
 
@@ -86,9 +90,25 @@ public interface ITimeoutFallbackRules : IGameRules
 
 这条要求**不是防自旋的护栏**:每一次兜底都要等满一个超时周期,所以最坏情况是每个周期一步 —— 慢、可见、不会自旋。它是**对局质量**的要求,所以本 spec MUST NOT 规定一个"连续兜底次数上限"。
 
+> **本要求的正文是手工合并的,而那是一条比它本身更值得记的账。**
+> 本变更的这一段是在 `pass-state-to-fallback` 之前写的,所以它带的是**旧签名**
+> (`MoveOnTimeout(IReadOnlyList<PlayedMove>, int)`);而那个变更**先合并**,把签名改成了
+> `MatchState`。两个变更改同一条要求,而 MODIFIED 是整体替换 —— 于是"按合并顺序归档"
+> 会让**后合并的那个**用旧正文盖掉新正文。归档前逐条比对发现了它,合并结果是:签名与
+> `MatchState` 那两段取新的,"恰好一个实现"与斗地主的兜底形式取本变更的。
+> **按合并顺序归档是必要的,不是充分的。**
+
 #### Scenario: 恰好一个内置棋种实现它
 - **WHEN** 遍历 `BuiltInGameRules.All(lexicon)`
 - **THEN** 恰好一个实现 `ITimeoutFallbackRules`,且它的 `GameKey == "doudizhu"`
+
+  这一条此前是"没有一个实现它" —— `generalize-turn-flow` 加接缝时钉的是"没有偷偷改动现有棋种"。
+  斗地主落地那天它按预告变红,改成"恰好一个":第二个要兜底的棋种出现时它会再红一次,而那正是
+  该问"这两个棋种的超时真是同一种东西吗"的时刻。
+
+#### Scenario: 兜底看得到对局设置
+- **WHEN** 一个实现设置的棋种超时,规则的 `MoveOnTimeout` 被调用
+- **THEN** `state.Setup` 恰好是 `Game.Setup`,一字不改
 
 #### Scenario: 兜底动作要经过合法性校验
 - **WHEN** 一个实现返回了该局面下非法的一步
