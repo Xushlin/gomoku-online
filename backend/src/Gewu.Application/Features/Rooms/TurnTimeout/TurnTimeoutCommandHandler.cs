@@ -84,7 +84,7 @@ public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutComma
                 played.Move.Ply,
                 played.Move.Row,
                 played.Move.Col,
-                SeatWire.ToStone(played.Move.Seat),
+                played.Move.Seat,
                 played.Move.PlayedAt,
                 played.Move.FromRow,
                 played.Move.FromCol,

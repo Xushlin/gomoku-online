@@ -37,7 +37,7 @@ public class CreateAiRoomCommandHandlerTests
         state.White!.Id.Should().Be(bot.Id.Value);
         state.White.Username.Should().Be("AI_Medium");
         state.Game.Should().NotBeNull();
-        state.Game!.CurrentTurn.Should().Be(Gewu.Domain.Enums.Stone.Black);
+        state.Game!.CurrentSeat.Should().Be(0, "先手座位号是 0 —— 颜色是显示层的事");
         state.Game.Moves.Should().BeEmpty();
 
         _rooms.Verify(r => r.AddAsync(It.IsAny<Room>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -121,8 +121,8 @@ public class CreateAiRoomCommandHandlerTests
         state.Black!.Id.Should().Be(bot.Id.Value);
         state.White!.Id.Should().Be(host.Id.Value);
         state.Host.Id.Should().Be(host.Id.Value);
-        // Game.CurrentTurn unchanged — still Black, which is now the bot.
-        state.Game!.CurrentTurn.Should().Be(Stone.Black);
+        // 先手座位不变 —— 仍然是 0 号，而现在坐在 0 号上的是机器人。
+        state.Game!.CurrentSeat.Should().Be(0);
         state.Game.Moves.Should().BeEmpty();
     }
 

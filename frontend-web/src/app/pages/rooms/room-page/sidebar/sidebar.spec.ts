@@ -39,7 +39,7 @@ function baseState(): RoomState {
     spectators: [],
     game: {
       id: 'g-1',
-      currentTurn: 'Black',
+      currentSeat: 0,
       startedAt: 'x',
       endedAt: null,
       result: null,

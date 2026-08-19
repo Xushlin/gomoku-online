@@ -6,11 +6,11 @@ import type { MoveDto, RoomState } from '../../../core/api/models/room.model';
 import { WRAPPING_UTILITIES, wrapsLongWords } from '../../../testing/wrapping';
 import { ChainBoard } from './chain-board';
 
-function said(ply: number, text: string, stone: 'Black' | 'White'): MoveDto {
-  return { ply, row: null, col: null, text, stone, playedAt: '2026-08-17T00:00:00Z' };
+function said(ply: number, text: string, seat: number): MoveDto {
+  return { ply, row: null, col: null, text, seat, playedAt: '2026-08-17T00:00:00Z' };
 }
 
-function state(moves: readonly MoveDto[], currentTurn: 'Black' | 'White' = 'Black'): RoomState {
+function state(moves: readonly MoveDto[], currentSeat = 0): RoomState {
   return {
     id: 'r-1',
     name: 'chain room',
@@ -22,7 +22,7 @@ function state(moves: readonly MoveDto[], currentTurn: 'Black' | 'White' = 'Blac
     spectators: [],
     game: {
       id: 'g-1',
-      currentTurn,
+      currentSeat,
       startedAt: '2026-08-17T00:00:00Z',
       endedAt: null,
       result: null,
@@ -43,10 +43,10 @@ describe('ChainBoard', () => {
   function mount(
     moves: readonly MoveDto[],
     mySide: 'black' | 'white' | 'spectator' = 'black',
-    currentTurn: 'Black' | 'White' = 'Black',
+    currentSeat = 0,
   ) {
     fixture = TestBed.createComponent(ChainBoard);
-    fixture.componentRef.setInput('state', state(moves, currentTurn));
+    fixture.componentRef.setInput('state', state(moves, currentSeat));
     fixture.componentRef.setInput('mySide', mySide);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
@@ -71,7 +71,7 @@ describe('ChainBoard', () => {
   });
 
   it('renders the chain in ply order', () => {
-    const el = mount([said(1, '一心一意', 'Black'), said(2, '意气风发', 'White')]);
+    const el = mount([said(1, '一心一意', 0), said(2, '意气风发', 1)]);
 
     const items = Array.from(el.querySelectorAll('ol li'));
     expect(items).toHaveLength(2);
@@ -85,7 +85,7 @@ describe('ChainBoard', () => {
     // inside 375 px because the text wraps. Same shape of guard as the chat panel:
     // it catches the utility being deleted from the markup, not the stylesheet
     // dropping it.
-    const el = mount([said(1, '风'.repeat(15), 'Black')]);
+    const el = mount([said(1, '风'.repeat(15), 0)]);
     const text = el.querySelector('ol li span.break-words, ol li span:last-of-type');
 
     expect(text, 'the idiom text should render').toBeTruthy();
@@ -96,7 +96,7 @@ describe('ChainBoard', () => {
   });
 
   it('shows the character the next word must start with', () => {
-    const el = mount([said(1, '一心一意', 'Black')], 'white', 'White');
+    const el = mount([said(1, '一心一意', 0)], 'white', 1);
 
     expect(el.textContent).toContain('意');
   });
@@ -110,7 +110,7 @@ describe('ChainBoard', () => {
   });
 
   it('lets the seat on turn type and submit', () => {
-    const el = mount([], 'black', 'Black');
+    const el = mount([], 'black', 0);
     type(el, '一心一意');
 
     expect((el.querySelector('input') as HTMLInputElement).disabled).toBe(false);
@@ -118,21 +118,21 @@ describe('ChainBoard', () => {
   });
 
   it('is read-only off turn', () => {
-    const el = mount([], 'black', 'White');
+    const el = mount([], 'black', 1);
 
     expect((el.querySelector('input') as HTMLInputElement).disabled).toBe(true);
     expect(submitButton(el).disabled).toBe(true);
   });
 
   it('gives spectators no input at all', () => {
-    const el = mount([said(1, '一心一意', 'Black')], 'spectator');
+    const el = mount([said(1, '一心一意', 0)], 'spectator');
 
     expect(el.querySelector('input')).toBeNull();
     expect(el.querySelector('button[type="submit"]')).toBeNull();
   });
 
   it('emits the trimmed word on submit', () => {
-    const el = mount([], 'black', 'Black');
+    const el = mount([], 'black', 0);
     const emitted: string[] = [];
     fixture.componentInstance.wordSay.subscribe((w) => emitted.push(w));
 
@@ -143,7 +143,7 @@ describe('ChainBoard', () => {
   });
 
   it('does not emit blank input', () => {
-    const el = mount([], 'black', 'Black');
+    const el = mount([], 'black', 0);
     const emitted: string[] = [];
     fixture.componentInstance.wordSay.subscribe((w) => emitted.push(w));
 
@@ -157,7 +157,7 @@ describe('ChainBoard', () => {
     // The load-bearing test for "the board judges nothing". Two of the three rules
     // are decidable here; deciding them would make the field partly authoritative
     // and could refuse a legal word off a one-ply-stale history.
-    const el = mount([said(1, '一心一意', 'Black')], 'white', 'White');
+    const el = mount([said(1, '一心一意', 0)], 'white', 1);
     const emitted: string[] = [];
     fixture.componentInstance.wordSay.subscribe((w) => emitted.push(w));
 
@@ -169,7 +169,7 @@ describe('ChainBoard', () => {
   });
 
   it('emits a word already played — also the server’s call', () => {
-    const el = mount([said(1, '一心一意', 'Black')], 'white', 'White');
+    const el = mount([said(1, '一心一意', 0)], 'white', 1);
     const emitted: string[] = [];
     fixture.componentInstance.wordSay.subscribe((w) => emitted.push(w));
 
@@ -182,7 +182,7 @@ describe('ChainBoard', () => {
   it('accepts idioms that are not four characters', () => {
     // Measured against the shipped dictionary: 1,393 of 30,895 idioms are not four
     // characters. A maxlength of 4 would make every one of them unenterable.
-    const el = mount([], 'black', 'Black');
+    const el = mount([], 'black', 0);
     const emitted: string[] = [];
     fixture.componentInstance.wordSay.subscribe((w) => emitted.push(w));
 
@@ -196,7 +196,7 @@ describe('ChainBoard', () => {
   });
 
   it('accepts an idiom containing punctuation', () => {
-    const el = mount([], 'black', 'Black');
+    const el = mount([], 'black', 0);
     const emitted: string[] = [];
     fixture.componentInstance.wordSay.subscribe((w) => emitted.push(w));
 
@@ -208,13 +208,13 @@ describe('ChainBoard', () => {
 
   it('mirrors only the cap the server has', () => {
     // Move.Text is HasMaxLength(64). Anything tighter is a client-invented rule.
-    const el = mount([], 'black', 'Black');
+    const el = mount([], 'black', 0);
 
     expect((el.querySelector('input') as HTMLInputElement).getAttribute('maxlength')).toBe('64');
   });
 
   it('clears the box once a word is sent', () => {
-    const el = mount([], 'black', 'Black');
+    const el = mount([], 'black', 0);
     type(el, '一心一意');
     submitButton(el).click();
     fixture.detectChanges();

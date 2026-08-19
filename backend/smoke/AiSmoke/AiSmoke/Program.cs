@@ -69,7 +69,7 @@ var room = await createResp.Content.ReadFromJsonAsync<RoomStateDto>()
 Assert(room.Status == "Playing", "room.Status == Playing");
 Assert(room.Black?.Username == aliceUsername, "black is Alice");
 Assert(room.White?.Username == "AI_Easy", "white is AI_Easy");
-Assert(room.Game?.CurrentTurn == "Black", "currentTurn == Black");
+Assert(room.Game?.CurrentSeat == 0, "currentSeat == 0 (先手坐 0 号，颜色是显示层的事)");
 Assert(room.Game?.Moves.Count == 0, "moves empty");
 
 Console.WriteLine("=== 3. Connect SignalR, JoinRoom ===");
@@ -97,9 +97,11 @@ var moveSignal = new SemaphoreSlim(0);
 // The fix does not depend on the rate. This step exists to show "the bot keeps
 // replying", and that needs *a* legal move, never a particular one.
 var occupied = new HashSet<(int Row, int Col)>();
+System.Collections.Concurrent.ConcurrentQueue<string>? arrivalsRef = null;
 hub.On<MoveMadePayload>("MoveMade", payload =>
 {
-    Console.WriteLine($"  <- MoveMade ply={payload.Ply} ({payload.Row},{payload.Col}) stone={payload.Stone}");
+    Console.WriteLine($"  <- MoveMade ply={payload.Ply} ({payload.Row},{payload.Col}) seat={payload.Seat}");
+    arrivalsRef?.Enqueue($"move:{payload.Ply}");
     lock (occupied)
     {
         occupied.Add((payload.Row, payload.Col));
@@ -110,6 +112,23 @@ hub.On<MoveMadePayload>("MoveMade", payload =>
 hub.On<GameEndedPayload>("GameEnded", payload =>
 {
     Console.WriteLine($"  <- GameEnded result={payload.Result} winner={payload.WinnerUserId}");
+});
+
+// 到达顺序 —— 一条**客户端真的依赖**的契约,此前没人量过。
+//
+// `handleMoveMade` 曾经自己猜下一手是谁:`move.stone === 'Black' ? 'White' : 'Black'`。
+// 那是个两座位假设,而三座位棋种里它是错的。删掉它的理由是"权威状态先到,所以不用猜" ——
+// 而那句话在这里被量成断言:`MakeMoveCommandHandler` 先 await `RoomStateChangedAsync`
+// 再 await `MoveMadeAsync`,同一个 group、同一条连接,所以带着这一手的 `RoomState`
+// MUST 在 `MoveMade` 之前到。
+//
+// **一个"因为顺序如此所以可以删代码"的论证,必须自己带上那个顺序的证据。**
+var arrivals = new System.Collections.Concurrent.ConcurrentQueue<string>();
+arrivalsRef = arrivals;
+hub.On<RoomStateDto>("RoomState", state =>
+{
+    var maxPly = state.Game?.Moves.Count > 0 ? state.Game.Moves[^1].Ply : 0;
+    arrivals.Enqueue($"state:{maxPly}");
 });
 
 await hub.StartAsync();
@@ -127,9 +146,13 @@ async Task<MoveMadePayload> NextMoveAsync(TimeSpan timeout)
 Console.WriteLine("=== 4. Alice plays (7,7); wait for bot response ===");
 await hub.InvokeAsync("MakeMove", room.Id, 7, 7);
 var aliceMove = await NextMoveAsync(MoveTimeout);
-Assert(aliceMove.Stone == "Black" && aliceMove.Row == 7 && aliceMove.Col == 7, "Alice's move echoed back");
+Assert(aliceMove.Seat == 0 && aliceMove.Row == 7 && aliceMove.Col == 7, "Alice's move echoed back");
+// 第一个提到 ply 1 的帧 MUST 是 RoomState,不是 MoveMade。
+var firstMentioningPly1 = arrivals.FirstOrDefault(a => a.EndsWith(":1", StringComparison.Ordinal));
+Assert(firstMentioningPly1 == "state:1",
+    $"the authoritative RoomState for a move arrives before its MoveMade (first was {firstMentioningPly1 ?? "<none>"})");
 var botMove = await NextMoveAsync(MoveTimeout);
-Assert(botMove.Stone == "White", "bot responded as White");
+Assert(botMove.Seat == 1, "bot responded from seat 1");
 Assert(botMove.Ply == 2, "bot move ply == 2");
 
 Console.WriteLine("=== 5. Play several more rounds — verify bot keeps moving ===");
@@ -324,9 +347,9 @@ record AuthResponse(string AccessToken, string RefreshToken, DateTime AccessToke
 record UserDto(Guid Id, string Email, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws, DateTime CreatedAt);
 record RoomStateDto(Guid Id, string Name, string Status, PlayerDto? Host, PlayerDto? Black, PlayerDto? White, List<PlayerDto> Spectators, GameDto? Game, List<object> ChatMessages, DateTime CreatedAt);
 record PlayerDto(Guid Id, string Username);
-record GameDto(Guid Id, string CurrentTurn, DateTime StartedAt, DateTime? EndedAt, string? Result, Guid? WinnerUserId, List<MoveDto> Moves);
-record MoveDto(int Ply, int Row, int Col, string Stone, DateTime PlayedAt);
-record MoveMadePayload(int Ply, int Row, int Col, string Stone, DateTime PlayedAt);
+record GameDto(Guid Id, int CurrentSeat, DateTime StartedAt, DateTime? EndedAt, string? Result, Guid? WinnerUserId, List<MoveDto> Moves);
+record MoveDto(int Ply, int Row, int Col, int Seat, DateTime PlayedAt);
+record MoveMadePayload(int Ply, int Row, int Col, int Seat, DateTime PlayedAt);
 record GameEndedPayload(string Result, Guid? WinnerUserId, DateTime EndedAt);
 record LeaderboardEntry(int Rank, Guid UserId, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws);
 record PagedResult<T>(List<T> Items, int Total, int Page, int PageSize);

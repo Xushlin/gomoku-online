@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomState } from '../../../../core/api/models/room.model';
+import { seatOfSide, FIRST_SEAT } from '../../../../games/board-seats';
 import {
   ResignConfirmDialog,
   type ResignConfirmResult,
@@ -16,6 +17,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RoomSidebar {
+  /** 模板只能读组件成员,所以把这个显示层常量挂上来。 */
+  protected readonly FIRST_SEAT = FIRST_SEAT;
+
   private readonly dialog = inject(Dialog);
 
   readonly state = input<RoomState | null>(null);
@@ -30,9 +34,8 @@ export class RoomSidebar {
   protected readonly isPlayer = computed(() => this.mySide() !== 'spectator');
 
   protected readonly myTurn = computed(() => {
-    const side = this.mySide();
-    const turn = this.state()?.game?.currentTurn;
-    return (side === 'black' && turn === 'Black') || (side === 'white' && turn === 'White');
+    const mySeat = seatOfSide(this.mySide());
+    return mySeat !== null && this.state()?.game?.currentSeat === mySeat;
   });
 
   protected readonly countdownText = computed(() => {

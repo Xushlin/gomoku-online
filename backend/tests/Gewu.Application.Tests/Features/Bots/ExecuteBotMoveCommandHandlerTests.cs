@@ -33,7 +33,7 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         _sender.Setup(s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new MoveDto(2, 0, 0, Stone.White, RoomsFixtures.Now));
+            .ReturnsAsync(new MoveDto(2, 0, 0, 1, RoomsFixtures.Now));
 
         var sut = new ExecuteBotMoveCommandHandler(_rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);
         await sut.Handle(new ExecuteBotMoveCommand(bot.Id, room.Id), default);
@@ -124,7 +124,7 @@ public class ExecuteBotMoveCommandHandlerTests
 
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         _sender.Setup(s => s.Send(It.IsAny<MakeMoveCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new MoveDto(2, 1, 1, Stone.White, RoomsFixtures.Now));
+            .ReturnsAsync(new MoveDto(2, 1, 1, 1, RoomsFixtures.Now));
 
         var sut = new ExecuteBotMoveCommandHandler(
             _rooms.Object, GomokuRules.Registry, GomokuRules.AiRegistry, _random.Object, _sender.Object);

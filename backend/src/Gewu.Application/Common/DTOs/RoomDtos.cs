@@ -10,7 +10,20 @@ public sealed record UserSummaryDto(Guid Id, string Username);
 /// <param name="Ply">步数(1-based)。</param>
 /// <param name="Row">终点 / 落点行;**文本类棋种为 <c>null</c>**。</param>
 /// <param name="Col">终点 / 落点列;文本类棋种为 <c>null</c>。</param>
-/// <param name="Stone">走这一步的一方。</param>
+/// <param name="Seat">
+/// 走这一步的**座位号**（0-based）。
+/// <para>
+/// 它此前是 `Stone`（`'Black' | 'White'`），经 `SeatWire.ToStone(seat)` 换算 ——
+/// 而那个函数是 `seat == 0 ? Black : White`，于是**2 号座位被说成 1 号**。
+/// 实测过：三座位房间里三手 `bid:0` 的 `stone` 是 `Black / White / White`，
+/// 两个农民在走子记录里重合。
+/// </para>
+/// <para>
+/// 颜色是**显示层**的事：五子棋 `0 → 黑`，象棋 `0 → 红`。`add-xiangqi` 定下的
+/// 规矩就是“`Stone` 一直是先手 / 后手，红黑是显示层的读法”，而 `SeatWire`
+/// 把那个读法写进了契约。
+/// </para>
+/// </param>
 /// <param name="PlayedAt">走子时刻(UTC)。</param>
 /// <param name="FromRow">
 /// 起点行;**落子类棋种(五子棋 / 一字棋)为 <c>null</c>**,走子类(中国象棋)非 <c>null</c>。
@@ -25,7 +38,7 @@ public sealed record MoveDto(
     int Ply,
     int? Row,
     int? Col,
-    Stone Stone,
+    int Seat,
     DateTime PlayedAt,
     int? FromRow = null,
     int? FromCol = null,
@@ -72,7 +85,7 @@ public sealed record RoomSummaryDto(
 /// </summary>
 public sealed record GameSnapshotDto(
     Guid Id,
-    Stone CurrentTurn,
+    int CurrentSeat,
     DateTime StartedAt,
     DateTime? EndedAt,
     GameResult? Result,

@@ -56,7 +56,7 @@ function makeSnapshot(overrides: Partial<RoomState> = {}): RoomState {
     spectators: [],
     game: {
       id: 'g-1',
-      currentTurn: 'Black',
+      currentSeat: 0,
       startedAt: '2026-04-24T00:00:00Z',
       endedAt: null,
       result: null,
@@ -152,21 +152,31 @@ describe('DefaultGameHubService', () => {
     expect(svc.state()).toEqual(snap);
   });
 
-  it('MoveMade appends the move and flips the turn', async () => {
+  it('MoveMade appends the move and leaves the turn to the authoritative state', async () => {
+    // **This test used to be called "…and flips the turn", and that is the point.**
+    // The handler used to compute `move.stone === 'Black' ? 'White' : 'Black'` — a
+    // two-seat rotation the client cannot generalise (it does not know the room's seat
+    // count) and that is simply wrong for a three-seat game.
+    //
+    // It does not need to guess: `RoomStateChangedAsync` is awaited before
+    // `MoveMadeAsync`, so the authoritative `currentSeat` has already arrived. AiSmoke
+    // asserts that arrival order over a real connection — a "the order makes the guess
+    // unnecessary" argument has to carry the evidence for the order.
     const { svc, conn } = setup();
     await svc.joinRoom('r-1');
     conn.handlers['RoomState']?.(makeSnapshot());
+    const before = svc.state()?.game?.currentSeat;
     const move: MoveDto = {
       ply: 1,
       row: 7,
       col: 7,
-      stone: 'Black',
+      seat: 0,
       playedAt: '2026-04-24T00:01:00Z',
     };
     conn.handlers['MoveMade']?.(move);
     expect(svc.state()?.game?.moves.length).toBe(1);
-    expect(svc.state()?.game?.currentTurn).toBe('White');
     expect(svc.state()?.game?.turnStartedAt).toBe(move.playedAt);
+    expect(svc.state()?.game?.currentSeat).toBe(before);
   });
 
   it('MoveMade with old ply is dropped', async () => {
@@ -181,11 +191,11 @@ describe('DefaultGameHubService', () => {
               ply: 5,
               row: 0,
               col: 0,
-              stone: 'Black',
+              seat: 0,
               playedAt: '2026-04-24T00:00:00Z',
             },
           ],
-          currentTurn: 'White',
+          currentSeat: 1,
         },
       }),
     );
@@ -193,11 +203,11 @@ describe('DefaultGameHubService', () => {
       ply: 3,
       row: 1,
       col: 1,
-      stone: 'Black',
+      seat: 0,
       playedAt: '2026-04-24T00:02:00Z',
     } satisfies MoveDto);
     expect(svc.state()?.game?.moves.length).toBe(1);
-    expect(svc.state()?.game?.currentTurn).toBe('White');
+    expect(svc.state()?.game?.currentSeat).toBe(1);
   });
 
   it('GameEnded sets gameEnded signal and marks room Finished', async () => {
@@ -265,7 +275,7 @@ describe('DefaultGameHubService', () => {
             ply: 10,
             row: 0,
             col: 0,
-            stone: 'Black',
+            seat: 0,
             playedAt: '2026-04-24T00:00:00Z',
           },
         ],
@@ -278,7 +288,7 @@ describe('DefaultGameHubService', () => {
       ply: 8,
       row: 1,
       col: 1,
-      stone: 'White',
+      seat: 1,
       playedAt: '2026-04-24T00:01:00Z',
     } satisfies MoveDto);
     expect(svc.state()?.game?.moves.length).toBe(1);

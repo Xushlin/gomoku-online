@@ -2,15 +2,15 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { MoveDto, RoomState, Stone } from '../../../core/api/models/room.model';
+import type { MoveDto, RoomState } from '../../../core/api/models/room.model';
 import { XiangqiBoard, type PieceMoveEvent } from './xiangqi-board';
 
-function slide(fromRow: number, fromCol: number, row: number, col: number, ply: number, stone: Stone): MoveDto {
-  return { ply, row, col, stone, playedAt: '2026-08-16T12:00:00Z', fromRow, fromCol };
+function slide(fromRow: number, fromCol: number, row: number, col: number, ply: number, seat: number): MoveDto {
+  return { ply, row, col, seat, playedAt: '2026-08-16T12:00:00Z', fromRow, fromCol };
 }
 
 function roomState(moves: readonly MoveDto[], status: RoomState['status'] = 'Playing'): RoomState {
-  const turn: Stone = moves.length % 2 === 0 ? 'Black' : 'White';
+  const turn = moves.length % 2 === 0 ? 0 : 1;
   return {
     id: 'room-1',
     name: 'xiangqi',
@@ -22,7 +22,7 @@ function roomState(moves: readonly MoveDto[], status: RoomState['status'] = 'Pla
     spectators: [],
     game: {
       id: 'g1',
-      currentTurn: turn,
+      currentSeat: turn,
       startedAt: '2026-08-16T12:00:00Z',
       endedAt: null,
       result: null,
@@ -172,7 +172,7 @@ describe('XiangqiBoard', () => {
     const { fixture, host } = setup();
 
     tap(fixture, 9, 0);
-    host.state.set(roomState([slide(9, 0, 8, 0, 1, 'Black')]));
+    host.state.set(roomState([slide(9, 0, 8, 0, 1, 0)]));
     fixture.detectChanges();
 
     expect(point(fixture, 9, 0).getAttribute('aria-pressed')).toBe('false');
@@ -181,7 +181,7 @@ describe('XiangqiBoard', () => {
   it('replays the history onto the board', () => {
     const { fixture, host } = setup();
 
-    host.state.set(roomState([slide(7, 1, 0, 1, 1, 'Black')])); // 炮打马
+    host.state.set(roomState([slide(7, 1, 0, 1, 1, 0)])); // 炮打马
     fixture.detectChanges();
 
     expect(point(fixture, 7, 1).querySelector('.xq-piece')).toBeNull();
@@ -192,7 +192,7 @@ describe('XiangqiBoard', () => {
   it('marks both ends of the last move', () => {
     const { fixture, host } = setup();
 
-    host.state.set(roomState([slide(9, 0, 8, 0, 1, 'Black')]));
+    host.state.set(roomState([slide(9, 0, 8, 0, 1, 0)]));
     fixture.detectChanges();
 
     expect(point(fixture, 9, 0).classList.contains('xq-point--last-from')).toBe(true);

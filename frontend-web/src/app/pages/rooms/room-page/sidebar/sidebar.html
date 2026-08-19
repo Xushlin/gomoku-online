@@ -69,7 +69,7 @@
     @if (room.game && room.status === 'Playing') {
       <div class="flex flex-col gap-1">
         <p class="text-xs">
-          @if (room.game.currentTurn === 'Black') {
+          @if (room.game.currentSeat === FIRST_SEAT) {
             {{ 'game.turn.black-turn' | transloco }}
           } @else {
             {{ 'game.turn.white-turn' | transloco }}

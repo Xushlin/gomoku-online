@@ -43,7 +43,7 @@ function makeState(overrides: Partial<RoomState> = {}): RoomState {
     spectators: [],
     game: {
       id: 'g-1',
-      currentTurn: 'Black',
+      currentSeat: 0,
       startedAt: 'x',
       endedAt: null,
       result: null,
@@ -104,7 +104,7 @@ describe('Board', () => {
   it('opponent turn → button disabled, no emit', () => {
     const fixture = mount();
     fixture.componentInstance.state.set(makeState({
-      game: { ...makeState().game!, currentTurn: 'White' },
+      game: { ...makeState().game!, currentSeat: 1 },
     }));
     fixture.componentInstance.mySide.set('black');
     fixture.detectChanges();
@@ -144,11 +144,11 @@ describe('Board', () => {
               ply: 1,
               row: 3,
               col: 4,
-              stone: 'Black',
+              seat: 0,
               playedAt: 'x',
             },
           ],
-          currentTurn: 'White',
+          currentSeat: 1,
         },
       }),
     );
@@ -217,8 +217,8 @@ describe('Board', () => {
         game: {
           ...makeState().game!,
           moves: [
-            { ply: 1, row: 0, col: 0, stone: 'Black', playedAt: 'x' },
-            { ply: 2, row: 7, col: 7, stone: 'White', playedAt: 'x' },
+            { ply: 1, row: 0, col: 0, seat: 0, playedAt: 'x' },
+            { ply: 2, row: 7, col: 7, seat: 1, playedAt: 'x' },
           ],
         },
       }),
@@ -228,5 +228,32 @@ describe('Board', () => {
     const buttons = allButtons(fixture);
     expect(buttons.length).toBe(9);
     expect(buttons[0].querySelector('.board-stone--black')).not.toBeNull();
+  });
+
+  it('paints seat 0 black and seat 1 white', () => {
+    // **变异测试逼出来的一条。** 把 `seatStone` 改成永远返回 'Black',744 条测试**全绿** ——
+    // 没有任何一条断言过"1 号座位画成白子"。上面那条只查了 0 号,而它本来是在测越界。
+    //
+    // 这条断言的是这次改动的**全部意义**:线上说座位,显示层把座位读成颜色。
+    // 读错了的症状是"两个人下同一种颜色",而那在屏幕上是最明显的一种坏。
+    const fixture = mount();
+    fixture.componentInstance.state.set(
+      makeState({
+        game: {
+          ...makeState().game!,
+          moves: [
+            { ply: 1, row: 0, col: 0, seat: 0, playedAt: 'x' },
+            { ply: 2, row: 0, col: 1, seat: 1, playedAt: 'x' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+
+    const buttons = allButtons(fixture);
+    expect(buttons[0].querySelector('.board-stone--black')).not.toBeNull();
+    expect(buttons[0].querySelector('.board-stone--white')).toBeNull();
+    expect(buttons[1].querySelector('.board-stone--white')).not.toBeNull();
+    expect(buttons[1].querySelector('.board-stone--black')).toBeNull();
   });
 });

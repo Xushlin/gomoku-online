@@ -273,11 +273,22 @@ export class DefaultGameHubService extends GameHubService {
       return;
     }
     const moves = [...current.game.moves, move].sort((a, b) => a.ply - b.ply);
-    const nextTurn: GameSnapshot['currentTurn'] = move.stone === 'Black' ? 'White' : 'Black';
+    // `currentSeat` is deliberately **not** updated here.
+    //
+    // This used to read `move.stone === 'Black' ? 'White' : 'Black'` — a two-seat
+    // rotation, and simply wrong for a three-seat game. The client cannot compute the
+    // next seat either: it does not know the room's seat count (no seat list on the
+    // DTO, no `seatCount` in `GET /api/games`).
+    //
+    // It does not need to. `MakeMoveCommandHandler` awaits `RoomStateChangedAsync`
+    // *before* `MoveMadeAsync`, into the same group over the same connection, so the
+    // authoritative state — including `currentSeat` — has already landed by the time
+    // this runs; `lastAppliedPly` then makes this handler return early. AiSmoke asserts
+    // that ordering over a real connection, because a "no guess needed, the order
+    // guarantees it" argument has to carry the evidence for that order.
     const nextGame: GameSnapshot = {
       ...current.game,
       moves,
-      currentTurn: nextTurn,
       turnStartedAt: move.playedAt,
     };
     this._state.set({ ...current, game: nextGame });
