@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { MoveDto, RoomState } from '../../../core/api/models/room.model';
+import { seatOfSide } from '../../board-seats';
 import {
   BLACK,
   pieceAt,
@@ -139,8 +140,8 @@ export class XiangqiBoard {
   });
 
   private readonly myTurn = computed<boolean>(() => {
-    const mine = this.myStone();
-    return mine !== null && this.state()?.game?.currentTurn === mine;
+    const mySeat = seatOfSide(this.mySide());
+    return mySeat !== null && this.state()?.game?.currentSeat === mySeat;
   });
 
   protected readonly boardDisabled = computed<boolean>(

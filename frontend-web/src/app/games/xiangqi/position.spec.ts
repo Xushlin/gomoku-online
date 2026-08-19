@@ -42,7 +42,7 @@ function move(fromRow: number, fromCol: number, row: number, col: number, ply = 
     ply,
     row,
     col,
-    stone: 'Black',
+    seat: 0,
     playedAt: '2026-08-16T12:00:00Z',
     fromRow,
     fromCol,
@@ -152,7 +152,7 @@ describe('positionAfter', () => {
       ply: 1,
       row: 5,
       col: 5,
-      stone: 'Black',
+      seat: 0,
       playedAt: '2026-08-16T12:00:00Z',
       fromRow: null,
       fromCol: null,
@@ -200,7 +200,7 @@ const SOLDIER_ADVANCE: MoveDto = {
   fromCol: 0,
   row: 5,
   col: 0,
-  stone: 'Black',
+  seat: 0,
   playedAt: 'x',
 };
 const BLACK_ADVANCE: MoveDto = {
@@ -209,7 +209,7 @@ const BLACK_ADVANCE: MoveDto = {
   fromCol: 0,
   row: 4,
   col: 0,
-  stone: 'White',
+  seat: 1,
   playedAt: 'x',
 };
 const THE_CAPTURE: MoveDto = {
@@ -218,7 +218,7 @@ const THE_CAPTURE: MoveDto = {
   fromCol: 0,
   row: 4,
   col: 0,
-  stone: 'Black',
+  seat: 0,
   playedAt: 'x',
 };
 
@@ -242,7 +242,7 @@ describe('lastMoveCaptured', () => {
       fromCol: 1,
       row: 2,
       col: 2,
-      stone: 'White',
+      seat: 1,
       playedAt: 'x',
     };
 
@@ -254,7 +254,7 @@ describe('lastMoveCaptured', () => {
   it('is false for a ply with no origin', () => {
     // The shape a placement game produces. Same rule `positionAfter` follows: a
     // mismatched history draws a board that may be wrong, it never throws.
-    const placement: MoveDto = { ply: 1, row: 4, col: 0, stone: 'Black', playedAt: 'x' };
+    const placement: MoveDto = { ply: 1, row: 4, col: 0, seat: 0, playedAt: 'x' };
 
     expect(lastMoveCaptured([placement])).toBe(false);
   });
@@ -266,7 +266,7 @@ describe('lastMoveCaptured', () => {
       fromCol: 0,
       row: 99,
       col: 0,
-      stone: 'Black',
+      seat: 0,
       playedAt: 'x',
     };
 

@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-import type { MoveDto, RoomState, Stone } from '../../../core/api/models/room.model';
+import type { MoveDto, RoomState } from '../../../core/api/models/room.model';
+import { seatOfSide, FIRST_SEAT } from '../../board-seats';
 
 /**
  * 成语接龙's play surface: the chain played so far, plus a box to add to it.
@@ -40,6 +41,9 @@ import type { MoveDto, RoomState, Stone } from '../../../core/api/models/room.mo
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChainBoard {
+  /** 模板只能读组件成员,所以把这个显示层常量挂上来。 */
+  protected readonly FIRST_SEAT = FIRST_SEAT;
+
   readonly state = input<RoomState | null>(null);
   readonly mySide = input<'black' | 'white' | 'spectator'>('spectator');
   readonly submitting = input<boolean>(false);
@@ -72,17 +76,12 @@ export class ChainBoard {
     return last ? last[last.length - 1] : null;
   });
 
-  /** `Stone` value of the seat the viewer occupies; `null` for spectators. */
-  private readonly myStone = computed<Stone | null>(() => {
-    const side = this.mySide();
-    if (side === 'black') return 'Black';
-    if (side === 'white') return 'White';
-    return null;
-  });
+  /** The seat the viewer occupies; `null` for spectators. */
+  private readonly mySeat = computed<number | null>(() => seatOfSide(this.mySide()));
 
   private readonly myTurn = computed<boolean>(() => {
-    const mine = this.myStone();
-    return mine !== null && this.state()?.game?.currentTurn === mine;
+    const mine = this.mySeat();
+    return mine !== null && this.state()?.game?.currentSeat === mine;
   });
 
   /** Identical predicate to the other two boards, on purpose. */

@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { MoveDto, RoomState, Stone } from '../../../../core/api/models/room.model';
+import { seatStone, seatOfSide } from '../../../../games/board-seats';
 
 /**
  * Gomoku's size, kept as the default so the two existing call sites (room page,
@@ -75,7 +76,7 @@ export class Board {
       const { row, col } = move;
       if (row == null || col == null) continue;
       if (row >= 0 && row < rowCount && col >= 0 && col < colCount) {
-        board[row][col] = move.stone;
+        board[row][col] = seatStone(move.seat);
       }
     }
     return board;
@@ -87,9 +88,8 @@ export class Board {
   });
 
   private readonly myTurn = computed<boolean>(() => {
-    const side = this.mySide();
-    const turn = this.state()?.game?.currentTurn;
-    return (side === 'black' && turn === 'Black') || (side === 'white' && turn === 'White');
+    const mySeat = seatOfSide(this.mySide());
+    return mySeat !== null && this.state()?.game?.currentSeat === mySeat;
   });
 
   protected stoneAt(row: number, col: number): Stone {

@@ -45,7 +45,7 @@ function makeRoomState(): RoomState {
     spectators: [],
     game: {
       id: 'g-1',
-      currentTurn: 'Black' as const,
+      currentSeat: 0,
       startedAt: '2026-04-24T00:00:00Z',
       endedAt: null,
       result: null,
@@ -428,13 +428,13 @@ describe('RoomPage board selection', () => {
     // 红 soldier up its file, 黑 soldier down the same one, then 红 takes it. Real
     // 象棋: soldiers capture straight ahead and 红 moves towards row 0.
     const RED_ADVANCE: MoveDto = {
-      ply: 1, fromRow: 6, fromCol: 0, row: 5, col: 0, stone: 'Black', playedAt: 'x',
+      ply: 1, fromRow: 6, fromCol: 0, row: 5, col: 0, seat: 0, playedAt: 'x',
     };
     const BLACK_ADVANCE: MoveDto = {
-      ply: 2, fromRow: 3, fromCol: 0, row: 4, col: 0, stone: 'White', playedAt: 'x',
+      ply: 2, fromRow: 3, fromCol: 0, row: 4, col: 0, seat: 1, playedAt: 'x',
     };
     const RED_CAPTURES: MoveDto = {
-      ply: 3, fromRow: 5, fromCol: 0, row: 4, col: 0, stone: 'Black', playedAt: 'x',
+      ply: 3, fromRow: 5, fromCol: 0, row: 4, col: 0, seat: 0, playedAt: 'x',
     };
 
     const roomWith = (gameKey: string, moves: readonly MoveDto[]): RoomState => {
@@ -447,7 +447,7 @@ describe('RoomPage board selection', () => {
       await Promise.resolve();
 
       hub.state.set(
-        roomWith('gomoku', [{ ply: 1, row: 7, col: 7, stone: 'Black', playedAt: 'x' }]),
+        roomWith('gomoku', [{ ply: 1, row: 7, col: 7, seat: 0, playedAt: 'x' }]),
       );
       fixture.detectChanges();
 
@@ -483,7 +483,7 @@ describe('RoomPage board selection', () => {
 
       hub.state.set(
         roomWith('idiom-chain', [
-          { ply: 1, row: null, col: null, text: '一五一十', stone: 'Black', playedAt: 'x' },
+          { ply: 1, row: null, col: null, text: '一五一十', seat: 0, playedAt: 'x' },
         ]),
       );
       fixture.detectChanges();

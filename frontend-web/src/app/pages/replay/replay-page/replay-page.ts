@@ -17,15 +17,12 @@ import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XiangqiBoard } from '../../../games/xiangqi/board/xiangqi-board';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
-import type {
-  GameReplayDto,
-  RoomState,
-  Stone,
-} from '../../../core/api/models/room.model';
+import type { GameReplayDto, RoomState } from '../../../core/api/models/room.model';
 import { boardSizeFor } from '../../../games/board-size';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { FIRST_SEAT, SECOND_SEAT } from '../../../games/board-seats';
 
 const STEP_INTERVAL_MS = 700;
 type Speed = 0.5 | 1 | 2;
@@ -102,8 +99,14 @@ export class ReplayPage implements OnInit, OnDestroy {
     const r = this.replay();
     if (!r) return null;
     const slice = r.moves.slice(0, this.currentPly());
-    const lastStone: Stone = slice.length > 0 ? slice[slice.length - 1].stone : 'White';
-    const nextTurn: Stone = lastStone === 'Black' ? 'White' : 'Black';
+    // 回放里"该谁走"**不参与任何判断**:`status` 是 `Finished`,棋盘只读,而
+    // `mySide` 不传(默认 `spectator`),所以 `myTurn` 恒为 false。它只是把这一帧
+    // 补成一个完整的 `RoomState`,好让棋盘组件一行不改地复用。
+    //
+    // 因此这里取"最后一手的下一个座位"的两座位算法,而 MUST NOT 有人拿它当真源:
+    // 三座位棋种的下一手由规则决定(地主先出),不是 `+1 % 2`。
+    const lastSeat = slice.length > 0 ? slice[slice.length - 1].seat : SECOND_SEAT;
+    const nextSeat = lastSeat === FIRST_SEAT ? SECOND_SEAT : FIRST_SEAT;
     return {
       id: r.roomId,
       name: r.name,
@@ -115,7 +118,7 @@ export class ReplayPage implements OnInit, OnDestroy {
       spectators: [],
       game: {
         id: 'replay',
-        currentTurn: nextTurn,
+        currentSeat: nextSeat,
         startedAt: r.startedAt,
         endedAt: r.endedAt,
         result: r.result,

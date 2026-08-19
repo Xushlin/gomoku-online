@@ -44,7 +44,7 @@ public sealed class GetGameReplayQueryHandler : IRequestHandler<GetGameReplayQue
 
         var moves = game.Moves
             .OrderBy(m => m.Ply)
-            .Select(m => new MoveDto(m.Ply, m.Row, m.Col, SeatWire.ToStone(m.Seat), m.PlayedAt, m.FromRow, m.FromCol, m.Text))
+            .Select(m => new MoveDto(m.Ply, m.Row, m.Col, m.Seat, m.PlayedAt, m.FromRow, m.FromCol, m.Text))
             .ToList()
             .AsReadOnly();
 

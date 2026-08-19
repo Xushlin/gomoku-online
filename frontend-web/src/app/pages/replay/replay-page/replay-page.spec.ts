@@ -26,9 +26,9 @@ function makeReplay(overrides: Partial<GameReplayDto> = {}): GameReplayDto {
     winnerUserId: 'u-1',
     endReason: 'Decided',
     moves: [
-      { ply: 1, row: 7, col: 7, stone: 'Black', playedAt: '2026-04-24T00:01:00Z' },
-      { ply: 2, row: 7, col: 8, stone: 'White', playedAt: '2026-04-24T00:02:00Z' },
-      { ply: 3, row: 8, col: 7, stone: 'Black', playedAt: '2026-04-24T00:03:00Z' },
+      { ply: 1, row: 7, col: 7, seat: 0, playedAt: '2026-04-24T00:01:00Z' },
+      { ply: 2, row: 7, col: 8, seat: 1, playedAt: '2026-04-24T00:02:00Z' },
+      { ply: 3, row: 8, col: 7, seat: 0, playedAt: '2026-04-24T00:03:00Z' },
     ],
     ...overrides,
   };
@@ -196,11 +196,11 @@ describe('ReplayPage board selection', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
   const XIANGQI_MOVES: GameReplayDto['moves'] = [
-    { ply: 1, row: 5, col: 0, stone: 'Black', playedAt: 'x', fromRow: 6, fromCol: 0 },
-    { ply: 2, row: 4, col: 0, stone: 'White', playedAt: 'x', fromRow: 3, fromCol: 0 },
+    { ply: 1, row: 5, col: 0, seat: 0, playedAt: 'x', fromRow: 6, fromCol: 0 },
+    { ply: 2, row: 4, col: 0, seat: 1, playedAt: 'x', fromRow: 3, fromCol: 0 },
     // 炮打马: the cannon on (7,1) uses the black cannon on (2,1) as its screen and
     // takes the horse on (0,1).
-    { ply: 3, row: 0, col: 1, stone: 'Black', playedAt: 'x', fromRow: 7, fromCol: 1 },
+    { ply: 3, row: 0, col: 1, seat: 0, playedAt: 'x', fromRow: 7, fromCol: 1 },
   ];
 
   function mountXiangqi() {

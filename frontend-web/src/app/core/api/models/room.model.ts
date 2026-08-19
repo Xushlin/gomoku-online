@@ -57,7 +57,18 @@ export interface MoveDto {
   readonly col: number | null;
   /** The move's text payload; `null` for games played on a board. */
   readonly text?: string | null;
-  readonly stone: Stone;
+  /**
+   * The **seat** that played this move (0-based).
+   *
+   * It used to be `stone: Stone`, translated on the server by
+   * `SeatWire.ToStone(seat)` — which was `seat === 0 ? Black : White`, so
+   * **seat 2 was reported as seat 1**. Measured on a real three-seat room: three
+   * `bid:0` moves came back `Black / White / White`, i.e. the two farmers were
+   * indistinguishable in the move log.
+   *
+   * Colour is a *display* reading of a seat — see `games/board-seats.ts`.
+   */
+  readonly seat: number;
   readonly playedAt: string;
   /**
    * Origin row, present only for games where a move slides a piece from one
@@ -74,7 +85,8 @@ export interface MoveDto {
 
 export interface GameSnapshot {
   readonly id: string;
-  readonly currentTurn: Stone;
+  /** The seat to move (0-based). See {@link MoveDto.seat}. */
+  readonly currentSeat: number;
   readonly startedAt: string;
   readonly endedAt: string | null;
   readonly result: GameResult | null;

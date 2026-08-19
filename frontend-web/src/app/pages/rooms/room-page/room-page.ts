@@ -26,6 +26,7 @@ import { GameEndedDialog, type GameEndedDialogData, type GameEndedDialogResult }
 import { hubErrorToKey, type HubErrorKey } from './hub-error.mapper';
 import { myOutcome } from './outcome';
 import { RoomSidebar } from './sidebar/sidebar';
+import { seatOfSide } from '../../../games/board-seats';
 
 const URGE_COOLDOWN_MS = 30_000;
 const URGE_TOAST_MS = 4_000;
@@ -138,9 +139,8 @@ export class RoomPage implements OnInit, OnDestroy {
     return 'spectator';
   });
   protected readonly myTurn = computed<boolean>(() => {
-    const side = this.mySide();
-    const turn = this.state()?.game?.currentTurn;
-    return (side === 'black' && turn === 'Black') || (side === 'white' && turn === 'White');
+    const mySeat = seatOfSide(this.mySide());
+    return mySeat !== null && this.state()?.game?.currentSeat === mySeat;
   });
   protected readonly turnRemainingMs = computed<number>(() => {
     const g = this.state()?.game;
