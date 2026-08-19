@@ -196,6 +196,41 @@ public interface IDealtGameRules : IGameRules
 }
 
 /// <summary>
+/// 超时**不该判负**的棋种 —— 超时时替那个座位走一步(托管),而不是结束对局。
+/// <para>
+/// 从 <see cref="IGameRules"/> 分出来,理由与 <see cref="IDealtGameRules"/> 相同:两个座位下
+/// "判他负、对手胜"是清楚且唯一的答案,四个现有棋种不需要这个成员,而**骗人的实现是下一个人
+/// 删不掉的东西**。
+/// </para>
+/// <para>
+/// 斗地主需要它:三个座位里"对手"不唯一,而"农民赢"更不是一个 <c>WinnerUserId</c> 装得下的结果。
+/// </para>
+/// </summary>
+public interface ITimeoutFallbackRules : IGameRules
+{
+    /// <summary>
+    /// 替 <paramref name="seat"/> 走一步 —— 它超时了。
+    /// <para>
+    /// MUST 是纯函数、无副作用,并 MUST 返回该座位在该局面下**合法**的一步:返回值会走与真人
+    /// 落子完全相同的路径(经过 <see cref="IGameRules.Apply"/> 校验并判定结果),非法就抛。
+    /// </para>
+    /// <para>
+    /// <b>MUST 保证推进对局。</b> 一个可以合法地无限重复的动作(牌类里"永远过牌")会把超时
+    /// worker 变成一个永不结束的自动对局。斗地主的形式是"能过就过,**不能过时出最小的一手**",
+    /// 而牌只会变少。
+    /// </para>
+    /// <para>
+    /// 这条要求**不是防自旋的护栏**:每一次兜底都要等满一个超时周期(worker 从最后一手的
+    /// <c>PlayedAt</c> 重算),所以最坏是每个周期一步 —— 慢、可见、不会自旋。它是对局质量的
+    /// 要求,所以这里不发明一个"连续兜底次数上限":那个数字会是凭空的。
+    /// </para>
+    /// </summary>
+    /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
+    /// <param name="seat">超时的座位号。</param>
+    MoveIntent MoveOnTimeout(IReadOnlyList<PlayedMove> history, int seat);
+}
+
+/// <summary>
 /// 按棋种键解析 <see cref="IGameRules"/>。未注册的键返回 <c>null</c>,
 /// 由 handler 映射成 404 —— 与 <c>IPuzzleRulesRegistry</c> 同一形状,
 /// 平台上"按游戏键解析实现"只该有一种写法。

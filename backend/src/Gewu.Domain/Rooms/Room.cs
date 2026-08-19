@@ -21,6 +21,45 @@ public sealed record UrgeOutcome(UserId UrgedUser);
 public sealed record GameEndOutcome(GameResult Result, UserId? WinnerUserId);
 
 /// <summary>
+/// 一次超时处理的结果:**要么替他走了一步,要么判他负结束了对局** —— 恰好一个。
+/// <para>
+/// 两种结果不能合成一个,因为调用方要做的事不同:走了一步要广播 <c>MoveMade</c>,
+/// 结束了要广播 <c>GameEnded</c>。用两个可空字段加一条"恰好一个"的不变量,而不是一个
+/// 带标志位的记录 —— 与 <c>MoveIntent</c> 的"位置类 / 文本类"同一种形状,同一个理由:
+/// 一个说不通的组合在构造时就不成立。
+/// </para>
+/// </summary>
+/// <param name="Move">替他走的那一步;判负时为 <c>null</c>。</param>
+/// <param name="Ended">判负的结果;走了一步时为 <c>null</c>。</param>
+public sealed record TurnTimeoutOutcome(MoveOutcome? Move, GameEndOutcome? Ended)
+{
+    /// <summary>替这个座位走了一步。</summary>
+    /// <param name="move">那一步。</param>
+    public static TurnTimeoutOutcome Played(MoveOutcome move) => new(move, null);
+
+    /// <summary>判他负,对局结束。</summary>
+    /// <param name="ended">结束的结果。</param>
+    public static TurnTimeoutOutcome Finished(GameEndOutcome ended) => new(null, ended);
+
+    /// <summary>替他走的那一步;判负时为 <c>null</c>。</summary>
+    public MoveOutcome? Move { get; } = Validate(Move, Ended).move;
+
+    /// <summary>判负的结果;走了一步时为 <c>null</c>。</summary>
+    public GameEndOutcome? Ended { get; } = Validate(Move, Ended).ended;
+
+    private static (MoveOutcome? move, GameEndOutcome? ended) Validate(
+        MoveOutcome? move, GameEndOutcome? ended)
+    {
+        if ((move is null) == (ended is null))
+        {
+            throw new System.InvalidOperationException(
+                "A turn timeout either played a move or ended the game, never both or neither.");
+        }
+        return (move, ended);
+    }
+}
+
+/// <summary>
 /// 房间聚合根:承载玩家、围观者、对局、聊天、催促时间戳与生命周期状态机。
 /// 所有对 <see cref="Game"/> / <see cref="ChatMessage"/> / 围观者的修改 MUST 通过本类的领域方法。
 /// </summary>
@@ -428,14 +467,36 @@ public sealed class Room
                 $"It is not seat {seat}'s turn; current turn is seat {Game.CurrentTurn}.");
         }
 
+        return ApplyMove(seat, intent, now, rules);
+    }
+
+    /// <summary>
+    /// 把一步棋交给规则、记录下来、必要时结束对局 —— <see cref="PlayMove"/> 与超时兜底**共用**这一条。
+    /// <para>
+    /// 抽出来是必须的,不是整洁:兜底那一步也可能**结束对局**(牌类里替人出掉最后一手牌,
+    /// 那一手就赢了),而两条路径各写一遍会让「<c>Apply</c> 是走子合法性与胜负判定的**唯一**入口」
+    /// 变成两个入口。
+    /// </para>
+    /// <para>
+    /// 它**不**验"这人是不是玩家、是不是他的回合" —— 那两条是 <see cref="PlayMove"/> 独有的:
+    /// 超时兜底的座位由 <c>CurrentTurn</c> 给出,没有一个"调用者"需要被核对身份。
+    /// </para>
+    /// </summary>
+    /// <param name="seat">走这一步的座位号。</param>
+    /// <param name="intent">这一步怎么走。</param>
+    /// <param name="now">当前时间(UTC)。</param>
+    /// <param name="rules">本房间棋种的规则。</param>
+    /// <exception cref="Exceptions.InvalidMoveException">规则判这一步非法。</exception>
+    private MoveOutcome ApplyMove(int seat, MoveIntent intent, DateTime now, IGameRules rules)
+    {
         // 盘面语义整个属于规则:越界、重复落子、走法合不合规,全部由 Apply 回答。
-        // 聚合根到这里为止只验了三件事——房间在不在对局中、这人是不是玩家、是不是他的回合。
         // 非法则抛 InvalidMoveException 向上冒泡(对外仍是 409),而 Game 的 Moves
         // 在此之前尚未追加,聚合状态不变。
-        var application = rules.Apply(Game.History(), intent, seat);
+        var application = rules.Apply(Game!.History(), intent, seat);
         var result = application.Result;
 
-        var appended = Game.RecordMove(intent, seat, rules.SeatCount, now);
+        var appended = Game.RecordMove(
+            intent, seat, rules.SeatCount, application.NextSeat, now);
 
         if (result != GameResult.Ongoing)
         {
@@ -494,7 +555,13 @@ public sealed class Room
     /// <exception cref="RoomNotInPlayException">房间不在 Playing。</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="turnTimeoutSeconds"/> &lt; 1。</exception>
     /// <exception cref="TurnNotTimedOutException">尚未到超时阈值。</exception>
-    public GameEndOutcome TimeOutCurrentTurn(DateTime now, int turnTimeoutSeconds)
+    /// <param name="now">当前时间(UTC)。</param>
+    /// <param name="turnTimeoutSeconds">超时阈值(秒),至少 1。</param>
+    /// <param name="rules">
+    /// 本房间棋种的规则。实现 <c>ITimeoutFallbackRules</c> 时,超时**替他走一步**而不是判他负。
+    /// </param>
+    public TurnTimeoutOutcome TimeOutCurrentTurn(
+        DateTime now, int turnTimeoutSeconds, IGameRules rules)
     {
         if (Status != RoomStatus.Playing)
         {
@@ -522,13 +589,24 @@ public sealed class Room
                 $"Current turn has not yet exceeded {turnTimeoutSeconds}s (elapsed {(now - lastActivity).TotalSeconds}s).");
         }
 
+        // 有兜底的棋种:替他走一步,对局继续。那一步走**与真人落子完全相同的路径** ——
+        // 它也可能非法(实现出错),更要紧的是它可能结束对局(替人出掉最后一手牌,那一手就赢了)。
+        if (rules is ITimeoutFallbackRules fallback)
+        {
+            var seat = Game.CurrentTurn;
+            var intent = fallback.MoveOnTimeout(Game.History(), seat);
+            return TurnTimeoutOutcome.Played(ApplyMove(seat, intent, now, rules));
+        }
+
+        // 没有兜底:判他负、对手胜 —— 而"对手"只在两个座位时唯一。这条限制没有被放宽,
+        // 只是上面那条路给了它一个正当的出口:一个三座位棋种若不提供兜底,仍然在这里大声坏掉。
         RequireTwoSeats("Timing a turn out");
 
         var winnerUserId = PlayerAt(OtherSeat(Game.CurrentTurn))!.Value;
 
         Game.FinishWith(GameResult.Decided, winnerUserId, GameEndReason.TurnTimeout, now);
         TransitionStatus(RoomStatus.Finished);
-        return new GameEndOutcome(GameResult.Decided, winnerUserId);
+        return TurnTimeoutOutcome.Finished(new GameEndOutcome(GameResult.Decided, winnerUserId));
     }
 
     /// <summary>

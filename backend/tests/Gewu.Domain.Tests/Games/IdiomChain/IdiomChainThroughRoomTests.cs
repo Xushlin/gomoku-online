@@ -102,7 +102,7 @@ public class IdiomChainThroughRoomTests
         // 进行中时 Result 为 null —— 规则从不写它,而接龙也没有能让规则写它的局面。
         room.Game!.Result.Should().BeNull();
 
-        var ended = room.TimeOutCurrentTurn(Now.AddMinutes(10), turnTimeoutSeconds: 60);
+        var ended = room.TimeOutCurrentTurn(Now.AddMinutes(10), turnTimeoutSeconds: 60, Rules);
 
         ended.Should().NotBeNull();
         room.Status.Should().Be(RoomStatus.Finished);
