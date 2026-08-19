@@ -29,7 +29,7 @@ readonly wordSay = output<string>();
 - **THEN** 两条按序渲染,各自标出走子方
 
 #### Scenario: 轮到自己时可输入
-- **WHEN** `mySide` 与 `currentTurn` 一致且 `status === 'Playing'`
+- **WHEN** `mySide` 对应的座位号等于 `currentSeat` 且 `status === 'Playing'`
 - **THEN** 输入框与提交按钮可用
 
 #### Scenario: 不是自己的回合时只读
@@ -47,8 +47,6 @@ readonly wordSay = output<string>();
 #### Scenario: 空白不发出
 - **WHEN** 输入框为空或只有空白
 - **THEN** 提交 MUST NOT emit
-
----
 
 ### Requirement: 棋盘不判合法性,只把"下一个字"读出来
 

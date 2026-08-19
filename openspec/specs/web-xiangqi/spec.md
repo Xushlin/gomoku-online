@@ -102,7 +102,7 @@ TBD - created by archiving change add-web-xiangqi. Update Purpose after archive.
 - **THEN** MUST NOT emit，MUST NOT 进入选中态
 
 #### Scenario: 非本方回合只读
-- **WHEN** `currentTurn` 是对方
+- **WHEN** `currentSeat` 是对方的座位
 - **THEN** 全部 90 个按钮 `disabled`；点击不触发任何事件
 
 #### Scenario: 观众只读

@@ -241,11 +241,22 @@ HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id
 
 出手方 MUST 记为座位号而 MUST NOT 记为 `Stone`。**持久化格式不变**:两座位棋种的历史数据里,原先的 `Black`/`White` 底层值就是 `1`/`2`,而座位号是 `0`/`1` —— 因此本次 MUST 附带一次值迁移,或以映射保持读写一致,二者选一并写明。MUST NOT 出现"看起来对、但历史局重放后出手方错位"的第三种做法。
 
-线上 DTO **不变**:`MoveDto.stone` 仍为 `'Black' | 'White'`,由 Api 边界从座位 0/1 映射。这是**带触发条件的债** —— 第一个 `SeatCount != 2` 的棋种落地那天,DTO 加座位字段、映射删除。写下这条的理由是:一层没有理由的边界映射,下一个读到它的人会当成手滑。
+线上 DTO SHALL 同样说座位:`MoveDto.seat: int`。**那笔带触发条件的债已经到期并还掉了。**
+
+上一版这里写的是「`MoveDto.stone` 仍为 `'Black' | 'White'`,由 Api 边界从座位 0/1 映射……第一个 `SeatCount != 2` 的棋种落地那天,DTO 加座位字段、映射删除」。斗地主落地,而那个映射
+(`SeatWire.ToStone(seat) = seat === 0 ? Black : White`)对三座位房间**给出错的答案**,不只是不完整:
+实测三手 `bid:0` 的 `stone` 是 `Black / White / White` —— 两个农民在走子记录里重合。
+
+`SeatWire` MUST 被删除,MUST NOT 以任何形式在契约边界上重建。棋色是**显示层**对座位的读法
+(五子棋读 0 号为黑,象棋读 0 号为红),而显示层是它成立的唯一一层。
 
 #### Scenario: Ply 从 1 起严格递增
 - **WHEN** 在同一局依次走 3 步
 - **THEN** 三个 `Move` 的 `Ply` 分别为 1、2、3
+
+#### Scenario: 线上载荷说座位
+- **WHEN** 任一路径产生 `MoveDto`(REST 快照、`MoveMade` 事件、回放)
+- **THEN** 它 MUST 携带 `seat`,MUST NOT 携带棋色;三座位房间里三个座位 MUST 得到三个不同的值
 
 #### Scenario: 历史对局重放后出手方不变
 - **WHEN** 取一局改动前存下的两座位对局,按新代码重放
@@ -366,7 +377,7 @@ Api 层 SHALL 暴露以下端点(均要求 `Authorize`):
 
 Application 层 SHALL 定义 `IRoomNotifier` 契约,至少含:
 
-- `RoomStateChangedAsync(RoomId, RoomStateDto)`
+- `RoomStateChangedAsync(Room, IReadOnlyDictionary<Guid, string>, int)` —— 收**聚合**而不是 DTO,自己投影「非围观者」与「围观者」两份视图(见 `fix-spectator-chat-leak`)。本条此前一直写着 `(RoomId, RoomStateDto)`
 - `PlayerJoinedAsync(RoomId, UserSummaryDto)` / `PlayerLeftAsync(RoomId, UserSummaryDto)`
 - `SpectatorJoinedAsync(RoomId, UserSummaryDto)` / `SpectatorLeftAsync(RoomId, UserSummaryDto)`
 - `MoveMadeAsync(RoomId, MoveDto)`
@@ -376,9 +387,18 @@ Application 层 SHALL 定义 `IRoomNotifier` 契约,至少含:
 
 Handler MUST 在 `SaveChangesAsync` **之后** 调用 `IRoomNotifier`,且 MUST NOT 在事务内调用(避免"事件发了但事务回滚"的不一致)。Api 层实现 `SignalRRoomNotifier : IRoomNotifier`,用 `IHubContext<MatchHub>` 把事件发到对应 SignalR group。
 
+**这个顺序现在有客户端依赖它,所以它 MUST 在线上被量到,而不只是在 handler 里被读到。**
+Web 客户端的 `MoveMade` 处理器**不再自己推算下一手是谁** —— 它此前算的是
+`move.stone === 'Black' ? 'White' : 'Black'`,一个两座位假设。删掉那个推算的理由正是这条顺序:
+权威的 `currentSeat` 先到。**一个"因为顺序如此所以可以删代码"的论证必须自带那个顺序的证据。**
+
 #### Scenario: 落子成功后的事件顺序
 - **WHEN** `MakeMoveCommand` 成功持久化
 - **THEN** Handler 按顺序调 `RoomStateChangedAsync`,然后 `MoveMadeAsync`;若对局结束,再调 `GameEndedAsync`
+
+#### Scenario: 到达顺序在真连接上被量到
+- **WHEN** 一个真 SignalR 客户端同时订阅 `RoomState` 与 `MoveMade`,然后走一步棋
+- **THEN** 第一个提到该 `ply` 的帧 MUST 是 `RoomState`;这条 MUST 由 `AiSmoke` 在 CI 里跑
 
 #### Scenario: 事务失败时不发事件
 - **WHEN** `SaveChangesAsync` 抛 `DbUpdateConcurrencyException`
@@ -941,6 +961,9 @@ public static async Task ApplyAsync(
 
 ### Requirement: `GameSnapshotDto` 扩展 TurnStartedAt / TurnTimeoutSeconds / EndReason
 
+`GameSnapshotDto.CurrentSeat` SHALL 是**座位号**(`int`)。它此前是 `Stone CurrentTurn`,经 `SeatWire` 换算 —— 而那让三座位房间在**两个不同玩家的回合**都报同一个 `White`(实测)。倒计时 UI 要显示"在等谁",
+而一个分不出两个人的字段答不了这个问题。
+
 `GameSnapshotDto` MUST 追加三个字段(纯追加,向后兼容):
 
 - `DateTime TurnStartedAt` —— 当前回合起始时间,等价于 `Moves.OrderBy(Ply).LastOrDefault()?.PlayedAt ?? Game.StartedAt`
@@ -957,7 +980,7 @@ public static async Task ApplyAsync(
 
 #### Scenario: 结束 DTO
 - **WHEN** 对 Finished 房间构造 `GameSnapshotDto`
-- **THEN** `EndReason` 取对应值(Connected5 / Resigned / TurnTimeout)
+- **THEN** `EndReason` 取对应值(`Decided` / `Resigned` / `TurnTimeout`)—— `Connected5` 早在 `generalize-match-domain` 改名为 `Decided`,本条正文此前一直没跟上
 
 #### Scenario: GameEndedDto 总含 EndReason
 - **WHEN** 任一路径触发 `GameEndedAsync` 广播
