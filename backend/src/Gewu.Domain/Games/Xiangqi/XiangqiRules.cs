@@ -74,7 +74,7 @@ public sealed class XiangqiRules : IBoardGameRules
 
     /// <inheritdoc />
     public MoveApplication Apply(
-        IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+        MatchState state, MoveIntent intent, int seat)
     {
         // 座位 0 = 先手 = 红。「Stone.Black 就是红」那条读法在这里落成结构。
         var side = BoardSeats.ToStone(seat);
@@ -99,7 +99,7 @@ public sealed class XiangqiRules : IBoardGameRules
                 $"Position is outside the {Rows}x{Cols} board of '{GameKey}'.");
         }
 
-        var board = Replay(history);
+        var board = Replay(state.History);
 
         var piece = board.At(from)
             ?? throw new InvalidMoveException(

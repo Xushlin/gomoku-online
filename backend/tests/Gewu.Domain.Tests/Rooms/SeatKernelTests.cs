@@ -32,7 +32,7 @@ public class SeatKernelTests
         public bool IsRated => false;
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+            MatchState state, MoveIntent intent, int seat)
             => MoveApplication.Ongoing();
     }
 

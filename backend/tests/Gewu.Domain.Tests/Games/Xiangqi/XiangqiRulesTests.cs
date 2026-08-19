@@ -34,7 +34,7 @@ public class XiangqiRulesTests
 
     private static MoveApplication Apply(
         IReadOnlyList<PlayedMove> history, int fr, int fc, int tr, int tc, int side)
-        => Rules.Apply(history, MoveIntent.Slide(P(fr, fc), P(tr, tc)), side);
+        => Rules.Apply(new MatchState(null, history), MoveIntent.Slide(P(fr, fc), P(tr, tc)), side);
 
     private static Action Applying(
         IReadOnlyList<PlayedMove> history, int fr, int fc, int tr, int tc, int side)
@@ -63,7 +63,7 @@ public class XiangqiRulesTests
     [Fact]
     public void A_move_without_an_origin_is_rejected()
     {
-        var act = () => Rules.Apply(Start, MoveIntent.Place(P(6, 0)), Red);
+        var act = () => Rules.Apply(new MatchState(null, Start), MoveIntent.Place(P(6, 0)), Red);
 
         act.Should().Throw<InvalidMoveException>().WithMessage("*origin*");
     }

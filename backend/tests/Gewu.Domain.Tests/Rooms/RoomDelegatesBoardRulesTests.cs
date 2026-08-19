@@ -42,12 +42,12 @@ public class RoomDelegatesBoardRulesTests
         public Exception? Throw { get; set; }
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+            MatchState state, MoveIntent intent, int seat)
         {
             Calls++;
             LastIntent = intent;
             LastSeat = seat;
-            LastHistoryCount = history.Count;
+            LastHistoryCount = state.History.Count;
             if (Throw is not null)
             {
                 throw Throw;

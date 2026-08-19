@@ -45,7 +45,7 @@ public class XiangqiAiTests
         var move = Ai(difficulty).SelectMove([], RedStone);
 
         // 判据不是「看起来像一步棋」,而是**规则接受它**。
-        Rules.Invoking(r => r.Apply([], move, Red)).Should().NotThrow();
+        Rules.Invoking(r => r.Apply(new MatchState(null, []), move, Red)).Should().NotThrow();
         move.From.Should().NotBeNull("象棋是走子类棋种");
     }
 
@@ -62,7 +62,7 @@ public class XiangqiAiTests
         for (var ply = 0; ply < 12; ply++)
         {
             var move = ai.SelectMove(history, BoardSeats.ToStone(side));
-            var result = Rules.Apply(history, move, side);   // 非法就抛
+            var result = Rules.Apply(new MatchState(null, history), move, side);   // 非法就抛
             history.Add(PlayedMove.Positional(move.From, move.To!.Value, side));
             if (result.Result != GameResult.Ongoing)
             {
@@ -88,7 +88,7 @@ public class XiangqiAiTests
 
         var move = Ai(difficulty).SelectMove(history, RedStone);
 
-        Rules.Invoking(r => r.Apply(history, move, Red)).Should().NotThrow();
+        Rules.Invoking(r => r.Apply(new MatchState(null, history), move, Red)).Should().NotThrow();
     }
 
     // ---- 会吃白送的子 ----
@@ -125,7 +125,7 @@ public class XiangqiAiTests
 
         var move = Ai(BotDifficulty.Easy).SelectMove(history, RedStone);
 
-        Rules.Invoking(r => r.Apply(history, move, Red)).Should().NotThrow();
+        Rules.Invoking(r => r.Apply(new MatchState(null, history), move, Red)).Should().NotThrow();
     }
 
     // ---- 纯函数 ----
@@ -197,7 +197,7 @@ public class XiangqiAiTests
         moves.Should().NotBeEmpty();
         foreach (var move in moves)
         {
-            Rules.Invoking(r => r.Apply([], move, Red)).Should().NotThrow();
+            Rules.Invoking(r => r.Apply(new MatchState(null, []), move, Red)).Should().NotThrow();
         }
     }
 

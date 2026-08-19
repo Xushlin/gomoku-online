@@ -96,18 +96,18 @@ public interface IGameRules
     /// 与最后一步的位置没有直接关系 —— 没有一条塞得进「连 N 子棋盘」。
     /// </para>
     /// <para>
-    /// 收的是**走子历史**而不是一个盘面对象:后者会让聚合根重新知道「有一个盘面」,只是换了个名字,
+    /// 收的是**这一局的状态**(走子历史 + 服务端侧设置)而不是一个盘面对象:后者会让聚合根重新知道「有一个盘面」,只是换了个名字,
     /// 而盘面要么冗余存盘(第二份真源)、要么每次重放(那就是现在的做法)。每步 O(n) 重放在
     /// 五子棋 &lt; 100 步、象棋 &lt; 200 步的量级上是亚毫秒的,而且**此前的 <c>Game.ReplayBoard</c>
     /// 已经在这么做** —— 本抽象没有让它变慢,只是把重放搬进了规则。真慢了就在规则内部加缓存,
     /// 那是规则的私事,接口不用动。
     /// </para>
     /// </summary>
-    /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
+    /// <param name="state">规则知道的关于这一局的一切:走子历史 + 服务端侧的对局设置。</param>
     /// <param name="intent">这一步想怎么走。</param>
-    /// <param name="side">走这一步的一方。</param>
+    /// <param name="seat">走这一步的座位号。</param>
     /// <exception cref="Exceptions.InvalidMoveException">这一步不合法。</exception>
-    MoveApplication Apply(IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat);
+    MoveApplication Apply(MatchState state, MoveIntent intent, int seat);
 }
 
 /// <summary>

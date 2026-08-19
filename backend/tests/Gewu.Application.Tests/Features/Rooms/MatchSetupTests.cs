@@ -38,7 +38,7 @@ public class MatchSetupTests
         public string CreateSetup(int seed) => $"deal-{seed}";
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+            MatchState state, MoveIntent intent, int seat)
             => MoveApplication.Ongoing();
     }
 

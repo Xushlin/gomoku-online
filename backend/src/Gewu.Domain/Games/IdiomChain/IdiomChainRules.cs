@@ -68,7 +68,7 @@ public sealed class IdiomChainRules : IGameRules
 
     /// <inheritdoc />
     public MoveApplication Apply(
-        IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+        MatchState state, MoveIntent intent, int seat)
     {
         // 成语接龙不看是谁出的手 —— 一个成语能不能接上,只取决于历史里的最后一个字。
         // 座位号在这里只是被接受、不被使用,而这正是"内核不该替规则决定这件事"的样子。
@@ -85,13 +85,13 @@ public sealed class IdiomChainRules : IGameRules
         }
 
         // 只按**字**接,不按读音。见本类下方的说明。
-        if (LastWord(history) is { } previous && !LinksOnto(previous, word))
+        if (LastWord(state.History) is { } previous && !LinksOnto(previous, word))
         {
             throw InvalidMoveException.IdiomDoesNotLink(
                 $"'{word}' must start with '{LastCharOf(previous)}', the last character of '{previous}'.");
         }
 
-        foreach (var played in history)
+        foreach (var played in state.History)
         {
             if (string.Equals(played.Text, word, StringComparison.Ordinal))
             {

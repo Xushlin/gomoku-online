@@ -20,7 +20,7 @@ public class IdiomChainRulesTests
     private static PlayedMove Said(string word, int side) => PlayedMove.Said(word, side);
 
     private static MoveApplication Apply(IReadOnlyList<PlayedMove> history, string word, int side)
-        => Rules.Apply(history, MoveIntent.Say(word), side);
+        => Rules.Apply(new MatchState(null, history), MoveIntent.Say(word), side);
 
     [Fact]
     public void It_is_registered_as_a_boardless_rated_human_game()
@@ -88,7 +88,7 @@ public class IdiomChainRulesTests
     [Fact]
     public void A_positional_move_is_refused()
     {
-        var act = () => Rules.Apply([], MoveIntent.Place(new Position(0, 0)), First);
+        var act = () => Rules.Apply(new MatchState(null, []), MoveIntent.Place(new Position(0, 0)), First);
 
         // 缺省的 invalid-move：送错了形状不是三条规则之一。
         act.Should().Throw<InvalidMoveException>()
