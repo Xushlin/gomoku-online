@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **格物 / Gewu** — a multi-platform online game hall. Planned games: idiom games (成语纵横 / 成语接龙 / 猜成语), 五子棋, 一字棋, 中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what they all have in common.
 
-Seven games ship today, and between them they establish the three kernels every later game reuses:
+Eight games ship today, and between them they establish the three kernels every later game reuses:
+
+- **斗地主 (doudizhu)** — the match kernel's **hardest** proof: three seats, a server-only deal, hands visible to one seat each, and a settlement in points rather than ELO. It cost **eleven** changes — six to stop the kernel assuming two players, one for the cards, one for the rules, one for per-seat visibility, and one for the UI — and the aggregate was never touched by any of them. Playable at `/g/doudizhu/lobby`.
 
 - **五子棋 (gomoku)** — the *match* kernel: players register, create/join rooms, play real-time matches (via SignalR) with room chat, spectator chat, and urge-opponent shortcuts; ELO-based ranking with special icons for the top three; human-vs-AI with multiple difficulties; game-record storage and replay.
 - **成语纵横 (idiom-crossword)** — the *puzzle* kernel: a level catalogue, server-authoritative attempts (the answer key never leaves the server), server-counted mistakes and hints, star scoring, and per-level best records.
@@ -26,7 +28,7 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
 ## Current phase
 
-**Seven games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), 中国象棋 (the change that proved which match seams were actually general), 华容道 (the one that did the same to the puzzle kernel), 成语接龙 (the one with no board at all), and 俄罗斯方块 (the only one whose client owns the whole rule set). Detail:
+**Eight games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), 中国象棋 (the change that proved which match seams were actually general), 华容道 (the one that did the same to the puzzle kernel), 成语接龙 (the one with no board at all), 俄罗斯方块 (the only one whose client owns the whole rule set), and 斗地主 (three seats, hidden hands, and the first game whose players do not all see the same room). Detail:
 
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
@@ -362,7 +364,7 @@ Not yet done — platform roadmap:
 
   **What is left for 斗地主, and why it is four more changes.** The card logic is provable on its own; wiring it into the kernel is not one PR. In order: **`generalize-match-outcome`** (done — the result enum was two-player), **`generalize-match-flow`** (a server-only setup value on `Game` that reaches no DTO; rules able to override `(seat+1) % N`, because the landlord leads regardless of who bid last; and a rules-supplied timeout fallback — without it `TurnTimeoutWorker` would throw every 1500 ms into the void, which is exactly `enforce-ai-availability`'s defect), **`add-doudizhu`** (the rules through the real `Room`), **`add-doudizhu-visibility`** (hands are visible to one seat only — `RoomView` currently splits player/spectator and needs a third, per-seat dimension), then **`add-web-doudizhu`**.
 
-  Of that list, **everything except `add-web-doudizhu` is now done**. Everything up to and including **`add-doudizhu`** — `generalize-match-flow` shipped as three narrower changes (`add-match-setup`, `generalize-turn-flow`, `pass-setup-to-rules`) plus the audit `pass-state-to-fallback`, so it was five enabling changes rather than one. `add-doudizhu-visibility` followed, so only **`add-web-doudizhu`** is left. The transport is a question for the first of those, not an open gap: `SayWord(roomId, text)` builds `MakeMoveCommand(Text:)` and inspects no game key, so **the payload path already carries a bid or a play** — a method named for 成语接龙 is in fact the generic text path, and whether 斗地主 should call it under that name is part of the DTO work that deletes `SeatWire`.
+  Of that list, **everything except `add-web-doudizhu` is now done**. Everything up to and including **`add-doudizhu`** — `generalize-match-flow` shipped as three narrower changes (`add-match-setup`, `generalize-turn-flow`, `pass-setup-to-rules`) plus the audit `pass-state-to-fallback`, so it was five enabling changes rather than one. `add-doudizhu-visibility` and `add-web-doudizhu` followed, so **斗地主 is done** — eleven changes end to end, and the match aggregate was not touched by any of them. The transport is a question for the first of those, not an open gap: `SayWord(roomId, text)` builds `MakeMoveCommand(Text:)` and inspects no game key, so **the payload path already carries a bid or a play** — a method named for 成语接龙 is in fact the generic text path, and whether 斗地主 should call it under that name is part of the DTO work that deletes `SeatWire`.
 
   斗地主 will be **unrated**, and the reason is structural rather than a judgement: ELO is a two-player model and this game settles in per-player points, so a ladder over it is a *different* ladder — the same separation tetris's score ladder already has. That also keeps `IsRated ⇒ SeatCount == 2` intact rather than needing an exception.
 
@@ -458,7 +460,21 @@ Not yet done — platform roadmap:
 
   Two limits written down rather than glossed: **the broadcast fan-out has no end-to-end test** (projection is covered by unit tests and real HTTP, the group function is exhaustive by construction, but "three real SignalR connections each receive only their own" needs a `Gewu.Api.Tests` project this repo does not have — so a one-character typo in `ViewGroupName` turns nothing red today). And a mutation-restore step silently reverted two days of work: **python resolves `/tmp/x` to `D:\tmp\x` while msys bash means something else**, and the stale same-named backup there was two days old. What exposed it was not the `dotnet test` right after — **that run printed only the Domain line because the other two projects never compiled**. *"No failures in the output" and "all three projects ran" are not the same claim.*
 
-Discipline: **do not start a new game until the previous one is archived.** Seven games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished. And the rule is narrower than the failure it needs to prevent: `enable-xiangqi-human-play` was not a game, so nothing stopped it sitting unarchived for 36 commits with the live spec contradicting the code. **A merged PR whose change directory is still in `openspec/changes/` is the signal** — check that list, because strict validation will not.
+- [x] **`add-web-doudizhu`** — 斗地主 is playable at `/g/doudizhu/lobby`. **Eight games ship.** Backend: **zero changes**. Verified by bidding and playing a card in a real browser against two real accounts.
+
+  **`mySide` was the real generalization here.** The card table takes `mySeat: number | null`, because `'black' | 'white' | 'spectator'` has nothing to say about a third seat — and following that thread found the rest: `RoomPage.mySeat` reads `seats` (not `black`/`white`, where seat 2 simply does not appear and would be read as a spectator), `mySide` is *derived* from it rather than computed a second way, and `RoomSidebar` takes `mySeat` too — **seat 2 was previously denied the resign and leave buttons**, a consequence of `isPlayer = mySide !== 'spectator'`.
+
+  Measured in the browser, not deduced: clicking **Bid 3** then selecting ♣6 and **Play (1)** produced `moves [(1,0,'bid:3'), (2,0,'play:M')]`, hand 17 → 20 (the kitty absorbed) with `kitty` turning from `null` into three cards, and **two tokens reading two different hand lengths (19 / 17) while the public counts and the table matched exactly** — per-seat trimming holding on the wire.
+
+  **Two defects only a browser could find.** A drawn game still rendered two disabled action buttons — *a button you cannot press is a question on screen: is it me, or is it broken?* And with seat 2 to move, the sidebar said 「白方走棋」 in a game with no white side. The second is the sharper one: that string **was correct for all four two-seat games** and wrong for the third seat — the same shape as `SeatWire`, this time in copy. The fix keys off `seats.length`, not the game key: the seat list is already in the snapshot, and taking an async dependency for a number you already hold turns a synchronous fact into a loading state.
+
+  The board judges no legality, and this is the fourth different answer to that question — 象棋 doesn't judge, 华容道 does, 成语接龙 **splits**, and 斗地主 doesn't judge *at all* except the one rule that needs no rules ("nothing on the table, so you cannot pass"). Combination recognition plus beat comparison live on the server and are the only judge; a second copy would diverge, and divergence reads to a player as a bug.
+
+  The 375 px check was run with **19 cards on screen** (`overflow: 0`) — `generalize-lobby`'s lesson in its exact original form, since an empty hand passes trivially.
+
+  One thing deliberately not done: **renaming `SayWord`.** It is in fact the generic text-payload path — the server only builds `MakeMoveCommand(Text:)` and never looks at the game key — but its name was coined for 成语接龙. No third hub method was added (one payload with two entrances is two validation paths to keep in step), and no drive-by rename either, since that touches server, contract and spec. **Trigger: the day a third text-payload game lands**, when a name coined for one game becomes misleading in three places.
+
+Discipline: **do not start a new game until the previous one is archived.** Eight games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished. And the rule is narrower than the failure it needs to prevent: `enable-xiangqi-human-play` was not a game, so nothing stopped it sitting unarchived for 36 commits with the live spec contradicting the code. **A merged PR whose change directory is still in `openspec/changes/` is the signal** — check that list, because strict validation will not.
 
 Deferred follow-ups, each with a reason:
 
