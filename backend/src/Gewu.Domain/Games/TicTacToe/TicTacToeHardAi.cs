@@ -62,7 +62,7 @@ public sealed class TicTacToeHardAi : IPlacementAi
             var result = trial.PlaceStone(new DomainMove(p, myStone));
             var score = result == GameResult.Ongoing
                 ? Search(trial, myStone, Opponent(myStone), 1, memo)
-                : TerminalScore(result, myStone, 1);
+                : TerminalScore(result, mover: myStone, myStone, 1);
 
             // 严格大于:并列时保留阅读顺序靠前的那一手,保证确定性。
             if (score > bestScore)
@@ -102,7 +102,7 @@ public sealed class TicTacToeHardAi : IPlacementAi
             var result = trial.PlaceStone(new DomainMove(p, toMove));
             var score = result == GameResult.Ongoing
                 ? Search(trial, myStone, Opponent(toMove), depth + 1, memo)
-                : TerminalScore(result, myStone, depth + 1);
+                : TerminalScore(result, mover: toMove, myStone, depth + 1);
 
             best = maximising ? Math.Max(best, score) : Math.Min(best, score);
         }
@@ -114,14 +114,24 @@ public sealed class TicTacToeHardAi : IPlacementAi
     /// <summary>
     /// 终局分。深度参与计分,所以"能赢就早点赢、要输就晚点输" ——
     /// 这也顺带保证了"有立即取胜的一手就走它":同样是赢,浅的分更高。
+    /// <para>
+    /// **这里必须知道刚落子的是谁。** `GameResult.Decided` 只说"判出了胜负",而这一层的
+    /// `result` 来自落 `toMove` 的一手 —— 那可能是我,也可能是对手。此前这个信息是从
+    /// `result` 的颜色里读的,而那个颜色本就是 `PlaceStone` 从它自己的入参抄来的;现在
+    /// 从调用点直接传进来,少绕一圈。
+    /// </para>
     /// </summary>
-    private static int TerminalScore(GameResult result, Stone myStone, int depth)
+    /// <param name="result">落子后的判定结果。</param>
+    /// <param name="mover">刚落子的一方。</param>
+    /// <param name="myStone">AI 自己的棋色。</param>
+    /// <param name="depth">当前搜索深度。</param>
+    private static int TerminalScore(GameResult result, Stone mover, Stone myStone, int depth)
     {
         if (result == GameResult.Draw)
         {
             return 0;
         }
-        return TicTacToeBoard.IsWinFor(result, myStone) ? WinBase - depth : depth - WinBase;
+        return mover == myStone ? WinBase - depth : depth - WinBase;
     }
 
     /// <summary>把盘面编码成一个三进制整数,用作备忘表的键。</summary>

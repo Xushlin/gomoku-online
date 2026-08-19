@@ -100,10 +100,11 @@ public class RoomPlayMoveTests
 
         var finalOutcome = room.PlayMove(b, MoveIntent.Place(new Position(7, 7)), Now.AddSeconds(9), BuiltInGameRules.Gomoku);
 
-        finalOutcome.Result.Should().Be(GameResult.BlackWin);
+        finalOutcome.Result.Should().Be(GameResult.Decided);
         room.Status.Should().Be(RoomStatus.Finished);
         room.Game!.WinnerUserId.Should().Be(b);
-        room.Game.Result.Should().Be(GameResult.BlackWin);
+        room.Game.Result.Should().Be(GameResult.Decided);
+        room.Game.WinnerUserId.Should().Be(room.BlackPlayerId, "连五的是先手座位");
         room.Game.EndedAt.Should().Be(Now.AddSeconds(9));
         room.Game.EndReason.Should().Be(GameEndReason.Decided);
     }

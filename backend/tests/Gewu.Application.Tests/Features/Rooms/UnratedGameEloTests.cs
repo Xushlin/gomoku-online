@@ -116,7 +116,8 @@ public class UnratedGameEloTests
             new MakeMoveCommand(host.Id, room.Id, winning.Row, winning.Col), default);
 
         room.Status.Should().Be(RoomStatus.Finished);
-        room.Game!.Result.Should().Be(GameResult.BlackWin);
+        room.Game!.Result.Should().Be(GameResult.Decided);
+        room.Game.WinnerUserId.Should().Be(room.BlackPlayerId);
         room.Game.EndReason.Should().NotBeNull();
         AssertNoStatsRowsExist();
     }
@@ -231,7 +232,8 @@ public class UnratedGameEloTests
         await Resign().Handle(new ResignCommand(host.Id, room.Id), default);
 
         room.Status.Should().Be(RoomStatus.Finished);
-        room.Game!.Result.Should().Be(GameResult.WhiteWin);
+        room.Game!.Result.Should().Be(GameResult.Decided);
+        room.Game.WinnerUserId.Should().Be(room.WhitePlayerId);
         room.Game.EndReason.Should().Be(GameEndReason.Resigned);
         AssertNoStatsRowsExist();
     }
@@ -269,7 +271,7 @@ public class UnratedGameEloTests
             .Handle(new GetGameReplayQuery(room.Id), default);
 
         replay.Moves.Should().HaveCount(5);
-        replay.Result.Should().Be(GameResult.BlackWin);
+        replay.Result.Should().Be(GameResult.Decided);
     }
 
     // ---- 对照组:五子棋照常计分 ----

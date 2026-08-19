@@ -51,7 +51,7 @@ public sealed class TurnTimeoutCommandHandler : IRequestHandler<TurnTimeoutComma
 
         var outcome = room.TimeOutCurrentTurn(_clock.UtcNow, _gameOptions.TurnTimeoutSeconds);
 
-        await GameEloApplier.ApplyAsync(room, outcome.Result, _rules, _users, cancellationToken);
+        await GameEloApplier.ApplyAsync(room, _rules, _users, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
 
         var ended = new GameEndedDto(

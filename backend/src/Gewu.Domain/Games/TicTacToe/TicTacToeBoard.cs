@@ -55,7 +55,7 @@ internal static class TicTacToeBoard
         foreach (var p in candidates)
         {
             var trial = board.Clone();
-            if (IsWinFor(trial.PlaceStone(new DomainMove(p, stone)), stone))
+            if (IsWinForMover(trial.PlaceStone(new DomainMove(p, stone))))
             {
                 return p;
             }
@@ -63,9 +63,14 @@ internal static class TicTacToeBoard
         return null;
     }
 
-    /// <summary>该结果是否表示 <paramref name="stone"/> 方获胜。</summary>
+    /// <summary>
+    /// 该结果是否表示**刚落子的那一方**获胜。
+    /// <para>
+    /// 此前的签名是 <c>IsWinFor(GameResult, Stone)</c>,而它做的事是把 <c>result</c> 里的颜色与
+    /// 传进来的颜色比一遍 —— 可 <c>PlaceStone</c> 只会为刚落的那颗子判胜,所以那次比较的答案
+    /// 恒等于"判胜了没有"。少一个参数,也少一个"传错颜色"的可能。
+    /// </para>
+    /// </summary>
     /// <param name="result">落子后的判定结果。</param>
-    /// <param name="stone">关注的一方。</param>
-    internal static bool IsWinFor(GameResult result, Stone stone)
-        => stone == Stone.Black ? result == GameResult.BlackWin : result == GameResult.WhiteWin;
+    internal static bool IsWinForMover(GameResult result) => result == GameResult.Decided;
 }

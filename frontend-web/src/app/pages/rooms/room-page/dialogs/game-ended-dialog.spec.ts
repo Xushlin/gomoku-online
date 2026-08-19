@@ -45,23 +45,23 @@ function mount(data: GameEndedDialogData) {
 describe('GameEndedDialog', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
-  it('Black wins and I am Black → title-win', () => {
+  it('I am the winner → title-win', () => {
     const { fixture } = mount({
-      result: 'BlackWin',
+      result: 'Decided',
       winnerUserId: 'u-1',
       endReason: 'Decided',
-      mySide: 'black',
+      myUserId: 'u-1',
       roomId: 'r-1',
     });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('You won!');
   });
 
-  it('Black wins and I am White → title-lose', () => {
+  it('Someone else is the winner → title-lose', () => {
     const { fixture } = mount({
-      result: 'BlackWin',
+      result: 'Decided',
       winnerUserId: 'u-1',
       endReason: 'Resigned',
-      mySide: 'white',
+      myUserId: 'u-2',
       roomId: 'r-1',
     });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('You lost.');
@@ -72,7 +72,7 @@ describe('GameEndedDialog', () => {
       result: 'Draw',
       winnerUserId: null,
       endReason: 'Decided',
-      mySide: 'black',
+      myUserId: 'u-1',
       roomId: 'r-1',
     });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Draw.');
@@ -83,7 +83,7 @@ describe('GameEndedDialog', () => {
       result: 'Draw',
       winnerUserId: null,
       endReason: 'Decided',
-      mySide: 'spectator',
+      myUserId: null,
       roomId: 'r-1',
     });
     const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
@@ -94,10 +94,10 @@ describe('GameEndedDialog', () => {
 
   it('View-replay button closes with "replay"', () => {
     const { fixture, dialogRef } = mount({
-      result: 'BlackWin',
+      result: 'Decided',
       winnerUserId: 'u-1',
       endReason: 'Decided',
-      mySide: 'black',
+      myUserId: 'u-1',
       roomId: 'r-1',
     });
     const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
@@ -110,7 +110,7 @@ describe('GameEndedDialog', () => {
       result: 'Draw',
       winnerUserId: null,
       endReason: 'Decided',
-      mySide: 'spectator',
+      myUserId: null,
       roomId: 'r-1',
     });
     const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;

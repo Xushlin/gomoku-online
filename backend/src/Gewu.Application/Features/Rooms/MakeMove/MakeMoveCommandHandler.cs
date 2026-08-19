@@ -66,7 +66,7 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
 
         if (outcome.Result != GameResult.Ongoing)
         {
-            await GameEloApplier.ApplyAsync(room, outcome.Result, _rules, _users, cancellationToken);
+            await GameEloApplier.ApplyAsync(room, _rules, _users, cancellationToken);
         }
 
         await _uow.SaveChangesAsync(cancellationToken);

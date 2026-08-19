@@ -200,7 +200,7 @@ public class NInARowRulesTests
         board.PlaceStone(new DomainMove(new Position(1, 1), Stone.Black));
         var result = board.PlaceStone(new DomainMove(new Position(1, 2), Stone.Black));
 
-        result.Should().Be(GameResult.BlackWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
@@ -240,7 +240,7 @@ public class NInARowRulesTests
         board.PlaceStone(new DomainMove(new Position(r2, c2), Stone.White));
         var result = board.PlaceStone(new DomainMove(new Position(r3, c3), Stone.White));
 
-        result.Should().Be(GameResult.WhiteWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]

@@ -249,15 +249,20 @@ public class TicTacToeMediumAiTests
         var hard = new TicTacToeHardAi();
         var toMove = Stone.Black; // Medium 先手
         GameResult result;
+        Stone mover;
 
         do
         {
             IPlacementAi ai = toMove == Stone.Black ? medium : hard;
+            mover = toMove;
             result = board.PlaceStone(new DomainMove(ai.SelectMove(board, toMove), toMove));
             toMove = toMove == Stone.Black ? Stone.White : Stone.Black;
         }
         while (result == GameResult.Ongoing);
 
-        result.Should().NotBe(GameResult.BlackWin);
+        // "Medium 赢了"现在是 `判胜 && 最后落子的是 Medium` —— `Decided` 自己不说谁赢,
+        // 而这里最后一手的落子方正是答案。
+        (result == GameResult.Decided && mover == Stone.Black).Should().BeFalse(
+            "Hard MUST NOT lose to Medium");
     }
 }

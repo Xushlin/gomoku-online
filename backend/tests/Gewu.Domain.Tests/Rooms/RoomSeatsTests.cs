@@ -30,7 +30,7 @@ public class RoomSeatsTests
 
         public MoveApplication Apply(
             IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
-            => new(GameResult.Ongoing);
+            => MoveApplication.Ongoing();
     }
 
     private static UserId NewUser() => new(Guid.NewGuid());

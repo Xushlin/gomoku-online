@@ -26,7 +26,7 @@ internal static class GameEloApplier
     /// <summary>
     /// 对对局 <paramref name="room"/> 的黑 / 白方应用 ELO 变更 —— 改的是双方在
     /// <c>room.GameKey</c> 这一个棋种上的 <see cref="UserGameStats"/> 行,其它棋种一个字段不动。
-    /// <paramref name="result"/> 必须是结束态之一(BlackWin / WhiteWin / Draw)。
+    /// 房间的对局必须已经结束 —— 结果与赢家都从 <c>room.Game</c> 读。
     /// <para>
     /// 棋种 <c>IsRated == false</c> 时**直接返回**:不取战绩行、不建行、不改评分。
     /// 对局本身照常结束(<c>Room.Status</c> 进 Finished、<c>EndReason</c> 已写入、
@@ -39,7 +39,6 @@ internal static class GameEloApplier
     /// </para>
     /// </summary>
     /// <param name="room">已结束的房间。</param>
-    /// <param name="result">结束态结果。</param>
     /// <param name="rules">
     /// 棋种规则注册表。解析不出 <c>room.GameKey</c> 时同样跳过计分而不是抛错:
     /// 此刻对局已经结束并记录在案,为了"算不出分"而让整个事务失败,会把一局已经下完的棋
@@ -49,7 +48,6 @@ internal static class GameEloApplier
     /// <param name="cancellationToken">取消令牌。</param>
     public static async Task ApplyAsync(
         Room room,
-        GameResult result,
         IGameRulesRegistry rules,
         IUserRepository users,
         CancellationToken cancellationToken)
@@ -59,19 +57,30 @@ internal static class GameEloApplier
             return;
         }
 
+        // 结果与赢家都从聚合读,而**不从入参读**。三条结束路径都是先 FinishWith 再走到这里,
+        // 所以这两个事实此刻已经落在 Game 上;把它们当参数传进来,等于允许调用方递交一个与
+        // 已记录状态不一致的组合 —— 那正是本次改动在删的那种形状(同一事实的第二份)。
+        var game = room.Game
+            ?? throw new InvalidOperationException(
+                $"Room '{room.Id.Value}' has no game; ELO cannot be applied.");
+
         var whiteId = room.WhitePlayerId!.Value;
         var blackStats = await users.GetOrCreateGameStatsAsync(
             room.BlackPlayerId, room.GameKey, cancellationToken);
         var whiteStats = await users.GetOrCreateGameStatsAsync(
             whiteId, room.GameKey, cancellationToken);
 
-        var outcomeForBlack = result switch
+        // 胜负从 WinnerUserId 读。此前是 `GameResult.BlackWin => Win`,那要求结果枚举自己带着
+        // 颜色 —— 而同一个事实已经在 WinnerUserId 里。`Decided` 而赢家不是这两位玩家之一时
+        // **抛**,不猜一方获胜:那种状态是聚合出了错,静默算一次分会把错扩散到评分里。
+        var outcomeForBlack = (game.Result, game.WinnerUserId) switch
         {
-            GameResult.BlackWin => GameOutcome.Win,
-            GameResult.WhiteWin => GameOutcome.Loss,
-            GameResult.Draw => GameOutcome.Draw,
+            (GameResult.Draw, null) => GameOutcome.Draw,
+            (GameResult.Decided, { } w) when w == room.BlackPlayerId => GameOutcome.Win,
+            (GameResult.Decided, { } w) when w == whiteId => GameOutcome.Loss,
             _ => throw new ArgumentOutOfRangeException(
-                nameof(result), result, "Unexpected GameResult for ELO."),
+                nameof(room), (game.Result, game.WinnerUserId),
+                "Unexpected (result, winner) pair for ELO."),
         };
         var outcomeForWhite = outcomeForBlack switch
         {

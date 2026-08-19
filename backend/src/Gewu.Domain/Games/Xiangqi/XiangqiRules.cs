@@ -143,11 +143,13 @@ public sealed class XiangqiRules : IBoardGameRules
         var opponent = Opponent(side);
         if (!HasAnyLegalMove(after, opponent))
         {
-            return new MoveApplication(
-                side == Stone.Black ? GameResult.BlackWin : GameResult.WhiteWin);
+            // 赢家是走子方,而"走子方"在这一层就是 seat —— 此前这里写的是
+            // `side == Stone.Black ? BlackWin : WhiteWin`,即把三行之前刚从 seat 换出来的
+            // 那个颜色又换了回去。
+            return MoveApplication.Won(seat);
         }
 
-        return new MoveApplication(GameResult.Ongoing);
+        return MoveApplication.Ongoing();
     }
 
     private static Stone Opponent(Stone side) => side == Stone.Black ? Stone.White : Stone.Black;

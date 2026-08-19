@@ -109,7 +109,10 @@ public sealed class Board
 
         if (FormsWin(move.Position, move.Stone))
         {
-            return move.Stone == Stone.Black ? GameResult.BlackWin : GameResult.WhiteWin;
+            // 赢的一方**就是** move.Stone —— 落子类棋种里落子的人不可能因为落子而输。
+            // 所以返回值里不再重复一遍那个颜色:调用方手上就有 `move`,而此前那句
+            // `move.Stone == Black ? BlackWin : WhiteWin` 是把入参重新说了一遍。
+            return GameResult.Decided;
         }
 
         return IsFull() ? GameResult.Draw : GameResult.Ongoing;

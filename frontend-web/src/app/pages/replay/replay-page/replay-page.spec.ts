@@ -22,7 +22,7 @@ function makeReplay(overrides: Partial<GameReplayDto> = {}): GameReplayDto {
     white: { id: 'u-2', username: 'bob' },
     startedAt: '2026-04-24T00:00:00Z',
     endedAt: '2026-04-24T00:05:00Z',
-    result: 'BlackWin',
+    result: 'Decided',
     winnerUserId: 'u-1',
     endReason: 'Decided',
     moves: [

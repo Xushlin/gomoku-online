@@ -48,7 +48,8 @@ public class GameRulesApplyTests
 
         var result = Gomoku.Apply(history, MoveIntent.Place(new Position(7, 7)), BoardSeats.FirstSeat);
 
-        result.Result.Should().Be(GameResult.BlackWin);
+        result.Result.Should().Be(GameResult.Decided);
+        result.WinnerSeat.Should().Be(0, "赢家是走这一步的座位");
     }
 
     [Fact]

@@ -30,14 +30,14 @@ public class ResignCommandHandlerTests
         var ended = await Build().Handle(new ResignCommand(alice.Id, room.Id), default);
 
         // DTO
-        ended.Result.Should().Be(GameResult.WhiteWin);
+        ended.Result.Should().Be(GameResult.Decided);
         ended.WinnerUserId.Should().Be(bob.Id.Value);
         ended.EndReason.Should().Be(GameEndReason.Resigned);
         ended.EndedAt.Should().Be(RoomsFixtures.Now.AddMinutes(1));
 
         // Room state
         room.Status.Should().Be(RoomStatus.Finished);
-        room.Game!.Result.Should().Be(GameResult.WhiteWin);
+        room.Game!.Result.Should().Be(GameResult.Decided);
         room.Game.EndReason.Should().Be(GameEndReason.Resigned);
 
         // ELO applied —— 写的是双方在该棋种上的战绩行
@@ -54,7 +54,7 @@ public class ResignCommandHandlerTests
         // Notifier:RoomStateChanged + GameEnded 各一次,**不**发 MoveMade
         _notifier.Verify(n => n.RoomStateChangedAsync(It.IsAny<Room>(), It.IsAny<IReadOnlyDictionary<Guid, string>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.GameEndedAsync(room.Id,
-            It.Is<GameEndedDto>(d => d.EndReason == GameEndReason.Resigned && d.Result == GameResult.WhiteWin),
+            It.Is<GameEndedDto>(d => d.EndReason == GameEndReason.Resigned && d.Result == GameResult.Decided),
             It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.MoveMadeAsync(It.IsAny<RoomId>(), It.IsAny<MoveDto>(),
             It.IsAny<CancellationToken>()), Times.Never);

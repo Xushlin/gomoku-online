@@ -162,8 +162,8 @@ public class XiangqiThroughRoomTests
 
         var ended = room.Resign(red, Now.AddSeconds(3));
 
-        ended.Result.Should().Be(GameResult.WhiteWin);
-        ended.WinnerUserId.Should().Be(black);
+        ended.Result.Should().Be(GameResult.Decided);
+        ended.WinnerUserId.Should().Be(black, "认输之后赢的是对手");
         room.Game!.EndReason.Should().Be(GameEndReason.Resigned);
         room.Status.Should().Be(RoomStatus.Finished);
     }

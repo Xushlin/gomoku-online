@@ -41,6 +41,24 @@ public sealed class RoomFullException : DomainException
     public RoomFullException(string message) : base("room-full", message) { }
 }
 
+/// <summary>
+/// 这条路径只对两座位棋种有定义,而本房间的座位数不是 2。Api 层映射 409。
+/// <para>
+/// "认输"与"超时判负"都要指出**一个**赢家,而"对手"只在两个座位时唯一。三个座位时它有两个,
+/// 谁赢是那个棋种的规则问题(斗地主里取决于超时的是地主还是农民),不是这里可以默认的。
+/// </para>
+/// <para>
+/// **拒绝而不是猜。** 旧代码在三座位下的行为是:0 号认输判 1 号胜,2 号完全不在话下,而 2 号
+/// 认输会得到 <c>NotAPlayerException</c> —— 三个静默的错答案。今天没有三座位棋种,所以这条
+/// 抛不出来;它存在是为了让第一个三座位棋种**必须**先回答这个问题,而不是继承一个错的默认。
+/// </para>
+/// </summary>
+public sealed class SeatCountNotSupportedException : DomainException
+{
+    /// <inheritdoc />
+    public SeatCountNotSupportedException(string message) : base("seat-count-not-supported", message) { }
+}
+
 /// <summary>用户已在房间内(玩家或围观者),不可重复加入同一角色。Api 层映射 409。</summary>
 public sealed class AlreadyInRoomException : DomainException
 {

@@ -52,7 +52,7 @@ public class GetGameReplayQueryHandlerTests
         dto.White.Id.Should().Be(bob.Id.Value);
         dto.White.Username.Should().Be("Bob");
         dto.Host.Id.Should().Be(alice.Id.Value);
-        dto.Result.Should().Be(GameResult.BlackWin);
+        dto.Result.Should().Be(GameResult.Decided);
         dto.WinnerUserId.Should().Be(alice.Id.Value);
         dto.EndReason.Should().Be(GameEndReason.Decided);
         dto.Moves.Should().HaveCount(9);

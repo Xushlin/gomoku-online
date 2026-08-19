@@ -2,12 +2,14 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { GameEndReason, GameResult } from '../../../../core/api/models/room.model';
+import { myOutcome } from '../outcome';
 
 export interface GameEndedDialogData {
   readonly result: GameResult;
   readonly winnerUserId: string | null;
   readonly endReason: GameEndReason;
-  readonly mySide: 'black' | 'white' | 'spectator';
+  /** The signed-in user's id — the dialog compares it with `winnerUserId`. */
+  readonly myUserId: string | null;
   readonly roomId: string;
 }
 
@@ -25,11 +27,15 @@ export class GameEndedDialog {
   private readonly dialogRef = inject<DialogRef<GameEndedDialogResult>>(DialogRef);
 
   protected readonly titleKey = computed<string>(() => {
-    const { result, mySide } = this.data;
-    if (result === 'Draw') return 'game.ended.title-draw';
-    if (result === 'BlackWin' && mySide === 'black') return 'game.ended.title-win';
-    if (result === 'WhiteWin' && mySide === 'white') return 'game.ended.title-win';
-    return 'game.ended.title-lose';
+    // One judgement, shared with the win/lose sound — see `myOutcome`.
+    switch (myOutcome(this.data, this.data.myUserId)) {
+      case 'draw':
+        return 'game.ended.title-draw';
+      case 'win':
+        return 'game.ended.title-win';
+      case 'lose':
+        return 'game.ended.title-lose';
+    }
   });
 
   protected readonly reasonKey = computed<string>(() => {

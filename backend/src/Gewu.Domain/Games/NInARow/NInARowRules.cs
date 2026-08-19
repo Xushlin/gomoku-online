@@ -150,7 +150,12 @@ public sealed class NInARowRules : INInARowRules
         var board = ReplayBoard(history);
 
         var result = board.PlaceStone(new Move(to, side));
-        return new MoveApplication(result);
+
+        // 判胜时赢家就是走这一步的座位。连 N 子里这一点恒成立,但它是**本棋种**的性质:
+        // 接缝本身允许"走完就输",所以这里要说出来,而不是让内核去猜。
+        return result == GameResult.Decided
+            ? MoveApplication.Won(seat)
+            : new MoveApplication(result, null);
     }
 
     /// <summary>该坐标是否在本棋种界内。<c>Position</c> 只保证非负,上界在这里判。</summary>

@@ -178,12 +178,63 @@ public static class MovePayload
 }
 
 /// <summary>
-/// <c>IGameRules.Apply</c> 的结果:这一步走完之后对局处于什么状态。
+/// <c>IGameRules.Apply</c> 的结果:这一步走完之后对局处于什么状态,以及赢家是谁。
 /// <para>
-/// 只有 <see cref="Result"/> 一个字段。**不带 <c>EndReason</c>** —— 「怎么结束的」有三类
-/// (规则判出 / 认输 / 超时),而规则只可能是第一类,让它每次都回一个恒定值是噪声。
-/// 另外两类由 <c>Room</c> 的另外两条路径各自写入。
+/// **不带 <c>EndReason</c>** —— 「怎么结束的」有三类(规则判出 / 认输 / 超时),而规则只可能是
+/// 第一类,让它每次都回一个恒定值是噪声。另外两类由 <c>Room</c> 的另外两条路径各自写入。
+/// </para>
+/// <para>
+/// **赢家是座位号,不是棋色。** 此前这个信息藏在 <c>GameResult.BlackWin</c> / <c>WhiteWin</c> 里,
+/// 而那两个值只够表示两个座位。落子类棋种里赢家恒等于走子方,但那是**那些棋种**的性质,不是本类型的
+/// —— 一个走完就输的规则(某些棋种的自杀着)在这里表达得出来,而在旧形状里表达不出来。
 /// </para>
 /// </summary>
 /// <param name="Result">走完之后的对局状态。</param>
-public readonly record struct MoveApplication(GameResult Result);
+/// <param name="WinnerSeat">赢家座位号;<see cref="GameResult.Decided"/> 之外一律 <c>null</c>。</param>
+public readonly record struct MoveApplication(GameResult Result, int? WinnerSeat)
+{
+    /// <summary>走完之后的对局状态。</summary>
+    public GameResult Result { get; } = Validate(Result, WinnerSeat).result;
+
+    /// <summary>赢家座位号;<see cref="GameResult.Decided"/> 之外一律 <c>null</c>。</summary>
+    public int? WinnerSeat { get; } = Validate(Result, WinnerSeat).winnerSeat;
+
+    /// <summary>对局仍在进行。</summary>
+    public static MoveApplication Ongoing() => new(GameResult.Ongoing, null);
+
+    /// <summary>某个座位赢了。</summary>
+    /// <param name="seat">赢家座位号。</param>
+    public static MoveApplication Won(int seat) => new(GameResult.Decided, seat);
+
+    /// <summary>和局。</summary>
+    public static MoveApplication Drawn() => new(GameResult.Draw, null);
+
+    /// <summary>
+    /// 强制「有赢家 ⇔ 判出胜负」。
+    /// <para>
+    /// 由**构造器**执行,不由三个工厂保证 —— 与 <see cref="MovePayload"/> 守护「恰好一种载荷」
+    /// 是同一种机制、同一个理由:一个 record struct 的主构造器随时能被直接调用,而工厂只是约定。
+    /// </para>
+    /// </summary>
+    private static (GameResult result, int? winnerSeat) Validate(GameResult result, int? winnerSeat)
+    {
+        if (result == GameResult.Decided && winnerSeat is null)
+        {
+            throw new InvalidMoveException(
+                "A decided game must name the winning seat.");
+        }
+
+        if (result != GameResult.Decided && winnerSeat is not null)
+        {
+            throw new InvalidMoveException(
+                $"A {result} game has no winner; got seat {winnerSeat}.");
+        }
+
+        if (winnerSeat < 0)
+        {
+            throw new InvalidMoveException($"Seat {winnerSeat} is not a seat.");
+        }
+
+        return (result, winnerSeat);
+    }
+}
