@@ -11,8 +11,11 @@ public class JoinRoomCommandHandlerTests
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IRoomNotifier> _notifier = new();
 
+    private readonly FakeSeeds _seeds = new();
+
     private JoinRoomCommandHandler Build() => new(
-        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object, RoomsFixtures.TestGameOptions(), GomokuRules.Registry);
+        _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object,
+        RoomsFixtures.TestGameOptions(), GomokuRules.Registry, _seeds);
 
     [Fact]
     public async Task Success_Starts_Game_And_Notifies()

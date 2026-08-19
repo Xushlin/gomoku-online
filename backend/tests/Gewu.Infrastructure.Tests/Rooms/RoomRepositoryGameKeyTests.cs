@@ -68,7 +68,7 @@ public sealed class RoomRepositoryGameKeyTests : IAsyncLifetime
     private static Room Playing(string name, UserId host, UserId guest, string gameKey)
     {
         var room = Waiting(name, host, gameKey);
-        room.JoinAsPlayer(guest, Now, BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(guest, Now, BuiltInGameRules.Gomoku, setup: null);
         return room;
     }
 

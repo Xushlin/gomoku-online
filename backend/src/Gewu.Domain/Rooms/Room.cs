@@ -148,7 +148,24 @@ public sealed class Room
     /// <summary>
     /// 第二位玩家加入为白方,对局启动。若加入者此前是围观者,先从 <see cref="Spectators"/> 移除。
     /// </summary>
-    public void JoinAsPlayer(UserId userId, DateTime now, IGameRules rules)
+    /// <param name="userId">入座的用户。</param>
+    /// <param name="now">当前时间(UTC)。</param>
+    /// <param name="rules">本房间棋种的规则 —— 座位数由它给。</param>
+    /// <param name="setup">
+    /// 本局的服务端侧设置,由调用方造好传入;不需要设置的棋种传 <c>null</c>。
+    /// <para>
+    /// **没有默认值,而且必须与规则一致。** 默认值会让"忘了传"和"故意不传"在源码里长得
+    /// 一模一样(同 <c>fix-spectator-chat-leak</c> 给 <c>ToState</c> 加必填 <c>RoomView</c>
+    /// 的理由),而这里更进一步:开局那一刻两者不一致就抛,于是"忘了传"是一个异常,
+    /// 不是一局没有牌的斗地主。
+    /// </para>
+    /// <para>
+    /// 由调用方造而不是由本方法从一个种子生成:造它需要熵,而 Domain 不该知道有一个随机源。
+    /// 熵的来源是 Application 层已有的 <c>ISeedProvider</c>。这也让测试可复现 —— 传一个
+    /// 钉住的设置串,而不是"发了什么算什么"。
+    /// </para>
+    /// </param>
+    public void JoinAsPlayer(UserId userId, DateTime now, IGameRules rules, string? setup)
     {
         if (Status != RoomStatus.Waiting)
         {
@@ -180,8 +197,24 @@ public sealed class Room
         // 第二个人坐进来之后房间**留在 Waiting**。
         if (_seats.Count == rules.SeatCount)
         {
+            // 一致性校验发生在**开局那一刻**,而不是每一次入座:否则三人棋种的前两次入座
+            // 都得携带一份最终会被丢掉的设置,而那份设置的存在会误导下一个读代码的人。
+            var needsSetup = rules is IDealtGameRules;
+            if (needsSetup && setup is null)
+            {
+                throw new MissingGameSetupException(
+                    $"'{rules.GameKey}' deals a setup at start; none was supplied.");
+            }
+            if (!needsSetup && setup is not null)
+            {
+                // 第二个方向同样要抛:一个把设置传给不需要设置的棋种的调用方,拿着一个错误的
+                // 心智模型,而那份设置会被存下来再也没人读。
+                throw new MissingGameSetupException(
+                    $"'{rules.GameKey}' has no setup, but one was supplied.");
+            }
+
             TransitionStatus(RoomStatus.Playing);
-            Game = new Game(Id, now);
+            Game = new Game(Id, now, setup);
         }
     }
 

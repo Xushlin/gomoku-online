@@ -46,7 +46,7 @@ public class RoomDissolveTests
     public void Dissolve_Playing_Room_Throws_RoomNotWaiting()
     {
         var room = NewWaitingRoom(out var hostId);
-        room.JoinAsPlayer(UserId.NewId(), Now.AddMinutes(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(UserId.NewId(), Now.AddMinutes(1), BuiltInGameRules.Gomoku, setup: null);
         room.Status.Should().Be(RoomStatus.Playing);
 
         var act = () => room.Dissolve(hostId);
@@ -59,7 +59,7 @@ public class RoomDissolveTests
     {
         var room = NewWaitingRoom(out var hostId);
         var whiteId = UserId.NewId();
-        room.JoinAsPlayer(whiteId, Now.AddMinutes(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(whiteId, Now.AddMinutes(1), BuiltInGameRules.Gomoku, setup: null);
 
         // 黑方横向连五结束对局
         for (var c = 0; c <= 3; c++)

@@ -59,7 +59,7 @@ public class RoomSeatsTests
         var room = WaitingRoom(host);
         var guest = NewUser();
 
-        room.JoinAsPlayer(guest, Now.AddSeconds(1), new SeatsRules(2));
+        room.JoinAsPlayer(guest, Now.AddSeconds(1), new SeatsRules(2), setup: null);
 
         room.Status.Should().Be(RoomStatus.Playing);
         room.Game.Should().NotBeNull();
@@ -73,14 +73,14 @@ public class RoomSeatsTests
         var host = NewUser();
         var room = WaitingRoom(host);
 
-        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules, setup: null);
 
         // 这是本变更新增的状态:坐进来了,但还没满。两人棋种下这一步就开局了。
         room.Status.Should().Be(RoomStatus.Waiting);
         room.Game.Should().BeNull();
         room.Seats.Should().HaveCount(2);
 
-        room.JoinAsPlayer(NewUser(), Now.AddSeconds(2), rules);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(2), rules, setup: null);
 
         room.Status.Should().Be(RoomStatus.Playing);
         room.Game.Should().NotBeNull();
@@ -95,8 +95,8 @@ public class RoomSeatsTests
         var second = NewUser();
         var third = NewUser();
         var room = WaitingRoom(host);
-        room.JoinAsPlayer(second, Now.AddSeconds(1), rules);
-        room.JoinAsPlayer(third, Now.AddSeconds(2), rules);
+        room.JoinAsPlayer(second, Now.AddSeconds(1), rules, setup: null);
+        room.JoinAsPlayer(third, Now.AddSeconds(2), rules, setup: null);
 
         var turns = new List<int> { room.Game!.CurrentTurn };
         foreach (var (player, i) in new[] { host, second, third, host }.Select((p, i) => (p, i)))
@@ -115,10 +115,10 @@ public class RoomSeatsTests
     {
         var rules = new SeatsRules(3);
         var room = WaitingRoom(NewUser());
-        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules);
-        room.JoinAsPlayer(NewUser(), Now.AddSeconds(2), rules);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules, setup: null);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(2), rules, setup: null);
 
-        var act = () => room.JoinAsPlayer(NewUser(), Now.AddSeconds(3), rules);
+        var act = () => room.JoinAsPlayer(NewUser(), Now.AddSeconds(3), rules, setup: null);
 
         // 满了之后房间已经是 Playing,所以先撞上"不是 Waiting"那条 —— 这也是今天两人棋种的行为。
         act.Should().Throw<RoomNotWaitingException>();
@@ -131,7 +131,7 @@ public class RoomSeatsTests
         var host = NewUser();
         var room = WaitingRoom(host);
 
-        var act = () => room.JoinAsPlayer(host, Now.AddSeconds(1), rules);
+        var act = () => room.JoinAsPlayer(host, Now.AddSeconds(1), rules, setup: null);
 
         act.Should().Throw<AlreadyInRoomException>()
             .WithMessage("*already seated*");
@@ -143,7 +143,7 @@ public class RoomSeatsTests
         var host = NewUser();
         var guest = NewUser();
         var room = WaitingRoom(host);
-        room.JoinAsPlayer(guest, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(guest, Now.AddSeconds(1), BuiltInGameRules.Gomoku, setup: null);
 
         room.SwapPlayers(Now.AddSeconds(2));
 
@@ -159,8 +159,8 @@ public class RoomSeatsTests
     {
         var rules = new SeatsRules(3);
         var room = WaitingRoom(NewUser());
-        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules);
-        room.JoinAsPlayer(NewUser(), Now.AddSeconds(2), rules);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules, setup: null);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(2), rules, setup: null);
 
         // EF 物化时不保证顺序,而 `PlayerAt` / 轮转都按座位号说话 —— 所以顺序由 Seats 保证,
         // 不由加载顺序保证。

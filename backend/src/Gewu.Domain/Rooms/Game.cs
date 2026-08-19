@@ -52,6 +52,25 @@ public sealed class Game
     public int CurrentTurn { get; private set; }
 
     /// <summary>
+    /// 本局的**服务端侧对局设置**;不需要设置的棋种为 <c>null</c>。
+    /// <para>
+    /// **内核从不解释它。** 不读内容、不校验格式、不依赖长度 —— 它由规则造
+    /// (<c>IDealtGameRules.CreateSetup</c>)、由规则读,对本类而言只是一段随本局存下来的字节。
+    /// </para>
+    /// <para>
+    /// **它 MUST NOT 出现在任何 DTO 上。** 斗地主的设置就是三家的底牌 —— 与成语纵横
+    /// 「答案不出服务端」是同一条平台规则:*客户端算不出来的东西,客户端就骗不了*。
+    /// 将来每个座位各自收到自己那一份是另一件事;整份设置永远不出服务端。这一条由一条
+    /// 反射断言强制(DTO 命名空间下不得有名字含 Setup 的成员),而不是靠记性。
+    /// </para>
+    /// <para>
+    /// 不需要设置时是 <c>null</c> 而 MUST NOT 是 <c>""</c>:空字符串会让"这个棋种没有设置"
+    /// 与"设置是空的"看起来一样。
+    /// </para>
+    /// </summary>
+    public string? Setup { get; private set; }
+
+    /// <summary>
     /// 乐观并发令牌。SQLite 没有原生 rowversion,由 Domain 在每次状态变更后手动更新;
     /// EF 以 <c>IsConcurrencyToken</c> 形式使用,冲突时抛 <c>DbUpdateConcurrencyException</c>。
     /// </summary>
@@ -66,11 +85,12 @@ public sealed class Game
     // EF 物化用。
     private Game() { }
 
-    internal Game(RoomId roomId, DateTime startedAt)
+    internal Game(RoomId roomId, DateTime startedAt, string? setup)
     {
         Id = Guid.NewGuid();
         RoomId = roomId;
         StartedAt = startedAt;
+        Setup = setup;
         EndedAt = null;
         Result = null;
         WinnerUserId = null;

@@ -29,6 +29,7 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
     private readonly IUnitOfWork _uow;
     private readonly GameOptions _gameOptions;
     private readonly IGameRulesRegistry _rules;
+    private readonly ISeedProvider _seeds;
 
     /// <inheritdoc />
     public CreateAiRoomCommandHandler(
@@ -37,7 +38,8 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
         IDateTimeProvider clock,
         IUnitOfWork uow,
         Microsoft.Extensions.Options.IOptions<GameOptions> gameOptions,
-        IGameRulesRegistry rules)
+        IGameRulesRegistry rules,
+        ISeedProvider seeds)
     {
         _rooms = rooms;
         _users = users;
@@ -45,6 +47,7 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
         _uow = uow;
         _gameOptions = gameOptions.Value;
         _rules = rules;
+        _seeds = seeds;
     }
 
     /// <inheritdoc />
@@ -75,7 +78,7 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares unknown game '{request.GameKey}'.");
 
-        room.JoinAsPlayer(bot.Id, now, rules);
+        room.JoinAsPlayer(bot.Id, now, rules, MatchSetup.For(rules, _seeds));
         // Human picked White → seat the bot on Black so it plays first. Same
         // transaction as create + join, so the AI worker can't race with
         // the swap (room invisible until commit).

@@ -5,6 +5,26 @@ using Microsoft.Extensions.Options;
 namespace Gewu.Application.Tests.Features.Rooms;
 
 /// <summary>Rooms handler 测试共用的 builder / mock 设置。</summary>
+/// <summary>
+/// 固定种子的 <see cref="ISeedProvider"/> —— 顺带**数一数它被调了几次**。
+/// <para>
+/// 次数是要断言的东西之一:不需要设置的棋种 MUST NOT 取随机数。一个每局都取一次随机数
+/// 却没人用的调用,会让"这个棋种有随机性吗"这个问题在读代码时得不到确定答案。
+/// </para>
+/// </summary>
+internal sealed class FakeSeeds(int seed = 20260819) : ISeedProvider
+{
+    /// <summary>被调用了几次。</summary>
+    public int Calls { get; private set; }
+
+    /// <inheritdoc />
+    public int NextSeed()
+    {
+        Calls++;
+        return seed;
+    }
+}
+
 internal static class RoomsFixtures
 {
     public static readonly DateTime Now = new(2026, 4, 18, 12, 0, 0, DateTimeKind.Utc);
@@ -49,7 +69,7 @@ internal static class RoomsFixtures
         User host, User challenger, string name = "Test Room", string gameKey = GameKeys.Gomoku)
     {
         var room = Room.Create(RoomId.NewId(), name, host.Id, Now, gameKey);
-        room.JoinAsPlayer(challenger.Id, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(challenger.Id, Now.AddSeconds(1), BuiltInGameRules.Gomoku, setup: null);
         return room;
     }
 

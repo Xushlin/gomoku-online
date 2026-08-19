@@ -162,6 +162,40 @@ public interface INInARowRules : IBoardGameRules
 }
 
 /// <summary>
+/// 开局需要一份**服务端侧对局设置**的棋种 —— 斗地主的发牌是第一个。
+/// <para>
+/// 从 <see cref="IGameRules"/> 分出来,理由与 <see cref="IBoardGameRules"/> /
+/// <see cref="INInARowRules"/> 当初分出来时相同:留在基接口上,四个现有棋种就得各写一个
+/// 骗人的实现(<c>=> null</c> 之类),而**骗人的实现是下一个人删不掉的东西** —— 他无从知道
+/// 有没有调用方。**接口只承载对每个实现都成立的东西。**
+/// </para>
+/// <para>
+/// 五子棋 / 一字棋 / 象棋 / 成语接龙都不需要秘密:它们的开局是常量,走子历史本来就广播,
+/// 没有任何东西要藏。
+/// </para>
+/// </summary>
+public interface IDealtGameRules : IGameRules
+{
+    /// <summary>
+    /// 造一份本局的设置。**同一个种子 MUST 产出同一个字符串** —— 重放靠这一点,测试钉住
+    /// 一局牌也靠这一点。
+    /// <para>
+    /// 实现 MUST NOT 用 <c>System.Random</c>:它的算法在 .NET 版本之间变过,而这条要求
+    /// 跨版本成立(同 <c>TetrisPieceSequence</c> 与 <c>DoudizhuDeal</c> 上写下的理由)。
+    /// </para>
+    /// <para>
+    /// 种子由**调用方**给,取自 Application 层的 <c>ISeedProvider</c>。Domain 不自己取随机数,
+    /// 所以这个接口收一个 <c>int</c> 而不是一个随机源。
+    /// </para>
+    /// <para>
+    /// 返回的字符串对内核完全不透明:<c>Game</c> 存它、不读它。见 <c>Game.Setup</c>。
+    /// </para>
+    /// </summary>
+    /// <param name="seed">开局种子。</param>
+    string CreateSetup(int seed);
+}
+
+/// <summary>
 /// 按棋种键解析 <see cref="IGameRules"/>。未注册的键返回 <c>null</c>,
 /// 由 handler 映射成 404 —— 与 <c>IPuzzleRulesRegistry</c> 同一形状,
 /// 平台上"按游戏键解析实现"只该有一种写法。

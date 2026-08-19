@@ -49,7 +49,7 @@ public class RoomOutcomeTests
         for (var i = 1; i < seatCount; i++)
         {
             var next = NewUser();
-            room.JoinAsPlayer(next, Now.AddSeconds(i), rules);
+            room.JoinAsPlayer(next, Now.AddSeconds(i), rules, setup: null);
             players.Add(next);
         }
         return (room, players);

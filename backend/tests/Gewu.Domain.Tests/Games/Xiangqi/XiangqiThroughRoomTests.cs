@@ -30,7 +30,7 @@ public class XiangqiThroughRoomTests
         var red = UserId.NewId();
         var black = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "xiangqi room", red, Now, GameKeys.Xiangqi);
-        room.JoinAsPlayer(black, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(black, Now.AddSeconds(1), BuiltInGameRules.Gomoku, setup: null);
         return (room, red, black);
     }
 

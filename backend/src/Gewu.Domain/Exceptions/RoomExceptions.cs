@@ -42,6 +42,23 @@ public sealed class RoomFullException : DomainException
 }
 
 /// <summary>
+/// 开局时"这个棋种要不要一份服务端侧设置"与调用方给的东西不一致。Api 层映射 400。
+/// <para>
+/// 两个方向都用它:要设置而没给(会开出一局没有牌的斗地主),以及不要设置却给了
+/// (调用方拿着一个错误的心智模型,而那份设置会被存下来再也没人读)。
+/// </para>
+/// <para>
+/// 这是**调用方的错**,不是玩家的错 —— 客户端做不出这个请求。它存在是为了让"忘了传"
+/// 变成一个异常而不是一个静默的 <c>null</c>。
+/// </para>
+/// </summary>
+public sealed class MissingGameSetupException : DomainException
+{
+    /// <inheritdoc />
+    public MissingGameSetupException(string message) : base("missing-game-setup", message) { }
+}
+
+/// <summary>
 /// 这条路径只对两座位棋种有定义,而本房间的座位数不是 2。Api 层映射 409。
 /// <para>
 /// "认输"与"超时判负"都要指出**一个**赢家,而"对手"只在两个座位时唯一。三个座位时它有两个,

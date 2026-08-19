@@ -66,7 +66,7 @@ public class SpectatorsAcrossGamesTests
         var c = UserId.NewId();
         var d = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "watched room", a, Now, gameKey);
-        room.JoinAsPlayer(b, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
+        room.JoinAsPlayer(b, Now.AddSeconds(1), BuiltInGameRules.Gomoku, setup: null);
         room.JoinAsSpectator(c);
         room.JoinAsSpectator(d);
         return (room, a, b, c, d);
