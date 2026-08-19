@@ -18,6 +18,8 @@ API 契约:
 - `leaveRoom(roomId: string): Promise<void>`
 - `joinSpectatorGroup(roomId: string): Promise<void>`
 - `makeMove(roomId: string, row: number, col: number): Promise<void>`
+- `sayWord(roomId: string, word: string): Promise<void>` —— 文本类棋种(成语接龙)
+- `reconnect(): Promise<void>`
 - `movePiece(roomId: string, fromRow: number, fromCol: number, row: number, col: number): Promise<void>`
 - `sendChat(roomId: string, content: string, channel: 'Room' | 'Spectator'): Promise<void>`
 - `urge(roomId: string): Promise<void>`
@@ -38,8 +40,16 @@ API 契约:
 - **THEN** `state()` signal MUST 返回完全等价的新对象(整体替换,不增量合并)
 
 #### Scenario: state 在 MoveMade 事件后增量更新
-- **WHEN** 服务端发出 `MoveMade` 事件(`MoveDto { ply, row, col, stone, playedAt }`)
-- **THEN** `state()?.game?.moves` MUST 追加该 Move(按 `ply` 排序);`state()?.game?.currentTurn` MUST 翻转;`state()?.game?.turnStartedAt` MUST 更新为新值(如事件或随后 `RoomState` 提供的)
+- **WHEN** 服务端发出 `MoveMade` 事件(`MoveDto { ply, row, col, seat, playedAt }`)
+- **THEN** `state()?.game?.moves` MUST 追加该 Move(按 `ply` 排序);`state()?.game?.turnStartedAt` MUST 更新;而 `state()?.game?.currentSeat` MUST **保持不变**
+
+  **本场景此前要求 `currentTurn` MUST 翻转,而那是一个两座位假设。** 实现写的是
+  `move.stone === 'Black' ? 'White' : 'Black'`,三座位棋种下它是错的;客户端也算不出来 ——
+  它不知道房间有几个座位(DTO 没有座位表,`GET /api/games` 没有 `seatCount`)。
+
+  它不需要算:权威状态先到(见 `room-and-gameplay` 的到达顺序要求),所以 `currentSeat`
+  在这个 handler 跑之前就已经是对的,而 `lastAppliedPly` 会让它直接返回。**删掉一个猜测的
+  论证必须自带那个顺序的证据**,证据在 `AiSmoke` 里,对着真连接量。
 
 #### Scenario: gameEnded signal 在 GameEnded 事件后为 non-null
 - **WHEN** 服务端发出 `GameEnded`
@@ -143,7 +153,7 @@ API 契约:
 - 房间名 `state.name` + 房主 `state.host.username`(`game.room.*` i18n)。**房主用户名 SHALL 是 `routerLink` 链接到 `/users/<host.id>`,使用 `.username-link` class + `(click)="$event.stopPropagation()"`**。
 - 黑方座位 `state.black?.username` / 白方座位 `state.white?.username`,每个座位显示是否在线(未实现在线探测则显示 `username` 字面量)。**座位上的 username SHALL 同样是 `/users/<id>` 链接**(空座位文案不变)。
 - 当前状态徽章(`Waiting / Playing / Finished`)
-- 当前回合指示:`state.game.currentTurn === 'Black' ? game.turn.black-turn : game.turn.white-turn`;若 `mySide()` 与 `currentTurn` 对应,额外突出 `game.turn.your-turn`
+- 当前回合指示:`state.game.currentSeat === FIRST_SEAT ? game.turn.black-turn : game.turn.white-turn`;若 `mySide()` 对应的座位等于 `currentSeat`,额外突出 `game.turn.your-turn`
 - **回合倒计时**:
   - 计算 `deadline = state.game.turnStartedAt + state.game.turnTimeoutSeconds`
   - 显示剩余时间 `M:SS`,驱动源是 RoomPage 的 1 Hz `now` signal
@@ -160,7 +170,7 @@ API 契约:
 所有文案走 `| transloco`,零硬编码。
 
 #### Scenario: 我方回合突出
-- **WHEN** `mySide() === 'black'` 且 `state.game.currentTurn === 'Black'`
+- **WHEN** `mySide() === 'black'` 且 `state.game.currentSeat === 0`
 - **THEN** 侧栏 MUST 同时显示 `game.turn.black-turn` 与 `game.turn.your-turn`
 
 #### Scenario: 倒计时低于阈值强调
@@ -182,8 +192,6 @@ API 契约:
 #### Scenario: 用户名是链接
 - **WHEN** 侧栏渲染 host=alice、black=alice、white=bob
 - **THEN** "alice" 与 "bob" 文本均为 `<a>`,`href` 解析到 `/users/<id>`;有 `username-link` class
-
----
 
 ### Requirement: `ChatPanel` —— 双通道不对称可见性
 
@@ -244,11 +252,11 @@ RoomPage 的"催促对手"按钮 SHALL:
 Urge 被叫方:hub `urged$` emit → RoomPage 显示顶部 toast(i18n `game.urge.toast`)~ 4 秒后自动消失。Toast 使用 `var(--color-*)` 着色,不用 Material snackbar。
 
 #### Scenario: 对方回合可用,本方回合禁用
-- **WHEN** `mySide() === 'black'` 且 `currentTurn === 'White'`
+- **WHEN** `mySide() === 'black'` 且 `currentSeat === 1`
 - **THEN** Urge 按钮启用;点击后发 `hub.urge(roomId)`
 
 #### Scenario: 本方回合禁用
-- **WHEN** `currentTurn === 'Black'` 且 `mySide() === 'black'`
+- **WHEN** `currentSeat === 0` 且 `mySide() === 'black'`
 - **THEN** Urge 按钮 `disabled`
 
 #### Scenario: 冷却中禁用
@@ -258,8 +266,6 @@ Urge 被叫方:hub `urged$` emit → RoomPage 显示顶部 toast(i18n `game.urge
 #### Scenario: 被叫方 toast
 - **WHEN** 对手 urge 了我
 - **THEN** RoomPage 页顶 MUST 出现 toast 显示 `game.urge.toast` 翻译文本,大约 4 秒后消失
-
----
 
 ### Requirement: Game-ended CDK Dialog 由 `gameEnded` signal 驱动
 
@@ -341,53 +347,33 @@ abstract dissolve(roomId: string): Observable<void>;
 
 ### Requirement: RoomState 类型完整化 —— scaffold 留下的 `unknown` 被完整类型替换
 
-`src/app/core/api/models/room.model.ts` SHALL 声明与后端 DTO 对齐的完整类型:
-
-```ts
-export type Stone = 'Empty' | 'Black' | 'White';
-export type GameResult = 'Ongoing' | 'Decided' | 'Draw';
-export type GameEndReason = 'Decided' | 'Resigned' | 'TurnTimeout';
-export type ChatChannel = 'Room' | 'Spectator';
-
-export interface MoveDto {
-  readonly ply: number;
-  readonly row: number | null;        // 无盘面棋种为 null
-  readonly col: number | null;
-  readonly text?: string | null;      // 文本类棋种的载荷
-  readonly stone: Stone;
-  readonly playedAt: string;
-  readonly fromRow?: number | null;   // 走子类棋种的起点
-  readonly fromCol?: number | null;
-}
-
-export interface GameSnapshot {
-  readonly id: string;
-  readonly currentTurn: Stone;
-  readonly startedAt: string;
-  readonly endedAt: string | null;
-  readonly result: GameResult | null;
-  readonly winnerUserId: string | null;
-  readonly endReason: GameEndReason | null;
-  readonly turnStartedAt: string;
-  readonly turnTimeoutSeconds: number;
-  readonly moves: readonly MoveDto[];
-}
-
-export interface GameEndedDto {
-  readonly result: GameResult;
-  readonly winnerUserId: string | null;
-  readonly endedAt: string;
-  readonly endReason: GameEndReason;
-}
-```
-
+`src/app/core/api/models/room.model.ts` SHALL 声明与后端 DTO 对齐的完整类型,覆盖
+`Stone` / `GameResult` / `GameEndReason` / `ChatChannel` 四个字符串字面量联合,以及
+`MoveDto` / `GameSnapshot` / `GameEndedDto` / `RoomState` 四个接口。
 `RoomState.game` SHALL 为 `GameSnapshot | null`;`RoomState.chatMessages` SHALL 为 `readonly ChatMessage[]`。
 
-所有字段名 MUST 与后端 System.Text.Json camelCase + `JsonStringEnumConverter` 产生的 wire 名完全对齐。**枚举类型 MUST 是字符串字面量并联类型**,不是数字 enum。
+所有字段名 MUST 与后端 System.Text.Json camelCase + `JsonStringEnumConverter` 产生的 wire 名完全对齐。
+**枚举类型 MUST 是字符串字面量并联类型**,不是数字 enum。
 
-**`GameResult` MUST NOT 含带颜色的取值。** 服务端合并了 `BlackWin` / `WhiteWin`,理由是那两个值与 `winnerUserId` 说的是同一件事。客户端因此 MUST 用 `winnerUserId` 判断"谁赢了",MUST NOT 拿结果值去跟自己的棋色比 —— 后者在座位数超过两个时无从下手,而 `winnerUserId` 一直都在这两个 DTO 里。
+**这条要求此前把那三个接口的源码整段抄在这里,而它自己的正文就写着「一条把源码整段抄进来的
+requirement,会在每一次那段源码变化时静静过期」。** 它随后又过期了一次(本次改动),所以这次
+不是更新那份抄本,而是**删掉它**:要求改为点出**哪些类型必须存在**与**哪些决定必须成立**,
+逐字段的形状由 TypeScript 自己保证 —— 那是编译器的活,不是规格的活。
 
-`MoveDto` / `GameEndReason` 的取值在本条中一并订正:`generalize-match-payload` 与 `add-hub-error-codes` 之后,`row` / `col` 可空、`text` / `fromRow` / `fromCol` 存在、`Connected5` 已改名 `Decided`,而本 requirement 里的代码块此前仍是那几次改动之前的样子。**一条把源码整段抄进来的 requirement,会在每一次那段源码变化时静静过期**;订正它是本次改动的副产品,不是它的目的。
+以下几条是**决定**,所以留在规格里:
+
+- **`MoveDto.seat: number` 与 `GameSnapshot.currentSeat: number` MUST 是座位号,MUST NOT 是棋色。**
+  服务端此前经 `SeatWire.ToStone(seat)` 换算,而那是 `seat === 0 ? Black : White` —— 于是
+  **2 号座位被说成 1 号**。实测:三座位房间三手 `bid:0` 的 `stone` 是 `Black / White / White`,
+  两个农民在走子记录里重合,`currentTurn` 在两个不同玩家的回合都报 `White`。
+- **颜色是显示层对座位的读法**,住在 `games/board-seats.ts`(`seatStone`):五子棋读 0 号为黑,
+  象棋读 0 号为红。同一个数字两种读法,而两种都只在显示层成立。这与后端 `BoardSeats` 是同一件事,
+  与被删掉的 `SeatWire` 恰恰相反 —— 后者把这个读法写进了**契约**。
+- **`GameResult` MUST NOT 含带颜色的取值。** 服务端合并了 `BlackWin` / `WhiteWin`,理由是那两个值
+  与 `winnerUserId` 说的是同一件事。客户端因此 MUST 用 `winnerUserId` 判断"谁赢了",MUST NOT 拿
+  结果值去跟自己的棋色比 —— 后者在座位数超过两个时无从下手。
+- `row` / `col` 可空(无盘面棋种),`text` / `fromRow` / `fromCol` 存在,`GameEndReason` 里是
+  `Decided` 而不是 `Connected5`。
 
 #### Scenario: 类型编译通过
 - **WHEN** 用更新后的 `RoomState` 解析 `GET /api/rooms/:id` 的真实响应(在开发环境)
@@ -396,6 +382,15 @@ export interface GameEndedDto {
 #### Scenario: 带颜色的结果值不再存在
 - **WHEN** 代码写 `result === 'BlackWin'`
 - **THEN** TypeScript MUST 报错 —— 该取值已不在联合类型里
+
+#### Scenario: 棋色不再出现在走子载荷上
+- **WHEN** 代码写 `move.stone` 或 `game.currentTurn`
+- **THEN** TypeScript MUST 报错 —— 这两个字段已换成 `seat` / `currentSeat`
+
+#### Scenario: 两个座位画成两种颜色
+- **WHEN** 棋盘上有一手 `seat: 0` 与一手 `seat: 1`
+- **THEN** 前者 MUST 渲染成黑子、后者 MUST 渲染成白子 —— 一条断言,因为把 `seatStone` 改成
+  永远返回 `'Black'` 曾让**全部 744 条前端测试保持绿色**
 
 ### Requirement: i18n —— `game.*` 翻译树同步扩充
 
