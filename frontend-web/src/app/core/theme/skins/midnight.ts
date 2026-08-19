@@ -34,6 +34,22 @@ export const midnightSkin: BoardSkinTokens = {
     red: '#ff7a6b',
     black: '#ccd6e4',
   },
+  cards: {
+    face: 'linear-gradient(160deg, #f2f6fb 0%, #dde5ef 100%)',
+    faceEdge: 'rgb(90 105 125 / 0.5)',
+    red: '#d93b39',
+    black: '#1d2430',
+    back: 'linear-gradient(160deg, #2f3b52 0%, #1a2130 100%)',
+    backEdge: '#7c8ca6',
+  },
+  felt: {
+    bg: 'radial-gradient(ellipse at 50% 35%, #1e4a44 0%, #16332f 60%, #0f2320 100%)',
+    edge: '#2b3442',
+    radius: '18px',
+    shadow: '0 10px 28px rgb(0 0 0 / 0.5)',
+    text: '#e8eef6',
+    textMuted: 'rgb(232 238 246 / 0.7)',
+  },
   lastMove: {
     ring: '#22d3ee',
   },

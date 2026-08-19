@@ -135,7 +135,6 @@ describe('RoomSidebar', () => {
     expect(text).not.toContain('Leave');
     expect(text).not.toContain('Urge');
   });
-})
   it('says which seat is to play when there are more than two', () => {
     // **在浏览器里发现的。** 一局斗地主轮到 2 号座位时,侧栏写的是「白方走棋」——
     // 而那一桌上没有白方。判据是 `seats.length`,不是棋种键:座位表就在快照里。
@@ -155,4 +154,35 @@ describe('RoomSidebar', () => {
     expect(text).toContain('game.turn.seat-turn');
     expect(text).not.toContain('game.turn.white-turn');
   });
-;
+
+  it('lists all three players when the room has three seats', () => {
+    // **也是在浏览器里发现的,而且是同一个缺陷的第二处。** `add-web-doudizhu` 把「轮到谁」
+    // 改成了座位号,却没看旁边这份名单:它只列黑白两个,于是**2 号座位上的人在自己的房间里
+    // 根本不出现**。上面那条测试当时是绿的 —— 它问的是另一个问题。
+    const fixture = mount();
+    fixture.componentInstance.state.set({
+      ...baseState(),
+      seats: [
+        { index: 0, player: { id: 'u-1', username: 'alice' } },
+        { index: 1, player: { id: 'u-2', username: 'bob' } },
+        { index: 2, player: { id: 'u-3', username: 'carol' } },
+      ],
+    });
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    for (const name of ['alice', 'bob', 'carol']) expect(text).toContain(name);
+    // 三座位时「黑方 / 白方」那两个标签 MUST NOT 再出现 —— 那一桌上没有黑白。
+    expect(text).not.toContain('Black');
+    expect(text).not.toContain('White');
+  });
+
+  it('still says black and white for a two-seat room', () => {
+    const fixture = mount();
+    fixture.componentInstance.state.set(baseState());
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Black');
+    expect(text).toContain('White');
+  });
+});

@@ -51,6 +51,54 @@ export interface BoardSkinTokens {
     /** Glyph colour of the black side. Same rule: shade is free, hue is not. */
     black: string;
   }>;
+  readonly cards: Readonly<{
+    /**
+     * `background` shorthand for a card's paper face.
+     *
+     * Playing cards need their own tokens for the same reason xiangqi pieces did:
+     * a card is neither a stone nor a disc. And they need to be *tokens* rather than
+     * a set of 54 bitmaps, because a bitmap follows neither the app theme nor the
+     * board skin — and this repo's hard rule is that components never hard-code colour.
+     */
+    face: string;
+    /** Border colour of the paper face. */
+    faceEdge: string;
+    /**
+     * Colour of the corner index on a red suit.
+     *
+     * Same constraint the xiangqi pieces carry: **a skin picks the shade, never the
+     * hue.** A card table whose hearts are not red is broken, in every theme — the
+     * suit's hue is the game's identity. (The pip artwork itself is a fixed image
+     * for that reason; only the index takes a token.)
+     */
+    red: string;
+    /** Colour of the corner index on a black suit. Same rule. */
+    black: string;
+    /** `background` shorthand for the back of a card (the lattice). */
+    back: string;
+    /** Border colour of a card back. */
+    backEdge: string;
+  }>;
+  readonly felt: Readonly<{
+    /** `background` shorthand for the card table's surface. */
+    bg: string;
+    /** Border colour around the table. */
+    edge: string;
+    /** Outer border-radius of the table. */
+    radius: string;
+    /** Box-shadow giving the table depth (usually with an inset vignette). */
+    shadow: string;
+    /**
+     * Text colour on the table surface.
+     *
+     * A token rather than a literal because the surface itself is a skin's choice:
+     * cream reads on wood's baize and disappears on `classic`, whose felt is mixed
+     * from `--color-surface` and is therefore light under a light theme.
+     */
+    text: string;
+    /** Secondary text colour on the table (counts, labels). */
+    textMuted: string;
+  }>;
   readonly lastMove: Readonly<{
     /** Ring color around the most recent move. */
     ring: string;

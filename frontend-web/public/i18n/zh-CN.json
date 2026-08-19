@@ -227,7 +227,8 @@
       "status-playing": "对局中",
       "status-finished": "已结束",
       "not-found": "房间不存在或已结束。",
-      "back-to-lobby": "返回大厅"
+      "back-to-lobby": "返回大厅",
+      "seat-label": "{{seat}} 号座位"
     },
     "board": {
       "cell-aria-label": "第 {{row}} 行 第 {{col}} 列",
@@ -238,7 +239,8 @@
       "opponent-turn": "等待对手",
       "black-turn": "黑方回合",
       "white-turn": "白方回合",
-      "countdown-label": "剩余时间"
+      "countdown-label": "剩余时间",
+      "seat-turn": "轮到 {{seat}} 号座位"
     },
     "actions": {
       "resign": "认输",
@@ -391,6 +393,10 @@
     "tetris": {
       "title": "俄罗斯方块",
       "description": "堆好落下的方块,消行,冲榜。"
+    },
+    "doudizhu": {
+      "title": "斗地主",
+      "description": "三个人、一副牌,地主对两个农民。手牌只有你自己看得见。"
     }
   },
   "idiom-crossword": {
@@ -596,27 +602,42 @@
     "next": "下一页",
     "page-of": "第 {{page}} / {{total}} 页"
   },
-  "games.doudizhu.title": "斗地主",
-  "games.doudizhu.description": "三个人、一副牌,地主对两个农民。手牌只有你自己看得见。",
-  "doudizhu.phase.Bidding": "叫分",
-  "doudizhu.phase.Playing": "出牌",
-  "doudizhu.phase.Finished": "本局结束",
-  "doudizhu.table.landlord": "地主:{{seat}} 号座位",
-  "doudizhu.table.landlord-badge": "地主",
-  "doudizhu.table.base-score": "底分 {{score}}",
-  "doudizhu.table.kitty": "底牌",
-  "doudizhu.table.seat": "{{seat}} 号座位",
-  "doudizhu.table.cards-left": "剩 {{count}} 张",
-  "doudizhu.table.others-label": "其他两家",
-  "doudizhu.table.played-by": "{{seat}} 号座位打出",
-  "doudizhu.table.free-lead": "自由出牌 —— 桌上没有要压的牌",
-  "doudizhu.table.my-hand": "我的牌({{count}} 张)",
-  "doudizhu.table.my-hand-label": "我的手牌,点一下选中",
-  "doudizhu.table.waiting-for-deal": "等待发牌…",
-  "doudizhu.action.no-bid": "不叫",
-  "doudizhu.action.bid": "叫 {{points}} 分",
-  "doudizhu.action.play": "出牌({{count}})",
-  "doudizhu.action.pass": "不要",
-  "doudizhu.action.waiting": "等其他人行动…",
-  "game.turn.seat-turn": "轮到 {{seat}} 号座位"
+  "doudizhu": {
+    "phase": {
+      "Bidding": "叫分",
+      "Playing": "出牌",
+      "Finished": "本局结束"
+    },
+    "table": {
+      "landlord": "地主:{{seat}} 号座位",
+      "landlord-badge": "地主",
+      "base-score": "底分 {{score}}",
+      "kitty": "底牌",
+      "seat": "{{seat}} 号座位",
+      "cards-left": "剩 {{count}} 张",
+      "others-label": "其他两家",
+      "played-by": "{{seat}} 号座位打出",
+      "free-lead": "自由出牌 —— 桌上没有要压的牌",
+      "my-hand": "我的牌({{count}} 张)",
+      "my-hand-label": "我的手牌,点一下选中",
+      "waiting-for-deal": "等待发牌…",
+      "hidden-hand": "{{count}} 张暗牌",
+      "kitty-hidden": "底牌,还没翻开"
+    },
+    "action": {
+      "no-bid": "不叫",
+      "bid": "叫 {{points}} 分",
+      "play": "出牌({{count}})",
+      "pass": "不要",
+      "waiting": "等其他人行动…"
+    },
+    "card": {
+      "joker": "王"
+    },
+    "bubble": {
+      "pass": "不要",
+      "bid": "叫 {{points}} 分",
+      "no-bid": "不叫"
+    }
+  }
 }

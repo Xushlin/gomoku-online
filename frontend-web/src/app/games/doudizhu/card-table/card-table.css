@@ -1,0 +1,365 @@
+/*
+ * 斗地主的牌桌 —— 一张桌子、三个座位、真牌面,以及发牌与出牌的动作。
+ *
+ * **这份样式表是组件自己的,而不是 `src/styles/` 下的一个全局文件 —— 那是量出来的。**
+ * 第一版按 `.board-*` / `.xq-*` 的先例放在全局并在 `angular.json` 里注册,而全局样式**首屏就要
+ * 下载**:初始包从 474.16 kB 涨到 484.83 kB,480 kB 的预算当场报警。那个数字是
+ * `tighten-bundle-budget` 特意收紧到那里的 —— 为的就是让它在有人去翻之前先响。牌桌只在斗地主
+ * 房间里画,所以它属于 `room-page` 那个 lazy chunk。搬完是 479.53 kB。
+ *
+ * **然后 `anyComponentStyle: 4kB` 这条预算响了(5.34 kB)**,于是这里只留 Tailwind 表达不了的东西:
+ * 皮肤 token 驱动的绘制、扇形的重叠公式、grid 的座位格、动画。间距与字号回到模板里的 utility ——
+ * 那些 class 早就在首屏包里了,所以搬过去的净成本约等于零。CLAUDE.md 的约定本来就是这个分工。
+ *
+ * 两条值得记住的:
+ *
+ *   1. **发牌与出牌的动画由「牌的身份」驱动。** 模板用 `track card.code`,所以一张牌的 DOM 节点
+ *      只在这张牌第一次出现时被创建,而 `animation` 写在牌上就恰好在那一刻放一次。之后重排、
+ *      别人出牌、快照刷新都不会重播(CSS 动画不因节点移动而重启)。于是不需要信号、不需要
+ *      计时器、也不需要「动画放过了吗」这个状态。
+ *
+ *   2. **选中抬起用 `translate:`,而入场动画用 `transform:`。** 两个是不同的属性,会各自
+ *      生效并叠加 —— 如果都写 `transform`,发牌动画那一段会把抬起状态抹掉。
+ *
+ * **花色图的路径不在这里,而在 `card-art.ts`,而那也是量出来的。** 第一版把 `url()` 写在这个文件里
+ * (CSS 才是绘制权威),而测试用的那份构建**没有 .png 的 loader**:绝对路径报
+ * `Could not resolve`,相对路径报 `No loader is configured for ".png"` —— 两次都是整个测试构建
+ * 失败。所以路径成了组件绑上来的 `--ddz-pip`。代价写在这里:那个绑定若被清洗掉,花色会**静静地
+ * 不见**,所以有一条断言读 inline style 里的 `url(`。
+ */
+
+:host {
+  display: block;
+}
+
+/* ---------------------------------------------------------------- 桌面 */
+
+.ddz-table {
+  /* 一张手牌的宽度。20 张牌在 375 px 下靠 .ddz-fan 的 --ddz-step 收窄,而不是靠这个下限。 */
+  --ddz-card-w: clamp(34px, 8.6vw, 54px);
+  /* 对家的牌背要小一号:两叠 17 张要塞进 375 px 的左右两栏。 */
+  --ddz-back-w: clamp(18px, 4.6vw, 30px);
+  --ddz-kitty-w: clamp(24px, 6vw, 38px);
+  /* 出牌飞来的距离 —— 桌子的尺度,不是一张牌的尺度。 */
+  --ddz-throw: clamp(3.5rem, 20vw, 8rem);
+
+  color: var(--felt-text);
+  background: var(--felt-bg);
+  border: 2px solid var(--felt-edge);
+  border-radius: var(--felt-radius);
+  box-shadow: var(--felt-shadow);
+}
+
+/*
+ * 三(或四)个座位 + 桌心。`across` 那一格在三家时是空的,而它存在不是为了将来抽象:
+ * 挖坑是四个人,没有这一格第四个人会和另一个人叠在同一个位置上 —— 那是画错,不是少画。
+ */
+.ddz-arena {
+  display: grid;
+  grid-template-areas:
+    'left across right'
+    'centre centre centre';
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/*
+ * `min-width: 0` 不是可省的:**grid item 的 `min-width` 默认是 `auto`**,所以轨道再窄,
+ * 里面的座位也会按内容撑出去。375 px 下量到的是 `.ddz-slot--right` scrollWidth 78 > 64、
+ * 整个 arena 301 > 287 —— 而**页面级的 `scrollWidth - clientWidth` 是 0**,所以那条检查
+ * 看不见它。`generalize-lobby` 记的是同一类:一个「不横向滚动」的检查可以在真有溢出时通过。
+ *
+ * 右侧那格原来还带 `justify-self: end`,那让它收缩成内容宽度、然后从内容处溢出;
+ * 现在让它占满轨道,靠 `.ddz-seat` 的 `align-items: flex-end` 把内容推到右边。
+ */
+.ddz-slot {
+  min-width: 0;
+}
+
+.ddz-slot--left {
+  grid-area: left;
+}
+
+.ddz-slot--across {
+  grid-area: across;
+}
+
+.ddz-slot--right {
+  grid-area: right;
+}
+
+/*
+ * **座位这一列必须是 `stretch`(默认),而这是量出来两次才定下来的。**
+ *
+ * 第一版右边那格是 `align-items: flex-end`,第二版改成 `center` —— 两者都让里面的扇形变成
+ * shrink-to-fit,于是 `--ddz-step` 里的 `100%` 对着一个还没定下来的宽度解算:先是变出**负**
+ * 步长(牌背反向叠,`scrollWidth 18 > clientWidth 0`),再是被下限压到 2px(17 张牌挤成
+ * 50px 的一条)。**只有当扇形的宽度就是轨道宽度时,「装得下」那一项才有意义** —— 量到的
+ * 步长这才是 4.5px、整叠正好 90px。
+ *
+ * 所以对齐交给模板里的 `justify-center` / `self-center`,而这一列不动。
+ */
+
+/*
+ * **装着 `.ddz-fan` 的容器 MUST NOT 是 shrink-to-fit。** 这一条踩了三次:右侧座位的
+ * `flex-end`、后来的 `center`、以及桌心这里的 `items-center`。每一次都是同一个机制 ——
+ * 扇形的「装得下」那一项里有 `100%`,而 shrink-to-fit 的容器宽度还没定下来,于是它解算成 0,
+ * 步长先变负、后被下限压到 2px:20 张牌挤成一条。所以这里不写 `align-items`(默认 stretch),
+ * 对齐由子元素自己的 `self-center` / `text-center` 负责。
+ */
+.ddz-centre {
+  grid-area: centre;
+  min-height: calc(var(--ddz-card-w) / 0.7 + 0.5rem);
+}
+
+/* 该谁走 —— 一圈光 + 呼吸。降低动效时只留那圈光。 */
+.ddz-seat--turn {
+  border-color: var(--last-move-ring);
+  animation: ddz-breathe 2s ease-in-out infinite;
+}
+
+@keyframes ddz-breathe {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--last-move-ring) 28%, transparent);
+  }
+}
+
+/*
+ * 只带颜色的几个类。**它们看起来该是 Tailwind 的 arbitrary value,而那条路量过是更贵的:**
+ * 把 `text-[color:var(--felt-text-muted)]` 之类写进模板,新 utility 会进**首屏**的 Tailwind
+ * 样式表 —— 初始包 479.53 → 480.38 kB(预算又红了),而省下的 1.4 kB 是在 lazy chunk 里。
+ * 所以分工是:**尺寸间距用现成的 utility(它们早就在首屏包里),而皮肤 token 留在这里。**
+ */
+
+.ddz-muted {
+  color: var(--felt-text-muted);
+}
+
+.ddz-avatar,
+.ddz-bubble,
+.ddz-btn,
+.ddz-landlord {
+  color: var(--card-black);
+  background: var(--card-face);
+  border-color: var(--card-face-edge);
+}
+
+.ddz-landlord {
+  color: var(--card-red);
+}
+
+.ddz-free-lead {
+  border-color: var(--felt-text-muted);
+}
+
+.ddz-btn:focus-visible,
+.ddz-focus:focus-visible,
+/* ---------------------------------------------------------------- 一张牌 */
+
+.ddz-card {
+  position: relative;
+  display: block;
+  width: var(--ddz-w);
+  /* 420 × 600 —— 与真牌一样的长宽比。 */
+  height: calc(var(--ddz-w) / 0.7);
+  flex: none;
+  padding: 0;
+  color: var(--card-black);
+  background: var(--card-face);
+  border: 1px solid var(--card-face-edge);
+  border-radius: calc(var(--ddz-w) * 0.13);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.28);
+}
+
+.ddz-card--red {
+  color: var(--card-red);
+}
+
+.ddz-card__rank {
+  position: absolute;
+  top: 3%;
+  left: 8%;
+  font-size: calc(var(--ddz-w) * 0.44);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 角标下面那个小花色,和右下角那个大的 —— 同一张图,两个尺寸。 */
+/*
+ * 「10」是唯一两个字符的点数,而扇形里露出来的只有一张牌宽的 ~46%(375 px 下 16px)——
+ * **在浏览器里看到的是 `1(`**:后一张牌把第二个字符切掉了。所以两位数的点数窄一号。
+ * CSS 选不到文本内容,所以判据在模板里(`card.label.length > 1`),而不是一个花色/点数表。
+ */
+.ddz-card__rank--wide {
+  font-size: calc(var(--ddz-w) * 0.34);
+}
+
+.ddz-card__pip {
+  position: absolute;
+  inset: calc(var(--ddz-w) * 0.5) auto auto 8%;
+  width: calc(var(--ddz-w) * 0.26);
+  aspect-ratio: 1;
+  background: var(--ddz-pip) center / contain no-repeat;
+}
+
+.ddz-card__pip--big {
+  inset: auto 7% 5% auto;
+  width: calc(var(--ddz-w) * 0.5);
+}
+
+/* 王没有花色 —— 给它凑一个,就是用一个合法值表示「不适用」。 */
+.ddz-card__joker {
+  position: absolute;
+  right: 8%;
+  bottom: 6%;
+  font-size: calc(var(--ddz-w) * 0.42);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/*
+ * 牌背的菱形格是**结构**,不是哪个皮肤的选择 —— 三个皮肤里原本逐字相同地各写了一份。
+ * 提到这里之后皮肤只给颜色(`--card-back`),而这三层进的是 lazy chunk 而不是首屏。
+ */
+.ddz-card--back {
+  background:
+    repeating-linear-gradient(63deg, rgb(255 255 255 / 0.16) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(-63deg, rgb(255 255 255 / 0.16) 0 1px, transparent 1px 10px),
+    var(--card-back);
+  border-color: var(--card-back-edge);
+}
+
+/* ---------------------------------------------------------------- 扇形 */
+
+/*
+ * 重叠步长:取「一张牌宽的固定比例」与「容器正好装得下」里的**较小**者,所以任意张数都不溢出。
+ * `--ddz-gaps` 由组件绑成 `max(n - 1, 1)` —— 一个纯数字。把 `max()` 直接写进分母在 CSS 里也
+ * 合法,但绑一个数字省掉了对那条规则的赌,而组件本来就知道张数。
+ */
+.ddz-fan {
+  --ddz-overlap: 0.58;
+  /*
+   * 下限 2px 不是保险,是**必须**:`100%` 在一个 shrink-to-fit 的容器里解算成 0,于是
+   * 「装得下」那一项变成负数,牌会反向叠。量到过一次(右侧座位 `scrollWidth 18 > clientWidth 0`)。
+   */
+  --ddz-step: max(
+    2px,
+    min(calc(var(--ddz-w) * var(--ddz-overlap)), calc((100% - var(--ddz-w)) / var(--ddz-gaps)))
+  );
+  /*
+   * 发牌动画的横向散开量,**故意不是 `--ddz-step`** —— 那一版量出来是 0。
+   * `--ddz-step` 里有个 `100%`,而百分比是在**用它的地方**解算的:在 `margin-left` 里它对着
+   * 容器(375 px 下 15.8px),而在 `transform: translate()` 里它对着**元素自己**,于是
+   * `(34px - 34px) / 16 = 0`,`min()` 取 0,整段横向位移消失。牌只往下掉,不散开 ——
+   * 而动画照样在放,所以看起来像「设计成这样」。
+   * 这里只用长度,没有百分比,于是在哪里用都是同一个值。
+   */
+  --ddz-spread: calc(var(--ddz-w) * 0.5);
+
+  display: flex;
+  justify-content: center;
+}
+
+.ddz-fan > * + * {
+  margin-left: calc(var(--ddz-step) - var(--ddz-w));
+}
+
+.ddz-fan--backs {
+  --ddz-w: var(--ddz-back-w);
+  --ddz-overlap: 0.42;
+}
+
+.ddz-hand {
+  --ddz-w: var(--ddz-card-w);
+
+  padding-top: calc(var(--ddz-card-w) * 0.24);
+}
+
+.ddz-hand .ddz-card:disabled {
+  cursor: default;
+}
+
+.ddz-hand .ddz-card--selected {
+  translate: 0 calc(var(--ddz-card-w) * -0.24);
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.35);
+}
+
+.ddz-played {
+  --ddz-w: var(--ddz-card-w);
+}
+
+.ddz-kitty {
+  --ddz-w: var(--ddz-kitty-w);
+}
+
+/* ---------------------------------------------------------------- 动作 */
+
+/*
+ * 发牌:从扇形正中散开。起点只用 `--ddz-i`(第几张)、`--ddz-n`(共几张)、`--ddz-step`
+ * (重叠步长)算出 —— 不量 DOM,所以桌子换了摆法它仍然对。
+ */
+@keyframes ddz-deal {
+  from {
+    opacity: 0;
+    transform: translate(calc((var(--ddz-n) / 2 - var(--ddz-i) - 0.5) * var(--ddz-spread)), -140%)
+      rotate(-6deg) scale(0.8);
+  }
+}
+
+.ddz-hand .ddz-card {
+  cursor: pointer;
+  /* 抬起用 translate:,入场动画用 transform: —— 两个属性,各自生效并叠加。 */
+  transition: translate 140ms ease;
+  /* 简写里第二个时间是 delay —— 逐张错开就靠它。 */
+  animation: ddz-deal 380ms cubic-bezier(0.2, 0.7, 0.3, 1) calc(var(--ddz-i) * 45ms) backwards;
+}
+
+/*
+ * 出牌:从出牌人的方位飞向桌心。方位由 `relativeSeat()` 给的四个值之一决定,
+ * 而不是由量出来的坐标。
+ */
+@keyframes ddz-play {
+  from {
+    opacity: 0;
+    transform: translate(var(--ddz-from-x, 0px), var(--ddz-from-y, -100%)) scale(0.72);
+  }
+}
+
+.ddz-played .ddz-card {
+  animation: ddz-play 320ms cubic-bezier(0.2, 0.7, 0.3, 1) calc(var(--ddz-i) * 28ms) backwards;
+}
+
+.ddz-played--from-right {
+  --ddz-from-x: var(--ddz-throw);
+  --ddz-from-y: calc(var(--ddz-throw) * -0.55);
+}
+
+.ddz-played--from-left {
+  --ddz-from-x: calc(var(--ddz-throw) * -1);
+  --ddz-from-y: calc(var(--ddz-throw) * -0.55);
+}
+
+.ddz-played--from-across {
+  --ddz-from-x: 0px;
+  --ddz-from-y: calc(var(--ddz-throw) * -0.8);
+}
+
+.ddz-played--from-self {
+  --ddz-from-x: 0px;
+  --ddz-from-y: var(--ddz-throw);
+}
+
+/*
+ * 一桌 20 张牌加上出牌,是这个 app 里动得最多的一屏 —— 所以这不是可选项。
+ * 抬起的 transition 一并关掉:一个 140ms 的位移也是位移。
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ddz-hand .ddz-card,
+  .ddz-played .ddz-card,
+  .ddz-seat--turn {
+    animation: none;
+  }
+
+  .ddz-hand .ddz-card {
+    transition: none;
+  }
+}

@@ -74,6 +74,26 @@
   --xq-red: #b3261e;
   --xq-black: #241d16;
 
+  /* Playing cards + the felt table (斗地主). The paper face and the felt are the
+     skin's call; the *hue* of a suit is not — see BoardSkinTokens.cards.red. */
+  --card-face: linear-gradient(160deg, #fffdf6 0%, #f3ead6 100%);
+  --card-face-edge: rgb(120 85 40 / 0.35);
+  --card-red: #c62828;
+  --card-black: #2b2b2b;
+  --card-back: linear-gradient(160deg, #8a2420 0%, #5a1512 100%);
+  --card-back-edge: #e8d3a8;
+  --felt-bg:
+    radial-gradient(ellipse at 50% 120%, rgb(0 0 0 / 0.28) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 32%, #2f7a4a 0%, #1d5333 58%, #123a24 100%);
+  --felt-text: #f7f2e4;
+  --felt-text-muted: rgb(247 242 228 / 0.72);
+  --felt-edge: #6b4423;
+  --felt-radius: 18px;
+  --felt-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 60px rgb(0 0 0 / 0.35),
+    0 10px 28px rgb(0 0 0 / 0.28);
+
   --last-move-ring: #ff9f1a;
 }
 
@@ -125,6 +145,18 @@
   --xq-piece-bg: #e6d2a8;
   --xq-red: #c33a2c;
   --xq-black: #1d1812;
+
+  /* Dimmer baize and a slightly warmer paper so the table stops glowing against
+     a dark page. The suit hues are untouched — a skin picks the shade, not the hue. */
+  --card-face: linear-gradient(160deg, #f6f1e2 0%, #e3d8c0 100%);
+  --felt-bg:
+    radial-gradient(ellipse at 50% 120%, rgb(0 0 0 / 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 32%, #1f5334 0%, #143a24 58%, #0c2717 100%);
+  --felt-edge: #4a2e15;
+  --felt-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    inset 0 0 60px rgb(0 0 0 / 0.5),
+    0 10px 28px rgb(0 0 0 / 0.5);
 
   --last-move-ring: #ffb000;
 }
@@ -194,6 +226,25 @@
   --xq-red: #ff7a6b;
   --xq-black: #ccd6e4;
 
+  /* Cool paper, slate back, teal-slate baize — self-contained dark, like the board. */
+  --card-face: linear-gradient(160deg, #f2f6fb 0%, #dde5ef 100%);
+  --card-face-edge: rgb(90 105 125 / 0.5);
+  --card-red: #d93b39;
+  --card-black: #1d2430;
+  --card-back: linear-gradient(160deg, #2f3b52 0%, #1a2130 100%);
+  --card-back-edge: #7c8ca6;
+  --felt-bg:
+    radial-gradient(ellipse at 50% 120%, rgb(0 0 0 / 0.42) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 32%, #1e4a44 0%, #16332f 58%, #0f2320 100%);
+  --felt-text: #e8eef6;
+  --felt-text-muted: rgb(232 238 246 / 0.7);
+  --felt-edge: #2b3442;
+  --felt-radius: 18px;
+  --felt-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    inset 0 0 60px rgb(0 0 0 / 0.45),
+    0 10px 28px rgb(0 0 0 / 0.5);
+
   --last-move-ring: #22d3ee;
 }
 
@@ -227,6 +278,29 @@
   --xq-piece-bg: var(--color-bg);
   --xq-red: #c0392b;
   --xq-black: var(--color-text);
+
+  /* Follows the theme. The paper takes --color-bg, NOT --color-surface, for the same
+     reason the xiangqi disc does: the felt is mixed from --color-surface, so a card
+     painted in it would be an invisible rectangle carrying an index.
+     红 does not follow the theme — it is the suit's identity. */
+  --card-face: var(--color-bg);
+  --card-face-edge: var(--color-border);
+  --card-red: #c0392b;
+  --card-black: var(--color-text);
+  --card-back: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-primary) 70%, black),
+      color-mix(in srgb, var(--color-primary) 35%, black)
+    );
+  --card-back-edge: var(--color-border);
+  --felt-bg:
+    radial-gradient(ellipse at 50% 120%, rgb(0 0 0 / 0.18) 0%, transparent 60%),
+    color-mix(in srgb, var(--color-surface) 88%, var(--color-text));
+  --felt-text: var(--color-text);
+  --felt-text-muted: var(--color-muted);
+  --felt-edge: var(--color-border);
+  --felt-radius: var(--radius-card);
+  --felt-shadow: inset 0 0 40px rgb(0 0 0 / 0.12), 0 2px 8px rgb(0 0 0 / 0.08);
 
   --last-move-ring: var(--color-primary);
 }
