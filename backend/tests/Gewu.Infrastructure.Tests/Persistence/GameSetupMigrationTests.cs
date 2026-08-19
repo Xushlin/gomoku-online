@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Gewu.Infrastructure.Persistence;
@@ -129,18 +130,47 @@ public class GameSetupMigrationTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Rolling_back_needs_no_guard_and_this_is_why()
+    public async Task Rolling_back_across_this_migration_destroys_a_deal()
     {
-        // 收窄一列而底下有装不进去的数据时通常必须拒绝(见 AddMoveTextPayload / RemapGameResultValues)。
-        // 这里不同:Setup 的**唯一**读者是需要它的那个棋种的规则,而回滚到本迁移之前意味着那个
-        // 棋种在这个构建里还不存在 —— 所以不可能有非 NULL 的行需要保护。
+        // **这条测试替换掉的那一条,写的是一个现在已经不成立的理由。**
         //
-        // 这条断言把那句话变成可执行的:此刻**没有任何内置棋种**会产生非 NULL 的 Setup。
-        // 斗地主落地那天这条会红,而那正是该重新想一遍这个 Down 的时刻。
+        // 原文:「Setup 的唯一读者是需要它的那个棋种的规则,而回滚到本迁移之前意味着那个棋种
+        // 在这个构建里还不存在 —— 所以不可能有非 NULL 的行需要保护」,并断言"没有任何内置棋种
+        // 会产生非 NULL 的 Setup",注释里写着「斗地主落地那天这条会红,而那正是该重新想一遍
+        // 这个 Down 的时刻」。**斗地主落地了,它红了,所以这里是重新想的结果。**
+        //
+        // 重新想的结论:那个 Down **确实会毁数据**,而且比"回滚到一个没有斗地主的构建"更难看 ——
+        // 回滚再前滚一次,列会以全 NULL 回来,房间还在、还像能玩,而规则在下一手抛
+        // 「This doudizhu game has no deal recorded」。
+        //
+        // 那个迁移**不能就地改**:已合并的迁移不改是硬规矩。所以这条测试的作用变了 ——
+        // 它不再论证"不需要守卫",而是把后果**演出来**并留在案上。真要修就是加一个新迁移,
+        // 而在没有部署、库随时可删的今天,那笔钱不值得花。
+        await SeedBeforeAsync();
+        await MigrateToAsync(Target);
+        await ExecAsync($"UPDATE Games SET Setup = 'AB/CD/EF' WHERE Id = '{Sql(_gameId)}';");
+
+        await MigrateToAsync(Previous);
+        await MigrateToAsync(Target);
+
+        (await ScalarAsync($"SELECT COUNT(*) FROM Games WHERE Id = '{Sql(_gameId)}';"))
+            .Should().Be(1L, "房间与对局都还在 —— 这正是难看的地方");
+        (await ScalarAsync($"SELECT Setup FROM Games WHERE Id = '{Sql(_gameId)}';"))
+            .Should().Be(DBNull.Value, "发牌没了,而这一局看起来仍然能继续");
+    }
+
+    [Fact]
+    public async Task Exactly_one_built_in_game_can_produce_a_non_null_setup()
+    {
+        // 上面那条演的是后果;这一条盯的是**范围**。今天只有斗地主会写非 NULL 的 Setup,
+        // 所以那笔"加一个带守卫的新迁移"的账只涉及一个棋种。第二个棋种要设置的那天这条会红 ——
+        // 那时这笔账变大,该重新估。
         var lexicon = new Gewu.Domain.Idioms.InMemoryIdiomLexicon(["一心一意"]);
 
         Gewu.Domain.Games.NInARow.BuiltInGameRules.All(lexicon)
-            .Should().NotContain(r => r is Gewu.Domain.Games.Abstractions.IDealtGameRules);
+            .Where(r => r is Gewu.Domain.Games.Abstractions.IDealtGameRules)
+            .Should().ContainSingle()
+            .Which.GameKey.Should().Be(Gewu.Domain.Games.Abstractions.GameKeys.Doudizhu);
     }
 
     public async ValueTask DisposeAsync()

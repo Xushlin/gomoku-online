@@ -101,14 +101,25 @@ public class SeatKernelTests
     }
 
     [Fact]
-    public void Every_registered_game_has_two_seats_today()
+    public void Every_rated_game_has_two_seats()
     {
-        // 本次改动行为零变化,这条是它的可执行形式。第一个三座位棋种落地那天,
-        // 这条会红 —— 那时它该被改成"每个计分棋种两个座位"。
-        foreach (var rules in BuiltInGameRules.All(new NoIdioms()))
+        // 这条此前是"每个棋种两个座位",注释里写着"第一个三座位棋种落地那天该被改成
+        // '每个计分棋种两个座位'"。斗地主落地了,所以照那句话改 —— **而它变红的时机
+        // 正是它存在的理由**,不是一次需要绕过的失败。
+        //
+        // 改完之后它仍然有牙:ELO 是两人模型,所以"计分"与"三个座位"不能同时为真。
+        foreach (var rules in BuiltInGameRules.All(new NoIdioms()).Where(r => r.IsRated))
         {
-            rules.SeatCount.Should().Be(2, $"{rules.GameKey} is a two-seat game today");
+            rules.SeatCount.Should().Be(2, $"{rules.GameKey} is rated, and ELO is a two-player rating");
         }
+    }
+
+    [Fact]
+    public void At_least_one_game_has_more_than_two_seats()
+    {
+        // 上面那条在"所有棋种都不计分"时会退化成空循环。这一条钉住三座位真的存在过 ——
+        // 否则删掉斗地主之后,那条断言会以"没有反例"的姿态继续绿着。
+        BuiltInGameRules.All(new NoIdioms()).Should().Contain(r => r.SeatCount > 2);
     }
 
     [Fact]

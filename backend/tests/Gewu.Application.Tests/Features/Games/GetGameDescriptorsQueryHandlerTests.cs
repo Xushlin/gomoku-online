@@ -104,14 +104,21 @@ public class GetGameDescriptorsQueryHandlerTests
     }
 
     [Fact]
-    public async Task TicTacToe_is_the_only_unrated_versus_game()
+    public async Task The_unrated_games_are_tictactoe_and_doudizhu()
     {
-        // 一字棋是唯一不计分的对战棋种,也因此是好几条"两类都要出现过"的遍历断言在
-        // 拒绝那一侧的唯一样本。哪天它也计分了,那些断言会变红 —— 那是想要的。
+        // 此前这条是"一字棋是唯一不计分的对战棋种"。斗地主加入了那一侧,而**两者不计分的
+        // 理由不同**,值得分开写下来:
+        //
+        // - 一字棋:没有人人对战,唯一的对手是机器人,而机器人对局是计分的 —— 那种阶梯排出来的
+        //   是"谁刷弱档刷得多"。
+        // - 斗地主:ELO 是两人模型,而它按分结算 —— 一个按分的阶梯是另一条榜。
+        //
+        // 这条断言仍然在守同一件事:不计分那一侧非空,所以那几条"两类都要出现过"的遍历断言
+        // 不会退化成单边空转。
         var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
 
-        items.Where(i => !i.IsRated).Should().ContainSingle()
-            .Which.GameKey.Should().Be(GameKeys.TicTacToe);
+        items.Where(i => !i.IsRated).Select(i => i.GameKey)
+            .Should().BeEquivalentTo([GameKeys.TicTacToe, GameKeys.Doudizhu]);
     }
 
     [Fact]
