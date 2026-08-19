@@ -35,8 +35,8 @@ public class TurnTimeoutCommandHandlerTests
         public bool SupportsHumanVsHuman => true;
         public bool IsRated => false;
 
-        public MoveIntent MoveOnTimeout(IReadOnlyList<PlayedMove> history, int seat)
-            => MoveIntent.Place(new Position(history.Count, 0));
+        public MoveIntent MoveOnTimeout(MatchState state, int seat)
+            => MoveIntent.Place(new Position(state.History.Count, 0));
 
         public MoveApplication Apply(
             MatchState state, MoveIntent intent, int seat)
