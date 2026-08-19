@@ -14,7 +14,7 @@ import { RoomSidebar } from './sidebar';
   template: `
     <app-room-sidebar
       [state]="state()"
-      [mySide]="mySide()"
+      [mySeat]="mySeat()"
       [turnRemainingMs]="remaining()"
       [canUrge]="canUrge()"
     />
@@ -22,7 +22,7 @@ import { RoomSidebar } from './sidebar';
 })
 class Host {
   readonly state = signal<RoomState | null>(null);
-  readonly mySide = signal<'black' | 'white' | 'spectator'>('black');
+  readonly mySeat = signal<number | null>(0);
   readonly remaining = signal<number>(60_000);
   readonly canUrge = signal(false);
 }
@@ -36,6 +36,10 @@ function baseState(): RoomState {
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
     white: { id: 'u-2', username: 'bob' },
+    seats: [
+      { index: 0, player: { id: 'u-1', username: 'alice' } },
+      { index: 1, player: { id: 'u-2', username: 'bob' } },
+    ],
     spectators: [],
     game: {
       id: 'g-1',
@@ -124,7 +128,7 @@ describe('RoomSidebar', () => {
   it('spectator sees no player-only buttons', () => {
     const fixture = mount();
     fixture.componentInstance.state.set(baseState());
-    fixture.componentInstance.mySide.set('spectator');
+    fixture.componentInstance.mySeat.set(null);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).not.toContain('Resign');

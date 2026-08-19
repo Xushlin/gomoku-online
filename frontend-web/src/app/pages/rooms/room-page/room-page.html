@@ -80,6 +80,13 @@
             [submitting]="submittingMove()"
             (pieceMove)="handlePieceMove($event)"
           />
+        } @else if (isDoudizhu()) {
+          <app-card-table
+            [state]="room"
+            [mySeat]="mySeat()"
+            [submitting]="submittingMove()"
+            (action)="handleTextMove($event)"
+          />
         } @else if (isIdiomChain()) {
           <app-chain-board
             [state]="room"
@@ -101,7 +108,7 @@
       <div class="flex flex-col gap-4">
         <app-room-sidebar
           [state]="room"
-          [mySide]="mySide()"
+          [mySeat]="mySeat()"
           [turnRemainingMs]="turnRemainingMs()"
           [canUrge]="canUrge()"
           (resign)="handleResign()"

@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomState } from '../../../../core/api/models/room.model';
-import { seatOfSide, FIRST_SEAT } from '../../../../games/board-seats';
+import { FIRST_SEAT } from '../../../../games/board-seats';
 import {
   ResignConfirmDialog,
   type ResignConfirmResult,
@@ -23,7 +23,15 @@ export class RoomSidebar {
   private readonly dialog = inject(Dialog);
 
   readonly state = input<RoomState | null>(null);
-  readonly mySide = input<'black' | 'white' | 'spectator'>('spectator');
+  /**
+   * 看这个房间的人坐第几号;`null` 表示不占座位(围观者 / 尚未入座)。
+   *
+   * **它此前是 `mySide: 'black' | 'white' | 'spectator'`,而那对三座位房间是错的** ——
+   * 2 号座位上的人既不是 black 也不是 white,于是被当成围观者:辞局与离开按钮都不给他。
+   * 座位号是线上契约自 `generalize-match-contract` 起就说的东西,而颜色只是棋盘家族在
+   * 显示层的读法。
+   */
+  readonly mySeat = input<number | null>(null);
   readonly turnRemainingMs = input<number>(0);
   readonly canUrge = input<boolean>(false);
 
@@ -31,11 +39,11 @@ export class RoomSidebar {
   readonly leave = output<void>();
   readonly urge = output<void>();
 
-  protected readonly isPlayer = computed(() => this.mySide() !== 'spectator');
+  protected readonly isPlayer = computed(() => this.mySeat() !== null);
 
   protected readonly myTurn = computed(() => {
-    const mySeat = seatOfSide(this.mySide());
-    return mySeat !== null && this.state()?.game?.currentSeat === mySeat;
+    const seat = this.mySeat();
+    return seat !== null && this.state()?.game?.currentSeat === seat;
   });
 
   protected readonly countdownText = computed(() => {

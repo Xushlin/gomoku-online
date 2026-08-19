@@ -595,5 +595,27 @@
     "prev": "Previous",
     "next": "Next",
     "page-of": "Page {{page}} of {{total}}"
-  }
+  },
+  "games.doudizhu.title": "Dou Dizhu",
+  "games.doudizhu.description": "Three players, one deck: the landlord against two peasants. Your hand is visible only to you.",
+  "doudizhu.phase.Bidding": "Bidding",
+  "doudizhu.phase.Playing": "Playing",
+  "doudizhu.phase.Finished": "Finished",
+  "doudizhu.table.landlord": "Landlord: seat {{seat}}",
+  "doudizhu.table.landlord-badge": "Landlord",
+  "doudizhu.table.base-score": "Base score {{score}}",
+  "doudizhu.table.kitty": "Kitty",
+  "doudizhu.table.seat": "Seat {{seat}}",
+  "doudizhu.table.cards-left": "{{count}} left",
+  "doudizhu.table.others-label": "The other two players",
+  "doudizhu.table.played-by": "Played by seat {{seat}}",
+  "doudizhu.table.free-lead": "Free lead — nothing on the table to beat",
+  "doudizhu.table.my-hand": "My hand ({{count}})",
+  "doudizhu.table.my-hand-label": "My hand; tap to select",
+  "doudizhu.table.waiting-for-deal": "Waiting for the deal…",
+  "doudizhu.action.no-bid": "Pass on bidding",
+  "doudizhu.action.bid": "Bid {{points}}",
+  "doudizhu.action.play": "Play ({{count}})",
+  "doudizhu.action.pass": "Pass",
+  "doudizhu.action.waiting": "Waiting for the others…"
 }

@@ -15,7 +15,9 @@ import { SoundService } from '../../../core/sound/sound.service';
 import type { SoundEventName } from '../../../core/sound/sound.tokens';
 import { gameEntryRoute, PLATFORM_HOME } from '../../../games/game-entry-route';
 import { GameCatalogService } from '../../../games/game-catalog.service';
+import { CardTable } from '../../../games/doudizhu/card-table/card-table';
 import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
+import { DOUDIZHU_KEY } from '../../../games/doudizhu/game-key';
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
 import { lastMoveCaptured } from '../../../games/xiangqi/position';
@@ -26,7 +28,7 @@ import { GameEndedDialog, type GameEndedDialogData, type GameEndedDialogResult }
 import { hubErrorToKey, type HubErrorKey } from './hub-error.mapper';
 import { myOutcome } from './outcome';
 import { RoomSidebar } from './sidebar/sidebar';
-import { seatOfSide } from '../../../games/board-seats';
+import { FIRST_SEAT, SECOND_SEAT } from '../../../games/board-seats';
 
 const URGE_COOLDOWN_MS = 30_000;
 const URGE_TOAST_MS = 4_000;
@@ -36,7 +38,7 @@ const TICK_MS = 1_000;
 @Component({
   selector: 'app-room-page',
   standalone: true,
-  imports: [Board, XiangqiBoard, ChainBoard, ChatPanel, RoomSidebar, RouterLink, TranslocoPipe],
+  imports: [Board, XiangqiBoard, ChainBoard, CardTable, ChatPanel, RoomSidebar, RouterLink, TranslocoPipe],
   templateUrl: './room-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -130,17 +132,43 @@ export class RoomPage implements OnInit, OnDestroy {
    */
   protected readonly isIdiomChain = computed(() => this.state()?.gameKey === IDIOM_CHAIN_KEY);
 
-  protected readonly mySide = computed<'black' | 'white' | 'spectator'>(() => {
+  /** 斗地主是第四种棋盘形状,而它是第一个用座位号而不是颜色描述自己的。 */
+  protected readonly isDoudizhu = computed(() => this.state()?.gameKey === DOUDIZHU_KEY);
+
+  /**
+   * 我坐第几号座位;`null` 表示不占座位(围观者 / 尚未入座)。
+   *
+   * **读的是 `seats`,而不是 `black` / `white`** —— 后两个字段是 0 号与 1 号的派生读法,
+   * 于是三座位房间里 2 号座位上的人在它们里面**根本不出现**,会被当成围观者。
+   */
+  protected readonly mySeat = computed<number | null>(() => {
     const s = this.state();
     const myId = this.auth.user()?.id;
-    if (!s || !myId) return 'spectator';
-    if (s.black?.id === myId) return 'black';
-    if (s.white?.id === myId) return 'white';
-    return 'spectator';
+    if (!s || !myId) return null;
+    return s.seats.find((seat) => seat.player.id === myId)?.index ?? null;
   });
+
+  /**
+   * 棋盘家族的显示读法 —— **只给那三个两座位棋盘用**。
+   *
+   * 由 `mySeat` 派生,而不是自己再读一遍 `black` / `white`:同一个事实两处读法就是两个真源。
+   * 座位号超过 1 的人在这里是 `'spectator'`,而那**不是**"他是围观者"的意思 ——
+   * 那三个棋盘只认得两个座位,而斗地主的牌桌收的是 `mySeat`,不走这条路。
+   */
+  protected readonly mySide = computed<'black' | 'white' | 'spectator'>(() => {
+    switch (this.mySeat()) {
+      case FIRST_SEAT:
+        return 'black';
+      case SECOND_SEAT:
+        return 'white';
+      default:
+        return 'spectator';
+    }
+  });
+
   protected readonly myTurn = computed<boolean>(() => {
-    const mySeat = seatOfSide(this.mySide());
-    return mySeat !== null && this.state()?.game?.currentSeat === mySeat;
+    const seat = this.mySeat();
+    return seat !== null && this.state()?.game?.currentSeat === seat;
   });
   protected readonly turnRemainingMs = computed<number>(() => {
     const g = this.state()?.game;
@@ -150,7 +178,7 @@ export class RoomPage implements OnInit, OnDestroy {
   });
   protected readonly canUrge = computed<boolean>(() => {
     const s = this.state();
-    if (!s || s.status !== 'Playing' || this.mySide() === 'spectator' || this.myTurn()) return false;
+    if (!s || s.status !== 'Playing' || this.mySeat() === null || this.myTurn()) return false;
     if (this.connectionStatus() !== 'connected') return false;
     return this.now() >= this.urgeCooldownUntil();
   });
@@ -253,7 +281,7 @@ export class RoomPage implements OnInit, OnDestroy {
     try {
       this.hub.applySnapshot(await firstValueFrom(this.rooms.getById(id)));
       await this.hub.joinRoom(id);
-      if (this.mySide() === 'spectator') await this.hub.joinSpectatorGroup(id);
+      if (this.mySeat() === null) await this.hub.joinSpectatorGroup(id);
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 404) this.notFound.set(true);
       else this.loadError.set(true);
@@ -267,7 +295,7 @@ export class RoomPage implements OnInit, OnDestroy {
     if (!id) return;
     try {
       await this.hub.joinRoom(id);
-      if (this.mySide() === 'spectator') await this.hub.joinSpectatorGroup(id);
+      if (this.mySeat() === null) await this.hub.joinSpectatorGroup(id);
       this.hub.applySnapshot(await firstValueFrom(this.rooms.getById(id)));
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 404) {
@@ -300,6 +328,20 @@ export class RoomPage implements OnInit, OnDestroy {
    */
   protected handleWordSay(word: string): void {
     this.submitMove((id) => this.hub.sayWord(id, word));
+  }
+
+  /**
+   * 斗地主的一次动作 —— `bid:N` / `pass` / `play:<cards>`。
+   *
+   * 走的是同一个 hub 方法。**`sayWord` 的名字是为成语接龙起的,而它其实是通用的文本载荷路径**:
+   * 服务端 `SayWord(roomId, text)` 只是构造 `MakeMoveCommand(Text:)`,不看棋种键。
+   *
+   * 没有为斗地主加第三个 hub 方法:同一个载荷两个入口,就是两处要一起维护的校验路径。
+   * 也没有顺手把它改名 —— 改名是服务端 + 契约 + 规格三处的事,而它值得单独一个变更。
+   * **触发条件:第三个走文本载荷的棋种落地那天**,那时"为某一个棋种起的名字"会变成三处误导。
+   */
+  protected handleTextMove(action: string): void {
+    this.submitMove((id) => this.hub.sayWord(id, action));
   }
 
   protected handlePieceMove(payload: PieceMoveEvent): void {

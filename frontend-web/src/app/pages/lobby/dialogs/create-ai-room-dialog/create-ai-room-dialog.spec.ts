@@ -19,7 +19,11 @@ class StubRoomsApi {
       host: { id: 'u-1', username: 'alice' },
       black: { id: 'u-1', username: 'alice' },
       white: { id: 'bot', username: 'AI_Medium' },
-      spectators: [],
+      seats: [
+      { index: 0, player: { id: 'u-1', username: 'alice' } },
+      { index: 1, player: { id: 'u-2', username: 'bob' } },
+    ],
+    spectators: [],
       game: null,
       chatMessages: [],
       createdAt: '2026-04-25T00:00:00Z',

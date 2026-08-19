@@ -83,6 +83,17 @@ export interface MoveDto {
   readonly fromCol?: number | null;
 }
 
+/**
+ * 一个座位:座位号 + 坐在上面的人。
+ *
+ * `black` / `white` 是 0 号与 1 号的派生读法,所以三座位房间里 2 号座位上的人
+ * **在它们里面根本不出现**。要知道"谁坐哪",读这个。
+ */
+export interface RoomSeat {
+  readonly index: number;
+  readonly player: UserSummary;
+}
+
 export interface GameSnapshot {
   readonly id: string;
   /** The seat to move (0-based). See {@link MoveDto.seat}. */
@@ -95,6 +106,17 @@ export interface GameSnapshot {
   readonly turnStartedAt: string;
   readonly turnTimeoutSeconds: number;
   readonly moves: readonly MoveDto[];
+  /**
+   * 这个看客**能看到**的那一份棋种私有状态,由服务端的规则序列化;棋种没有隐藏信息、
+   * 或对局还没开始时不给(`null` / 字段缺失)。
+   *
+   * **对本层完全不透明** —— 内容由棋种决定,由那个棋种自己的模块解析
+   * (斗地主见 `games/doudizhu/seat-view.ts`)。与闯关那条线的 `LayoutJson` 同一个做法。
+   *
+   * 同一局的不同座位拿到的是**不同的**字符串:斗地主的手牌只有一个座位能看,而服务端
+   * 逐张裁剪过,并有一条"没有一个座位看得到别人的任何一张"的断言钉着。
+   */
+  readonly seatView?: string | null;
 }
 
 export interface ChatMessage {
@@ -169,6 +191,7 @@ export interface RoomState {
   readonly black: UserSummary | null;
   readonly white: UserSummary | null;
   readonly spectators: readonly UserSummary[];
+  readonly seats: readonly RoomSeat[];
   readonly game: GameSnapshot | null;
   readonly chatMessages: readonly ChatMessage[];
   readonly createdAt: string;

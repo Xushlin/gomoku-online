@@ -1,4 +1,5 @@
 import type { GameManifest } from './game-manifest';
+import { doudizhuManifest } from './doudizhu/manifest';
 import { gomokuManifest } from './gomoku/manifest';
 import { idiomChainManifest } from './idiom-chain/manifest';
 import { idiomCrosswordManifest } from './idiom-crossword/manifest';
@@ -22,6 +23,7 @@ export const GAME_REGISTRY: readonly GameManifest[] = [
   idiomGuessManifest,
   ticTacToeManifest,
   xiangqiManifest,
+  doudizhuManifest,
   klotskiManifest,
   tetrisManifest,
 ];

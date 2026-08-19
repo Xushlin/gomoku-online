@@ -1,0 +1,149 @@
+@if (view(); as v) {
+  <div class="flex flex-col gap-4">
+    <!-- 公开信息:阶段、地主、底分、底牌。三家(与围观者)看到的完全相同。 -->
+    <div class="border-border bg-surface rounded-card flex flex-wrap items-center gap-x-4 gap-y-2 border p-3">
+      <span class="text-sm font-semibold">
+        {{ 'doudizhu.phase.' + v.phase | transloco }}
+      </span>
+      @if (v.landlord !== null) {
+        <span class="text-muted text-sm">
+          {{ 'doudizhu.table.landlord' | transloco: { seat: v.landlord + 1 } }}
+        </span>
+        <span class="text-muted text-sm tabular-nums">
+          {{ 'doudizhu.table.base-score' | transloco: { score: v.baseScore } }}
+        </span>
+      }
+      @if (v.kitty; as kitty) {
+        <span class="flex flex-wrap items-center gap-1">
+          <span class="text-muted text-xs">{{ 'doudizhu.table.kitty' | transloco }}</span>
+          @for (card of kitty; track card.code) {
+            <span
+              class="border-border bg-bg rounded-card inline-flex min-w-7 items-center justify-center border px-1 py-0.5 text-xs leading-none"
+              [class.text-red-600]="card.red"
+              [class.dark:text-red-400]="card.red"
+              >{{ symbol(card) }}{{ card.label }}</span
+            >
+          }
+        </span>
+      }
+    </div>
+
+    <!-- 另外两家:只剩几张。张数是牌桌上看得见的,所以服务端给所有人。 -->
+    <ul class="flex flex-wrap gap-3" [attr.aria-label]="'doudizhu.table.others-label' | transloco">
+      @for (other of others(); track other.seat) {
+        <li
+          class="border-border bg-surface rounded-card flex min-w-0 flex-1 flex-col gap-1 border p-3"
+          [attr.data-seat]="other.seat"
+          [attr.data-count]="other.count"
+        >
+          <span class="text-sm break-words">
+            {{ 'doudizhu.table.seat' | transloco: { seat: other.seat + 1 } }}
+            @if (other.seat === v.landlord) {
+              <span class="text-primary ml-1 text-xs font-semibold">{{
+                'doudizhu.table.landlord-badge' | transloco
+              }}</span>
+            }
+          </span>
+          <span class="text-muted text-xs tabular-nums">
+            {{ 'doudizhu.table.cards-left' | transloco: { count: other.count } }}
+          </span>
+        </li>
+      }
+    </ul>
+
+    <!-- 桌面上等着被压的那一手。 -->
+    <div class="border-border rounded-card border border-dashed p-3">
+      @if (v.tableCards; as table) {
+        <p class="text-muted mb-2 text-xs">
+          {{ 'doudizhu.table.played-by' | transloco: { seat: (v.tableSeat ?? 0) + 1 } }}
+        </p>
+        <div class="flex flex-wrap gap-1">
+          @for (card of table; track card.code) {
+            <span
+              class="border-border bg-surface rounded-card inline-flex min-w-8 items-center justify-center border px-1.5 py-1 text-sm leading-none"
+              [class.text-red-600]="card.red"
+              [class.dark:text-red-400]="card.red"
+              >{{ symbol(card) }}{{ card.label }}</span
+            >
+          }
+        </div>
+      } @else {
+        <p class="text-muted text-center text-sm">{{ 'doudizhu.table.free-lead' | transloco }}</p>
+      }
+    </div>
+
+    @if (!isSpectator()) {
+      <!-- 自己的牌。服务端逐张裁剪过,所以这里没有"要藏什么"的问题。 -->
+      <div class="flex flex-col gap-2">
+        <span class="text-muted text-xs">
+          {{ 'doudizhu.table.my-hand' | transloco: { count: hand().length } }}
+        </span>
+        <div class="flex flex-wrap gap-1" role="group" [attr.aria-label]="'doudizhu.table.my-hand-label' | transloco">
+          @for (card of hand(); track card.code) {
+            <button
+              type="button"
+              class="border-border bg-surface rounded-card min-w-9 border px-2 py-2 text-sm leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default disabled:opacity-60"
+              [class.border-primary]="isSelected(card)"
+              [class.-translate-y-1]="isSelected(card)"
+              [class.text-red-600]="card.red"
+              [class.dark:text-red-400]="card.red"
+              [class.transition-transform]="true"
+              [attr.aria-pressed]="isSelected(card)"
+              [attr.aria-label]="symbol(card) + card.label"
+              [disabled]="actionsDisabled()"
+              (click)="toggle(card)"
+            >
+              {{ symbol(card) }}{{ card.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="border-border bg-surface rounded-card flex flex-wrap gap-2 border p-3">
+        @if (v.phase === 'Bidding') {
+          @for (points of bids; track points) {
+            <button
+              type="button"
+              class="border-border rounded-card border px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default disabled:opacity-50"
+              [disabled]="actionsDisabled()"
+              (click)="bid(points)"
+            >
+              {{
+                points === 0
+                  ? ('doudizhu.action.no-bid' | transloco)
+                  : ('doudizhu.action.bid' | transloco: { points: points })
+              }}
+            </button>
+          }
+        } @else {
+          <button
+            type="button"
+            class="bg-primary text-bg rounded-card px-4 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default disabled:opacity-50"
+            [disabled]="!canPlay()"
+            (click)="play()"
+          >
+            {{ 'doudizhu.action.play' | transloco: { count: selectedCount() } }}
+          </button>
+          <button
+            type="button"
+            class="border-border rounded-card border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default disabled:opacity-50"
+            [disabled]="!canPass()"
+            (click)="pass()"
+          >
+            {{ 'doudizhu.action.pass' | transloco }}
+          </button>
+        }
+
+        @if (actionsDisabled() && !readonly()) {
+          <p class="text-muted w-full text-xs">{{ 'doudizhu.action.waiting' | transloco }}</p>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <!-- seatView 解不出来:棋种没有隐藏状态、对局还没开始、或形状读不懂。
+       三种的正确反应都是"这一块先不画",而不是让房间页整页挂掉。 -->
+  <p class="text-muted border-border rounded-card border border-dashed p-6 text-center text-sm">
+    {{ 'doudizhu.table.waiting-for-deal' | transloco }}
+  </p>
+}

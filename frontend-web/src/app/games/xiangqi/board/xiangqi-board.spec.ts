@@ -19,6 +19,10 @@ function roomState(moves: readonly MoveDto[], status: RoomState['status'] = 'Pla
     host: { id: 'u1', username: 'red' },
     black: { id: 'u1', username: 'red' },
     white: { id: 'u2', username: 'black' },
+    seats: [
+      { index: 0, player: { id: 'u-1', username: 'alice' } },
+      { index: 1, player: { id: 'u-2', username: 'bob' } },
+    ],
     spectators: [],
     game: {
       id: 'g1',

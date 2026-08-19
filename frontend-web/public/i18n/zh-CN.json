@@ -595,5 +595,27 @@
     "prev": "上一页",
     "next": "下一页",
     "page-of": "第 {{page}} / {{total}} 页"
-  }
+  },
+  "games.doudizhu.title": "斗地主",
+  "games.doudizhu.description": "三个人、一副牌,地主对两个农民。手牌只有你自己看得见。",
+  "doudizhu.phase.Bidding": "叫分",
+  "doudizhu.phase.Playing": "出牌",
+  "doudizhu.phase.Finished": "本局结束",
+  "doudizhu.table.landlord": "地主:{{seat}} 号座位",
+  "doudizhu.table.landlord-badge": "地主",
+  "doudizhu.table.base-score": "底分 {{score}}",
+  "doudizhu.table.kitty": "底牌",
+  "doudizhu.table.seat": "{{seat}} 号座位",
+  "doudizhu.table.cards-left": "剩 {{count}} 张",
+  "doudizhu.table.others-label": "其他两家",
+  "doudizhu.table.played-by": "{{seat}} 号座位打出",
+  "doudizhu.table.free-lead": "自由出牌 —— 桌上没有要压的牌",
+  "doudizhu.table.my-hand": "我的牌({{count}} 张)",
+  "doudizhu.table.my-hand-label": "我的手牌,点一下选中",
+  "doudizhu.table.waiting-for-deal": "等待发牌…",
+  "doudizhu.action.no-bid": "不叫",
+  "doudizhu.action.bid": "叫 {{points}} 分",
+  "doudizhu.action.play": "出牌({{count}})",
+  "doudizhu.action.pass": "不要",
+  "doudizhu.action.waiting": "等其他人行动…"
 }
