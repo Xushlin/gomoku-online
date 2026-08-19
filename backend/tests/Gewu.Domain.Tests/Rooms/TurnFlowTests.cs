@@ -46,15 +46,15 @@ public class TurnFlowTests
     private sealed class FallbackRules(
         int seatCount,
         Func<int, MoveApplication>? apply = null,
-        Func<IReadOnlyList<PlayedMove>, int, MoveIntent>? fallback = null)
+        Func<MatchState, int, MoveIntent>? fallback = null)
         : FlowRules(seatCount, apply), ITimeoutFallbackRules
     {
         public int FallbackCalls { get; private set; }
 
-        public MoveIntent MoveOnTimeout(IReadOnlyList<PlayedMove> history, int seat)
+        public MoveIntent MoveOnTimeout(MatchState state, int seat)
         {
             FallbackCalls++;
-            return (fallback ?? ((h, _) => MoveIntent.Place(new Position(h.Count, 0))))(history, seat);
+            return (fallback ?? ((s, _) => MoveIntent.Place(new Position(s.History.Count, 0))))(state, seat);
         }
     }
 
@@ -232,6 +232,33 @@ public class TurnFlowTests
 
         act.Should().Throw<TurnNotTimedOutException>();
         rules.FallbackCalls.Should().Be(0, "还没超时就问兜底,等于替一个还在思考的人出手");
+    }
+
+    [Fact]
+    public void The_fallback_sees_the_setup()
+    {
+        // **这条测试是本次签名改动的理由。** `MoveOnTimeout` 第一版只收历史,而斗地主首出时的
+        // 兜底要出"手上最小的一张单牌" —— 手牌在发牌里,不在历史里。
+        //
+        // `generalize-turn-flow` 加这个接缝时 `MatchState` 还不存在;紧接着的
+        // `pass-setup-to-rules` 为了同一个理由改了 `Apply`,却没回头看几十行之外这个刚加的接缝。
+        MatchState? seen = null;
+        var rules = new FallbackRules(
+            3,
+            fallback: (state, _) =>
+            {
+                seen = state;
+                return MoveIntent.Place(new Position(state.History.Count, 0));
+            });
+        var host = NewUser();
+        var room = Room.Create(new RoomId(Guid.NewGuid()), "flow", host, Now, rules.GameKey);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules, setup: null);
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(2), rules, setup: null);
+
+        room.TimeOutCurrentTurn(Now.AddHours(1), 60, rules);
+
+        seen.Should().NotBeNull("兜底必须被问到");
+        seen!.Value.History.Should().BeEmpty("这一局还没走过任何一步");
     }
 
     [Fact]

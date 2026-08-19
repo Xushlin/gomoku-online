@@ -224,10 +224,22 @@ public interface ITimeoutFallbackRules : IGameRules
     /// <c>PlayedAt</c> 重算),所以最坏是每个周期一步 —— 慢、可见、不会自旋。它是对局质量的
     /// 要求,所以这里不发明一个"连续兜底次数上限":那个数字会是凭空的。
     /// </para>
+    /// <para>
+    /// 它收 <see cref="MatchState"/> 而不是只收历史:兜底动作可能需要**服务端侧的对局设置**。
+    /// 斗地主首出时要出"手上最小的一张单牌",而手牌在发牌里,不在历史里。
+    /// </para>
+    /// <para>
+    /// **这个签名第一版写错了,而错法值得记下来。** <c>generalize-turn-flow</c> 加本接口时
+    /// <see cref="MatchState"/> 还不存在;紧接着的 <c>pass-setup-to-rules</c> 为了同一个理由
+    /// (规则读不到设置)把 <see cref="IGameRules.Apply"/> 改成收 <see cref="MatchState"/>,
+    /// **却没有回头看几十行之外这个刚加的接缝**。与 <c>enforce-ai-availability</c> 记下的
+    /// "修好规则夹具、没看隔七行的 AI 夹具"是同一个形状:**"我刚修过这个类型的问题"是一个
+    /// 应该去搜一遍同类的信号,不是一个可以安心的理由。**
+    /// </para>
     /// </summary>
-    /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
+    /// <param name="state">规则知道的关于这一局的一切:走子历史 + 服务端侧的对局设置。</param>
     /// <param name="seat">超时的座位号。</param>
-    MoveIntent MoveOnTimeout(IReadOnlyList<PlayedMove> history, int seat);
+    MoveIntent MoveOnTimeout(MatchState state, int seat);
 }
 
 /// <summary>

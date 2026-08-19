@@ -594,7 +594,7 @@ public sealed class Room
         if (rules is ITimeoutFallbackRules fallback)
         {
             var seat = Game.CurrentTurn;
-            var intent = fallback.MoveOnTimeout(Game.History(), seat);
+            var intent = fallback.MoveOnTimeout(Game.State(), seat);
             return TurnTimeoutOutcome.Played(ApplyMove(seat, intent, now, rules));
         }
 
