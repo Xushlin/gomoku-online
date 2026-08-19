@@ -474,9 +474,38 @@ Not yet done — platform roadmap:
 
   One thing deliberately not done: **renaming `SayWord`.** It is in fact the generic text-payload path — the server only builds `MakeMoveCommand(Text:)` and never looks at the game key — but its name was coined for 成语接龙. No third hub method was added (one payload with two entrances is two validation paths to keep in step), and no drive-by rename either, since that touches server, contract and spec. **Trigger: the day a third text-payload game lands**, when a name coined for one game becomes misleading in three places.
 
+- [x] **`add-doudizhu-table-visuals`** — 斗地主的牌桌变成了一张桌子,发牌与出牌有了动作。Backend: **zero changes**.
+
+  用户的话是「界面有点粗糙,太简陋了」,并给了一张 QQ 游戏斗地主的参照图。那张图里真正起作用的四件事**都不需要新的服务端数据**:一张绿呢桌子、三个座位环绕(下家在右 —— 出牌逆时针,俯视时下方的逆时针下一位就在右)、对家的手牌是一叠**牌背**(与服务端逐张裁剪过的事实一致 —— 客户端手上本来就没有那些牌)、以及牌从扇形正中散到手里 / 出的牌从出牌人的方位飞到桌心。
+
+  **整张牌的位图没有用,而这是这个仓库已经判过的同一个案子。** 用户提供的素材包里有 54 张 420×600 的牌面,而它们既不跟 app 主题也不跟棋盘皮肤 —— 硬规则是组件里不许写死颜色,`add-web-xiangqi` 给象棋棋子的答案是 `BoardSkinTokens.pieces`,连约束一起继承:**皮肤挑的是深浅,不是色相**。所以纸面 / 边框 / 角标 / 牌背 / 桌面进 token(三个皮肤各补一份,**漏了编译不过** —— 那份 `bamboo` fixture 在加字段那一刻就红了,和 `pieces` 加进来那次是同一处),而**花色的色相是这个游戏的身份**(♥ 必须是红的),所以只用素材包里的**四个花色图**,一张 2 KB 上下。顺带解决一个老问题:`♥` 在部分平台会被渲染成彩色 emoji,而一张图不会。
+
+  **动画由「牌的身份」驱动,而不是由计时器。** 模板用 `track card.code`,所以一张牌的 DOM 节点只在这张牌**第一次出现**时被创建,而 `animation` 写在牌上就恰好在那一刻放一次 —— 之后重排、别人出牌、快照刷新都不会重播(CSS 动画不因节点移动而重启)。于是没有信号要清、没有 `setTimeout` 要取消、也没有「动画放过了吗」这个状态。**同一个事实同时驱动 DOM 与动画,就没有第二个东西需要被记得去重置**;抢到地主后进手的三张底牌因此**也**会飞进来,而那不需要额外一行代码。
+
+  **三处「计划是错的」,每一处都是量出来的,而三处的形状相同:一个我以为已知的机制。**
+
+  1. 样式表按 `.board-*` / `.xq-*` 的先例放在全局 —— 而全局样式**首屏就要下载**:初始包 474.16 → **484.83 kB**,480 kB 的预算当场报警。搬进组件(`room-page` 那个 lazy chunk)后 479.66 kB。中间还走错一步:为了压进 `anyComponentStyle: 4kB`,把 token 颜色写成 `text-[color:var(--x)]` 之类的 arbitrary utility —— **那些 utility 会进首屏的 Tailwind 样式表**,479.53 → 480.38 kB,预算又红。最后的分工是:尺寸间距用现成 utility(它们早就在首屏包里),皮肤 token 留在组件 CSS。
+  2. 发牌的横向散开量量出来是 **0**。`--ddz-step` 里有个 `100%`,而**百分比是在用它的地方解算的**:在 `margin-left` 里它对着容器,而在 `transform: translate()` 里它对着**元素自己**,`(34px - 34px) / 16 = 0`。牌只往下掉不散开,**而动画照样在放**,所以看起来像「设计成这样」。
+  3. 花色图的路径原本写在 CSS 里(CSS 才是绘制权威),而这份**测试构建没有 .png 的 loader**:绝对路径 `Could not resolve`,相对路径 `No loader is configured for ".png"` —— 两次都是整个测试构建失败。路径因此由组件绑成 `--ddz-pip`,而「它指着一个真存在的文件」由一条走遍**全部 54 个编码**的测试钉住(**惰性** `import.meta.glob` 只取键名、不加载模块 —— 同一个 loader 限制下唯一还能证明文件在磁盘上的办法)。代价写在源码里:那个绑定若被清洗掉,花色会**静静地不见**,所以有一条断言读 inline style 里的 `url(`。
+
+  **「装着扇形的容器不能是 shrink-to-fit」这一条踩了三次** —— 右侧座位的 `flex-end`、改成 `center`、桌心的 `items-center`。同一个机制:`100%` 在宽度尚未定下来的容器里解算成 0,步长先变**负**(牌背反向叠,`scrollWidth 18 > clientWidth 0`),加了下限之后又被压到 2px(17 张牌挤成 50px 的一条)。
+
+  **顺带修的两处,都只有在屏幕上才看得见。** 侧栏在三座位房间只列黑白两个人 —— **2 号座位上的人在自己的房间里根本不出现**,而这是 `add-web-doudizhu` 修过的「白方走棋」**同一个缺陷的第二处**,当时那条测试是绿的:它问的是另一个问题。以及 375 px 下「10」被后一张牌切成「1(」。
+
+  **新增一个 lint 期的检查,并作废了一份抄在规格里的名单。** `frontend-web/scripts/check-styles.mjs` 挂在 `npm run lint` 上,断言每个皮肤块定义的变量集与默认皮肤一致、样式表里没写死花色路径、发牌 keyframe 里没引用带百分比的变量。它**不在 vitest 里**,是试过三条路之后的结论(`?raw` 的默认导出是 `[]`、`import.meta.glob` 带 `query` 同上、`node:fs` 在 spec 的 tsconfig 里没有类型)。而 `web-board-skins` 里那条抄了 11 个变量名的 requirement 同时作废:它自 `add-web-xiangqi` 起就漏了 `--xq-*` 三个,**而那条 Scenario 从来没有被实现过** —— 没有任何测试读过 `board-skins.css`。第一版检查还红在**我自己写的注释**上(classic 块里一句「NOT `--color-surface`: this skin…」),所以它先剥注释 —— `generalize-match-seats` 的源码级断言记的是同一条。
+
+  **一次变异什么也没证明,而它长得像证明了。** 侧栏那条第一次用 `@if (false)` 变异,得到的是**模板编译错误**:exit 1,而没有一条测试跑起来。改成 `seats.length > 5` 才真正让 2 条测试变红。**一个构建失败的变异不是红测试** —— 与本文件已记的「`--no-build` 会跑磁盘上碰巧存在的那份二进制」是同一族:失败与「没在测」长得一样。
+
+  **动画的证据全部来自 headless CDP,而这纠正了本文件里的一句话。** 之前记的是「Browser pane 不显示时读到的 DOM 属性是旧的」;更准确的说法是**时间线根本不走** —— `document.timeline.currentTime` 冻在 0,所有动画 `running@0`、`opacity: 0`,牌停在 `from` 关键帧上(而这反倒让我能直接读出那一帧的散开量,于是发现它是 0)。`chrome --headless --screenshot` 也不行:它只能靠 `--virtual-time-budget`,而 SignalR 的长轮询一直挂着,虚拟时间到点时页面还停在骨架屏上。用 CDP 真实时间采样量到的是:t=432ms 时 17 个动画全 `running`、第一张牌在 `x=216, y=-108, opacity 0`;t=882ms 时 15 个还在跑、第一张已就位;t=2482ms 时**一个都不剩**;而 `--force-prefers-reduced-motion` 下同一组采样**每次都是 0 个动画**。375 px 的检查是在**满屏内容**下做的(20 张牌 / 两家各 17 张牌背 / 桌上一手牌),**没有任何元素** `scrollWidth > clientWidth` —— 这一条是必要的:三次溢出里有两次在页面级 `scrollWidth - clientWidth === 0` 下完全看不见。
+
+
 Discipline: **do not start a new game until the previous one is archived.** Eight games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished. And the rule is narrower than the failure it needs to prevent: `enable-xiangqi-human-play` was not a game, so nothing stopped it sitting unarchived for 36 commits with the live spec contradicting the code. **A merged PR whose change directory is still in `openspec/changes/` is the signal** — check that list, because strict validation will not.
 
 Deferred follow-ups, each with a reason:
+
+- **An exception message still names an env var the runtime ignores.** Starting the API in Production without a signing key throws `Jwt:SigningKey is empty in Production. Set environment variable GOMOKU_JWT__SIGNINGKEY.` — and `fix-spec-api-ops-env-prefix` **measured** that the `GOMOKU_` prefix does not work: only the unprefixed `Jwt__SigningKey` is read. So the message sends whoever hits it to a variable the process will not look at. Found while starting a scratch API for `add-doudizhu-table-visuals`' browser verification (three env-var attempts: `Jwt__Key` — wrong key name; `Jwt__SigningKey` with a non-base64 value — `FormatException`; then base64 — worked).
+
+  That earlier change fixed the *spec* and left the *runtime's own error text* saying the old thing, which is the same defect one layer over: **a documented config key the runtime silently ignores is worse than no documentation**, and an exception message is documentation that arrives at exactly the moment someone needs it. It is a one-line fix in `Program.cs` plus the assertion that the message names `Jwt__SigningKey`; it is deferred only because it is backend and unrelated to a card table. **Trigger: the next backend change of any size.**
 
 - **`squash-migration-baseline` — measured and declined.** Off the deferred list: decided against, with the numbers, so nobody re-litigates it.
 
@@ -501,7 +530,7 @@ Deferred follow-ups, each with a reason:
 
   Existing dev databases keep their pretty-printed rows, because the seeder is a no-op once levels exist. Not worth a data migration: a local DB can be deleted, and there is no deployed one.
 
-- **The `bundle initial exceeded maximum budget` warning is gone, and the budget is now 480 kB** — 504.65 kB → **470.37 kB**, against a threshold tightened from 500 kB so the win cannot quietly erode (transfer 132.15 → 124.70 kB). See `close-bundle-budget` and `tighten-bundle-budget`. Headroom is **9.63 kB**, deliberately narrow: the whole point of the signal is that it fires before anyone has to go looking.
+- **The `bundle initial exceeded maximum budget` warning is gone, and the budget is now 480 kB** — 504.65 kB → **470.37 kB**, against a threshold tightened from 500 kB so the win cannot quietly erode (transfer 132.15 → 124.70 kB). See `close-bundle-budget` and `tighten-bundle-budget`. Headroom **was** 9.63 kB, deliberately narrow: the whole point of the signal is that it fires before anyone has to go looking. `add-doudizhu-table-visuals` then spent almost all of it — **479.66 kB, i.e. 0.34 kB left** — and the reason is worth knowing before the next change: that game's own stylesheet sits in a lazy chunk, but the **skin tokens it reads live in `board-skins.css`, which is eager**, and four skin blocks × ten new variables is ~5.5 kB that every first paint pays for. The budget fired three times during that change and was never raised. **The next person who adds a token to every skin will hit it immediately**, and the honest options then are to shrink the per-skin values (hoisting a shared *pattern* into component CSS worked once — the card back's lattice was byte-identical in all three skins) or to make skin variables lazy, which nothing here does yet.
 
   The fix was one component. `find-player` — a single debounced text box on `/home` — was the **only eagerly-loaded consumer of `@angular/forms`**: the auth pages, the lobby dialogs and the chat panel are all behind lazy routes. One `FormControl` was therefore pulling **34 kB** of forms machinery into every first paint. Replacing it with a plain signal + `[value]`/`(input)` removed exactly that, and the deferred note's guess — "one small thing rather than an architectural change" — turned out right.
 
