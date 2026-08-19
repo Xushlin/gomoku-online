@@ -165,37 +165,58 @@ HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id
 - `Result: GameResult?`(对局进行时为 `null`)
 - `WinnerUserId: UserId?`
 - `EndReason: GameEndReason?`(结束时非 null,与 `Result` 同时为 null 或同时非 null)
-- **`CurrentTurn: int`** —— **座位号**,`0` 到 `SeatCount - 1`
+- `CurrentTurn: int` —— **座位号**,`0` 到 `SeatCount - 1`
+- `Setup: string?` —— 本局的**服务端侧对局设置**;不需要设置的棋种为 `null`
 - `Moves: IReadOnlyCollection<Move>`
 - `RowVersion: byte[]`(乐观并发令牌,由 Infrastructure 层维护)
 
-`CurrentTurn` MUST 是座位号而 MUST NOT 是 `Stone`。轮转 MUST 为 `(CurrentTurn + 1) % SeatCount`,而 MUST NOT 是两值之间的布尔翻转。
+`CurrentTurn` MUST 是座位号而 MUST NOT 是 `Stone`。轮转的默认规则 MUST 为
+`(CurrentTurn + 1) % SeatCount`,而 MUST NOT 是两值之间的布尔翻转;规则可以用
+`MoveApplication.NextSeat` **覆盖**它。
 
-**`Stone` MUST NOT 出现在 `Gewu.Domain/Rooms/` 下的任何文件中。** 这是"内核不知道一个游戏有几个人"的可执行形式,与 `in-room-chat` 那条「`JoinAsSpectator` 不许提到 `GameKey`」是同一种断言,且同样 MUST 由一条测试强制而不是靠约定。
+**`Stone` MUST NOT 出现在 `Gewu.Domain/Rooms/` 下的任何文件中。** 这是"内核不知道一个游戏有几个人"的可执行形式,MUST 由一条测试强制而不是靠约定。
 
-`Stone` 本身不废弃,它下沉到棋盘类棋种的规则内部:座位 0/1 由 `INInARowRules` / `XiangqiRules` **在自己内部**映成 `Stone.Black` / `Stone.White`。`add-xiangqi` 立下的「`Stone.Black` 就是红」那条读法**一个字不动** —— 它本来就是棋种内部的事,而这次改动恰好把这一点变成了结构。
+`Stone` 本身不废弃,它下沉到棋盘类棋种的规则内部。`add-xiangqi` 立下的「`Stone.Black` 就是红」那条读法**一个字不动**。
+
+#### `Setup` 是一个内核从不解释的字符串
+
+内核 MUST NOT 读它的内容、MUST NOT 校验它的格式、MUST NOT 依赖它的长度。**它 MUST NOT 出现在任何 DTO 上**,由一条反射断言强制(DTO 命名空间下不得有名字含 `Setup` 的成员)。行为测试只能证明**今天**的投影没带上它 —— **一个不存在的成员没有明天。**
 
 `Game` 不独立于 `Room` 存活;构造仅由 `Room.JoinAsPlayer` 内部发生。`Game.FinishWith` 的签名 MUST 为 `FinishWith(GameResult, UserId?, GameEndReason, DateTime)`。
 
 #### Scenario: 初始 Game 状态
-- **WHEN** 白方加入触发 `JoinAsPlayer`
-- **THEN** `Game.StartedAt == now`;**`CurrentTurn == 0`**(先手座位);`Moves` 空;`EndedAt == null`;`Result == null`;`EndReason == null`
+- **WHEN** 坐满触发 `JoinAsPlayer`
+- **THEN** `Game.StartedAt == now`;`CurrentTurn == 0`;`Moves` 空;`EndedAt == null`;`Result == null`;`EndReason == null`
+
+#### Scenario: 不需要设置的棋种其 Setup 为 null
+- **WHEN** 一个不实现 `IDealtGameRules` 的棋种开局
+- **THEN** `Game.Setup == null` —— MUST NOT 是 `""`
+
+#### Scenario: 需要设置的棋种其 Setup 被存下来
+- **WHEN** 一个实现 `IDealtGameRules` 的棋种开局,`JoinAsPlayer` 收到的 `setup` 是 `"abc"`
+- **THEN** `Game.Setup == "abc"`,一字不改
+
+#### Scenario: 任何 DTO 都不暴露 Setup
+- **WHEN** 反射遍历 `Gewu.Application.Common.DTOs` 下的全部类型
+- **THEN** 没有任何成员的名字含 `Setup`
 
 #### Scenario: 两座位游戏的轮转不变
-- **WHEN** 一个 `SeatCount == 2` 的棋种连走 3 步
-- **THEN** `CurrentTurn` 依次为 `0 → 1 → 0 → 1` —— 与改动前的 `Black → White → Black → White` 逐步等价,行为零变化
+- **WHEN** 一个 `SeatCount == 2` 的棋种连走 3 步,规则都不指定 `NextSeat`
+- **THEN** `CurrentTurn` 依次为 `0 → 1 → 0 → 1`
 
 #### Scenario: 三座位游戏按环轮转
-- **WHEN** 一个 `SeatCount == 3` 的规则连走 3 步
+- **WHEN** 一个 `SeatCount == 3` 的规则连走 3 步,都不指定 `NextSeat`
 - **THEN** `CurrentTurn` 依次为 `0 → 1 → 2 → 0`
 
-  这一条用一个假的三座位规则验证,而它证明的是**取模算术**,MUST NOT 被当成"这个接缝对牌类够用"的证据 —— 后者只有真游戏能证。`add-puzzle-core` 用一个照着唯一实现捏的 fake 声称证过接缝通用,华容道一到 `Validate` 与 `Score` 两个都得改。
+  这一条用一个假的三座位规则验证,而它证明的是**取模算术**,MUST NOT 被当成"这个接缝对牌类够用"的证据 —— 后者只有真游戏能证。
+
+#### Scenario: 规则指定的下一手覆盖轮转
+- **WHEN** 规则在座位 `1` 走完之后返回 `NextSeat == 0`,而 `SeatCount == 3`
+- **THEN** `CurrentTurn == 0`,而不是 `2`
 
 #### Scenario: Game 结束状态
 - **WHEN** 某方获胜或平局或认输或超时后
 - **THEN** `EndedAt != null`;`Result != null`;若有胜方则 `WinnerUserId != null`;`EndReason != null` 且对应路径
-
----
 
 ### Requirement: `Move` 子实体记录每一步的上下文
 
@@ -553,75 +574,112 @@ Api 层全局异常中间件 MUST 映射:
 系统 SHALL 在 `Room` 聚合根上提供 `Resign(UserId userId, DateTime now) : GameEndOutcome` 方法。规则:
 
 - `Status != Playing` 或 `Game == null` → MUST 抛 `RoomNotInPlayException`
-- `userId` 不是 `BlackPlayerId` 且不是 `WhitePlayerId` → MUST 抛 `NotAPlayerException`
+- `SeatOf(userId) == null` → MUST 抛 `NotAPlayerException`
 - **MUST NOT** 检查 `CurrentTurn` —— 认输不限回合,可在对手回合认输
-- 推导对手棋色与 UserId;`Game.FinishWith(opponentResult, opponentUserId, GameEndReason.Resigned, now)`;`Status` 转换为 `Finished`
-- 返回 `GameEndOutcome(opponentResult, opponentUserId)`
+- 推导对手座位与 UserId;`Game.FinishWith(GameResult.Decided, opponentUserId, GameEndReason.Resigned, now)`;`Status` 转换为 `Finished`
+- 返回 `GameEndOutcome(GameResult.Decided, opponentUserId)`
 
-新 record `GameEndOutcome(GameResult Result, UserId? WinnerUserId)` MUST 定义在 `Gewu.Domain.Rooms` 命名空间,与现有 `MoveOutcome` 同文件,是 `Resign` / `TimeOutCurrentTurn` 的通用返回类型。
+`GameEndOutcome(GameResult Result, UserId? WinnerUserId)` MUST 定义在 `Gewu.Domain.Rooms` 命名空间,
+与 `MoveOutcome` 同文件,是 `Resign` / `TimeOutCurrentTurn` 的通用返回类型。
 
-#### Scenario: 黑方认输
-- **WHEN** Black 玩家(含 Host)在 Playing 状态调 `Resign(hostId, now)`
-- **THEN** 返回 `GameEndOutcome(WhiteWin, whitePlayerId)`;`Game.Result == WhiteWin`;`Game.WinnerUserId == whitePlayerId`;`Game.EndReason == Resigned`;`Game.EndedAt == now`;`Room.Status == Finished`
+结果值 MUST 是 `Decided`,而 MUST NOT 是带颜色的取值。**谁赢了由 `WinnerUserId` 一处说明。**
 
-#### Scenario: 白方认输
-- **WHEN** White 玩家调 `Resign(whiteId, now)`
-- **THEN** 返回 `GameEndOutcome(BlackWin, blackPlayerId)`;其他字段对称
+**本方法今天仍假定恰好两个座位** —— "对手"在两个座位时唯一,三个座位时不唯一。它 MUST 在座位数
+不为 2 时以一个具名异常拒绝,而 MUST NOT 猜一个对手。拆除条件:第一个 `SeatCount != 2` 的棋种落地,
+届时"认输"对它意味着什么是那个棋种要回答的问题,不是这里可以默认的。
+
+#### Scenario: 先手座位认输
+- **WHEN** 先手座位玩家(含 Host)在 Playing 状态调 `Resign(hostId, now)`
+- **THEN** 返回 `GameEndOutcome(Decided, whitePlayerId)`;`Game.Result == Decided`;`Game.WinnerUserId == whitePlayerId`;`Game.EndReason == Resigned`;`Game.EndedAt == now`;`Room.Status == Finished`
+
+#### Scenario: 后手座位认输
+- **WHEN** 后手座位玩家调 `Resign(whiteId, now)`
+- **THEN** 返回 `GameEndOutcome(Decided, blackPlayerId)`;其他字段对称
 
 #### Scenario: 非自己回合也可认输
-- **WHEN** `CurrentTurn == Black`,White 玩家调 `Resign(whiteId, now)`
-- **THEN** 不抛异常;对局按白方认输 / 黑方胜结束
+- **WHEN** `CurrentTurn == 0`,后手座位玩家调 `Resign(whiteId, now)`
+- **THEN** 不抛异常;对局按后手认输 / 先手胜结束
 
 #### Scenario: 非玩家认输被拒
-- **WHEN** 非 Black / White 的 `UserId`(围观者或任意其他用户)调 `Resign`
+- **WHEN** 一个不在任何座位上的 `UserId`(围观者或任意其他用户)调 `Resign`
 - **THEN** 抛 `NotAPlayerException`
 
 #### Scenario: Waiting / Finished 状态调用
 - **WHEN** `Status != Playing`
 - **THEN** 抛 `RoomNotInPlayException`
 
----
+#### Scenario: 座位数不为 2 时拒绝
+- **WHEN** 一个三座位房间里的玩家调 `Resign`
+- **THEN** 抛一个具名异常;MUST NOT 任选一个对手判胜
 
 ### Requirement: `Room.TimeOutCurrentTurn` 按阈值判当前回合玩家超时负
 
-系统 SHALL 在 `Room` 聚合根上提供 `TimeOutCurrentTurn(DateTime now, int turnTimeoutSeconds) : GameEndOutcome`。规则:
+系统 SHALL 在 `Room` 聚合根上提供
+`TimeOutCurrentTurn(DateTime now, int turnTimeoutSeconds, IGameRules rules) : TurnTimeoutOutcome`。规则:
 
 - `Status != Playing` 或 `Game == null` → MUST 抛 `RoomNotInPlayException`
 - `turnTimeoutSeconds < 1` → MUST 抛 `ArgumentOutOfRangeException`
 - 计算 `lastActivity = Game.Moves.OrderBy(m => m.Ply).LastOrDefault()?.PlayedAt ?? Game.StartedAt`
 - `(now - lastActivity).TotalSeconds < turnTimeoutSeconds` → MUST 抛 `TurnNotTimedOutException`(防 worker 竞态)
-- `>= turnTimeoutSeconds` 时:`CurrentTurn` 的棋色方为 loser,对方为 winner;`Game.FinishWith(winnerResult, winnerUserId, GameEndReason.TurnTimeout, now)`;`Status = Finished`
-- 返回 `GameEndOutcome(winnerResult, winnerUserId)`
+- `>= turnTimeoutSeconds` 时分两条路:
+  - `rules is ITimeoutFallbackRules fb` → 用 `fb.MoveOnTimeout(history, CurrentTurn)` **替这个座位走一步**,那一步 MUST 走与真人落子完全相同的路径(即经过 `rules.Apply`),返回 `TurnTimeoutOutcome.Played(...)`
+  - 否则 → `CurrentTurn` 座位为 loser,另一个座位为 winner;`Game.FinishWith(GameResult.Decided, winnerUserId, GameEndReason.TurnTimeout, now)`;`Status = Finished`;返回 `TurnTimeoutOutcome.Ended(...)`
 
-#### Scenario: 黑方超时
-- **WHEN** `CurrentTurn == Black`,`lastActivity = t0`,`now - t0 = 61s`,`timeout = 60`
-- **THEN** 返回 `GameEndOutcome(WhiteWin, whitePlayerId)`;`Game.Result == WhiteWin`;`Game.WinnerUserId == whitePlayerId`;`Game.EndReason == TurnTimeout`;`Room.Status == Finished`
+判负那一条路要求**恰好两个座位** —— "对手"只在两个座位时唯一 —— 不满足时 MUST 抛
+`SeatCountNotSupportedException`。**这条限制没有被放宽,只是有了一个正当的出口**:一个三座位棋种
+若不提供兜底,仍然会在超时那一刻大声坏掉。
 
-#### Scenario: 白方超时
-- **WHEN** 黑方已走 1 子(ply=1, playedAt=t1),`CurrentTurn == White`,`now - t1 >= timeout`
-- **THEN** 返回 `GameEndOutcome(BlackWin, blackPlayerId)`
+`TurnTimeoutOutcome` MUST 恰好携带两者之一(走了一步 / 结束了),由构造强制;MUST NOT 两个都有
+或两个都无。
+
+#### 兜底那一步 MUST 过 `rules.Apply`
+
+MUST NOT 直接往 `Game` 里塞一条 `Move`。两个理由,第二个更要紧:
+
+1. 规则给出的兜底动作也可能非法(实现出错),而非法的一步不该因为"系统替他走的"就被接受。
+2. **它可能结束对局** —— 牌类游戏里替人出掉最后一手牌,那一手就赢了。
+
+因此 `PlayMove` 与超时兜底 MUST 共用同一条内部路径。两条路径各写一遍,会让本 spec 已经立下的
+「`Apply` 是走子合法性与胜负判定的**唯一**入口」变成两个入口。
+
+兜底走出的一步在**线上与真人走的一步没有区别**,这是刻意的:客户端不需要区分"他走的"与
+"系统替他走的",而房间状态广播本来就带着新的 `CurrentTurn`。
+
+#### Scenario: 先手座位超时(没有兜底的棋种)
+- **WHEN** `CurrentTurn == 0`,`lastActivity = t0`,`now - t0 = 61s`,`timeout = 60`,规则不实现 `ITimeoutFallbackRules`
+- **THEN** 返回 `Ended`,其 `GameEndOutcome` 为 `(Decided, whitePlayerId)`;`Game.Result == Decided`;`Game.WinnerUserId == whitePlayerId`;`Game.EndReason == TurnTimeout`;`Room.Status == Finished`
+
+#### Scenario: 后手座位超时
+- **WHEN** 先手已走 1 子(ply=1, playedAt=t1),`CurrentTurn == 1`,`now - t1 >= timeout`
+- **THEN** 返回 `Ended`,`WinnerUserId == blackPlayerId`
 
 #### Scenario: 无 Moves 时以 StartedAt 为基准
 - **WHEN** `Game.Moves.Count == 0`,`now - Game.StartedAt >= timeout`
-- **THEN** 黑方超时 → 白方胜
+- **THEN** 先手超时 → 后手胜
 
 #### Scenario: 阈值恰好
 - **WHEN** `(now - lastActivity).TotalSeconds == turnTimeoutSeconds`(例如都为 60)
 - **THEN** **成功判负**(用 `>=` 比较,不是 `>`)
 
 #### Scenario: 尚未超时
-- **WHEN** `(now - lastActivity).TotalSeconds < turnTimeoutSeconds`(例如 59 vs 60)
-- **THEN** 抛 `TurnNotTimedOutException`;`Room` / `Game` 状态保持不变
+- **WHEN** `(now - lastActivity).TotalSeconds < turnTimeoutSeconds`
+- **THEN** 抛 `TurnNotTimedOutException`;MUST NOT 调 `MoveOnTimeout`
 
-#### Scenario: 非法 timeout 参数
-- **WHEN** `turnTimeoutSeconds == 0`
-- **THEN** 抛 `ArgumentOutOfRangeException`
+#### Scenario: 有兜底的棋种超时时走一步而不是结束
+- **WHEN** 规则实现 `ITimeoutFallbackRules`,已超时
+- **THEN** 返回 `Played`;`Game.Moves` 多一条;`Status` 仍为 `Playing`;`CurrentTurn` 已按 `Apply` 的结果推进
 
-#### Scenario: 非 Playing 状态
-- **WHEN** `Status != Playing`
-- **THEN** 抛 `RoomNotInPlayException`
+#### Scenario: 兜底那一步照样判胜负
+- **WHEN** 兜底动作使规则判出胜负
+- **THEN** 对局照常结束(`Status == Finished`、`EndReason == Decided`),而 MUST NOT 是 `TurnTimeout` —— 它是被规则判出来的,不是超时判的
 
----
+#### Scenario: 非法的兜底动作被拒
+- **WHEN** `MoveOnTimeout` 返回该局面下非法的一步
+- **THEN** 抛 `InvalidMoveException`;`Game.Moves` 不增加、`CurrentTurn` 不变、`Status` 仍是 `Playing`
+
+#### Scenario: 三座位且没有兜底时拒绝
+- **WHEN** 一个三座位房间超时,规则不实现 `ITimeoutFallbackRules`
+- **THEN** 抛 `SeatCountNotSupportedException`;MUST NOT 任选一个赢家
 
 ### Requirement: 新增异常 `TurnNotTimedOutException` 与其 HTTP 映射
 
@@ -736,29 +794,52 @@ Api 层 SHALL 暴露 `POST /api/rooms/{id}/resign`(`[Authorize]`),成功 200 + `
 
 ### Requirement: `TurnTimeoutCommand` 是 worker 内部命令
 
-Application 层 SHALL 新增:
+Application 层 SHALL 提供:
 
 ```
 public sealed record TurnTimeoutCommand(RoomId RoomId) : IRequest<Unit>;
 ```
 
 Handler 流程:
+
 1. Load room(null → `RoomNotFoundException`)
-2. `var outcome = room.TimeOutCurrentTurn(_clock.UtcNow, _opts.Value.TurnTimeoutSeconds)`
-3. `await GameEloApplier.ApplyAsync(room, outcome.Result, _users, ct)`
-4. `await _uow.SaveChangesAsync(ct)`
-5. Notifier 顺序:`RoomStateChangedAsync` → `GameEndedAsync`
-6. 返回 `Unit.Value`
+2. **解析规则**:`_rules.For(room.GameKey)`,解析不出来时与落子路径一致地处理 —— 那是一条损坏的房间记录
+3. `var outcome = room.TimeOutCurrentTurn(_clock.UtcNow, _opts.Value.TurnTimeoutSeconds, rules)`
+4. 仅当对局**已结束**时 `await GameEloApplier.ApplyAsync(room, _rules, _users, ct)`
+5. `await _uow.SaveChangesAsync(ct)`
+6. Notifier 顺序按结果分两条路:
+   - 走了一步:`RoomStateChangedAsync` → `MoveMadeAsync`(与真人落子**逐条相同**);若那一步同时判出胜负,再 `GameEndedAsync`
+   - 判他负:`RoomStateChangedAsync` → `GameEndedAsync`
+7. 返回 `Unit.Value`
+
+第 4 步的「仅当已结束」与 `MakeMoveCommandHandler` 是**同一条**规则(一步棋不结束对局就不动评分),
+不是一条新规则。
 
 此命令 **不**暴露 REST 端点、**不**路由 SignalR Hub;仅 `TurnTimeoutWorker` 通过 `ISender.Send` 发送。
+
+本条此前写的是 `GameEloApplier.ApplyAsync(room, outcome.Result, _users, ct)` —— 那是
+`generalize-match-outcome` 之前的签名(那次改动让它从聚合读结果与赢家,并少了一个参数),
+而本 spec 没有跟上。顺带订正。
 
 #### Scenario: 命令不可经 HTTP 触发
 - **WHEN** 审阅 `RoomsController` / `MatchHub`
 - **THEN** 无任何 action / method 构造或分发 `TurnTimeoutCommand`
 
-#### Scenario: Worker 成功触发
-- **WHEN** `TurnTimeoutWorker` 发 `TurnTimeoutCommand(roomId)`,handler 执行
-- **THEN** Room.Status 转为 Finished;ELO 被应用;SignalR `GameEnded { EndReason: TurnTimeout }` 被广播
+#### Scenario: Worker 触发一个没有兜底的棋种
+- **WHEN** `TurnTimeoutWorker` 发 `TurnTimeoutCommand(roomId)`,该棋种不实现 `ITimeoutFallbackRules`
+- **THEN** Room.Status 转为 Finished;ELO 被应用;`GameEnded { EndReason: TurnTimeout }` 被广播;`MoveMadeAsync` MUST NOT 被调
+
+#### Scenario: Worker 触发一个有兜底的棋种
+- **WHEN** 同上,但该棋种实现 `ITimeoutFallbackRules`,且兜底那一步没有结束对局
+- **THEN** `RoomStateChangedAsync` 与 `MoveMadeAsync` 各一次;`GameEndedAsync` MUST NOT 被调;ELO MUST NOT 被触动
+
+#### Scenario: 兜底那一步结束了对局
+- **WHEN** 兜底动作使规则判出胜负
+- **THEN** `RoomStateChangedAsync`、`MoveMadeAsync`、`GameEndedAsync` 各一次
+
+#### Scenario: 房间指向本构建不认识的棋种
+- **WHEN** `room.GameKey` 在注册表里解析不出规则
+- **THEN** 抛 `RoomNotFoundException`;MUST NOT 提交、MUST NOT 广播
 
 #### Scenario: 竞态:worker 晚到一步
 - **WHEN** Worker 的 `GetRoomsWithExpiredTurnsAsync` 说"超时了",但到 handler 执行时对手刚落了一子
@@ -1121,24 +1202,26 @@ Validator MUST 通过注入的 `IGameRulesRegistry` 判断,MUST NOT 内联一份
 `Room.PlayMove(UserId userId, MoveIntent intent, DateTime now, IGameRules rules)` SHALL 依次执行:
 
 1. `Status != Playing` → 抛 `RoomNotInPlayException`
-2. `userId` 不是黑 / 白方 → 抛 `NotAPlayerException`
-3. 不是该方回合 → 抛 `NotYourTurnException`
-4. 调 `rules.Apply(history, intent, side)` —— **越界、重复落子、走法合法性全部由规则回答**
-5. 合法则 append 一条 `Move`(含可空起点)、切换回合
+2. `SeatOf(userId) == null` → 抛 `NotAPlayerException`
+3. 不是该座位的回合 → 抛 `NotYourTurnException`
+4. 调 `rules.Apply(history, intent, seat)` —— **越界、重复落子、走法合法性全部由规则回答**
+5. 合法则 append 一条 `Move`,并按 `MoveApplication.NextSeat`(为 `null` 时按 `(seat + 1) % SeatCount`)切换回合
 6. `Result != Ongoing` 则 `Game.FinishWith(result, winner, GameEndReason.Decided, now)` 并转 `Finished`
 
-**聚合根 MUST NOT 再调 `rules.IsInBounds` / `rules.CreateBoard` / `Board.PlaceStone`。** 盘面语义
-整个属于规则。这是象棋能进这个聚合的前提:它的一格上是七种棋子之一 × 两方,胜负是将死 / 困毙,
-与最后一步的位置没有直接关系 —— 没有一条能塞进「连 N 子棋盘」。
+第 4–6 步 MUST 抽成一条**内部共用**路径,由 `PlayMove` 与 `TimeOutCurrentTurn` 的兜底分支共同调用。
+前三步是 `PlayMove` 独有的(超时兜底不需要"这人是不是玩家、是不是他的回合" —— 座位由
+`CurrentTurn` 给出)。
 
-签名从 `Position position` 改为 `MoveIntent intent`。落子类棋种的调用方传 `MoveIntent(null, to)`。
+**赢家 MUST 由 `PlayerAt(application.WinnerSeat)` 得到**,而 MUST NOT 由结果值 `switch` 出黑方 / 白方。
+
+**聚合根 MUST NOT 再调 `rules.IsInBounds` / `rules.CreateBoard` / `Board.PlaceStone`。**
 
 #### Scenario: 非玩家落子
 - **WHEN** 一个围观者调 `PlayMove`
 - **THEN** 抛 `NotAPlayerException`,MUST NOT 调 `rules.Apply`
 
 #### Scenario: 不是自己的回合
-- **WHEN** 白方在黑方回合调 `PlayMove`
+- **WHEN** 后手座位在先手回合调 `PlayMove`
 - **THEN** 抛 `NotYourTurnException`,MUST NOT 调 `rules.Apply`
 
 #### Scenario: 规则拒绝则聚合状态不变
@@ -1146,8 +1229,20 @@ Validator MUST 通过注入的 `IGameRulesRegistry` 判断,MUST NOT 内联一份
 - **THEN** `Game.Moves` 不增加、`CurrentTurn` 不变、`Status` 仍是 `Playing`
 
 #### Scenario: 规则判出胜负则对局结束
-- **WHEN** `rules.Apply` 返回 `BlackWin`
-- **THEN** `Status == Finished`、`Game.Result == BlackWin`、`EndReason == Decided`、`WinnerUserId` 是黑方
+- **WHEN** `rules.Apply` 返回 `(Decided, WinnerSeat: 0)`
+- **THEN** `Status == Finished`、`Game.Result == Decided`、`EndReason == Decided`、`WinnerUserId == PlayerAt(0)`
+
+#### Scenario: 赢家座位不是零号也一样
+- **WHEN** `rules.Apply` 返回 `(Decided, WinnerSeat: 2)` 且房间有三个座位
+- **THEN** `WinnerUserId == PlayerAt(2)`
+
+#### Scenario: 平局不写赢家
+- **WHEN** `rules.Apply` 返回 `(Draw, null)`
+- **THEN** `Game.Result == Draw`、`WinnerUserId == null`
+
+#### Scenario: 规则可以指定下一手
+- **WHEN** 一个三座位规则在座位 `0` 走完之后返回 `NextSeat == 2`
+- **THEN** `Game.CurrentTurn == 2`,而不是 `1`
 
 ### Requirement: 领域错误带稳定错误码,并以 `HubException` 送达客户端
 
@@ -1346,19 +1441,32 @@ Hub 方法 MUST NOT 访问 `DbContext`、MUST NOT 直接发送 SignalR 消息(�
 
 ### Requirement: `Room.JoinAsPlayer` 让玩家入座,坐满才开局
 
-系统 SHALL 提供 `Room.JoinAsPlayer(UserId userId, DateTime now, IGameRules rules)`。调用后:
+系统 SHALL 提供 `Room.JoinAsPlayer(UserId userId, DateTime now, IGameRules rules, string? setup)`。调用后:
 
 - 若 `Status != Waiting`:MUST 抛 `RoomNotWaitingException`
 - 若 `SeatOf(userId) != null`(已经坐着,含创建者):MUST 抛 `AlreadyInRoomException`
 - 若 `userId ∈ Spectators`:MUST 先从围观者集合移除,再入座
 - 若 `Seats.Count >= rules.SeatCount`:MUST 抛 `RoomFullException`
-- 否则:在**下一个空座位号**入座;**当且仅当**坐满(`Seats.Count == rules.SeatCount`)时 `Status = Playing` 且 `Game = new Game(currentTurn: 0, startedAt: now)`
+- 否则:在**下一个空座位号**入座;**当且仅当**坐满(`Seats.Count == rules.SeatCount`)时 `Status = Playing` 且 `Game = new Game(currentTurn: 0, startedAt: now, setup: setup)`
 
-**座位数由 `rules` 给,MUST NOT 存在 `Room` 上。** 存一份就是规则事实的第二份副本,而它错了的表现是"房间永远开不了局"或"少一个人就开局了" —— 两者都不会有人立刻发现。`PlayMove` 早就是收规则的形状,这里只是把同一个惯例用在同一个地方。
+**座位数由 `rules` 给,MUST NOT 存在 `Room` 上。** 存一份就是规则事实的第二份副本,而它错了的表现是"房间永远开不了局"或"少一个人就开局了"。
+
+#### `setup` 与规则 MUST 一致,且没有默认值
+
+`setup` 参数 MUST 是**必填的可空参数**,MUST NOT 有默认值:默认值会让"忘了传"和"故意不传"在源码里长得一模一样,而那正是 `fix-spectator-chat-leak` 给 `ToState` 加必填 `RoomView` 时写下的理由。
+
+而且 `Room` MUST 校验两者一致:
+
+- `rules is IDealtGameRules` 而 `setup` 为 `null` → MUST 抛
+- `rules` 不是 `IDealtGameRules` 而 `setup` 非 `null` → MUST 抛
+
+于是"忘了传"是一个异常,不是一局没有牌的斗地主。第二条同样要有:一个把设置传给不需要设置的棋种的调用方,拿着一个错误的心智模型,而那份设置会被存下来再也没人读。
+
+`setup` MUST 由**调用方**造好传进来,而 MUST NOT 由 `Room` 从一个种子生成 —— 造它需要熵,而 Domain 不该知道有一个随机源。熵的来源是 Application 层已有的 `ISeedProvider`。这也让测试可复现:传一个钉住的设置串,而不是"发了什么算什么"。
 
 #### Scenario: 两人棋种第二位玩家加入即开局
-- **WHEN** 房间处于 `Waiting`,`SeatCount == 2`,调用 `JoinAsPlayer(bobId, now, rules)`
-- **THEN** `PlayerAt(1) == bobId`;`Status == Playing`;`Game != null` 且 `Game.CurrentTurn == 0`;`Game.StartedAt == now`
+- **WHEN** 房间处于 `Waiting`,`SeatCount == 2`,调用 `JoinAsPlayer(bobId, now, rules, null)`
+- **THEN** `PlayerAt(1) == bobId`;`Status == Playing`;`Game.CurrentTurn == 0`;`Game.StartedAt == now`;`Game.Setup == null`
 
 #### Scenario: 三人棋种坐第二个人时仍然等待
 - **WHEN** `SeatCount == 3`,房间里已有 host,第二个人 `JoinAsPlayer`
@@ -1367,6 +1475,24 @@ Hub 方法 MUST NOT 访问 `DbContext`、MUST NOT 直接发送 SignalR 消息(�
 #### Scenario: 三人棋种坐满第三个人才开局
 - **WHEN** 承上,第三个人 `JoinAsPlayer`
 - **THEN** `Seats` 的 `Index` 为 `0, 1, 2`;`Status == Playing`;`Game.CurrentTurn == 0`
+
+#### Scenario: 需要设置的棋种坐满时设置落在 Game 上
+- **WHEN** 规则实现 `IDealtGameRules`,最后一个人入座时 `setup` 为 `"deal"`
+- **THEN** `Game.Setup == "deal"`
+
+#### Scenario: 需要设置却没给,拒绝
+- **WHEN** 规则实现 `IDealtGameRules`,最后一个人入座时 `setup` 为 `null`
+- **THEN** MUST 抛;`Status` 仍为 `Waiting`,`Game == null` —— MUST NOT 开出一局没有设置的棋
+
+#### Scenario: 不需要设置却给了,拒绝
+- **WHEN** 规则不实现 `IDealtGameRules` 而 `setup` 非 `null`
+- **THEN** MUST 抛
+
+#### Scenario: 坐不满时不校验设置
+- **WHEN** `SeatCount == 3`,第二个人入座,规则实现 `IDealtGameRules` 而 `setup` 为 `null`
+- **THEN** 不抛 —— 还没开局,设置此刻无从谈起
+
+  这一条是刻意的:一致性校验发生在**开局那一刻**,而不是每一次入座。否则三人棋种的前两次入座都得携带一份最终会被丢掉的设置,而那份设置的存在会误导下一个读代码的人。
 
 #### Scenario: 非等待状态
 - **WHEN** `Status` 为 `Playing` 或 `Finished`,调用 `JoinAsPlayer`
@@ -1382,7 +1508,7 @@ Hub 方法 MUST NOT 访问 `DbContext`、MUST NOT 直接发送 SignalR 消息(�
 
 #### Scenario: 座位坐满后再有人要坐
 - **WHEN** 座位已满
-- **THEN** 抛 `RoomNotWaitingException` 或 `RoomFullException` —— 坐满即开局,所以先撞上状态检查;两者都表示"坐不进去"
+- **THEN** 抛 `RoomNotWaitingException` 或 `RoomFullException`
 
 ### Requirement: `AddRoomSeats` 迁移把两列搬进座位表,两个方向都手写
 
@@ -1408,4 +1534,20 @@ EF 生成的版本 MUST NOT 直接采用,它有两处错而两处都不报错:
 #### Scenario: 回滚把玩家搬回去而不是留下空 GUID
 - **WHEN** 迁移后回滚
 - **THEN** `BlackPlayerId` / `WhitePlayerId` 与迁移前逐项相同
+
+### Requirement: `AddGameSetup` 迁移只加一列
+
+`AddGameSetup` SHALL 给 `Games` 加一个可空的 `Setup` 列(`TEXT`),既有行为 `NULL`。
+
+这是**纯加宽**:没有回填、没有值重映射、没有删列。因此 EF 生成的版本**可以直接采用** —— 这与本仓库前四次迁移都不同,而能这么说是因为核对过,不是因为默认它对。
+
+`Down` 直接删列。收窄一列而底下有数据时通常必须拒绝(见 `AddMoveTextPayload`),但这里不同:`Setup` 的**唯一**读者是需要它的那个棋种的规则,而回滚到这个迁移之前意味着那个棋种还不存在,所以不可能有非 `NULL` 的行需要保护。**这个理由 MUST 写在迁移里** —— 否则下一个人只看到"这个 `Down` 没有守卫",而无从知道那是核对过的结论还是漏掉的。
+
+#### Scenario: 既有对局不受影响
+- **WHEN** 在含既有 `Games` 行的库上跑迁移
+- **THEN** 每行的其他列一字不变;`Setup` 为 `NULL`
+
+#### Scenario: 回滚删列
+- **WHEN** 回滚该迁移
+- **THEN** `Setup` 列消失,其他列不变
 

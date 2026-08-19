@@ -85,15 +85,15 @@ export interface PagedResult<T> {
 
 字段名与后端 `System.Text.Json` camelCase + `JsonStringEnumConverter` 输出严格对齐。
 
+战绩列表判断一局的胜负 MUST 比较 `winnerUserId` 与被查看用户的 id,MUST NOT 用 `result` 的取值配 `black` / `white` 推断 —— `GameResult` 已不含带颜色的取值。
+
 #### Scenario: 编译通过
 - **WHEN** 用上述类型解析真实 API 响应
 - **THEN** 无 TypeScript 错误
 
 #### Scenario: 枚举字段按字符串字面量
-- **WHEN** 代码写 `summary.result === 'BlackWin'`
-- **THEN** 编译通过;`=== 1` 不通过
-
----
+- **WHEN** 代码写 `summary.result === 'Decided'`
+- **THEN** 编译通过;`=== 1` 不通过;`=== 'BlackWin'` 也不通过
 
 ### Requirement: 个人主页 header card 渲染身份与战绩
 

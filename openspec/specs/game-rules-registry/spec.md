@@ -230,66 +230,112 @@ Handler MUST NOT 访问数据库。两份注册表本来就在内存里,这是�
 `IGameRules` SHALL 提供:
 
 ```
-MoveApplication Apply(
-    IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side);
+public readonly record struct MatchState(string? Setup, IReadOnlyList<PlayedMove> History);
+
+MoveApplication Apply(MatchState state, MoveIntent intent, int seat);
 ```
 
 规则 MUST 自行完成:形状校验(该棋种要不要 `From`)、越界、目标格合法性、走法合法性、
 以及走完之后的 `GameResult`。非法走子 MUST 抛 `InvalidMoveException`,且 MUST NOT 产生副作用
 —— 规则实例是无状态的,同一个实例被并发的多个房间共享。
 
-`history` 是本局已走的全部步,按 `Ply` 升序。规则从它重建自己需要的表示。
+判出胜负时,规则 MUST 同时给出**赢家的座位号**(`MoveApplication.WinnerSeat`)。它 MUST NOT 被当成
+"走这一步的人"的同义词:落子类棋种里赢家恒等于走子方,但那是**那些棋种**的性质,不是接口的性质。
+
+`state.History` 是本局已走的全部步,按 `Ply` 升序。`state.Setup` 是本局的服务端侧对局设置
+(见 `room-and-gameplay` 的 `Game.Setup`),不需要设置的棋种恒为 `null`。规则从这两者重建自己
+需要的表示。
+
+#### 状态是一个记录,而不是两个平铺的参数
+
+`Apply(history, setup, intent, seat)` 有四个参数,其中两个是**这局到目前为止的状态**、两个是
+**这一步**。四个平铺的参数要求读代码的人记住顺序;`Apply(state, intent, seat)` 按它们实际的用法
+分组。
+
+**这不是为将来的扩展付钱** —— 本 spec 已经拒绝过那条理由(不加 JSON 载荷列,因为"一个成语是
+一个标量")。这里的理由是可读性:`state` 是一个有名字的东西,而 `(history, setup)` 是两个碰巧
+相邻的参数。
+
+#### `Setup` 到得了规则,到不了客户端
+
+`state.Setup` 让规则读得到发牌,而那条「任何 DTO 都不得有名字含 `Setup` 的成员」的反射断言
+**不变**。这是同一条平台规则的两半:规则在服务端,所以它可以知道;客户端不能。
 
 **聚合根 MUST NOT 再自行判断盘面。** `Room.PlayMove` 在调用本方法之前只做三件事:房间在不在
 对局中、这人是不是玩家、是不是他的回合。越界、重复落子、走法是否合规,全部 MUST 由本方法回答。
 
-传历史而不是传一个盘面对象:后者会让聚合根重新知道「有一个盘面」,只是换了个名字,而盘面要么
-冗余存盘(第二份真源)、要么每次重放(那就是现在的做法)。每步 O(n) 重放在这个量级上是亚毫秒的,
-而且**今天的 `Game.ReplayBoard` 已经在这么做**。
+传状态而不是传一个盘面对象:后者会让聚合根重新知道「有一个盘面」,只是换了个名字,而盘面要么
+冗余存盘(第二份真源)、要么每次重放(那就是现在的做法)。每步 O(n) 重放在这个量级上是亚毫秒的。
+
+第三个参数是座位号而不是 `Stone`。
 
 #### Scenario: 合法落子返回 Ongoing
-- **WHEN** 对空盘调 `Apply([], MoveIntent(null, (7,7)), Black)`(五子棋)
-- **THEN** 返回 `Result == Ongoing`
+- **WHEN** 对空盘调 `Apply(new MatchState(null, []), MoveIntent.Place((7,7)), 0)`(五子棋)
+- **THEN** 返回 `Result == Ongoing`、`WinnerSeat == null`
 
 #### Scenario: 越界由规则拒绝
-- **WHEN** 对一字棋调 `Apply([], MoveIntent(null, (3,0)), Black)`
+- **WHEN** 对一字棋调 `Apply(new MatchState(null, []), MoveIntent.Place((3,0)), 0)`
 - **THEN** 抛 `InvalidMoveException`
 
 #### Scenario: 重复落子由规则拒绝
 - **WHEN** 历史里 (0,0) 已有子,再对 (0,0) 落子
 - **THEN** 抛 `InvalidMoveException`
 
+#### Scenario: 判胜时说出赢家座位
+- **WHEN** 落子类棋种的一步造成连 N 子,由座位 `s` 走出
+- **THEN** 返回 `Result == Decided` 且 `WinnerSeat == s`
+
+#### Scenario: 不需要设置的棋种收到的 Setup 恒为 null
+- **WHEN** 一个不实现 `IDealtGameRules` 的棋种被调用
+- **THEN** `state.Setup == null`
+
+#### Scenario: 需要设置的棋种收到开局那份设置
+- **WHEN** 一个实现 `IDealtGameRules` 的棋种被调用
+- **THEN** `state.Setup` 恰好是 `Game.Setup`,一字不改
+
+  这一条是本变更存在的理由:`add-match-setup` 把设置存下来了,而**规则拿不到它** ——
+  一个存下来再也没人读的值。
+
 #### Scenario: 无状态
-- **WHEN** 同一个规则实例被两段不同的历史先后调用
-- **THEN** 两次结果只取决于各自的 `history`,MUST NOT 互相影响
+- **WHEN** 同一个规则实例被两个不同的 `MatchState` 先后调用
+- **THEN** 两次结果只取决于各自的 `state`,MUST NOT 互相影响
 
 ### Requirement: `MoveIntent.From` 可空,形状由规则校验
 
 `Gewu.Domain` SHALL 定义:
 
 ```
-public readonly record struct MoveIntent(Position? From, Position To);
-public readonly record struct PlayedMove(Position? From, Position To, Stone Side);
-public readonly record struct MoveApplication(GameResult Result);
+public readonly record struct MoveIntent(Position? From, Position? To, string? Text);
+public readonly record struct PlayedMove(Position? From, Position? To, string? Text, int Seat);
+public readonly record struct MoveApplication(GameResult Result, int? WinnerSeat);
 ```
 
 `From` 为 `null` 表示**落子类**棋种的一步(五子棋 / 一字棋:只有落点);非 `null` 表示
-**走子类**棋种的一步(中国象棋:从哪儿到哪儿)。
+**走子类**棋种的一步(中国象棋:从哪儿到哪儿)。两种载荷(位置 / 文本)的互斥不变量由
+`room-and-gameplay` 的「一步棋要么是位置,要么是文本」那条 requirement 定义,本条 MUST NOT 复述它
+—— 本 spec 此前写的是 `MoveIntent(Position? From, Position To)`,即 `generalize-match-payload`
+之前的签名,而那次改动新增了一条正确的 requirement 却把这条错的留在原地。**同一个事实被两条
+requirement 描述、其中一条是旧的,是这个仓库反复付账的那个形状。**
 
 规则 MUST 校验形状:落子类棋种收到非 `null` 的 `From` MUST 抛 `InvalidMoveException`,
 走子类棋种收到 `null` 的 `From` 同样 MUST 抛。**这条校验属于规则,不属于聚合根** ——
 聚合根不知道哪些棋种走子。
 
-MUST NOT 用一个合法值(例如 `From == To`)表示「没有起点」:那样读代码的人看到 `from == to`
-得猜这是原地不动还是落子,而 `null` 说的是实话。
+`MoveApplication.WinnerSeat` MUST 非 `null` 当且仅当 `Result == Decided`,**由构造器强制**。
+`Ongoing` / `Draw` 带一个赢家、或 `Decided` 不带赢家,都 MUST 在构造时抛异常,而 MUST NOT 只写在
+文档里 —— 与上面那条互斥载荷同一种机制,同一个理由。
 
 #### Scenario: 落子类拒绝带起点的走子
-- **WHEN** 对五子棋调 `Apply([], MoveIntent((0,0), (1,1)), Black)`
+- **WHEN** 对五子棋调 `Apply([], MoveIntent(from: (0,0), to: (1,1)), 0)`
 - **THEN** 抛 `InvalidMoveException` —— 五子棋没有「从哪儿走」
 
 #### Scenario: 历史保留起点
 - **WHEN** 一步走子类的棋被记录
 - **THEN** `PlayedMove.From` 非 `null`,重放时能还原
+
+#### Scenario: 结果与赢家必须一致
+- **WHEN** 构造 `MoveApplication(GameResult.Ongoing, 0)` 或 `MoveApplication(GameResult.Decided, null)`
+- **THEN** 构造 MUST 失败并抛异常
 
 ### Requirement: `INInARowRules` 承载连 N 子专有成员
 
@@ -380,4 +426,115 @@ n-in-a-row 的 AI 工厂 MUST 接 `INInARowRules`;走子类棋种自带表示,�
 #### Scenario: 新棋种自动进入既有的遍历检查
 - **WHEN** 往 `All` 添加一个棋种
 - **THEN** `IsRated ⇒ SupportsHumanVsHuman` 与建房能力校验 MUST 自动覆盖到它,不需要改动那两处测试
+
+### Requirement: `IDealtGameRules` 承载"这个棋种开局要一份服务端侧设置"
+
+`Gewu.Domain` SHALL 定义:
+
+```
+public interface IDealtGameRules : IGameRules
+{
+    string CreateSetup(int seed);
+}
+```
+
+只有需要秘密初始状态的棋种实现它。五子棋、一字棋、中国象棋、成语接龙**一行不动** —— 它们的开局是常量,走子历史本来就广播,没有任何东西要藏。
+
+**分出一个接口而不是给 `IGameRules` 加成员**,理由与 `IBoardGameRules` / `INInARowRules` 当初分出来时相同:留在基接口上,四个棋种就得各写一个骗人的实现(`=> null` 之类),而**骗人的实现是下一个人删不掉的东西** —— 他无从知道有没有调用方。本 spec 已有的那条纪律仍然适用:**接口只承载对每个实现都成立的东西。**
+
+`CreateSetup` MUST 是纯函数:同一个 `seed` MUST 产出同一个字符串。这是重放的前提,也是测试能钉住一局牌的前提。实现 MUST NOT 用 `System.Random` 之外的运行时随机源,更 MUST NOT 用 `System.Random` —— 它的算法在 .NET 版本之间变过,而这条要求跨版本成立(同 `TetrisPieceSequence` 与 `DoudizhuDeal` 上写下的理由)。
+
+`seed` 由**调用方**给,取自 Application 层的 `ISeedProvider`。Domain MUST NOT 自己取随机数。
+
+返回的字符串对内核完全不透明,见 `room-and-gameplay` 的 `Game.Setup`。
+
+#### Scenario: 现有棋种都不实现它
+- **WHEN** 遍历 `BuiltInGameRules.All(lexicon)`
+- **THEN** 没有一个实现 `IDealtGameRules`
+
+  这一条会在斗地主落地那天由那次变更改成"恰好一个实现它"。它现在的价值是钉住**本次变更没有偷偷改动任何现有棋种** —— 那是本变更的验收标准。
+
+#### Scenario: 同一个种子给出同一份设置
+- **WHEN** 对同一个实现两次调 `CreateSetup(20260819)`
+- **THEN** 两个字符串相等
+
+#### Scenario: 设置由 Application 造好再交给聚合
+- **WHEN** 一个需要设置的棋种开局
+- **THEN** `ISeedProvider.NextSeed()` 被调用一次,其结果传给 `CreateSetup`,而 `CreateSetup` 的结果传给 `Room.JoinAsPlayer` —— **`Room` 与 `Game` 都不曾见过那个种子**
+
+#### Scenario: 不需要设置的棋种不触发随机源
+- **WHEN** 一个不实现 `IDealtGameRules` 的棋种开局
+- **THEN** `ISeedProvider.NextSeed()` MUST NOT 被调用
+
+  一个每局都取一次随机数却没人用的调用,会让"这个棋种有随机性吗"这个问题在读代码时得不到确定答案。
+
+### Requirement: `ITimeoutFallbackRules` 让超时变成"替他走一步"而不是"判他负"
+
+`Gewu.Domain` SHALL 定义:
+
+```
+public interface ITimeoutFallbackRules : IGameRules
+{
+    MoveIntent MoveOnTimeout(IReadOnlyList<PlayedMove> history, int seat);
+}
+```
+
+只有"超时不该判负"的棋种实现它。五子棋、一字棋、中国象棋、成语接龙**一行不动** —— 两个座位下"判他负、对手胜"是清楚且唯一的答案。
+
+分出一个接口而不是给 `IGameRules` 加成员,理由与 `IBoardGameRules` / `IDealtGameRules` 相同:留在基接口上,四个棋种就得各写一个骗人的实现,而**骗人的实现是下一个人删不掉的东西**。
+
+`MoveOnTimeout` MUST 是纯函数,MUST NOT 有副作用,并 MUST 返回一个该座位在该局面下**合法**的一步。它的返回值 MUST 与真人走的一步走同一条路 —— 即由 `IGameRules.Apply` 校验并判定结果,见 `room-and-gameplay`。
+
+**实现 MUST 保证推进对局。** 一个可以合法地无限重复的兜底动作(牌类游戏里"永远过牌")会把超时 worker 变成一个永不结束的自动对局。斗地主的形式是"能过就过,**不能过时出最小的一手**",而牌只会变少。
+
+这条要求**不是防自旋的护栏**,理由要写清楚:每一次兜底都要等满一个超时周期(worker 从最后一手的 `PlayedAt` 重算 `lastActivity`),所以最坏情况是每个周期一步 —— 慢、可见、不会自旋。它是**对局质量**的要求,所以本 spec MUST NOT 规定一个"连续兜底次数上限":那个数字会是凭空的,而它要防的东西并不存在。
+
+#### Scenario: 现有棋种都不实现它
+- **WHEN** 遍历 `BuiltInGameRules.All(lexicon)`
+- **THEN** 没有一个实现 `ITimeoutFallbackRules`
+
+  这一条会在斗地主落地那天由那次变更改成"恰好一个实现它"。它现在钉住的是**本次变更没有偷偷改动任何现有棋种**。
+
+#### Scenario: 兜底动作要经过合法性校验
+- **WHEN** 一个实现返回了该局面下非法的一步
+- **THEN** `Apply` MUST 抛 `InvalidMoveException`,而对局状态 MUST NOT 改变 —— "系统替他走的"不是绕过校验的理由
+
+### Requirement: `MoveApplication.NextSeat` 让规则指定下一手是谁
+
+`MoveApplication` SHALL 为:
+
+```
+public readonly record struct MoveApplication(GameResult Result, int? WinnerSeat, int? NextSeat);
+```
+
+`NextSeat` 为 `null` 表示**按环轮转**(`(seat + 1) % SeatCount`);非 `null` 表示下一手轮到该座位。
+
+斗地主需要它:叫分结束之后先出牌的是**地主**,而地主可能是任何一个座位,与最后叫分的是谁无关。
+
+#### `null` 表示轮转,而这与「参数不给默认值」不矛盾
+
+本平台的既有纪律是"默认值会让'忘了传'和'故意不传'长得一样"(见 `Room.JoinAsPlayer` 的 `setup`)。这里给 `null` 一个默认语义,判据是**忘了会不会有人发现**:
+
+- 忘了传 `setup` → 一局没有牌的棋,要到第一次出牌才炸,离开局已过去几十秒。
+- 忘了给 `NextSeat` → **下一手轮到错的人**,在那个棋种的第一条测试里就会红。
+
+而且 `null` 在这里有真实含义,不是"没填":四个现有棋种的每一手、以及斗地主出牌阶段的每一手,答案确实都是"按环轮转"。让五个实现每次都算一遍内核已经知道的事,是重复而不是明确。
+
+**判出胜负或和局时 `NextSeat` MUST 为 `null`** —— 对局结束了,没有下一手。由构造器强制,与 `WinnerSeat` 那条同一种机制。
+
+#### Scenario: 不指定就按环轮转
+- **WHEN** 规则返回 `MoveApplication.Ongoing()`,由座位 `s` 走出,`SeatCount == n`
+- **THEN** `Game.CurrentTurn == (s + 1) % n`
+
+#### Scenario: 指定了就听规则的
+- **WHEN** 一个三座位规则在座位 `0` 走完之后返回 `NextSeat == 2`
+- **THEN** `Game.CurrentTurn == 2`
+
+#### Scenario: 结束的对局不能有下一手
+- **WHEN** 构造 `MoveApplication(GameResult.Decided, 0, nextSeat: 1)` 或 `MoveApplication(GameResult.Draw, null, nextSeat: 0)`
+- **THEN** 构造 MUST 失败并抛
+
+#### Scenario: 负数不是座位
+- **WHEN** 构造一个 `NextSeat` 为负数的 `MoveApplication`
+- **THEN** 构造 MUST 失败并抛
 
