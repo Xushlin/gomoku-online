@@ -377,7 +377,9 @@ Api 层 SHALL 暴露以下端点(均要求 `Authorize`):
 
 Application 层 SHALL 定义 `IRoomNotifier` 契约,至少含:
 
-- `RoomStateChangedAsync(Room, IReadOnlyDictionary<Guid, string>, int)` —— 收**聚合**而不是 DTO,自己投影「非围观者」与「围观者」两份视图(见 `fix-spectator-chat-leak`)。本条此前一直写着 `(RoomId, RoomStateDto)`
+- `RoomStateChangedAsync(Room, IReadOnlyDictionary<Guid, string>, int)` —— 收**聚合**而不是 DTO,自己**逐份**投影:**每个座位一份**,外加观察者一份、围观者一份。座位那几份各含该座位的私有状态(`GameSnapshotDto.SeatView`)。
+
+  投影次数从 2 变成 `SeatCount + 2`,而**没有为「没有隐藏信息的棋种」开一条快路**:那会是两条代码路径,而这整套 `RoomView` 机制存在的全部理由就是不给任何 handler 一次忘记裁剪的机会。代价是同一份 payload 多发几次,进程内扇出。
 - `PlayerJoinedAsync(RoomId, UserSummaryDto)` / `PlayerLeftAsync(RoomId, UserSummaryDto)`
 - `SpectatorJoinedAsync(RoomId, UserSummaryDto)` / `SpectatorLeftAsync(RoomId, UserSummaryDto)`
 - `MoveMadeAsync(RoomId, MoveDto)`
@@ -391,6 +393,10 @@ Handler MUST 在 `SaveChangesAsync` **之后** 调用 `IRoomNotifier`,且 MUST N
 Web 客户端的 `MoveMade` 处理器**不再自己推算下一手是谁** —— 它此前算的是
 `move.stone === 'Black' ? 'White' : 'Black'`,一个两座位假设。删掉那个推算的理由正是这条顺序:
 权威的 `currentSeat` 先到。**一个"因为顺序如此所以可以删代码"的论证必须自带那个顺序的证据。**
+
+#### Scenario: 每个座位收到自己的那一份
+- **WHEN** 一个有隐藏信息的棋种触发 `RoomState` 广播
+- **THEN** 每个座位群各收到一份、且**内容互不相同**;观察者群与围观者群各收到一份、都不含任何座位的私有状态
 
 #### Scenario: 落子成功后的事件顺序
 - **WHEN** `MakeMoveCommand` 成功持久化
@@ -964,6 +970,10 @@ public static async Task ApplyAsync(
 `GameSnapshotDto.CurrentSeat` SHALL 是**座位号**(`int`)。它此前是 `Stone CurrentTurn`,经 `SeatWire` 换算 —— 而那让三座位房间在**两个不同玩家的回合**都报同一个 `White`(实测)。倒计时 UI 要显示"在等谁",
 而一个分不出两个人的字段答不了这个问题。
 
+`GameSnapshotDto.SeatView`(`string?`)SHALL 携带**这个看客能看到的那一份棋种私有状态**,由规则序列化(`IPerSeatViewRules`),对本层完全不透明。棋种没有隐藏信息、或对局尚未开始时 MUST 是 `null`。
+
+**同一局的不同座位拿到的是不同的字符串**,所以广播 MUST 按座位分别投影 —— 见 `IRoomNotifier` 那条要求。
+
 `GameSnapshotDto` MUST 追加三个字段(纯追加,向后兼容):
 
 - `DateTime TurnStartedAt` —— 当前回合起始时间,等价于 `Moves.OrderBy(Ply).LastOrDefault()?.PlayedAt ?? Game.StartedAt`
@@ -1209,6 +1219,12 @@ Validator MUST 通过注入的 `IGameRulesRegistry` 判断,MUST NOT 内联一份
 穿过九处 `ToState` / `ToSummary` 调用点。见 `add-web-tictactoe-ai` design D1:客户端从自己的
 游戏注册表解析尺寸,该重复此刻比它的替代方案便宜,且 `generalize-match-contract` 反正要
 重写这两个 DTO,届时再改为服务端下发。
+
+`RoomStateDto.Seats`(`IReadOnlyList<RoomSeatDto>`,每项是座位号 + 座位上的人)SHALL 列出**全部**座位。
+
+`Black` / `White` 保留,它们是 0 号与 1 号的**派生读法**,不是第二个真源,所以不会漂;但它们对三座位房间**不完整** —— 实测:三座位房间里 2 号座位上的人在任何字段里都不出现。`Seats` 是它的修法。
+
+**这个字段在 `generalize-match-contract` 里被刻意推迟过**,理由是那时没有读者,而「交付一个没人读的字段」正是 `add-match-setup` 刚踩过的坑。现在读者有了:客户端要画三家的牌,就得知道谁坐哪。
 
 #### Scenario: 五子棋房间
 - **WHEN** 读取任意 `gomoku` 房间的状态或摘要
@@ -1458,6 +1474,14 @@ Handler MUST 依据载荷选出**恰好一个** `MoveIntent` 工厂(`Place` / `S
 领域合法性一律由 Handler 调 `Room.PlayMove` 决定;Hub 只把参数搬成一个 `MakeMoveCommand`。哪个棋种收哪种载荷由**规则**判(棋盘类规则收到文本会拒,反之亦然),Hub MUST NOT 知道这件事。
 
 Hub 方法 MUST NOT 访问 `DbContext`、MUST NOT 直接发送 SignalR 消息(事件由 `IRoomNotifier` 在 Handler 完成后触发)。
+
+视图子群 SHALL 是三类:`room:{id}:seat:{n}`(每个座位一个)、`room:{id}:spectators`、`room:{id}:observers`(在房间里、没坐座位、也没围观)。三类 MUST **互斥且穷尽** —— `JoinRoom` 按聚合身份把每个连接放进恰好一个。
+
+**按座位分群,而 MUST NOT 用 `Clients.User(...)`**:后者会打到那个用户的**全部连接**,包括他开在另一个房间的标签页 —— 一个催促弹错标签无所谓,一份房间快照盖掉另一个房间的状态不行。
+
+`observers` 群此前叫 `non-spectators`,里面既有坐着的人也有没坐的人。座位群出现之后那样不行:坐着的人会收到两份快照(一份带手牌、一份不带),**看到哪一份由到达顺序决定**。
+
+`LeaveRoom` MUST 退掉**每一个**座位群,而它的上界 MUST 从注册表算(`All.Max(r => r.SeatCount)`),MUST NOT 是一个手写常量:手写值在座位更多的棋种落地那天要有人记得涨,而**忘记涨没有任何报错** ——症状是那个座位的人离开房间之后还在收快照。与 `enforce-ai-availability` 让校验去读注册表是同一条。
 
 #### Scenario: 未登录连接被拒
 - **WHEN** 不带有效 JWT 的客户端尝试连接 `/hubs/match`
