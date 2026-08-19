@@ -39,7 +39,7 @@ public class TurnTimeoutCommandHandlerTests
             => MoveIntent.Place(new Position(history.Count, 0));
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+            MatchState state, MoveIntent intent, int seat)
             => (apply ?? (_ => MoveApplication.Ongoing()))(seat);
     }
 

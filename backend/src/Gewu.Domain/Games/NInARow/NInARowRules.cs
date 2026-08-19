@@ -122,7 +122,7 @@ public sealed class NInARowRules : INInARowRules
 
     /// <inheritdoc />
     public MoveApplication Apply(
-        IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+        MatchState state, MoveIntent intent, int seat)
     {
         // 座位 → 棋色的换算在这里,一次。内核已经不知道"黑白"是什么了。
         var side = BoardSeats.ToStone(seat);
@@ -147,7 +147,7 @@ public sealed class NInARowRules : INInARowRules
 
         // 从历史重放。此前这段在 Game.ReplayBoard 里 —— 搬进来是本变更的要点:
         // 盘面语义整个属于规则,聚合根不该知道有一块 Board。
-        var board = ReplayBoard(history);
+        var board = ReplayBoard(state.History);
 
         var result = board.PlaceStone(new Move(to, side));
 

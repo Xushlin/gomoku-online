@@ -33,11 +33,11 @@ public class GameSetupTests
         public bool IsRated => false;
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+            MatchState state, MoveIntent intent, int seat)
             => MoveApplication.Ongoing();
     }
 
-    /// <summary>需要设置的探针。</summary>
+    /// <summary>需要设置的探针。它**记下自己在 Apply 里看到的设置** —— 那是本组测试的要点之一。</summary>
     private sealed class DealtRules(int seatCount = 2) : IDealtGameRules
     {
         public string GameKey => "dealt-probe";
@@ -45,11 +45,21 @@ public class GameSetupTests
         public bool SupportsHumanVsHuman => true;
         public bool IsRated => false;
 
+        /// <summary>最近一次 <c>Apply</c> 看到的设置。</summary>
+        public string? SeenSetup { get; private set; }
+
+        /// <summary><c>Apply</c> 被调过几次 —— 免得"没看到"与"没被调"混为一谈。</summary>
+        public int ApplyCalls { get; private set; }
+
         public string CreateSetup(int seed) => $"deal-{seed}";
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
-            => MoveApplication.Ongoing();
+            MatchState state, MoveIntent intent, int seat)
+        {
+            ApplyCalls++;
+            SeenSetup = state.Setup;
+            return MoveApplication.Ongoing();
+        }
     }
 
     private static UserId NewUser() => new(Guid.NewGuid());
@@ -140,6 +150,60 @@ public class GameSetupTests
 
         room.Status.Should().Be(RoomStatus.Playing);
         room.Game!.Setup.Should().Be("the-deal");
+    }
+
+    [Fact]
+    public void The_setup_reaches_the_rules()
+    {
+        // **这条测试是本变更存在的理由。** `add-match-setup` 把设置存进了 `Game`,而
+        // `IGameRules.Apply` 的签名是 `(history, intent, seat)` —— 规则拿不到它。一个存下来
+        // 再也没人读的值,正是那次变更自己为"不需要设置的棋种却收到设置"加守卫时给出的理由。
+        var rules = new DealtRules();
+        var host = NewUser();
+        var room = WaitingRoom(host, "dealt-probe");
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules, setup: "the-deal");
+
+        room.PlayMove(host, MoveIntent.Place(new Position(0, 0)), Now.AddSeconds(2), rules);
+
+        rules.ApplyCalls.Should().Be(1);
+        rules.SeenSetup.Should().Be("the-deal", "规则读得到开局那份设置,一字不改");
+    }
+
+    [Fact]
+    public void A_game_without_a_setup_shows_the_rules_null()
+    {
+        // 对称的一半:不需要设置的棋种在 `Apply` 里看到的是 `null`,而不是空字符串 ——
+        // 否则"这个棋种没有设置"与"设置是空的"在规则里同样不可区分。
+        var rules = new NullSetupSpy();
+        var host = NewUser();
+        var room = WaitingRoom(host, "plain-probe");
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), rules, setup: null);
+
+        room.PlayMove(host, MoveIntent.Place(new Position(0, 0)), Now.AddSeconds(2), rules);
+
+        rules.ApplyCalls.Should().Be(1);
+        rules.SeenSetup.Should().BeNull();
+    }
+
+    /// <summary>不需要设置、但记下它看到什么的探针。</summary>
+    private sealed class NullSetupSpy : IGameRules
+    {
+        public string GameKey => "plain-probe";
+        public int SeatCount => 2;
+        public bool SupportsHumanVsHuman => true;
+        public bool IsRated => false;
+
+        public string? SeenSetup { get; private set; }
+
+        public int ApplyCalls { get; private set; }
+
+        public MoveApplication Apply(
+            MatchState state, MoveIntent intent, int seat)
+        {
+            ApplyCalls++;
+            SeenSetup = state.Setup;
+            return MoveApplication.Ongoing();
+        }
     }
 
     [Fact]

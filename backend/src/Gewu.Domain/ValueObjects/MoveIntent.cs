@@ -178,6 +178,28 @@ public static class MovePayload
 }
 
 /// <summary>
+/// 规则知道的关于这一局的一切 —— <c>IGameRules.Apply</c> 的第一个参数。
+/// <para>
+/// 两个字段合成一个记录,而不是两个平铺的参数:<c>Apply(history, setup, intent, seat)</c> 有四个
+/// 参数,其中两个是**这局到目前为止的状态**、两个是**这一步**,四个平铺要求读的人记住顺序。
+/// </para>
+/// <para>
+/// **这不是为将来的扩展付钱** —— 那条理由本仓库拒绝过(<c>generalize-match-payload</c> 不加
+/// JSON 载荷列,因为"一个成语是一个标量")。这里的理由是可读性:<c>state</c> 是一个有名字的
+/// 东西,而 <c>(history, setup)</c> 是两个碰巧相邻的参数。
+/// </para>
+/// </summary>
+/// <param name="Setup">
+/// 本局的服务端侧对局设置;不需要设置的棋种恒为 <c>null</c>。
+/// <para>
+/// 规则读得到它,**客户端读不到** —— 那条「任何 DTO 都不得有名字含 Setup 的成员」的反射断言
+/// 不因为本类型而松动。这是同一条平台规则的两半:规则在服务端,所以它可以知道。
+/// </para>
+/// </param>
+/// <param name="History">本局已走的全部步,按 Ply 升序。</param>
+public readonly record struct MatchState(string? Setup, IReadOnlyList<PlayedMove> History);
+
+/// <summary>
 /// <c>IGameRules.Apply</c> 的结果:这一步走完之后对局处于什么状态,以及赢家是谁。
 /// <para>
 /// **不带 <c>EndReason</c>** —— 「怎么结束的」有三类(规则判出 / 认输 / 超时),而规则只可能是

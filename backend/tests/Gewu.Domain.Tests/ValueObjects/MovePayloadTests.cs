@@ -115,7 +115,7 @@ public class MovePayloadTests
     {
         // The point of RequirePosition: an idiom reaching gomoku's rules produces a
         // refusal that says why, not a null dereference.
-        var act = () => BuiltInGameRules.Gomoku.Apply([], MoveIntent.Say("一心一意"), BoardSeats.FirstSeat);
+        var act = () => BuiltInGameRules.Gomoku.Apply(new MatchState(null, []), MoveIntent.Say("一心一意"), BoardSeats.FirstSeat);
 
         act.Should().Throw<InvalidMoveException>()
             .WithMessage("*board*");

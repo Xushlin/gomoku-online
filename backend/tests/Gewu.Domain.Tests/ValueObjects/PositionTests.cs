@@ -15,7 +15,7 @@ public class PositionTests
     {
         try
         {
-            rules.Apply([], MoveIntent.Place(position), BoardSeats.FirstSeat);
+            rules.Apply(new MatchState(null, []), MoveIntent.Place(position), BoardSeats.FirstSeat);
             return true;
         }
         catch (InvalidMoveException)

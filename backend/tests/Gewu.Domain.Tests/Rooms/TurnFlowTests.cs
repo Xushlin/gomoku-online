@@ -35,7 +35,7 @@ public class TurnFlowTests
         public int ApplyCalls { get; private set; }
 
         public MoveApplication Apply(
-            IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
+            MatchState state, MoveIntent intent, int seat)
         {
             ApplyCalls++;
             return (apply ?? (_ => MoveApplication.Ongoing()))(seat);

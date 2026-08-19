@@ -113,6 +113,15 @@ public sealed class Game
         => _moves.OrderBy(x => x.Ply).Select(m => m.ToPlayedMove()).ToList();
 
     /// <summary>
+    /// 规则看得到的这一局:走子历史 + 服务端侧的对局设置。<c>IGameRules.Apply</c> 的入参。
+    /// <para>
+    /// 在这里组装而不是让 <c>Room</c> 拼:<see cref="Setup"/> 与 <see cref="History"/> 都是本子实体
+    /// 的东西,交出去的应该是一个完整的答案,而不是两个要调用方自己配对的零件。
+    /// </para>
+    /// </summary>
+    public MatchState State() => new(Setup, History());
+
+    /// <summary>
     /// 在对局内记录一步棋(仅由 <see cref="Room.PlayMove"/> 调用)。更新 <see cref="CurrentTurn"/>。
     /// </summary>
     /// <param name="intent">这一步怎么走。</param>

@@ -492,7 +492,7 @@ public sealed class Room
         // 盘面语义整个属于规则:越界、重复落子、走法合不合规,全部由 Apply 回答。
         // 非法则抛 InvalidMoveException 向上冒泡(对外仍是 409),而 Game 的 Moves
         // 在此之前尚未追加,聚合状态不变。
-        var application = rules.Apply(Game!.History(), intent, seat);
+        var application = rules.Apply(Game!.State(), intent, seat);
         var result = application.Result;
 
         var appended = Game.RecordMove(
