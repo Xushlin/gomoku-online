@@ -41,6 +41,14 @@ export class RoomSidebar {
 
   protected readonly isPlayer = computed(() => this.mySeat() !== null);
 
+  /**
+   * 座位多于两个 —— 那样"黑方 / 白方"就说不通了,改说座位号。
+   *
+   * 读的是 `seats.length`,而不是问棋种注册表要 `seatCount`:座位表就在这份快照里,
+   * 而多要一个异步依赖只为知道一个已经在手上的数字,是把一个同步事实变成一个加载态。
+   */
+  protected readonly moreThanTwoSeats = computed(() => (this.state()?.seats.length ?? 0) > 2);
+
   protected readonly myTurn = computed(() => {
     const seat = this.mySeat();
     return seat !== null && this.state()?.game?.currentSeat === seat;

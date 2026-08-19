@@ -617,5 +617,6 @@
   "doudizhu.action.bid": "叫 {{points}} 分",
   "doudizhu.action.play": "出牌({{count}})",
   "doudizhu.action.pass": "不要",
-  "doudizhu.action.waiting": "等其他人行动…"
+  "doudizhu.action.waiting": "等其他人行动…",
+  "game.turn.seat-turn": "轮到 {{seat}} 号座位"
 }

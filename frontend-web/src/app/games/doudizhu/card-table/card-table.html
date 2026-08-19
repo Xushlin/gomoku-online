@@ -99,6 +99,7 @@
         </div>
       </div>
 
+      @if (v.phase !== 'Finished') {
       <div class="border-border bg-surface rounded-card flex flex-wrap gap-2 border p-3">
         @if (v.phase === 'Bidding') {
           @for (points of bids; track points) {
@@ -138,6 +139,7 @@
           <p class="text-muted w-full text-xs">{{ 'doudizhu.action.waiting' | transloco }}</p>
         }
       </div>
+      }
     }
   </div>
 } @else {

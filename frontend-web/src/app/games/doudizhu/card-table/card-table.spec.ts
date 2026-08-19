@@ -221,6 +221,16 @@ describe('CardTable', () => {
     expect(actionButtons(fixture)).toHaveLength(0);
   });
 
+  it('offers no actions once the game is finished', () => {
+    // **在浏览器里发现的。** 一局流掉之后,牌桌还在画「出牌 / 不要」两个(禁用的)按钮 ——
+    // 一个点不动的按钮在屏幕上是个问句:是我不能点,还是坏了?对局结束就没有动作可做。
+    fixture.componentInstance.state.set(room(seatView({ phase: 'Finished' })));
+    fixture.detectChanges();
+
+    expect(actionButtons(fixture)).toHaveLength(0);
+    expect(handButtons(fixture)).toHaveLength(3);
+  });
+
   it('renders a placeholder instead of throwing when there is no seat view', () => {
     // 等待发牌、棋种没有隐藏状态、载荷读不懂 —— 三种都不该让房间页挂掉。
     fixture.componentInstance.state.set(room(null));

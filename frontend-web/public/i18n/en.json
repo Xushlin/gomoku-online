@@ -617,5 +617,6 @@
   "doudizhu.action.bid": "Bid {{points}}",
   "doudizhu.action.play": "Play ({{count}})",
   "doudizhu.action.pass": "Pass",
-  "doudizhu.action.waiting": "Waiting for the others…"
+  "doudizhu.action.waiting": "Waiting for the others…",
+  "game.turn.seat-turn": "Seat {{seat}} to play"
 }
