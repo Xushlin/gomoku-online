@@ -69,7 +69,11 @@
     @if (room.game && room.status === 'Playing') {
       <div class="flex flex-col gap-1">
         <p class="text-xs">
-          @if (room.game.currentSeat === FIRST_SEAT) {
+          <!-- 三个座位没有"黑白"。**这是在浏览器里发现的**:一局斗地主轮到 2 号座位时,
+               侧栏写的是「白方走棋」—— 而那一桌上没有白方。 -->
+          @if (moreThanTwoSeats()) {
+            {{ 'game.turn.seat-turn' | transloco: { seat: room.game.currentSeat + 1 } }}
+          } @else if (room.game.currentSeat === FIRST_SEAT) {
             {{ 'game.turn.black-turn' | transloco }}
           } @else {
             {{ 'game.turn.white-turn' | transloco }}

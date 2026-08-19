@@ -14,7 +14,7 @@ import { RoomSidebar } from './sidebar';
   template: `
     <app-room-sidebar
       [state]="state()"
-      [mySide]="mySide()"
+      [mySeat]="mySeat()"
       [turnRemainingMs]="remaining()"
       [canUrge]="canUrge()"
     />
@@ -22,7 +22,7 @@ import { RoomSidebar } from './sidebar';
 })
 class Host {
   readonly state = signal<RoomState | null>(null);
-  readonly mySide = signal<'black' | 'white' | 'spectator'>('black');
+  readonly mySeat = signal<number | null>(0);
   readonly remaining = signal<number>(60_000);
   readonly canUrge = signal(false);
 }
@@ -36,6 +36,10 @@ function baseState(): RoomState {
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
     white: { id: 'u-2', username: 'bob' },
+    seats: [
+      { index: 0, player: { id: 'u-1', username: 'alice' } },
+      { index: 1, player: { id: 'u-2', username: 'bob' } },
+    ],
     spectators: [],
     game: {
       id: 'g-1',
@@ -124,11 +128,31 @@ describe('RoomSidebar', () => {
   it('spectator sees no player-only buttons', () => {
     const fixture = mount();
     fixture.componentInstance.state.set(baseState());
-    fixture.componentInstance.mySide.set('spectator');
+    fixture.componentInstance.mySeat.set(null);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).not.toContain('Resign');
     expect(text).not.toContain('Leave');
     expect(text).not.toContain('Urge');
   });
-});
+})
+  it('says which seat is to play when there are more than two', () => {
+    // **在浏览器里发现的。** 一局斗地主轮到 2 号座位时,侧栏写的是「白方走棋」——
+    // 而那一桌上没有白方。判据是 `seats.length`,不是棋种键:座位表就在快照里。
+    const fixture = mount();
+    fixture.componentInstance.state.set({
+      ...baseState(),
+      seats: [
+        { index: 0, player: { id: 'u-1', username: 'a' } },
+        { index: 1, player: { id: 'u-2', username: 'b' } },
+        { index: 2, player: { id: 'u-3', username: 'c' } },
+      ],
+      game: { ...baseState().game!, currentSeat: 2 },
+    });
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('game.turn.seat-turn');
+    expect(text).not.toContain('game.turn.white-turn');
+  });
+;

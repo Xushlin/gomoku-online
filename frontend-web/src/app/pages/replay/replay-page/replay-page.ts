@@ -115,6 +115,13 @@ export class ReplayPage implements OnInit, OnDestroy {
       host: r.host,
       black: r.black,
       white: r.white,
+      // 回放的 DTO 只有黑白两方 —— 它是两座位棋种的产物,而三座位棋种的回放要等
+      // `GameReplayDto` 也改说座位。这里由两个已知的字段合成两个座位,而**不是给个空数组**:
+      // 空数组会让棋盘以为"这局没人下",而它其实是"这个 DTO 说不出第三个人"。
+      seats: [
+        { index: FIRST_SEAT, player: r.black },
+        { index: SECOND_SEAT, player: r.white },
+      ],
       spectators: [],
       game: {
         id: 'replay',

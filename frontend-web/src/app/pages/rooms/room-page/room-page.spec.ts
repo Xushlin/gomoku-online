@@ -42,6 +42,10 @@ function makeRoomState(): RoomState {
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
     white: { id: 'u-2', username: 'bob' },
+    seats: [
+      { index: 0, player: { id: 'u-1', username: 'alice' } },
+      { index: 1, player: { id: 'u-2', username: 'bob' } },
+    ],
     spectators: [],
     game: {
       id: 'g-1',
