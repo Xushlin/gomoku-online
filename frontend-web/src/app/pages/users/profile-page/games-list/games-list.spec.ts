@@ -26,7 +26,7 @@ const sampleGames = [
     white: { id: 'u-2', username: 'bob' },
     startedAt: '2026-04-23T00:00:00Z',
     endedAt: '2026-04-23T00:05:00Z',
-    result: 'BlackWin' as const,
+    result: 'Decided' as const,
     winnerUserId: 'u-1',
     endReason: 'Decided' as const,
     moveCount: 17,

@@ -77,8 +77,9 @@ public sealed class HardAi : IPlacementAi
             var cloned = board.Clone();
             var result = cloned.PlaceStone(new Move(c, myStone));
 
-            // 己方走这一步即连五 → 直接选
-            if (IsWinForStone(result, myStone))
+            // 己方走这一步即连五 → 直接选。这里落的是 myStone,而 PlaceStone 只会为
+            // **刚落的那颗子**判胜,所以 Decided 就是"我赢了",不需要再比颜色。
+            if (result == GameResult.Decided)
             {
                 return c;
             }
@@ -144,14 +145,12 @@ public sealed class HardAi : IPlacementAi
                 var result = cloned.PlaceStone(new Move(c, stoneToPlay));
 
                 int score;
-                if (IsWinForStone(result, myStone))
+                if (result == GameResult.Decided)
                 {
+                    // maximizing 分支落的是 myStone(stoneToPlay),所以判胜只可能是我赢。
+                    // 此前这里还有一个 `IsWinForStone(result, oppStone)` 分支,注释写着
+                    // 「不可能 —— 防御式」。那句注释是对的,而现在它连表达都表达不出来了。
                     score = TerminalWin;
-                }
-                else if (IsWinForStone(result, oppStone))
-                {
-                    // 不可能 —— maximizing 分支走的是 myStone;防御式
-                    score = -TerminalWin;
                 }
                 else if (result != GameResult.Ongoing)
                 {
@@ -177,13 +176,10 @@ public sealed class HardAi : IPlacementAi
                 var result = cloned.PlaceStone(new Move(c, stoneToPlay));
 
                 int score;
-                if (IsWinForStone(result, oppStone))
+                if (result == GameResult.Decided)
                 {
+                    // minimizing 分支落的是 oppStone,所以判胜只可能是对方赢。
                     score = -TerminalWin;
-                }
-                else if (IsWinForStone(result, myStone))
-                {
-                    score = TerminalWin;
                 }
                 else if (result != GameResult.Ongoing)
                 {
@@ -251,10 +247,6 @@ public sealed class HardAi : IPlacementAi
         }
         return true;
     }
-
-    private static bool IsWinForStone(GameResult result, Stone stone) =>
-        (stone == Stone.Black && result == GameResult.BlackWin) ||
-        (stone == Stone.White && result == GameResult.WhiteWin);
 
     // =========================================================================
     // Evaluation:沿 4 方向扫描同色连续段,按模式打分

@@ -44,12 +44,12 @@ public sealed class MediumAi : IPlacementAi
             throw new InvalidOperationException("Cannot select a move on a full board.");
         }
 
-        // 第一层:自赢
-        var myWin = myStone == Stone.Black ? GameResult.BlackWin : GameResult.WhiteWin;
+        // 第一层:自赢。TrialResult 落的是 myStone,而 PlaceStone 只为刚落的那颗子判胜,
+        // 所以 Decided 就是"我赢了" —— 不必先算出"我这色的胜"是哪个枚举值。
         var selfWinning = new List<Position>();
         foreach (var p in empties)
         {
-            if (TrialResult(board, p, myStone) == myWin)
+            if (TrialResult(board, p, myStone) == GameResult.Decided)
             {
                 selfWinning.Add(p);
             }
@@ -61,11 +61,10 @@ public sealed class MediumAi : IPlacementAi
 
         // 第二层:堵五
         var opponent = myStone == Stone.Black ? Stone.White : Stone.Black;
-        var oppWin = opponent == Stone.Black ? GameResult.BlackWin : GameResult.WhiteWin;
         var blocking = new List<Position>();
         foreach (var p in empties)
         {
-            if (TrialResult(board, p, opponent) == oppWin)
+            if (TrialResult(board, p, opponent) == GameResult.Decided)
             {
                 blocking.Add(p);
             }

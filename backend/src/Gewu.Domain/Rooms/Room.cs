@@ -349,6 +349,29 @@ public sealed class Room
         return _seats.SingleOrDefault(x => x.UserId == userId)?.Index;
     }
 
+    /// <summary>
+    /// 只对两座位棋种有定义的路径的前置条件 —— 认输与超时判负都要指出**一个**赢家。
+    /// <para>
+    /// 座位数从 <c>_seats.Count</c> 读,不需要 <c>IGameRules</c>:这两条路径只在 <c>Playing</c>
+    /// 状态下走到这里,而房间是坐满才开局的,所以 <c>_seats.Count == rules.SeatCount</c>。
+    /// 为一个已知的事实多要一个参数,是让每个调用方都替这里查一遍。
+    /// </para>
+    /// </summary>
+    /// <param name="what">在做什么,用于错误消息。</param>
+    /// <exception cref="SeatCountNotSupportedException">座位数不是 2。</exception>
+    private void RequireTwoSeats(string what)
+    {
+        if (_seats.Count != 2)
+        {
+            throw new SeatCountNotSupportedException(
+                $"{what} needs exactly two seats to name a single winner; this room has {_seats.Count}.");
+        }
+    }
+
+    /// <summary>两座位棋种里"另一个座位"。仅在 <see cref="RequireTwoSeats"/> 通过之后调用。</summary>
+    /// <param name="seat">这一个座位。</param>
+    private static int OtherSeat(int seat) => seat == FirstSeat ? 1 : FirstSeat;
+
     public MoveOutcome PlayMove(UserId userId, MoveIntent intent, DateTime now, IGameRules rules)
     {
         if (Status != RoomStatus.Playing)
@@ -383,12 +406,12 @@ public sealed class Room
 
         if (result != GameResult.Ongoing)
         {
-            var winnerId = result switch
-            {
-                GameResult.BlackWin => (UserId?)BlackPlayerId,
-                GameResult.WhiteWin => WhitePlayerId,
-                _ => null,
-            };
+            // 赢家从**座位**查,而不是从结果值 switch 出黑方 / 白方。此前那个 switch 要求
+            // 结果枚举自己带着颜色 —— 而"谁赢了"同一个事实已经写在 WinnerUserId 里了,
+            // 两份真源。顺带:座位号没有上限,`Decided` 也就能表示 2 号座位赢。
+            var winnerId = application.WinnerSeat is int winnerSeat
+                ? PlayerAt(winnerSeat)
+                : null;
             Game.FinishWith(result, winnerId, GameEndReason.Decided, now);
             TransitionStatus(RoomStatus.Finished);
         }
@@ -414,27 +437,17 @@ public sealed class Room
             throw new RoomNotInPlayException("Room is in Playing state but has no Game instance.");
         }
 
-        UserId opponentUserId;
-        GameResult opponentResult;
-        if (userId == BlackPlayerId)
-        {
-            opponentUserId = WhitePlayerId!.Value;
-            opponentResult = GameResult.WhiteWin;
-        }
-        else if (WhitePlayerId is not null && userId == WhitePlayerId.Value)
-        {
-            opponentUserId = BlackPlayerId;
-            opponentResult = GameResult.BlackWin;
-        }
-        else
-        {
-            throw new NotAPlayerException(
+        var seat = SeatOf(userId)
+            ?? throw new NotAPlayerException(
                 $"User {userId.Value} is not a player in this room and cannot resign.");
-        }
 
-        Game.FinishWith(opponentResult, opponentUserId, GameEndReason.Resigned, now);
+        RequireTwoSeats("Resigning");
+
+        var opponentUserId = PlayerAt(OtherSeat(seat))!.Value;
+
+        Game.FinishWith(GameResult.Decided, opponentUserId, GameEndReason.Resigned, now);
         TransitionStatus(RoomStatus.Finished);
-        return new GameEndOutcome(opponentResult, opponentUserId);
+        return new GameEndOutcome(GameResult.Decided, opponentUserId);
     }
 
     /// <summary>
@@ -476,22 +489,13 @@ public sealed class Room
                 $"Current turn has not yet exceeded {turnTimeoutSeconds}s (elapsed {(now - lastActivity).TotalSeconds}s).");
         }
 
-        UserId winnerUserId;
-        GameResult winnerResult;
-        if (Game.CurrentTurn == FirstSeat)
-        {
-            winnerUserId = WhitePlayerId!.Value;
-            winnerResult = GameResult.WhiteWin;
-        }
-        else
-        {
-            winnerUserId = BlackPlayerId;
-            winnerResult = GameResult.BlackWin;
-        }
+        RequireTwoSeats("Timing a turn out");
 
-        Game.FinishWith(winnerResult, winnerUserId, GameEndReason.TurnTimeout, now);
+        var winnerUserId = PlayerAt(OtherSeat(Game.CurrentTurn))!.Value;
+
+        Game.FinishWith(GameResult.Decided, winnerUserId, GameEndReason.TurnTimeout, now);
         TransitionStatus(RoomStatus.Finished);
-        return new GameEndOutcome(winnerResult, winnerUserId);
+        return new GameEndOutcome(GameResult.Decided, winnerUserId);
     }
 
     /// <summary>

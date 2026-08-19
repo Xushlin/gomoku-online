@@ -24,14 +24,14 @@ public class RoomDelegatesBoardRulesTests
     /// <summary>记录被调用了几次、拿到了什么的探针规则。</summary>
     private sealed class SpyRules : IGameRules
     {
-        private readonly GameResult _result;
+        private readonly MoveApplication? _application;
 
-        public SpyRules(GameResult result = GameResult.Ongoing) => _result = result;
+        public SpyRules(MoveApplication? application = null) => _application = application;
 
         public string GameKey => "spy";
         public int Rows => 9;
         public int Cols => 9;
-        public int SeatCount => 2;
+        public int SeatCount { get; init; } = 2;
         public bool SupportsHumanVsHuman => true;
         public bool IsRated => true;
 
@@ -52,7 +52,7 @@ public class RoomDelegatesBoardRulesTests
             {
                 throw Throw;
             }
-            return new MoveApplication(_result);
+            return _application ?? MoveApplication.Ongoing();
         }
     }
 
@@ -125,12 +125,12 @@ public class RoomDelegatesBoardRulesTests
     public void A_decisive_result_from_the_rules_finishes_the_game()
     {
         var (room, black, _) = PlayingRoom();
-        var rules = new SpyRules(GameResult.BlackWin);
+        var rules = new SpyRules(MoveApplication.Won(BoardSeats.FirstSeat));
 
         room.PlayMove(black, MoveIntent.Place(new Position(1, 1)), Now.AddSeconds(2), rules);
 
         room.Status.Should().Be(RoomStatus.Finished);
-        room.Game!.Result.Should().Be(GameResult.BlackWin);
+        room.Game!.Result.Should().Be(GameResult.Decided);
         room.Game.WinnerUserId.Should().Be(black);
         room.Game.EndReason.Should().Be(GameEndReason.Decided);
     }
@@ -139,7 +139,7 @@ public class RoomDelegatesBoardRulesTests
     public void A_draw_from_the_rules_finishes_with_no_winner()
     {
         var (room, black, _) = PlayingRoom();
-        var rules = new SpyRules(GameResult.Draw);
+        var rules = new SpyRules(MoveApplication.Drawn());
 
         room.PlayMove(black, MoveIntent.Place(new Position(1, 1)), Now.AddSeconds(2), rules);
 

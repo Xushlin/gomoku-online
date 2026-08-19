@@ -25,9 +25,9 @@ public class RoomResignTests
 
         var outcome = room.Resign(black, Now.AddMinutes(1));
 
-        outcome.Result.Should().Be(GameResult.WhiteWin);
+        outcome.Result.Should().Be(GameResult.Decided);
         outcome.WinnerUserId.Should().Be(white);
-        room.Game!.Result.Should().Be(GameResult.WhiteWin);
+        room.Game!.Result.Should().Be(GameResult.Decided);
         room.Game.WinnerUserId.Should().Be(white);
         room.Game.EndReason.Should().Be(GameEndReason.Resigned);
         room.Game.EndedAt.Should().Be(Now.AddMinutes(1));
@@ -41,7 +41,7 @@ public class RoomResignTests
 
         var outcome = room.Resign(white, Now.AddMinutes(1));
 
-        outcome.Result.Should().Be(GameResult.BlackWin);
+        outcome.Result.Should().Be(GameResult.Decided);
         outcome.WinnerUserId.Should().Be(black);
         room.Game!.EndReason.Should().Be(GameEndReason.Resigned);
         room.Status.Should().Be(RoomStatus.Finished);
@@ -58,7 +58,7 @@ public class RoomResignTests
         // Black 在 White 回合认输也成功
         var outcome = room.Resign(black, Now.AddMinutes(1));
 
-        outcome.Result.Should().Be(GameResult.WhiteWin);
+        outcome.Result.Should().Be(GameResult.Decided);
         room.Status.Should().Be(RoomStatus.Finished);
     }
 

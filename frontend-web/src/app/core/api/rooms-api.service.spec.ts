@@ -169,7 +169,7 @@ describe('RoomsApiService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({});
     req.flush({
-      result: 'BlackWin',
+      result: 'Decided',
       winnerUserId: 'u-2',
       endedAt: '2026-04-24T00:05:00Z',
       endReason: 'Resigned',
@@ -191,7 +191,7 @@ describe('RoomsApiService', () => {
       white: { id: 'u-2', username: 'bob' },
       startedAt: '2026-04-24T00:00:00Z',
       endedAt: '2026-04-24T00:05:00Z',
-      result: 'BlackWin',
+      result: 'Decided',
       winnerUserId: 'u-1',
       endReason: 'Decided',
       moves: [],

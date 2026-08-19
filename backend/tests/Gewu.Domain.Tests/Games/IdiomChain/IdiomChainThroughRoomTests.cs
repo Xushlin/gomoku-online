@@ -107,6 +107,8 @@ public class IdiomChainThroughRoomTests
         ended.Should().NotBeNull();
         room.Status.Should().Be(RoomStatus.Finished);
         room.Game.EndReason.Should().Be(GameEndReason.TurnTimeout);
-        room.Game.Result.Should().Be(GameResult.BlackWin, "the player who could not answer loses");
+        room.Game.Result.Should().Be(GameResult.Decided);
+        room.Game.WinnerUserId.Should().Be(
+            room.BlackPlayerId, "the player who could not answer loses");
     }
 }

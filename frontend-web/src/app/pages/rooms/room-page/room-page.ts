@@ -24,6 +24,7 @@ import { Board } from './board/board';
 import { ChatPanel, type SendChatPayload } from './chat/chat-panel';
 import { GameEndedDialog, type GameEndedDialogData, type GameEndedDialogResult } from './dialogs/game-ended-dialog';
 import { hubErrorToKey, type HubErrorKey } from './hub-error.mapper';
+import { myOutcome } from './outcome';
 import { RoomSidebar } from './sidebar/sidebar';
 
 const URGE_COOLDOWN_MS = 30_000;
@@ -200,15 +201,17 @@ export class RoomPage implements OnInit, OnDestroy {
   }
 
   private playGameEndSound(ended: GameEndedDto): void {
-    if (ended.result === 'Draw') {
-      this.sound.play('game-draw');
-      return;
+    switch (myOutcome(ended, this.auth.user()?.id)) {
+      case 'draw':
+        this.sound.play('game-draw');
+        return;
+      case 'win':
+        this.sound.play('game-win');
+        return;
+      case 'lose':
+        this.sound.play('game-lose');
+        return;
     }
-    const side = this.mySide();
-    const won =
-      (ended.result === 'BlackWin' && side === 'black') ||
-      (ended.result === 'WhiteWin' && side === 'white');
-    this.sound.play(won ? 'game-win' : 'game-lose');
   }
 
   ngOnInit(): void {
@@ -384,7 +387,7 @@ export class RoomPage implements OnInit, OnDestroy {
       result: ended.result,
       winnerUserId: ended.winnerUserId,
       endReason: ended.endReason,
-      mySide: this.mySide(),
+      myUserId: this.auth.user()?.id ?? null,
       roomId: this.roomId,
     };
     const ref = this.dialog.open<GameEndedDialogResult>(GameEndedDialog, { data });

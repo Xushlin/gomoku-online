@@ -33,7 +33,7 @@ public class SeatKernelTests
 
         public MoveApplication Apply(
             IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
-            => new(GameResult.Ongoing);
+            => MoveApplication.Ongoing();
     }
 
     private static Room PlayingRoom()

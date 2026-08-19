@@ -73,12 +73,12 @@ public class MakeMoveCommandHandlerTests
         _notifier.Verify(n => n.GameEndedAsync(
             room.Id,
             It.Is<GameEndedDto>(p =>
-                p.Result == GameResult.BlackWin
+                p.Result == GameResult.Decided
                 && p.WinnerUserId == host.Id.Value),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // ELO 在同事务落地,写的是**该棋种**那一行:两位玩家首局,行由 get-or-create 建出来,
-        // 初始均为 (1200, 0),BlackWin 后 EloRating.Calculate(1200,0,1200,0,Win) = (1220, 1180)
+        // 初始均为 (1200, 0),先手胜后 EloRating.Calculate(1200,0,1200,0,Win) = (1220, 1180)
         stats.Of(host).Rating.Should().Be(1220);
         stats.Of(host).GamesPlayed.Should().Be(1);
         stats.Of(host).Wins.Should().Be(1);

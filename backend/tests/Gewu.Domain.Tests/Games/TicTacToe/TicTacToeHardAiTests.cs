@@ -26,7 +26,7 @@ public class TicTacToeHardAiTests
 
     /// <summary>Hard 执 <paramref name="botStone"/>,对手穷举所有合法应手。收集所有终局。</summary>
     private static void PlayOutEveryLine(
-        Board board, Stone botStone, Stone toMove, List<GameResult> outcomes)
+        Board board, Stone botStone, Stone toMove, List<Outcome> outcomes)
     {
         var ai = new TicTacToeHardAi();
 
@@ -41,7 +41,7 @@ public class TicTacToeHardAiTests
             var result = next.PlaceStone(new DomainMove(pick, botStone));
             if (result != GameResult.Ongoing)
             {
-                outcomes.Add(result);
+                outcomes.Add(new Outcome(result, botStone));
                 return;
             }
             PlayOutEveryLine(next, botStone, Other(botStone), outcomes);
@@ -55,7 +55,7 @@ public class TicTacToeHardAiTests
             var result = next.PlaceStone(new DomainMove(p, toMove));
             if (result != GameResult.Ongoing)
             {
-                outcomes.Add(result);
+                outcomes.Add(new Outcome(result, toMove));
                 continue;
             }
             PlayOutEveryLine(next, botStone, botStone, outcomes);
@@ -79,8 +79,19 @@ public class TicTacToeHardAiTests
         return list;
     }
 
-    private static bool IsLossFor(GameResult result, Stone stone)
-        => stone == Stone.Black ? result == GameResult.WhiteWin : result == GameResult.BlackWin;
+    /// <summary>
+    /// 这一局是不是 <paramref name="stone"/> 输了。
+    /// <para>
+    /// **必须知道最后一手是谁落的。** <c>GameResult.Decided</c> 只说"判出了胜负",而赢的一方
+    /// 恒等于最后落子的一方(<c>PlaceStone</c> 只为刚落的那颗子判胜)。此前这个信息是从
+    /// 结果值的颜色里读的 —— 而那个颜色本就是 <c>PlaceStone</c> 从它自己的入参抄来的。
+    /// </para>
+    /// </summary>
+    private static bool IsLossFor(Outcome outcome, Stone stone)
+        => outcome.Result == GameResult.Decided && outcome.Mover != stone;
+
+    /// <summary>一条对局线的终局:结果,加上走出它的那一手是谁落的。</summary>
+    private readonly record struct Outcome(GameResult Result, Stone Mover);
 
     // ---- 本变更的核心断言 ----
 
@@ -90,13 +101,13 @@ public class TicTacToeHardAiTests
     public void Hard_never_loses_from_the_opening_whichever_side_it_plays(Stone botStone)
     {
         // Black 先走。bot 执白时,对手先动。
-        var outcomes = new List<GameResult>();
+        var outcomes = new List<Outcome>();
 
         PlayOutEveryLine(Rules.CreateBoard(), botStone, Stone.Black, outcomes);
 
         outcomes.Should().NotBeEmpty();
-        outcomes.Should().NotContain(r => IsLossFor(r, botStone));
-        outcomes.Should().OnlyContain(r => r != GameResult.Ongoing);
+        outcomes.Should().NotContain(o => IsLossFor(o, botStone));
+        outcomes.Should().OnlyContain(o => o.Result != GameResult.Ongoing);
     }
 
     [Fact]
@@ -124,9 +135,9 @@ public class TicTacToeHardAiTests
         {
             var theoretical = Value(board, toMove, memo);
 
-            var outcomes = new List<GameResult>();
+            var outcomes = new List<Outcome>();
             PlayOutEveryLine(board, toMove, toMove, outcomes);
-            var worst = outcomes.Min(r => Signed(r, toMove));
+            var worst = outcomes.Min(o => Signed(o, toMove));
 
             worst.Should().Be(
                 theoretical,
@@ -169,13 +180,13 @@ public class TicTacToeHardAiTests
     }
 
     /// <summary>终局结果在 <paramref name="stone"/> 视角下的 +1 / 0 / -1。</summary>
-    private static int Signed(GameResult result, Stone stone)
+    private static int Signed(Outcome outcome, Stone stone)
     {
-        if (result == GameResult.Draw)
+        if (outcome.Result == GameResult.Draw)
         {
             return 0;
         }
-        return IsLossFor(result, stone) ? -1 : 1;
+        return IsLossFor(outcome, stone) ? -1 : 1;
     }
 
     private static void Enumerate(

@@ -27,7 +27,7 @@ public class RoomTimeOutTests
 
         var outcome = room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60);
 
-        outcome.Result.Should().Be(GameResult.WhiteWin);
+        outcome.Result.Should().Be(GameResult.Decided);
         outcome.WinnerUserId.Should().Be(white);
         room.Game!.EndReason.Should().Be(GameEndReason.TurnTimeout);
         room.Game.WinnerUserId.Should().Be(white);
@@ -46,7 +46,7 @@ public class RoomTimeOutTests
 
         var outcome = room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60);
 
-        outcome.Result.Should().Be(GameResult.BlackWin);
+        outcome.Result.Should().Be(GameResult.Decided);
         outcome.WinnerUserId.Should().Be(black);
         room.Game!.EndReason.Should().Be(GameEndReason.TurnTimeout);
     }

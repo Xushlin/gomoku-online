@@ -113,7 +113,7 @@ class StubRoomsApi {
   dissolve = vi.fn(() => of(undefined));
   resign = vi.fn(() =>
     of({
-      result: 'BlackWin' as const,
+      result: 'Decided' as const,
       winnerUserId: 'u-1',
       endedAt: 'x',
       endReason: 'Resigned' as const,
@@ -489,6 +489,50 @@ describe('RoomPage board selection', () => {
       fixture.detectChanges();
 
       expect(playedEvents(sound)).toEqual(['move-place']);
+    });
+
+    // The three end-of-game sounds had **no test at all**, which mutation testing is
+    // what found: swapping `'game-win'` for `'game-lose'` in the dispatch left the whole
+    // suite green. The dialog's title had tests; the sound that plays beside it did not,
+    // and those two are the pair whose disagreement is audible.
+    const ended = (winnerUserId: string | null, result: 'Decided' | 'Draw' = 'Decided') => ({
+      result,
+      winnerUserId,
+      endedAt: 'x',
+      endReason: 'Decided' as const,
+    });
+
+    it('plays game-win when I am the winner', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+      sound.play.mockClear();
+
+      hub.gameEnded.set(ended('u-1')); // mount() signs in as u-1
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual(['game-win']);
+    });
+
+    it('plays game-lose when someone else is the winner', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+      sound.play.mockClear();
+
+      hub.gameEnded.set(ended('u-2'));
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual(['game-lose']);
+    });
+
+    it('plays game-draw on a draw', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+      sound.play.mockClear();
+
+      hub.gameEnded.set(ended(null, 'Draw'));
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual(['game-draw']);
     });
 
     it('says nothing on the first state it ever sees', async () => {

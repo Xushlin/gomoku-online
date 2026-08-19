@@ -55,7 +55,7 @@ public class GetUserGamesPagedQueryHandlerTests
         first.RoomId.Should().Be(r1.Id.Value);
         first.Black.Username.Should().Be("Alice");
         first.White.Username.Should().Be("Bob");
-        first.Result.Should().Be(GameResult.BlackWin);
+        first.Result.Should().Be(GameResult.Decided);
         first.EndReason.Should().Be(GameEndReason.Decided);
         first.MoveCount.Should().Be(9);
     }

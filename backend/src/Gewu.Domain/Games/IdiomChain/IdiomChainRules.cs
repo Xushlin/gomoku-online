@@ -100,7 +100,7 @@ public sealed class IdiomChainRules : IGameRules
             }
         }
 
-        return new MoveApplication(GameResult.Ongoing);
+        return MoveApplication.Ongoing();
     }
 
     /// <summary>上一个成语;开局为 <c>null</c>。</summary>

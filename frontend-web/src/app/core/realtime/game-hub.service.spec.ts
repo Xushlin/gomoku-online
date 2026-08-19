@@ -205,7 +205,7 @@ describe('DefaultGameHubService', () => {
     await svc.joinRoom('r-1');
     conn.handlers['RoomState']?.(makeSnapshot());
     const ended: GameEndedDto = {
-      result: 'BlackWin',
+      result: 'Decided',
       winnerUserId: 'u-1',
       endedAt: '2026-04-24T00:05:00Z',
       endReason: 'Decided',

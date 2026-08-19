@@ -32,7 +32,8 @@ public class TurnTimeoutCommandHandlerTests
         await Build(60).Handle(new TurnTimeoutCommand(room.Id), default);
 
         room.Status.Should().Be(RoomStatus.Finished);
-        room.Game!.Result.Should().Be(GameResult.WhiteWin); // Black 超时 → White 胜
+        room.Game!.Result.Should().Be(GameResult.Decided);
+        room.Game.WinnerUserId.Should().Be(room.WhitePlayerId, "先手座位超时 → 后手胜");
         room.Game.EndReason.Should().Be(GameEndReason.TurnTimeout);
 
         // ELO 变动 —— 落在该棋种的战绩行上
@@ -43,7 +44,7 @@ public class TurnTimeoutCommandHandlerTests
 
         _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _notifier.Verify(n => n.GameEndedAsync(room.Id,
-            It.Is<GameEndedDto>(d => d.EndReason == GameEndReason.TurnTimeout && d.Result == GameResult.WhiteWin),
+            It.Is<GameEndedDto>(d => d.EndReason == GameEndReason.TurnTimeout && d.Result == GameResult.Decided),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

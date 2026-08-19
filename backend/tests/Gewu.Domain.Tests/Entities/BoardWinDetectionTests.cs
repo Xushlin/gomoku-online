@@ -13,7 +13,7 @@ public class BoardWinDetectionTests
     }
 
     [Fact]
-    public void Horizontal_Five_In_A_Row_Yields_BlackWin()
+    public void Horizontal_Five_Of_Black_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -26,11 +26,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(7, 7), Stone.Black));
 
-        result.Should().Be(GameResult.BlackWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Horizontal_Five_In_A_Row_Yields_WhiteWin()
+    public void Horizontal_Five_Of_White_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -43,11 +43,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(7, 7), Stone.White));
 
-        result.Should().Be(GameResult.WhiteWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Vertical_Five_In_A_Row_Yields_BlackWin()
+    public void Vertical_Five_Of_Black_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -60,11 +60,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(7, 7), Stone.Black));
 
-        result.Should().Be(GameResult.BlackWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Main_Diagonal_Five_In_A_Row_Yields_BlackWin()
+    public void Main_Diagonal_Five_Of_Black_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -77,11 +77,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(7, 7), Stone.Black));
 
-        result.Should().Be(GameResult.BlackWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Anti_Diagonal_Five_In_A_Row_Yields_WhiteWin()
+    public void Anti_Diagonal_Five_Of_White_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -94,7 +94,7 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(3, 7), Stone.White));
 
-        result.Should().Be(GameResult.WhiteWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
@@ -112,11 +112,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(7, 7), Stone.Black));
 
-        result.Should().Be(GameResult.BlackWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Five_On_Top_Edge_Yields_BlackWin()
+    public void Five_On_Top_Edge_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -129,11 +129,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(0, 4), Stone.Black));
 
-        result.Should().Be(GameResult.BlackWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Five_On_Bottom_Edge_Yields_WhiteWin()
+    public void Five_On_Bottom_Edge_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -146,11 +146,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(14, 14), Stone.White));
 
-        result.Should().Be(GameResult.WhiteWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Five_On_Left_Edge_Yields_BlackWin()
+    public void Five_On_Left_Edge_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -163,11 +163,11 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(14, 0), Stone.Black));
 
-        result.Should().Be(GameResult.BlackWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]
-    public void Five_On_Right_Edge_Yields_WhiteWin()
+    public void Five_On_Right_Edge_Yields_Decided()
     {
         var board = GomokuBoards.New();
         PlaceAll(board, new[]
@@ -180,7 +180,7 @@ public class BoardWinDetectionTests
 
         var result = board.PlaceStone(new Move(new Position(4, 14), Stone.White));
 
-        result.Should().Be(GameResult.WhiteWin);
+        result.Should().Be(GameResult.Decided);
     }
 
     [Fact]

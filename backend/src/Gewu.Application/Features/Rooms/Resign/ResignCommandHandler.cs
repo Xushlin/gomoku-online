@@ -52,7 +52,7 @@ public sealed class ResignCommandHandler : IRequestHandler<ResignCommand, GameEn
 
         var outcome = room.Resign(request.UserId, _clock.UtcNow);
 
-        await GameEloApplier.ApplyAsync(room, outcome.Result, _rules, _users, cancellationToken);
+        await GameEloApplier.ApplyAsync(room, _rules, _users, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
 
         var ended = new GameEndedDto(

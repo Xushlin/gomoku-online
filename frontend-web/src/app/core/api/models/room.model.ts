@@ -7,7 +7,14 @@
 
 export type RoomStatus = 'Waiting' | 'Playing' | 'Finished';
 export type Stone = 'Empty' | 'Black' | 'White';
-export type GameResult = 'Ongoing' | 'BlackWin' | 'WhiteWin' | 'Draw';
+/**
+ * How a game ended. **There is no winner in here** — that is `winnerUserId`.
+ *
+ * The server merged `BlackWin` / `WhiteWin` into `Decided` because those two values and
+ * `winnerUserId` were the same fact stored twice, and because a colour-named result only
+ * has room for two seats.
+ */
+export type GameResult = 'Ongoing' | 'Decided' | 'Draw';
 export type GameEndReason = 'Decided' | 'Resigned' | 'TurnTimeout';
 export type ChatChannel = 'Room' | 'Spectator';
 export type BotDifficulty = 'Easy' | 'Medium' | 'Hard';

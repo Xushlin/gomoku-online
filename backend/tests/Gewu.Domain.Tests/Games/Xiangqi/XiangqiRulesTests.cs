@@ -415,7 +415,8 @@ public class XiangqiRulesTests
         // 逃格 (0,3) / (0,5) 都在同一条第 0 行上，(1,4) 被 (1,0) 的车封住 —— 将死。
         var result = Apply(h, 9, 8, 0, 8, Red);
 
-        result.Result.Should().Be(GameResult.BlackWin);
+        result.Result.Should().Be(GameResult.Decided);
+        result.WinnerSeat.Should().Be(BoardSeats.FirstSeat, "将死之后赢的是走子方");
     }
 
     [Fact]
@@ -445,7 +446,8 @@ public class XiangqiRulesTests
         // 而 (0,3)/(0,5)/(1,4) 三个逃格全被封 —— 困毙。
         var result = Apply(h, 9, 0, 1, 0, Red);
 
-        result.Result.Should().Be(GameResult.BlackWin);
+        result.Result.Should().Be(GameResult.Decided);
+        result.WinnerSeat.Should().Be(BoardSeats.FirstSeat, "将死之后赢的是走子方");
     }
 
     // ---- 无状态 ----
