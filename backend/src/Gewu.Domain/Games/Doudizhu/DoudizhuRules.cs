@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.Games.Abstractions;
@@ -18,7 +19,7 @@ namespace Gewu.Domain.Games.Doudizhu;
 /// <see cref="MatchState"/> 重建局面(见 <see cref="DoudizhuTable"/>)。
 /// </para>
 /// </summary>
-public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbackRules
+public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbackRules, IPerSeatViewRules
 {
     /// <inheritdoc />
     public string GameKey => GameKeys.Doudizhu;
@@ -170,5 +171,49 @@ public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbac
         // 首出不能过牌。手牌按大小升序,所以第一张就是最小的。
         var smallest = table.HandOf(seat)[0];
         return MoveIntent.Say(DoudizhuMove.Playing([smallest]).Encode());
+    }
+
+    /// <summary>
+    /// 序列化选项 —— camelCase,与平台上其它 JSON 载荷一致。
+    /// <para>
+    /// **不放宽转义**,而这是一个基于内容的判断:牌的字母表是 <c>A-Za-z@#</c>,全是 ASCII,
+    /// 默认转义器不会碰它们。<c>compact-puzzle-artefacts</c> 那里必须放宽,是因为它存的是汉字
+    /// (成语 / 曹操),默认转义会把每个字变成六个字符 —— **比它省下的空白还大**。
+    /// 同一个选项在那里必需、在这里多余,理由都在内容上。
+    /// </para>
+    /// </summary>
+    private static readonly JsonSerializerOptions ViewJson = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    /// <inheritdoc />
+    public string ViewFor(MatchState state, int? seat)
+    {
+        var table = DoudizhuTable.Reconstruct(state);
+
+        // 自己的牌只在"真占着一个座位"时给。围观者与还没入座的人拿到空串 ——
+        // 不是"某一家的牌",更不是三家的牌。
+        var myHand = seat is int s && s >= 0 && s < SeatCount
+            ? Card.Encode(table.HandOf(s))
+            : string.Empty;
+
+        // 底牌:定下地主之后才公开。叫分阶段它 MUST 为 null —— 那时它还没被翻开,
+        // 而它恰恰决定了谁值得抢地主,所以早给一步就是给了不该有的信息。
+        var kitty = table.Landlord is null ? null : Card.Encode(table.Kitty);
+
+        var view = new DoudizhuSeatView(
+            Phase: table.Phase.ToString(),
+            Landlord: table.Landlord,
+            BaseScore: table.BaseScore,
+            BidsMade: table.BidsMade,
+            MyHand: myHand,
+            HandCounts: Enumerable.Range(0, SeatCount).Select(i => table.HandOf(i).Count).ToList(),
+            Kitty: kitty,
+            TableSeat: table.CurrentSeat,
+            TableCards: table.Current is null ? null : Card.Encode(table.CurrentCards),
+            Winner: table.Winner);
+
+        return JsonSerializer.Serialize(view, ViewJson);
     }
 }

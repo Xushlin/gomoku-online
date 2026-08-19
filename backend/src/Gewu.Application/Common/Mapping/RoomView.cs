@@ -1,3 +1,4 @@
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 
@@ -16,8 +17,20 @@ namespace Gewu.Application.Common.Mapping;
 /// 这个仓库反复用的那句:**一张需要记得扩充的表是纪律,一个构造函数参数是编译器。**
 /// </para>
 /// </summary>
+/// <para>
+/// <b>它现在有两个维度。</b> 第二个是**这份快照给哪个座位看**:斗地主的手牌只有一个座位能看,
+/// 而"围观频道给不给"答不了这个问题。两个维度都在这里,是因为它们回答的是同一个问题的两半 ——
+/// "这份快照是给谁的",而把它们分成两个参数就等于给每个调用点一次只想起一半的机会。
+/// </para>
 /// <param name="IncludeSpectatorChat">这份快照是否包含围观频道的消息。</param>
-public readonly record struct RoomView(bool IncludeSpectatorChat)
+/// <param name="Seat">看这份快照的人坐第几号座位;不占座位(围观者 / 尚未入座)时 <c>null</c>。</param>
+/// <param name="SeatView">
+/// 这个座位**能看到**的那一份棋种私有状态,已由规则序列化;棋种没有隐藏信息时 <c>null</c>。
+/// <para>
+/// 对内核完全不透明 —— 它原样进 <c>GameSnapshotDto.SeatView</c>。内核 MUST NOT 解析它。
+/// </para>
+/// </param>
+public readonly record struct RoomView(bool IncludeSpectatorChat, int? Seat, string? SeatView)
 {
     /// <summary>
     /// 给某个具体的人看。**只有围观者**看得到围观频道。
@@ -34,11 +47,38 @@ public readonly record struct RoomView(bool IncludeSpectatorChat)
     /// </summary>
     /// <param name="room">房间。</param>
     /// <param name="viewer">看这份快照的人。</param>
-    public static RoomView For(Room room, UserId viewer) => new(room.IsSpectator(viewer));
+    /// <param name="rules">这个房间的棋种规则 —— 用来算出这个座位的私有切片。</param>
+    public static RoomView For(Room room, UserId viewer, IGameRules? rules)
+        => Build(room, room.IsSpectator(viewer), room.SeatOf(viewer), rules);
 
-    /// <summary>广播给"非围观者"子群的那一份 —— 不含围观频道。</summary>
-    public static RoomView ForNonSpectators => new(false);
+    /// <summary>广播给某一个座位的那一份 —— 含那个座位的私有状态,不含围观频道。</summary>
+    /// <param name="room">房间。</param>
+    /// <param name="seat">座位号。</param>
+    /// <param name="rules">棋种规则。</param>
+    public static RoomView ForSeat(Room room, int seat, IGameRules? rules)
+        => Build(room, includeSpectatorChat: false, seat: seat, rules: rules);
 
-    /// <summary>广播给围观者子群的那一份 —— 含围观频道。</summary>
-    public static RoomView ForSpectators => new(true);
+    /// <summary>
+    /// 广播给"在房间里但没坐座位、也没围观"的那一份 —— 既没有围观频道,也没有任何私有状态。
+    /// </summary>
+    /// <param name="room">房间。</param>
+    /// <param name="rules">棋种规则。</param>
+    public static RoomView ForObservers(Room room, IGameRules? rules)
+        => Build(room, includeSpectatorChat: false, seat: null, rules: rules);
+
+    /// <summary>广播给围观者子群的那一份 —— 含围观频道,不含任何座位的私有状态。</summary>
+    /// <param name="room">房间。</param>
+    /// <param name="rules">棋种规则。</param>
+    public static RoomView ForSpectators(Room room, IGameRules? rules)
+        => Build(room, includeSpectatorChat: true, seat: null, rules: rules);
+
+    private static RoomView Build(Room room, bool includeSpectatorChat, int? seat, IGameRules? rules)
+    {
+        // 私有切片只在**对局已经开始**时存在:规则要从 `MatchState` 重建局面,而 Waiting 房间
+        // 还没有 Game,也没有发牌。这不是防御性判空 —— 大厅列表与等待中的房间都会走到这里。
+        var seatView = rules is IPerSeatViewRules perSeat && room.Game is not null
+            ? perSeat.ViewFor(room.Game.State(), seat)
+            : null;
+        return new RoomView(includeSpectatorChat, seat, seatView);
+    }
 }
