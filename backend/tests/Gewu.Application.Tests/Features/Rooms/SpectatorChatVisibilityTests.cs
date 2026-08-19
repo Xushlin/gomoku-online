@@ -48,7 +48,7 @@ public class SpectatorChatVisibilityTests
     }
 
     private static IReadOnlyList<ChatChannel> ChannelsSeenBy(Room room, UserId viewer)
-        => [.. room.ToState(NoNames, 60, RoomView.For(room, viewer)).ChatMessages.Select(m => m.Channel)];
+        => [.. room.ToState(NoNames, 60, RoomView.For(room, viewer, rules: null)).ChatMessages.Select(m => m.Channel)];
 
     [Fact]
     public void A_player_never_receives_spectator_channel_messages()
@@ -67,7 +67,7 @@ public class SpectatorChatVisibilityTests
         // 裁剪必须只裁围观频道。把房间聊天一起裁掉是"修好了但坏了别的"。
         var (room, black, _, _, _, _) = Watched();
 
-        room.ToState(NoNames, 60, RoomView.For(room, black))
+        room.ToState(NoNames, 60, RoomView.For(room, black, rules: null))
             .ChatMessages.Should().ContainSingle()
             .Which.Content.Should().Be("good luck");
     }
@@ -79,7 +79,7 @@ public class SpectatorChatVisibilityTests
 
         foreach (var fan in new[] { fan1, fan2 })
         {
-            var seen = room.ToState(NoNames, 60, RoomView.For(room, fan)).ChatMessages;
+            var seen = room.ToState(NoNames, 60, RoomView.For(room, fan, rules: null)).ChatMessages;
             seen.Should().HaveCount(3);
             seen.Where(m => m.Channel == ChatChannel.Spectator)
                 .Select(m => m.SenderUsername)
@@ -99,7 +99,7 @@ public class SpectatorChatVisibilityTests
         // 代价是"先看看再决定围观"看不到评论,而那一步点一下大厅的「围观」按钮就跨过去了。
         var (room, _, _, _, _, stranger) = Watched();
 
-        room.ToState(NoNames, 60, RoomView.For(room, stranger)).ChatMessages
+        room.ToState(NoNames, 60, RoomView.For(room, stranger, rules: null)).ChatMessages
             .Should().ContainSingle().Which.Channel.Should().Be(ChatChannel.Room);
     }
 
@@ -110,8 +110,8 @@ public class SpectatorChatVisibilityTests
         // 而"忘记"正是此前的形状:一份 DTO 推给整个 room group。
         var (room, _, _, _, _, _) = Watched();
 
-        room.ToState(NoNames, 60, RoomView.ForNonSpectators).ChatMessages.Should().HaveCount(1);
-        room.ToState(NoNames, 60, RoomView.ForSpectators).ChatMessages.Should().HaveCount(3);
+        room.ToState(NoNames, 60, RoomView.ForObservers(room, rules: null)).ChatMessages.Should().HaveCount(1);
+        room.ToState(NoNames, 60, RoomView.ForSpectators(room, rules: null)).ChatMessages.Should().HaveCount(3);
     }
 
     [Theory]
@@ -126,9 +126,12 @@ public class SpectatorChatVisibilityTests
         rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
 
         var sut = new GetRoomRoleQueryHandler(rooms.Object);
-        var role = await sut.Handle(new GetRoomRoleQuery(asPlayer ? black : fan1, room.Id), default);
+        var membership = await sut.Handle(new GetRoomRoleQuery(asPlayer ? black : fan1, room.Id), default);
 
-        role.Should().Be(asPlayer ? RoomRole.Player : RoomRole.Spectator);
+        membership.Role.Should().Be(asPlayer ? RoomRole.Player : RoomRole.Spectator);
+        // 座位号与身份来自同一次查询 —— 玩家有座位,非玩家没有。分开问会有它们不一致的可能,
+        // 而不一致的后果是那个连接被放进一个不存在的座位群、或者一个群都不进。
+        membership.Seat.Should().Be(asPlayer ? 0 : null);
     }
 
     [Fact]
@@ -143,10 +146,10 @@ public class SpectatorChatVisibilityTests
         var sut = new GetRoomRoleQueryHandler(rooms.Object);
 
         (await sut.Handle(new GetRoomRoleQuery(stranger, room.Id), default))
-            .Should().Be(RoomRole.None);
+            .Should().Be(RoomMembership.None);
 
         // 房间没了时分群逻辑的正确反应是"不加任何子群",而不是把建连变成错误路径。
         (await sut.Handle(new GetRoomRoleQuery(stranger, RoomId.NewId()), default))
-            .Should().Be(RoomRole.None);
+            .Should().Be(RoomMembership.None);
     }
 }

@@ -59,8 +59,28 @@ public sealed class DoudizhuTable
     /// <summary>桌上那一手是谁打的。</summary>
     public int? CurrentSeat { get; private set; }
 
+    /// <summary>
+    /// 桌上那一手**具体是哪几张**;自由首出时为空。
+    /// <para>
+    /// <see cref="Current"/> 是 <c>(Kind, Key, Length)</c> —— 压牌只需要这三样,所以它不带牌。
+    /// 但屏幕上要画出那几张,所以这里留一份。重建时本来就在手上,不需要再走一遍历史。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<Card> CurrentCards { get; private set; } = [];
+
     /// <summary>赢家座位号;还没结束或流局时为 <c>null</c>。</summary>
     public int? Winner { get; private set; }
+
+    /// <summary>
+    /// 底牌 3 张。
+    /// <para>
+    /// 它**定下地主之后是公开的** —— 地主把它揽进手里,而这三张是什么,三家都该知道
+    /// (少了它,农民无从推断地主手上有什么)。裁剪"什么时候能看"是
+    /// <see cref="DoudizhuRules.ViewFor"/> 的事,不是这里的事:局面对象说的是"这一局是什么样",
+    /// 视图说的是"谁看得到"。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<Card> Kitty { get; private set; } = [];
 
     /// <summary>某个座位**还剩**哪些牌,按大小升序。</summary>
     /// <param name="seat">座位号。</param>
@@ -85,7 +105,7 @@ public sealed class DoudizhuTable
             hands[seat] = [.. deal.Hands[seat]];
         }
 
-        var table = new DoudizhuTable(hands);
+        var table = new DoudizhuTable(hands) { Kitty = deal.Kitty };
         var passes = 0;
 
         foreach (var played in state.History)
@@ -108,6 +128,7 @@ public sealed class DoudizhuTable
                         // 三家里另外两家都过了,桌面清空 —— 轮到的正是打出那一手的人。
                         table.Current = null;
                         table.CurrentSeat = null;
+                        table.CurrentCards = [];
                         passes = 0;
                     }
                     break;
@@ -119,6 +140,7 @@ public sealed class DoudizhuTable
                     }
                     table.Current = CardCombo.Recognise(move.Cards);
                     table.CurrentSeat = played.Seat;
+                    table.CurrentCards = move.Cards;
                     passes = 0;
                     if (hands[played.Seat].Count == 0)
                     {

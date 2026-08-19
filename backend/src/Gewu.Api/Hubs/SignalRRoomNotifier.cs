@@ -1,6 +1,7 @@
 using Gewu.Application.Abstractions;
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 using Microsoft.AspNetCore.SignalR;
@@ -14,24 +15,32 @@ namespace Gewu.Api.Hubs;
 public sealed class SignalRRoomNotifier : IRoomNotifier
 {
     private readonly IHubContext<MatchHub> _hub;
+    private readonly IGameRulesRegistry _rules;
 
     /// <inheritdoc />
-    public SignalRRoomNotifier(IHubContext<MatchHub> hub)
+    public SignalRRoomNotifier(IHubContext<MatchHub> hub, IGameRulesRegistry rules)
     {
         _hub = hub;
+        _rules = rules;
     }
 
     /// <summary>
-    /// 推完整房间状态 —— **分两份**。
+    /// 推完整房间状态 —— **每个座位一份,外加观察者一份、围观者一份**。
     /// <para>
-    /// 给玩家子群的那份不含围观频道,给围观者子群的那份含。此前这里是一份 DTO 推给
-    /// <c>room:{id}</c>(全体),于是围观者的吐槽进了玩家的客户端。
+    /// 此前是两份:非围观者一份、围观者一份。斗地主的手牌只有一个座位能看,所以"非围观者"
+    /// 不能再共用一份 —— 而一旦座位群出现,坐着的人就 MUST NOT 再留在观察者群里,否则他会
+    /// 收到两份快照(一份带手牌、一份不带),**看到哪一份由到达顺序决定**。
     /// </para>
     /// <para>
-    /// 两个目标群 MUST **互斥且穷尽**:<c>JoinRoom</c> 按聚合身份把每个连接放进
-    /// spectators 或 non-spectators 之一,所以每个连接恰好收到一份。互斥不成立会让某个连接
-    /// 收到两份、由到达顺序决定它看到什么;不穷尽会让某个连接一份都收不到 ——
-    /// 后者是我第一版按"玩家"分组时真的发生的事。
+    /// 目标群 MUST **互斥且穷尽**:<c>JoinRoom</c> 按聚合身份把每个连接放进「某个座位」/
+    /// 「围观者」/「观察者」之一,所以每个连接恰好收到一份。互斥不成立会让某个连接收到两份;
+    /// 不穷尽会让某个连接一份都收不到 —— 后者是 <c>fix-spectator-chat-leak</c> 第一版按"玩家"
+    /// 分组时真的发生的事。
+    /// </para>
+    /// <para>
+    /// <b>投影次数从 2 变成 SeatCount + 2,而没有为"没有隐藏信息的棋种"开一条快路。</b>
+    /// 那会是两条代码路径,而这套 <c>RoomView</c> 机制存在的全部理由就是不给任何 handler
+    /// 一次忘记裁剪的机会。
     /// </para>
     /// </summary>
     /// <param name="room">房间聚合。</param>
@@ -44,11 +53,28 @@ public sealed class SignalRRoomNotifier : IRoomNotifier
         int turnTimeoutSeconds,
         CancellationToken ct)
     {
-        var forNonSpectators = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForNonSpectators);
-        var forSpectators = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForSpectators);
+        // 棋种规则用来算每个座位的私有切片。键解析不出来时是 null —— 那样每个座位拿到的
+        // 投影内容相同,与本变更之前一致。
+        var rules = _rules.For(room.GameKey);
 
-        await _hub.Clients.Group(MatchHub.NonSpectatorsGroupName(room.Id))
-            .SendAsync("RoomState", forNonSpectators, ct);
+        // **每个座位一份。** 斗地主的手牌只有一个座位能看,所以"非围观者"不能再共用一份快照。
+        // 没有隐藏信息的棋种,这几份内容完全相同 —— 而这里**没有为它开一条快路**:
+        // 两条代码路径就是给每个未来的 handler 一次忘记裁剪的机会,而这一整个 RoomView 机制
+        // 存在的理由就是不给那种机会。代价是同一份 payload 多发几次,进程内扇出。
+        foreach (var seat in room.Seats)
+        {
+            var forSeat = room.ToState(
+                usernames, turnTimeoutSeconds, RoomView.ForSeat(room, seat.Index, rules));
+            await _hub.Clients.Group(MatchHub.SeatGroupName(room.Id, seat.Index))
+                .SendAsync("RoomState", forSeat, ct);
+        }
+
+        // 进了房间、没坐座位、也没围观的那些连接。
+        var forObservers = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForObservers(room, rules));
+        await _hub.Clients.Group(MatchHub.ObserversGroupName(room.Id))
+            .SendAsync("RoomState", forObservers, ct);
+
+        var forSpectators = room.ToState(usernames, turnTimeoutSeconds, RoomView.ForSpectators(room, rules));
         await _hub.Clients.Group(MatchHub.SpectatorsGroupName(room.Id))
             .SendAsync("RoomState", forSpectators, ct);
     }

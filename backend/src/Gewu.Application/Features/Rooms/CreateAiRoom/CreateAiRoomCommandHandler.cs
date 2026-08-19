@@ -95,6 +95,6 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
             [host.Id.Value] = host.Username.Value,
             [bot.Id.Value] = bot.Username.Value,
         };
-        return room.ToState(usernames, _gameOptions.TurnTimeoutSeconds, RoomView.For(room, request.HostUserId));
+        return room.ToState(usernames, _gameOptions.TurnTimeoutSeconds, RoomView.For(room, request.HostUserId, rules));
     }
 }

@@ -4,7 +4,7 @@ using MediatR;
 namespace Gewu.Application.Features.Rooms.GetRoomRole;
 
 /// <summary>把 <see cref="GetRoomRoleQuery"/> 解析成聚合里的身份。</summary>
-public sealed class GetRoomRoleQueryHandler : IRequestHandler<GetRoomRoleQuery, RoomRole>
+public sealed class GetRoomRoleQueryHandler : IRequestHandler<GetRoomRoleQuery, RoomMembership>
 {
     private readonly IRoomRepository _rooms;
 
@@ -15,19 +15,21 @@ public sealed class GetRoomRoleQueryHandler : IRequestHandler<GetRoomRoleQuery, 
     }
 
     /// <inheritdoc />
-    public async Task<RoomRole> Handle(GetRoomRoleQuery request, CancellationToken cancellationToken)
+    public async Task<RoomMembership> Handle(GetRoomRoleQuery request, CancellationToken cancellationToken)
     {
         var room = await _rooms.FindByIdAsync(request.RoomId, cancellationToken);
         if (room is null)
         {
-            return RoomRole.None;
+            return RoomMembership.None;
         }
 
-        if (room.IsPlayer(request.UserId))
+        // 座位号与"是不是玩家"由同一次查询给出 —— 两次分别问会有它们不一致的可能,
+        // 而不一致的后果是某个连接被放进一个不存在的座位群、或者一个群都不进。
+        if (room.SeatOf(request.UserId) is int seat)
         {
-            return RoomRole.Player;
+            return RoomMembership.AtSeat(seat);
         }
 
-        return room.IsSpectator(request.UserId) ? RoomRole.Spectator : RoomRole.None;
+        return room.IsSpectator(request.UserId) ? RoomMembership.Spectator : RoomMembership.None;
     }
 }

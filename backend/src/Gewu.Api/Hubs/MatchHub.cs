@@ -4,6 +4,7 @@ using Gewu.Application.Features.Rooms.GetRoomRole;
 using Gewu.Application.Features.Rooms.MakeMove;
 using Gewu.Application.Features.Rooms.SendChatMessage;
 using Gewu.Application.Features.Rooms.UrgeOpponent;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
 using MediatR;
@@ -24,13 +25,19 @@ public sealed class MatchHub : Hub
     private readonly ISender _mediator;
     private readonly IConnectionTracker _tracker;
     private readonly ILogger<MatchHub> _logger;
+    private readonly IGameRulesRegistry _rules;
 
     /// <inheritdoc />
-    public MatchHub(ISender mediator, IConnectionTracker tracker, ILogger<MatchHub> logger)
+    public MatchHub(
+        ISender mediator,
+        IConnectionTracker tracker,
+        ILogger<MatchHub> logger,
+        IGameRulesRegistry rules)
     {
         _mediator = mediator;
         _tracker = tracker;
         _logger = logger;
+        _rules = rules;
     }
 
     /// <inheritdoc />
@@ -74,10 +81,8 @@ public sealed class MatchHub : Hub
         // 身份取自**聚合**,不取自客户端自报。spec 一直是这么写的
         // (「若调用方已是该房间的玩家或围观者…则额外加入子群」),而实现此前是客户端
         // 自己调 JoinSpectatorGroup —— 于是玩家把自己塞进围观子群就能实时收到吐槽。
-        var role = await _mediator.Send(new GetRoomRoleQuery(GetUserId(), id), Context.ConnectionAborted);
-        await Groups.AddToGroupAsync(
-            Context.ConnectionId,
-            role == RoomRole.Spectator ? SpectatorsGroupName(id) : NonSpectatorsGroupName(id));
+        var membership = await _mediator.Send(new GetRoomRoleQuery(GetUserId(), id), Context.ConnectionAborted);
+        await Groups.AddToGroupAsync(Context.ConnectionId, ViewGroupName(id, membership));
 
         await _tracker.AssociateRoomAsync(Context.ConnectionId, id);
     }
@@ -88,7 +93,19 @@ public sealed class MatchHub : Hub
         var id = new RoomId(roomId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomGroupName(id));
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, SpectatorsGroupName(id));
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, NonSpectatorsGroupName(id));
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, ObserversGroupName(id));
+        // 座位群按座位号命名,所以离开时要把**每一个**都退掉。
+        //
+        // 不在这里重查一次身份:查到的可能已经变了(他可能刚从座位上离开),而"按现在的身份退群"
+        // 会把一个陈旧的座位群留在这个连接上 —— 那个座位后来若坐了别人,他就会收到别人的手牌。
+        // 退一个不存在的群是无操作,所以宁可多退。
+        //
+        // 上界**从注册表取**,不是一个手写常量:手写的那个在"座位更多的棋种"落地时要有人记得涨,
+        // 而忘记涨的症状是那个座位的人离开房间之后**还在收快照**。
+        for (var seat = 0; seat < SeatBound(); seat++)
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, SeatGroupName(id, seat));
+        }
         await _tracker.DissociateRoomAsync(Context.ConnectionId, id);
     }
 
@@ -110,12 +127,12 @@ public sealed class MatchHub : Hub
     public async Task JoinSpectatorGroup(Guid roomId)
     {
         var id = new RoomId(roomId);
-        var role = await _mediator.Send(new GetRoomRoleQuery(GetUserId(), id), Context.ConnectionAborted);
-        if (role == RoomRole.Spectator)
+        var membership = await _mediator.Send(new GetRoomRoleQuery(GetUserId(), id), Context.ConnectionAborted);
+        if (membership.Role == RoomRole.Spectator)
         {
-            // 先出后进:两个子群 MUST 互斥,否则这个连接会收到两份快照,
+            // 先出后进:视图子群 MUST 互斥,否则这个连接会收到两份快照,
             // 而后到的那一份覆盖前一份 —— 于是"看得到围观区"变成一件靠到达顺序的事。
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, NonSpectatorsGroupName(id));
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, ObserversGroupName(id));
             await Groups.AddToGroupAsync(Context.ConnectionId, SpectatorsGroupName(id));
         }
     }
@@ -189,20 +206,52 @@ public sealed class MatchHub : Hub
     internal static string SpectatorsGroupName(RoomId id) => $"room:{id.Value}:spectators";
 
     /// <summary>
-    /// **非围观者**的子群 —— 玩家,以及进了房但还没围观的连接。
+    /// 平台上座位数最多的棋种有几个座位 —— 只用于"退掉全部座位群"的上界。
     /// <para>
-    /// 加它是因为 <c>RoomState</c> 广播要发两份:这一份不含围观频道。此前只有
-    /// <c>room:{id}</c>(全体)与 <c>room:{id}:spectators</c>(仅围观者),没有这一侧,
-    /// 于是那一份只能推给全体 —— 围观者的吐槽就这样进了玩家的客户端。
+    /// 从注册表算,不写死:一个手写常量在座位更多的棋种落地那天要有人记得涨,而**忘记涨没有
+    /// 任何报错** —— 症状是那个座位的人离开房间之后还在收快照。这与
+    /// <c>enforce-ai-availability</c> 让校验去读 <c>IGameAiRegistry</c> 而不是加一个
+    /// 手写布尔是同一条:**一个复述结构性事实的手写值是判断,而判断会悄悄过期。**
     /// </para>
+    /// </summary>
+    private int SeatBound() => _rules.All.Max(r => r.SeatCount);
+
+    /// <summary>
+    /// 某个座位的视图子群。
     /// <para>
-    /// 它叫"非围观者"而不是"玩家",是因为它必须**穷尽**另一侧:两个子群加起来要覆盖房间里
-    /// 每一个连接,否则有人收不到任何快照。我第一版按"玩家"分,结果一个还没点围观的旁观连接
-    /// 两个组都不在,实时更新就断了。**分组要么互斥且穷尽,要么就有人掉在缝里。**
+    /// 一个座位一个群,而不是 <c>Clients.User(...)</c>:后者会打到那个用户的**全部连接**,
+    /// 包括他开在另一个房间的标签页 —— 一个催促弹错标签无所谓,一份房间快照盖掉另一个房间的
+    /// 状态不行。
     /// </para>
     /// </summary>
     /// <param name="id">房间。</param>
-    internal static string NonSpectatorsGroupName(RoomId id) => $"room:{id.Value}:non-spectators";
+    /// <param name="seat">座位号。</param>
+    internal static string SeatGroupName(RoomId id, int seat) => $"room:{id.Value}:seat:{seat}";
+
+    /// <summary>
+    /// **观察者**的子群 —— 进了房间、没坐座位、也没围观的连接。
+    /// <para>
+    /// 它此前叫 <c>non-spectators</c>,里面既有坐着的人也有没坐的人。座位群出现之后那样不行了:
+    /// 坐着的人会收到两份快照(一份带手牌、一份不带),而**看到哪一份由到达顺序决定** ——
+    /// 正是 <c>fix-spectator-chat-leak</c> 立下"互斥且穷尽"这条规矩要挡的事。
+    /// </para>
+    /// <para>
+    /// 三类连接各进恰好一个视图群:座位群、围观群、观察者群。改名不是整理 ——
+    /// 它把"在房间里、没坐座位、也没围观"这件事说出来,而那正是这个群现在的全部成员。
+    /// </para>
+    /// </summary>
+    /// <param name="id">房间。</param>
+    internal static string ObserversGroupName(RoomId id) => $"room:{id.Value}:observers";
+
+    /// <summary>这份身份对应的视图子群 —— 三类各一个,互斥且穷尽。</summary>
+    /// <param name="id">房间。</param>
+    /// <param name="membership">身份 + 座位号。</param>
+    internal static string ViewGroupName(RoomId id, RoomMembership membership) => membership.Role switch
+    {
+        RoomRole.Player => SeatGroupName(id, membership.Seat!.Value),
+        RoomRole.Spectator => SpectatorsGroupName(id),
+        _ => ObserversGroupName(id),
+    };
 
     private UserId GetUserId()
     {

@@ -6,6 +6,22 @@ namespace Gewu.Application.Common.DTOs;
 /// <summary>用户在 Room 相关 DTO 里的精简表示(避免暴露 email / 战绩等无关字段)。</summary>
 public sealed record UserSummaryDto(Guid Id, string Username);
 
+/// <summary>
+/// 一个座位:座位号 + 坐在上面的人。
+/// <para>
+/// <b>它存在的理由是 `Black` / `White` 描述不了三个座位。</b> 那两个字段是 0 号与 1 号的派生读法,
+/// 于是三座位房间里 2 号座位上的人**在任何字段里都不出现** —— 实测过。
+/// </para>
+/// <para>
+/// `generalize-match-contract` 刻意**没有**加这个字段,理由是那时没有读者,而
+/// 「交付一个没人读的字段」正是 `add-match-setup` 刚踩过的坑。现在读者有了:客户端要画三家的牌,
+/// 就得知道谁坐哪。
+/// </para>
+/// </summary>
+/// <param name="Index">座位号,0-based。</param>
+/// <param name="Player">坐在这个座位上的人。</param>
+public sealed record RoomSeatDto(int Index, UserSummaryDto Player);
+
 /// <summary>对局中一步棋的网络表示。</summary>
 /// <param name="Ply">步数(1-based)。</param>
 /// <param name="Row">终点 / 落点行;**文本类棋种为 <c>null</c>**。</param>
@@ -83,6 +99,17 @@ public sealed record RoomSummaryDto(
 /// <paramref name="EndReason"/> 与 <paramref name="Result"/> 同时为 <c>null</c> 或同时非 <c>null</c>。
 /// </para>
 /// </summary>
+/// <param name="SeatView">
+/// 这个看客**能看到**的那一份棋种私有状态,已由规则序列化;棋种没有隐藏信息时为 <c>null</c>。
+/// <para>
+/// 对本层完全不透明 —— 内容由棋种规则决定(<c>IPerSeatViewRules</c>),由客户端按棋种解析。
+/// 与闯关那条线的 <c>LayoutJson</c> 同一个做法:内核不该知道什么是牌。
+/// </para>
+/// <para>
+/// <b>同一局的不同座位拿到的是不同的字符串</b>,所以广播 MUST 按座位分别投影 ——
+/// 见 <c>SignalRRoomNotifier</c>。
+/// </para>
+/// </param>
 public sealed record GameSnapshotDto(
     Guid Id,
     int CurrentSeat,
@@ -93,7 +120,8 @@ public sealed record GameSnapshotDto(
     GameEndReason? EndReason,
     DateTime TurnStartedAt,
     int TurnTimeoutSeconds,
-    IReadOnlyList<MoveDto> Moves);
+    IReadOnlyList<MoveDto> Moves,
+    string? SeatView = null);
 
 /// <summary>聊天消息的网络表示。</summary>
 public sealed record ChatMessageDto(
@@ -130,6 +158,7 @@ public sealed record RoomStateDto(
     UserSummaryDto Host,
     UserSummaryDto? Black,
     UserSummaryDto? White,
+    IReadOnlyList<RoomSeatDto> Seats,
     IReadOnlyList<UserSummaryDto> Spectators,
     GameSnapshotDto? Game,
     IReadOnlyList<ChatMessageDto> ChatMessages,

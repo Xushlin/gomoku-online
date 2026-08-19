@@ -243,6 +243,45 @@ public interface ITimeoutFallbackRules : IGameRules
 }
 
 /// <summary>
+/// 有**隐藏信息**的棋种:同一局的状态,不同座位看到的不一样。
+/// <para>
+/// 只有需要藏东西的棋种实现它。五子棋 / 一字棋 / 中国象棋 / 成语接龙**一行不动** ——
+/// 它们的全部状态就是走子历史,而走子历史本来就广播给所有人。
+/// </para>
+/// <para>
+/// **分出一个接口而不是给 <see cref="IGameRules"/> 加成员**,理由与
+/// <see cref="IDealtGameRules"/> / <see cref="IBoardGameRules"/> 相同:留在基接口上,四个棋种
+/// 就得各写一个骗人的实现,而**骗人的实现是下一个人删不掉的东西**。
+/// </para>
+/// </summary>
+public interface IPerSeatViewRules : IGameRules
+{
+    /// <summary>
+    /// 座位 <paramref name="seat"/> **能看到**的那一份状态,序列化成对内核不透明的字符串。
+    /// <para>
+    /// <paramref name="seat"/> 为 <c>null</c> 表示"不占座位的人"(围观者,或进了房间还没入座的)。
+    /// 实现 MUST 只给这类人**公开信息**。
+    /// </para>
+    /// <para>
+    /// <b>内核 MUST NOT 解析返回值。</b> 它原样进 <c>GameSnapshotDto.SeatView</c>,由客户端按棋种解。
+    /// 这与闯关那条线的 <c>LayoutJson</c> / <c>SolutionJson</c> 是同一个做法:内核不该知道什么是牌,
+    /// 而每个棋种要送的东西天生不一样。
+    /// </para>
+    /// <para>
+    /// 它 MUST 是纯函数:同一个 <paramref name="state"/> 与同一个 <paramref name="seat"/> 给出
+    /// 同一个字符串。这样"某个座位看得到什么"是可断言的,而不是取决于调用时机。
+    /// </para>
+    /// <para>
+    /// <b>它 MUST NOT 泄漏别人的隐藏状态</b> —— 这条不是靠自觉:一条测试把三个座位的视图
+    /// 与另两家的手牌逐张比对,任何一张出现在不该出现的视图里就红。
+    /// </para>
+    /// </summary>
+    /// <param name="state">规则知道的关于这一局的一切。</param>
+    /// <param name="seat">看这份快照的座位号;<c>null</c> 表示没有座位的人。</param>
+    string ViewFor(MatchState state, int? seat);
+}
+
+/// <summary>
 /// 按棋种键解析 <see cref="IGameRules"/>。未注册的键返回 <c>null</c>,
 /// 由 handler 映射成 404 —— 与 <c>IPuzzleRulesRegistry</c> 同一形状,
 /// 平台上"按游戏键解析实现"只该有一种写法。
