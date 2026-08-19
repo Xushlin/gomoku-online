@@ -8,6 +8,7 @@
 // 6. GET /api/rooms/{id} at the end to observe final state.
 // 7. GET /api/leaderboard -> Alice appears, bot does NOT.
 // 8. GET /api/games + per-game leaderboard / profile queries.
+// 9. Create-room enforcement for a game with human play but no AI (doudizhu).
 
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -216,10 +217,38 @@ Console.WriteLine("=== 8. Per-game rating ===");
 var games = await http.GetFromJsonAsync<List<GameDescriptor>>("/api/games");
 Assert(games is not null && games.Any(g => g.GameKey == "gomoku" && g.IsRated), "gomoku is rated");
 Assert(games is not null && games.Any(g => g.GameKey == "tictactoe" && !g.IsRated), "tictactoe is not rated");
-// enable-xiangqi-human-play 之后:象棋计分,一字棋是唯一不计分的对战棋种。
+// enable-xiangqi-human-play 之后:象棋计分,且开放人人对战。
 Assert(games is not null && games.Any(g => g.GameKey == "xiangqi" && g.IsRated && g.SupportsHumanVsHuman),
     "xiangqi is rated and open to human play");
-Assert(games is not null && games.Count(g => !g.IsRated) == 1, "tictactoe is the only unrated versus game");
+
+// **这里此前是 `Count(g => !g.IsRated) == 1`("一字棋是唯一不计分的对战棋种"),而斗地主落地
+// 那天它红了 —— 尽管同一个事实在 Application 层的断言当天就改过了。**
+//
+// 一个事实两份副本,只改了一份,而 `dotnet test Gewu.slnx` 1266 条全绿:红的只有这里。
+// 这一次的成因不是这个仓库修过三遍的"手写清单冒充注册表",而是**这份副本住在
+// `dotnet test` 到不了的地方** —— 它是一个对着活服务器跑的控制台程序。
+// 又一次由这个 smoke 自己给出的、把它接进 CI 的理由。
+//
+// 改法不是把 1 改成 2:那只是把同一颗地雷往前挪一格,第九个棋种落地时再红一次。
+// **名册留在 Application 层维护**(那里两个不计分的棋种各写了不同的理由);这里改成钉
+// 那条不变量与"两侧都非空",于是它不必随棋种数量改动,而守住的东西一点没少。
+var descriptors = games ?? throw new Exception("/api/games returned null");
+Assert(descriptors.All(g => !g.IsRated || g.SupportsHumanVsHuman),
+    "every rated game is open to human play (IsRated => SupportsHumanVsHuman)");
+Assert(descriptors.Any(g => g.IsRated) && descriptors.Any(g => !g.IsRated),
+    "both sides are non-empty, so the walk above is not a one-sided no-op");
+
+// 斗地主是第八个棋种,而它在这份契约里的四个事实各有各的理由,所以点名断言 ——
+// 遍历守不住某一个棋种的具体取值。
+var doudizhu = descriptors.SingleOrDefault(g => g.GameKey == "doudizhu");
+Assert(doudizhu is not null, "doudizhu is published in the descriptor list");
+Assert(doudizhu?.SupportsHumanVsHuman == true, "doudizhu is open to human play");
+// ELO 是两人模型,而它按分结算 —— 一条按分的榜是另一条榜,不是这条。
+Assert(doudizhu?.IsRated == false, "doudizhu is unrated, and for a different reason than tictactoe");
+// enforce-ai-availability:没有机器人的棋种,`POST /api/rooms/ai` 必须拒绝(见步骤 9)。
+Assert(doudizhu?.SupportsAi == false, "doudizhu has no AI");
+// generalize-match-payload 开的无盘面分支,此前只有成语接龙走到过。
+Assert(doudizhu is { Rows: null, Cols: null }, "doudizhu reports no board");
 // generalize-match-payload 开出的无盘面分支,由成语接龙第一次真正走到。
 Assert(games is not null && games.Any(g => g.GameKey == "idiom-chain" && g.Rows is null && g.Cols is null),
     "idiom-chain reports no board");
@@ -238,6 +267,52 @@ var aliceXiangqi = await http.GetFromJsonAsync<UserPublicProfileDto>(
 // 404 would be mis-reported by clients as "user not found".
 Assert(aliceXiangqi!.GamesPlayed == 0, "Alice has no xiangqi record, and that is a 200");
 
+Console.WriteLine("=== 9. The two create-room enforcements, against the newest game ===");
+// 上面那两条断言(`supportsHumanVsHuman: true` / `supportsAi: false`)是**客户端看到的话**;
+// 这两条是**服务端会接受的事**。enforce-human-vs-human 与 enforce-ai-availability 各自的成因
+// 都是"结论对 web UI 成立、对 API 不成立",所以这两半必须分别量,不能从一半推另一半。
+var humanRoom = await http.PostAsJsonAsync("/api/rooms", new
+{
+    name = "doudizhu smoke",
+    gameKey = "doudizhu",
+});
+Assert((int)humanRoom.StatusCode == 201, $"POST /api/rooms doudizhu -> 201 (was {(int)humanRoom.StatusCode})");
+// 注意返回的是 `RoomSummaryDto` 而不是 `RoomStateDto` —— 建房与"看房间"是两个形状。
+//
+// **只在 201 时解析,而这个 `if` 是变异测试逼出来的。** 把上面那两个开关反过来之后建房
+// 返回 400,而 400 的正文是 `ProblemDetails`(`status` 是数字),于是解析抛异常、整个 smoke
+// 在这里崩掉 —— CI 仍然红(退出码非 0),但**后面的断言一条都没报出来**。
+// 与本文件上面记的"smoke 死在它自己的落子冲突上,什么都没抓到"是同一种坏掉的报告方式。
+var waiting = humanRoom.IsSuccessStatusCode
+    ? await humanRoom.Content.ReadFromJsonAsync<RoomSummary>()
+    : null;
+// 三个座位:开局要坐满三个人,所以一个人建完房之后它 MUST 留在 Waiting。
+// 这是 add-room-seats 的 `_seats.Count == rules.SeatCount` 第一次被真 HTTP 走到 ——
+// 两人棋种在这里是 Waiting 是因为"还差一个",而这里是"还差两个",同一段代码不同的数。
+Assert(waiting?.Status == "Waiting", "a one-player three-seat room stays Waiting");
+Assert(waiting?.GameKey == "doudizhu", "and the room remembers which game it is");
+// **这两条钉的是一笔已经到期的债,不是一个正确的形状。** `SeatWire` 在 add-room-seats 里
+// 把座位号翻成 'Black'/'White' 只到 DTO 边界,它自己的文档写了触发条件:第一个
+// `SeatCount != 2` 的棋种落地。它落地了 —— 于是这份契约描述不了这个房间:三号座位在
+// 这个 DTO 里**没有位置**,坐满之后 `White` 仍然只是二号座位。
+// add-doudizhu-visibility 付这笔账(DTO 加座位字段,`SeatWire` 删除);在那之前,把
+// "今天它长什么样"断言下来,好过让下一个人以为这形状是对的。
+//
+// 写成 `waiting is { White: null }` 而不是 `waiting?.White is null`:后者在 `waiting` 本身
+// 为 null 时**空转通过** —— 上面那次变异跑里,它是建房失败之后唯一还绿着的断言。
+Assert(waiting?.Black?.Username == aliceUsername, "seat 0 shows up as Black");
+Assert(waiting is { White: null }, "seat 2 has nowhere to go in a two-seat DTO — SeatWire's own trigger");
+
+var botRoom = await http.PostAsJsonAsync("/api/rooms/ai", new
+{
+    name = "doudizhu bot smoke",
+    difficulty = "Easy",
+    gameKey = "doudizhu",
+});
+// 400,不是 201。这条路径此前对成语接龙返回过 201,而 65 秒后那个调用方白拿了 +46 分。
+Assert((int)botRoom.StatusCode == 400,
+    $"POST /api/rooms/ai doudizhu -> 400 (was {(int)botRoom.StatusCode})");
+
 await hub.DisposeAsync();
 
 Console.WriteLine($"\n=== SUMMARY: {passed} passed, {failed} failed ===");
@@ -255,6 +330,8 @@ record MoveMadePayload(int Ply, int Row, int Col, string Stone, DateTime PlayedA
 record GameEndedPayload(string Result, Guid? WinnerUserId, DateTime EndedAt);
 record LeaderboardEntry(int Rank, Guid UserId, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws);
 record PagedResult<T>(List<T> Items, int Total, int Page, int PageSize);
+// `POST /api/rooms` 回的是 summary,不是 state —— 只声明这里真读的字段。
+record RoomSummary(Guid Id, string Name, string GameKey, string Status, PlayerDto Host, PlayerDto? Black, PlayerDto? White, int SpectatorCount);
 // Rows / Cols 必须可空:generalize-match-payload 起,无盘面的棋种(成语接龙)报 null。
 // SupportsAi 是 enforce-ai-availability 加的。
 //

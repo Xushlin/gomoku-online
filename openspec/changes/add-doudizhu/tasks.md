@@ -42,7 +42,8 @@
 - [x] 6.1 `dotnet test Gewu.slnx` 全绿 —— **1266**(Domain 855 / Application 286 / Infrastructure 125)
 - [x] 6.2 `git status backend/src` 只有两个内核相邻文件,`+4 / -1`;`Rooms/` 零改动
 - [x] 6.3 前端零改动;无迁移
-- [x] 6.4 `openspec validate --strict` 通过,且三个 MODIFIED 标题**去 live spec 核对过存在**
+- [x] 6.4 `openspec validate --strict` 通过,且每个 MODIFIED 标题**去 live spec 核对过存在**
+- [x] 6.5 `AiSmoke` 对着真服务器 **35 条全绿**(此前 22 过 1 败,见 §8)
 
 ## 7. 实现记录
 
@@ -125,3 +126,85 @@ git 侧也核对了:`backend/src` 只有那两个文件动过,`+4 / -1`。
 2³² 个种子找出相符的那一个,从而算出另两家的牌 —— 一台笔记本上可行。不在本变更修,因为修它是换
 洗牌算法,而那会改变所有历史对局的发牌;而这件事今天可以推迟,正是因为 `add-match-setup` 存的是
 `Encode()` 的结果、不是种子。触发条件:第一次真实部署之前。
+
+## 8. CI 红的那一条,与它的成因
+
+- [x] 8.1 `AiSmoke` 的 `Count(g => !g.IsRated) == 1` 改成钉不变量,而不是把 1 改成 2
+- [x] 8.2 斗地主自己的四个契约事实 + 步骤 9(建人房 201 / 建机器人房 400)
+- [x] 8.3 400 正文不再让整个 smoke 崩掉
+- [x] 8.4 变异验证:两个开关反过来 → 8 条红(含那条不变量);还原 → 35/35,退出码 0
+- [x] 8.5 一处 live spec 漂移:`web-xiangqi` 的「唯一不计分」
+
+### 后端 1266 全绿,而 CI 是红的
+
+`dotnet test Gewu.slnx` 全绿,红的只有 `AiSmoke` 一条:
+
+```
+✗ tictactoe is the only unrated versus game
+=== SUMMARY: 22 passed, 1 failed ===
+```
+
+**同一个事实的第二份副本,而第一份我当天就改了**(`GetGameDescriptorsQueryHandlerTests`
+里那条已经写成"一字棋与斗地主,两者理由不同")。
+
+成因**不是**这个仓库修过三遍的"手写清单冒充注册表" —— 这一份副本住在
+**`dotnet test` 到不了的地方**:它是一个对着活服务器跑的控制台程序。
+`ci/run-ai-smoke` 把它接进 CI 的理由,又一次由它自己给出。
+
+### 改法不是把 1 改成 2
+
+那只是把同一颗地雷往前挪一格:第九个棋种落地时它再红一次,而那一次同样只是"数字过期",
+不带任何新信息。
+
+分工现在是:**名册留在 Application 层**(那里两个不计分的棋种各写了不同的理由 —— 一字棋没有
+人人对战,斗地主按分结算),`AiSmoke` 钉**不变量**(`IsRated ⇒ SupportsHumanVsHuman`)与
+**两侧都非空**。于是它不必随棋种数量改动,而它守住的东西一点没少。
+
+顺带补上的是**另一半**:上面那些断言是"客户端被告知了什么",步骤 9 是"服务端会接受什么"。
+`enforce-human-vs-human` 与 `enforce-ai-availability` 的成因都是**从一半推出了另一半** ——
+结论对 web UI 成立、对 API 不成立 —— 所以这两半必须分别量。
+
+### 本地第一次跑,量的是前天的构建
+
+`--no-build` 跑起来,`/hubs/match` 回 404,而 `/hubs/gomoku` 回 401 —— 那是
+`rename-gomoku-to-gewu` **之前**的二进制,`bin/Release` 里的东西比源码旧两天。
+
+**`--no-build` 量的是磁盘上恰好躺着的那份东西。** CI 不会踩到,因为它的 `--no-build` 紧跟在
+同一个 job 里的 build 之后。更绕的一层紧接着出现:服务器还在跑的时候重新 build,MSBuild
+锁文件失败(`error MSB3021 … 被 Gewu.Api (76080) 占用`),而**紧接着的 `--no-build` 会心满意足
+地用那份没被替换掉的旧二进制** —— 一次失败的构建加一次成功的运行。
+
+### 变异逼出来的两件事
+
+**一、400 让 smoke 崩掉,而不是报告失败。** 把两个开关反过来之后建房返回 400,而 400 的正文是
+`ProblemDetails`(`status` 是数字),于是解析抛异常、进程崩在那一行:CI 仍然红(退出码 127),
+但**后面的断言一条都没报出来**。与本文件上面记的"smoke 死在它自己的落子冲突上,什么都没抓到"
+是同一种坏掉的报告方式。改成只在 2xx 时解析之后,同一个变异报出 8 条红、退出码 1。
+
+**二、一条空转通过的断言。** `waiting?.White is null` 在 `waiting` 本身为 `null` 时为真 ——
+建房失败之后,它是唯一还绿着的那条。`waiting is { White: null }` 之后它跟着红。
+**"房间没建出来"与"房间里那个座位是空的"必须是两个不同的结果。**
+
+### 一处 live spec 漂移,而它一直是绿的
+
+`web-xiangqi` 有一条 Scenario 叫「只有一字棋仍然没有排行榜入口」,理由写着
+「它是唯一不计分的对战棋种」。斗地主落地之后那句话不成立。
+
+**它的可执行形式一个字都不用改**:那条前端断言用的是桩、读的是 `isRated`,从来不数棋种个数。
+也就是说**代码一直是对的,错的只有描述它的那句话** —— 而 `openspec validate --strict` 验形状、
+不验真假,所以它验不出来。这与 `enable-xiangqi-human-play` 迟归档 36 个提交那次是同一类,
+只是这次在同一个 PR 里就抓住了。
+
+顺手核了另外两处带「唯一」的:`xiangqi/spec.md:166`(象棋自己不计分的唯一依据)与 `:172`
+(一字棋仍是注册表里 `SupportsHumanVsHuman == false` 的那一个)—— **两条都仍然成立**,而能对
+每一条说出**不同的**理由,才是"应用了规则"而不是"匹配了模式"的检验。
+
+### 量到一件属于下一个变更的事
+
+`Room.IsPlayer` 与 `Leave` 里的 `isPlayer` 读的是 `BlackPlayerId || WhitePlayerId`,也就是
+**只有 0 号和 1 号座位**。三座位房间里 2 号座位上的人因此:离开房间会被拒
+(`NotInRoomException`),而且**能把自己登记成围观者** —— 于是他会拿到围观视角、能发围观频道
+的评论,正是 `fix-spectator-chat-leak` 建立的那条不变量。
+
+不在本变更修:它是"按座位可见"的一部分,而 `PlayMove` 走的是 `SeatOf`(全部座位),所以出牌
+这条路没问题。留给 `add-doudizhu-visibility`,写进它的 proposal。
