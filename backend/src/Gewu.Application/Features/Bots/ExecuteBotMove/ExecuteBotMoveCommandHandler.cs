@@ -61,26 +61,18 @@ public sealed class ExecuteBotMoveCommandHandler : IRequestHandler<ExecuteBotMov
             throw new RoomNotInPlayException($"Room '{room.Id.Value}' is not in play (status={room.Status}).");
         }
 
-        Stone botStone;
-        if (request.BotUserId == room.BlackPlayerId)
-        {
-            botStone = Stone.Black;
-        }
-        else if (room.WhitePlayerId is not null && request.BotUserId == room.WhitePlayerId.Value)
-        {
-            botStone = Stone.White;
-        }
-        else
-        {
-            throw new NotAPlayerException(
+        var botSeat = room.SeatOf(request.BotUserId)
+            ?? throw new NotAPlayerException(
                 $"User {request.BotUserId.Value} is not a player in room {room.Id.Value}.");
-        }
 
-        if (botStone != room.Game.CurrentTurn)
+        if (botSeat != room.Game.CurrentTurn)
         {
             throw new NotYourTurnException(
-                $"Bot {request.BotUserId.Value} tried to move as {botStone} but current turn is {room.Game.CurrentTurn}.");
+                $"Bot {request.BotUserId.Value} tried to move from seat {botSeat} but current turn is seat {room.Game.CurrentTurn}.");
         }
+
+        // AI 这一侧仍然说棋色 —— 有 AI 的都是棋盘类棋种,而棋盘上那颗东西确实叫子。
+        var botStone = BoardSeats.ToStone(botSeat);
 
         var difficulty = BotAccountIds.TryGetDifficulty(request.BotUserId.Value)
             ?? throw new ArgumentException(

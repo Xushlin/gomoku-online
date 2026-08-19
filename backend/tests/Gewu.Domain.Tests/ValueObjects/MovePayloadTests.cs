@@ -103,8 +103,8 @@ public class MovePayloadTests
     [Fact]
     public void PlayedMove_enforces_the_same_invariant()
     {
-        var both = () => new PlayedMove(null, A, "一心一意", Stone.Black);
-        var neither = () => new PlayedMove(null, null, null, Stone.Black);
+        var both = () => new PlayedMove(null, A, "一心一意", BoardSeats.FirstSeat);
+        var neither = () => new PlayedMove(null, null, null, BoardSeats.FirstSeat);
 
         both.Should().Throw<InvalidMoveException>();
         neither.Should().Throw<InvalidMoveException>();
@@ -115,7 +115,7 @@ public class MovePayloadTests
     {
         // The point of RequirePosition: an idiom reaching gomoku's rules produces a
         // refusal that says why, not a null dereference.
-        var act = () => BuiltInGameRules.Gomoku.Apply([], MoveIntent.Say("一心一意"), Stone.Black);
+        var act = () => BuiltInGameRules.Gomoku.Apply([], MoveIntent.Say("一心一意"), BoardSeats.FirstSeat);
 
         act.Should().Throw<InvalidMoveException>()
             .WithMessage("*board*");

@@ -23,7 +23,7 @@ public class XiangqiThroughRoomTests
     private static readonly IGameRules Rules = BuiltInGameRules.Xiangqi;
 
     /// <summary>红方 —— 先手,占 <c>BlackPlayerId</c> 这个座位。</summary>
-    private const Stone Red = Stone.Black;
+    private static readonly int Red = BoardSeats.FirstSeat;
 
     private static (Room Room, UserId RedPlayer, UserId BlackPlayer) PlayingRoom()
     {
@@ -75,7 +75,7 @@ public class XiangqiThroughRoomTests
         move.FromCol.Should().Be(1);
         move.Row.Should().Be(7);
         move.Col.Should().Be(2);
-        move.Stone.Should().Be(Red);
+        move.Seat.Should().Be(Red);
     }
 
     [Fact]
@@ -88,9 +88,9 @@ public class XiangqiThroughRoomTests
         Play(room, red, 9, 1, 7, 2, 4);
 
         room.Game!.History().Should().Equal(
-            PlayedMove.Positional(new Position(6, 0), new Position(5, 0), Stone.Black),
-            PlayedMove.Positional(new Position(3, 0), new Position(4, 0), Stone.White),
-            PlayedMove.Positional(new Position(9, 1), new Position(7, 2), Stone.Black));
+            PlayedMove.Positional(new Position(6, 0), new Position(5, 0), BoardSeats.FirstSeat),
+            PlayedMove.Positional(new Position(3, 0), new Position(4, 0), BoardSeats.SecondSeat),
+            PlayedMove.Positional(new Position(9, 1), new Position(7, 2), BoardSeats.FirstSeat));
     }
 
     [Fact]

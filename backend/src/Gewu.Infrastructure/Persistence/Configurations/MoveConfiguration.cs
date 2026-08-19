@@ -33,7 +33,7 @@ public sealed class MoveConfiguration : IEntityTypeConfiguration<Move>
         builder.Property(m => m.Col);
         // 词典里最长的成语 15 字;64 留足余量,同时挡住把这一列当成自由文本用。
         builder.Property(m => m.Text).HasMaxLength(64);
-        builder.Property(m => m.Stone).HasConversion<int>().IsRequired();
+        builder.Property(m => m.Seat).IsRequired();
         builder.Property(m => m.PlayedAt).IsRequired();
 
         builder.HasIndex(m => new { m.GameId, m.Ply }).IsUnique();

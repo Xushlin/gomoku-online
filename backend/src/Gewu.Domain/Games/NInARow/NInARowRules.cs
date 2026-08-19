@@ -52,6 +52,16 @@ public sealed class NInARowRules : INInARowRules
             throw new ArgumentException("Game key must be non-empty.", nameof(gameKey));
         }
 
+        // 不变量二:现有 ELO 是两人制的,所以计分的棋种必须正好两个座位。连 N 子永远是两个,
+        // 所以这条在本类里恒真 —— 它写在这里是为了让**下一个**棋种照抄这个形状,而不是
+        // 在注释里留一句"三人局记得别开分"。判断会过期,不变量不会。
+        if (isRated && BoardSeats.SeatCount != 2)
+        {
+            throw new ArgumentException(
+                "A rated game must have exactly two seats; ELO is a two-player rating.",
+                nameof(isRated));
+        }
+
         // 不变量:只能跟机器人下的棋种不存在有意义的评分 —— 机器人对局是计分的,
         // 所以那种阶梯排出来的是"谁刷弱档刷得多"而不是棋力。在**构造处**失败,而不是等到
         // 某个 handler 算出一个没人该看的分数。
@@ -88,6 +98,9 @@ public sealed class NInARowRules : INInARowRules
     public int WinLength { get; }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    public int SeatCount => BoardSeats.SeatCount;
+
     public bool SupportsHumanVsHuman { get; }
 
     /// <inheritdoc />
@@ -102,19 +115,17 @@ public sealed class NInARowRules : INInARowRules
         var board = CreateBoard();
         foreach (var played in history)
         {
-            board.PlaceStone(new Move(played.RequirePosition(), played.Side));
+            board.PlaceStone(new Move(played.RequirePosition(), BoardSeats.ToStone(played.Seat)));
         }
         return board;
     }
 
     /// <inheritdoc />
     public MoveApplication Apply(
-        IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side)
+        IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
     {
-        if (side == Stone.Empty)
-        {
-            throw new InvalidMoveException("Move side cannot be Stone.Empty; use Black or White.");
-        }
+        // 座位 → 棋色的换算在这里,一次。内核已经不知道"黑白"是什么了。
+        var side = BoardSeats.ToStone(seat);
 
         // 形状校验属于规则,不属于聚合根 —— 聚合根不知道哪些棋种走子。连 N 子是**落子类**:
         // 一步棋只有落点。带起点的载荷不是「走错了」,是「客户端发了一个这个棋种不存在的走法」。

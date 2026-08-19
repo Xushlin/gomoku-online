@@ -22,22 +22,22 @@ public class XiangqiRulesTests
     private static readonly IBoardGameRules Rules = (IBoardGameRules)BuiltInGameRules.Xiangqi;
 
     /// <summary>红方 —— 先手。</summary>
-    private const Stone Red = Stone.Black;
+    private static readonly int Red = BoardSeats.FirstSeat;
 
     /// <summary>黑方 —— 后手。</summary>
-    private const Stone BlackSide = Stone.White;
+    private static readonly int BlackSide = BoardSeats.SecondSeat;
 
     private static Position P(int row, int col) => new(row, col);
 
-    private static PlayedMove Slide(int fromRow, int fromCol, int toRow, int toCol, Stone side)
+    private static PlayedMove Slide(int fromRow, int fromCol, int toRow, int toCol, int side)
         => PlayedMove.Positional(P(fromRow, fromCol), P(toRow, toCol), side);
 
     private static MoveApplication Apply(
-        IReadOnlyList<PlayedMove> history, int fr, int fc, int tr, int tc, Stone side)
+        IReadOnlyList<PlayedMove> history, int fr, int fc, int tr, int tc, int side)
         => Rules.Apply(history, MoveIntent.Slide(P(fr, fc), P(tr, tc)), side);
 
     private static Action Applying(
-        IReadOnlyList<PlayedMove> history, int fr, int fc, int tr, int tc, Stone side)
+        IReadOnlyList<PlayedMove> history, int fr, int fc, int tr, int tc, int side)
         => () => Apply(history, fr, fc, tr, tc, side);
 
     private static readonly IReadOnlyList<PlayedMove> Start = [];
@@ -282,7 +282,7 @@ public class XiangqiRulesTests
     // 比拼一串合法着法可读得多，也不会因为某步棋恰好将军而跑偏。
 
     /// <summary>把子从 a 搬到 b，仅用于摆局面。</summary>
-    private static PlayedMove Put(int fr, int fc, int tr, int tc, Stone side)
+    private static PlayedMove Put(int fr, int fc, int tr, int tc, int side)
         => Slide(fr, fc, tr, tc, side);
 
     [Fact]
@@ -374,7 +374,7 @@ public class XiangqiRulesTests
     private static readonly Position Graveyard = P(5, 4);
 
     /// <summary>把 (row, col) 上的子清掉 —— 叠到坟场格，覆盖掉上一个。</summary>
-    private static PlayedMove Remove(int row, int col, Stone side)
+    private static PlayedMove Remove(int row, int col, int side)
         => PlayedMove.Positional(P(row, col), Graveyard, side);
 
     /// <summary>清掉黑方除将以外的全部棋子，最后用一枚红子吃掉坟场里的幸存者。</summary>

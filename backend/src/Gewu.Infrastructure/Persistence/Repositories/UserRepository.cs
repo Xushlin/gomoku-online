@@ -169,8 +169,8 @@ public sealed class UserRepository : IUserRepository
             join g in _db.Games on r.Id equals g.RoomId
             join blackUser in _db.Users on r.BlackPlayerId equals blackUser.Id
             join whiteUser in _db.Users on r.WhitePlayerId!.Value equals whiteUser.Id
-            where (g.CurrentTurn == Stone.Black && blackUser.IsBot)
-               || (g.CurrentTurn == Stone.White && whiteUser.IsBot)
+            where (g.CurrentTurn == Gewu.Domain.Rooms.Room.FirstSeat && blackUser.IsBot)
+               || (g.CurrentTurn == Gewu.Domain.Rooms.Room.SecondSeat && whiteUser.IsBot)
             select r.Id;
 
         var ids = await query.ToListAsync(cancellationToken);

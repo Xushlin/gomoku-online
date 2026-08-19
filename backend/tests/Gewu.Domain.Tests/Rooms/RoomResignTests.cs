@@ -53,7 +53,7 @@ public class RoomResignTests
         var (room, black, white) = PlayingRoom();
         // Black 走一手,现在轮到 White
         room.PlayMove(black, MoveIntent.Place(new Position(7, 7)), Now.AddSeconds(2), BuiltInGameRules.Gomoku);
-        room.Game!.CurrentTurn.Should().Be(Stone.White);
+        room.Game!.CurrentTurn.Should().Be(BoardSeats.SecondSeat);
 
         // Black 在 White 回合认输也成功
         var outcome = room.Resign(black, Now.AddMinutes(1));

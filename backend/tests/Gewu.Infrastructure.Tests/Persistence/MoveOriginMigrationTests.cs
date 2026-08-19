@@ -67,6 +67,7 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
     {
         var roomId = Guid.NewGuid();
         var hostId = Guid.NewGuid();
+        var side = await MoveSideColumn.DetectAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"""
             INSERT INTO Users (Id, Email, Username, PasswordHash, IsActive, IsBot, CreatedAt, RowVersion)
@@ -78,10 +79,10 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
             INSERT INTO Games (Id, RoomId, StartedAt, CurrentTurn, RowVersion)
             VALUES ('{Sql(gameId)}', '{Sql(roomId)}', '{Now:o}', 1, randomblob(16));
 
-            INSERT INTO Moves (Id, GameId, Ply, Row, Col, Stone, PlayedAt) VALUES
-              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 1, 7,  7, 1, '{Now:o}'),
-              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 2, 8,  8, 2, '{Now.AddSeconds(1):o}'),
-              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 3, 7,  8, 1, '{Now.AddSeconds(2):o}');
+            INSERT INTO Moves (Id, GameId, Ply, Row, Col, {side.Name}, PlayedAt) VALUES
+              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 1, 7,  7, {side.First}, '{Now:o}'),
+              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 2, 8,  8, {side.Second}, '{Now.AddSeconds(1):o}'),
+              ('{Sql(Guid.NewGuid())}', '{Sql(gameId)}', 3, 7,  8, {side.First}, '{Now.AddSeconds(2):o}');
             """;
         await cmd.ExecuteNonQueryAsync();
     }
@@ -103,8 +104,8 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
             .ToListAsync();
 
         moves.Should().HaveCount(3);
-        moves.Select(m => (m.Ply, m.Row, m.Col, m.Stone))
-            .Should().Equal((1, 7, 7, Stone.Black), (2, 8, 8, Stone.White), (3, 7, 8, Stone.Black));
+        moves.Select(m => (m.Ply, m.Row, m.Col, m.Seat))
+            .Should().Equal((1, 7, 7, BoardSeats.FirstSeat), (2, 8, 8, BoardSeats.SecondSeat), (3, 7, 8, BoardSeats.FirstSeat));
     }
 
     [Fact]
@@ -154,8 +155,8 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
         var gameId = Sql(room.Game!.Id);
         var playedAt = Now.ToString("o", CultureInfo.InvariantCulture);
         await db.Database.ExecuteSqlAsync($"""
-            INSERT INTO Moves (Id, GameId, Ply, FromRow, FromCol, Row, Col, Stone, PlayedAt)
-            VALUES ({moveId}, {gameId}, 1, 3, 4, 5, 6, 1, {playedAt});
+            INSERT INTO Moves (Id, GameId, Ply, FromRow, FromCol, Row, Col, Seat, PlayedAt)
+            VALUES ({moveId}, {gameId}, 1, 3, 4, 5, 6, 0, {playedAt});
             """);
 
         var stored = await db.Set<PersistedMove>()
@@ -166,7 +167,7 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
         stored.FromCol.Should().Be(4);
         stored.FromPosition().Should().Be(new Position(3, 4));
         stored.ToPosition().Should().Be(new Position(5, 6));
-        stored.ToPlayedMove().Should().Be(PlayedMove.Positional(new Position(3, 4), new Position(5, 6), Stone.Black));
+        stored.ToPlayedMove().Should().Be(PlayedMove.Positional(new Position(3, 4), new Position(5, 6), BoardSeats.FirstSeat));
     }
 
     [Fact]

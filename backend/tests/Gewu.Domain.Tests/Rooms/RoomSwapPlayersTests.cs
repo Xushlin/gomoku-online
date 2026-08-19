@@ -38,7 +38,7 @@ public class RoomSwapPlayersTests
 
         room.HostUserId.Should().Be(hostId);
         room.Game!.CurrentTurn.Should().Be(initialTurn);
-        room.Game.CurrentTurn.Should().Be(Stone.Black);
+        room.Game.CurrentTurn.Should().Be(BoardSeats.FirstSeat);
     }
 
     [Fact]

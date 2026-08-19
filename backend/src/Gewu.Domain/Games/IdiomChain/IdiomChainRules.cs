@@ -44,6 +44,11 @@ public sealed class IdiomChainRules : IGameRules
     /// <summary>
     /// 有人人对战 —— 这是平台加这个游戏的**理由**:它需要人类对手。
     /// </summary>
+    /// <summary>
+    /// 两个座位。成语接龙没有棋盘,所以它 MUST NOT 引用 <c>BoardSeats</c> —— 那是棋盘家族的词汇。
+    /// </summary>
+    public int SeatCount => 2;
+
     public bool SupportsHumanVsHuman => true;
 
     /// <summary>
@@ -63,12 +68,11 @@ public sealed class IdiomChainRules : IGameRules
 
     /// <inheritdoc />
     public MoveApplication Apply(
-        IReadOnlyList<PlayedMove> history, MoveIntent intent, Stone side)
+        IReadOnlyList<PlayedMove> history, MoveIntent intent, int seat)
     {
-        if (side == Stone.Empty)
-        {
-            throw new InvalidMoveException("Move side cannot be Stone.Empty; use Black or White.");
-        }
+        // 成语接龙不看是谁出的手 —— 一个成语能不能接上,只取决于历史里的最后一个字。
+        // 座位号在这里只是被接受、不被使用,而这正是"内核不该替规则决定这件事"的样子。
+        _ = seat;
 
         // 位置类载荷在这里被挡下 —— 本棋种不在盘面上进行。
         // 这一条保持缺省的 invalid-move：它不是三条规则之一，而是送错了形状。

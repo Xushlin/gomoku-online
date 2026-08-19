@@ -75,7 +75,7 @@ public sealed class MakeMoveCommandHandler : IRequestHandler<MakeMoveCommand, Mo
             outcome.Move.Ply,
             outcome.Move.Row,
             outcome.Move.Col,
-            outcome.Move.Stone,
+            SeatWire.ToStone(outcome.Move.Seat),
             outcome.Move.PlayedAt,
             outcome.Move.FromRow,
             outcome.Move.FromCol,

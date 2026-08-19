@@ -21,7 +21,7 @@ public class GameRulesApplyTests
 
     private static readonly IReadOnlyList<PlayedMove> Empty = [];
 
-    private static PlayedMove Placed(int row, int col, Stone side)
+    private static PlayedMove Placed(int row, int col, int side)
         => PlayedMove.Positional(null, new Position(row, col), side);
 
     // ---- 合法路径 ----
@@ -29,7 +29,7 @@ public class GameRulesApplyTests
     [Fact]
     public void A_legal_placement_on_an_empty_board_is_ongoing()
     {
-        var result = Gomoku.Apply(Empty, MoveIntent.Place(new Position(7, 7)), Stone.Black);
+        var result = Gomoku.Apply(Empty, MoveIntent.Place(new Position(7, 7)), BoardSeats.FirstSeat);
 
         result.Result.Should().Be(GameResult.Ongoing);
     }
@@ -40,13 +40,13 @@ public class GameRulesApplyTests
         // 黑方已连四,第五子成五。
         var history = new List<PlayedMove>
         {
-            Placed(7, 3, Stone.Black), Placed(0, 0, Stone.White),
-            Placed(7, 4, Stone.Black), Placed(0, 1, Stone.White),
-            Placed(7, 5, Stone.Black), Placed(0, 2, Stone.White),
-            Placed(7, 6, Stone.Black), Placed(0, 3, Stone.White),
+            Placed(7, 3, BoardSeats.FirstSeat), Placed(0, 0, BoardSeats.SecondSeat),
+            Placed(7, 4, BoardSeats.FirstSeat), Placed(0, 1, BoardSeats.SecondSeat),
+            Placed(7, 5, BoardSeats.FirstSeat), Placed(0, 2, BoardSeats.SecondSeat),
+            Placed(7, 6, BoardSeats.FirstSeat), Placed(0, 3, BoardSeats.SecondSeat),
         };
 
-        var result = Gomoku.Apply(history, MoveIntent.Place(new Position(7, 7)), Stone.Black);
+        var result = Gomoku.Apply(history, MoveIntent.Place(new Position(7, 7)), BoardSeats.FirstSeat);
 
         result.Result.Should().Be(GameResult.BlackWin);
     }
@@ -59,13 +59,13 @@ public class GameRulesApplyTests
         //   O X _     黑走 (2,2) 填满,无三连 → 和棋。
         var history = new List<PlayedMove>
         {
-            Placed(0, 0, Stone.Black), Placed(0, 1, Stone.White),
-            Placed(0, 2, Stone.Black), Placed(1, 1, Stone.White),
-            Placed(1, 0, Stone.Black), Placed(1, 2, Stone.White),
-            Placed(2, 1, Stone.Black), Placed(2, 0, Stone.White),
+            Placed(0, 0, BoardSeats.FirstSeat), Placed(0, 1, BoardSeats.SecondSeat),
+            Placed(0, 2, BoardSeats.FirstSeat), Placed(1, 1, BoardSeats.SecondSeat),
+            Placed(1, 0, BoardSeats.FirstSeat), Placed(1, 2, BoardSeats.SecondSeat),
+            Placed(2, 1, BoardSeats.FirstSeat), Placed(2, 0, BoardSeats.SecondSeat),
         };
 
-        var result = TicTacToe.Apply(history, MoveIntent.Place(new Position(2, 2)), Stone.Black);
+        var result = TicTacToe.Apply(history, MoveIntent.Place(new Position(2, 2)), BoardSeats.FirstSeat);
 
         result.Result.Should().Be(GameResult.Draw);
     }
@@ -75,7 +75,7 @@ public class GameRulesApplyTests
     [Fact]
     public void Out_of_bounds_is_rejected_by_the_rules()
     {
-        var act = () => TicTacToe.Apply(Empty, MoveIntent.Place(new Position(3, 0)), Stone.Black);
+        var act = () => TicTacToe.Apply(Empty, MoveIntent.Place(new Position(3, 0)), BoardSeats.FirstSeat);
 
         act.Should().Throw<InvalidMoveException>();
     }
@@ -83,19 +83,22 @@ public class GameRulesApplyTests
     [Fact]
     public void An_occupied_square_is_rejected_by_the_rules()
     {
-        var history = new List<PlayedMove> { Placed(0, 0, Stone.Black) };
+        var history = new List<PlayedMove> { Placed(0, 0, BoardSeats.FirstSeat) };
 
-        var act = () => TicTacToe.Apply(history, MoveIntent.Place(new Position(0, 0)), Stone.White);
+        var act = () => TicTacToe.Apply(history, MoveIntent.Place(new Position(0, 0)), BoardSeats.SecondSeat);
 
         act.Should().Throw<InvalidMoveException>();
     }
 
     [Fact]
-    public void An_empty_side_is_rejected()
+    public void A_seat_this_game_does_not_have_is_rejected()
     {
-        var act = () => Gomoku.Apply(Empty, MoveIntent.Place(new Position(0, 0)), Stone.Empty);
+        // 这条测试此前叫 An_empty_side_is_rejected,断言 `Stone.Empty` 被拒。座位号是 int,
+        // "空"不再表达得出来 —— 但它守的那件事还在,只是从"不是一种棋色"变成了
+        // "不是这个棋种有的座位"。两人棋种的 2 号座位不存在。
+        var act = () => Gomoku.Apply(Empty, MoveIntent.Place(new Position(0, 0)), 2);
 
-        act.Should().Throw<InvalidMoveException>();
+        act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     // ---- 形状校验属于规则 ----
@@ -107,7 +110,7 @@ public class GameRulesApplyTests
         // 是「客户端发了一个这个棋种不存在的走法」。这条判断在规则里,不在聚合根里 ——
         // 聚合根不知道哪些棋种走子。
         var act = () => Gomoku.Apply(
-            Empty, MoveIntent.Slide(new Position(0, 0), new Position(1, 1)), Stone.Black);
+            Empty, MoveIntent.Slide(new Position(0, 0), new Position(1, 1)), BoardSeats.FirstSeat);
 
         act.Should().Throw<InvalidMoveException>()
             .WithMessage("*origin*");
@@ -119,9 +122,9 @@ public class GameRulesApplyTests
         // 同一个坐标,一个棋种界内、另一个界外。Position 只保证非负。
         var p = new Position(5, 5);
 
-        Gomoku.Invoking(r => r.Apply(Empty, MoveIntent.Place(p), Stone.Black))
+        Gomoku.Invoking(r => r.Apply(Empty, MoveIntent.Place(p), BoardSeats.FirstSeat))
             .Should().NotThrow();
-        TicTacToe.Invoking(r => r.Apply(Empty, MoveIntent.Place(p), Stone.Black))
+        TicTacToe.Invoking(r => r.Apply(Empty, MoveIntent.Place(p), BoardSeats.FirstSeat))
             .Should().Throw<InvalidMoveException>();
     }
 
@@ -132,26 +135,26 @@ public class GameRulesApplyTests
     {
         // 规则实例被并发的多个房间共享。任何随对局变化的字段都会变成跨房间的串味,
         // 而那种 bug 在单线程测试里看不见 —— 这条至少钉住「结果只取决于入参」。
-        var far = new List<PlayedMove> { Placed(0, 0, Stone.Black) };
+        var far = new List<PlayedMove> { Placed(0, 0, BoardSeats.FirstSeat) };
 
-        var a = Gomoku.Apply(far, MoveIntent.Place(new Position(7, 7)), Stone.White);
-        var b = Gomoku.Apply(Empty, MoveIntent.Place(new Position(7, 7)), Stone.White);
-        var c = Gomoku.Apply(far, MoveIntent.Place(new Position(7, 7)), Stone.White);
+        var a = Gomoku.Apply(far, MoveIntent.Place(new Position(7, 7)), BoardSeats.SecondSeat);
+        var b = Gomoku.Apply(Empty, MoveIntent.Place(new Position(7, 7)), BoardSeats.SecondSeat);
+        var c = Gomoku.Apply(far, MoveIntent.Place(new Position(7, 7)), BoardSeats.SecondSeat);
 
         a.Should().Be(b);
         b.Should().Be(c);
 
         // 而且 (0,0) 在第二次调用里是空的 —— 历史没有泄漏进来。
-        Gomoku.Invoking(r => r.Apply(Empty, MoveIntent.Place(new Position(0, 0)), Stone.White))
+        Gomoku.Invoking(r => r.Apply(Empty, MoveIntent.Place(new Position(0, 0)), BoardSeats.SecondSeat))
             .Should().NotThrow();
     }
 
     [Fact]
     public void Apply_does_not_mutate_the_history_it_is_given()
     {
-        var history = new List<PlayedMove> { Placed(0, 0, Stone.Black) };
+        var history = new List<PlayedMove> { Placed(0, 0, BoardSeats.FirstSeat) };
 
-        Gomoku.Apply(history, MoveIntent.Place(new Position(7, 7)), Stone.White);
+        Gomoku.Apply(history, MoveIntent.Place(new Position(7, 7)), BoardSeats.SecondSeat);
 
         history.Should().ContainSingle();
     }
@@ -187,7 +190,7 @@ public class GameRulesApplyTests
     {
         var history = new List<PlayedMove>
         {
-            Placed(7, 7, Stone.Black), Placed(8, 8, Stone.White), Placed(7, 8, Stone.Black),
+            Placed(7, 7, BoardSeats.FirstSeat), Placed(8, 8, BoardSeats.SecondSeat), Placed(7, 8, BoardSeats.FirstSeat),
         };
 
         var board = Gomoku.ReplayBoard(history);

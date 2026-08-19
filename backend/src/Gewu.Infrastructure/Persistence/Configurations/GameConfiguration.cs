@@ -29,7 +29,7 @@ public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Property(g => g.WinnerUserId)
             .HasConversion(v => v.HasValue ? v.Value.Value : (Guid?)null,
                            v => v.HasValue ? new UserId(v.Value) : (UserId?)null);
-        builder.Property(g => g.CurrentTurn).HasConversion<int>().IsRequired();
+        builder.Property(g => g.CurrentTurn).IsRequired();
 
         // SQLite 没有原生 rowversion,由 Domain 在每次状态变更后手动更新
         // (见 Game.TouchRowVersion);EF 只把它当作并发令牌检查。

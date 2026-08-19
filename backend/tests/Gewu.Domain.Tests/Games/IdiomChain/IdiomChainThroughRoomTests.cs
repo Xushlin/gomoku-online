@@ -76,7 +76,7 @@ public class IdiomChainThroughRoomTests
 
         act.Should().Throw<InvalidMoveException>();
         room.Game!.Moves.Should().HaveCount(1);
-        room.Game.CurrentTurn.Should().Be(Stone.White, "the refused player still owes a move");
+        room.Game.CurrentTurn.Should().Be(BoardSeats.SecondSeat, "the refused player still owes a move");
     }
 
     [Fact]

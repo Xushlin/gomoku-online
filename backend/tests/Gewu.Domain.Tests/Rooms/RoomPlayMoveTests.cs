@@ -30,8 +30,8 @@ public class RoomPlayMoveTests
         outcome.Move.Ply.Should().Be(1);
         outcome.Move.Row.Should().Be(7);
         outcome.Move.Col.Should().Be(7);
-        outcome.Move.Stone.Should().Be(Stone.Black);
-        room.Game!.CurrentTurn.Should().Be(Stone.White);
+        outcome.Move.Seat.Should().Be(BoardSeats.FirstSeat);
+        room.Game!.CurrentTurn.Should().Be(BoardSeats.SecondSeat);
         room.Game.Moves.Should().HaveCount(1);
     }
 
@@ -80,7 +80,7 @@ public class RoomPlayMoveTests
         var act = () => room.PlayMove(w, MoveIntent.Place(new Position(7, 7)), Now.AddMinutes(3), BuiltInGameRules.Gomoku);
         act.Should().Throw<InvalidMoveException>();
         room.Game!.Moves.Should().HaveCount(1); // 未追加
-        room.Game.CurrentTurn.Should().Be(Stone.White); // 未翻转
+        room.Game.CurrentTurn.Should().Be(BoardSeats.SecondSeat); // 未翻转
     }
 
     [Fact]
