@@ -115,12 +115,21 @@ public sealed class Game
     /// <summary>
     /// 在对局内记录一步棋(仅由 <see cref="Room.PlayMove"/> 调用)。更新 <see cref="CurrentTurn"/>。
     /// </summary>
-    internal Move RecordMove(MoveIntent intent, int seat, int seatCount, DateTime playedAt)
+    /// <param name="intent">这一步怎么走。</param>
+    /// <param name="seat">走这一步的座位号。</param>
+    /// <param name="seatCount">本棋种的座位数 —— 按环轮转要用。</param>
+    /// <param name="nextSeat">
+    /// 规则指定的下一手座位;<c>null</c> 表示按环轮转。绝大多数棋种、以及牌类棋种的绝大多数
+    /// 手数,答案都是"轮转",所以那是默认。
+    /// </param>
+    /// <param name="playedAt">走这一步的时间(UTC)。</param>
+    internal Move RecordMove(
+        MoveIntent intent, int seat, int seatCount, int? nextSeat, DateTime playedAt)
     {
         var nextPly = _moves.Count + 1;
         var move = new Move(Id, nextPly, intent, seat, playedAt);
         _moves.Add(move);
-        CurrentTurn = (seat + 1) % seatCount;
+        CurrentTurn = nextSeat ?? (seat + 1) % seatCount;
         TouchRowVersion();
         return move;
     }

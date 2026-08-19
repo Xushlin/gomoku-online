@@ -25,10 +25,10 @@ public class RoomTimeOutTests
         var (room, _, white) = PlayingRoom();
         var later = Now.AddSeconds(1).AddSeconds(61); // 距 StartedAt 61s
 
-        var outcome = room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60);
+        var outcome = room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60, BuiltInGameRules.Gomoku);
 
-        outcome.Result.Should().Be(GameResult.Decided);
-        outcome.WinnerUserId.Should().Be(white);
+        outcome.Ended!.Result.Should().Be(GameResult.Decided);
+        outcome.Ended!.WinnerUserId.Should().Be(white);
         room.Game!.EndReason.Should().Be(GameEndReason.TurnTimeout);
         room.Game.WinnerUserId.Should().Be(white);
         room.Status.Should().Be(RoomStatus.Finished);
@@ -44,10 +44,10 @@ public class RoomTimeOutTests
 
         var later = blackMoveAt.AddSeconds(61);
 
-        var outcome = room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60);
+        var outcome = room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60, BuiltInGameRules.Gomoku);
 
-        outcome.Result.Should().Be(GameResult.Decided);
-        outcome.WinnerUserId.Should().Be(black);
+        outcome.Ended!.Result.Should().Be(GameResult.Decided);
+        outcome.Ended!.WinnerUserId.Should().Be(black);
         room.Game!.EndReason.Should().Be(GameEndReason.TurnTimeout);
     }
 
@@ -57,7 +57,7 @@ public class RoomTimeOutTests
         var (room, _, _) = PlayingRoom();
         var later = Now.AddSeconds(1).AddSeconds(59); // 59s elapsed, threshold 60s
 
-        var act = () => room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60);
+        var act = () => room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60, BuiltInGameRules.Gomoku);
 
         act.Should().Throw<TurnNotTimedOutException>();
         room.Status.Should().Be(RoomStatus.Playing);
@@ -73,7 +73,7 @@ public class RoomTimeOutTests
         var startedAt = Now.AddSeconds(1);
         var later = startedAt.AddSeconds(60); // exactly 60s
 
-        var act = () => room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60);
+        var act = () => room.TimeOutCurrentTurn(later, turnTimeoutSeconds: 60, BuiltInGameRules.Gomoku);
 
         act.Should().NotThrow();
         room.Status.Should().Be(RoomStatus.Finished);
@@ -85,7 +85,7 @@ public class RoomTimeOutTests
         var host = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "waiting", host, Now, GameKeys.Gomoku);
 
-        var act = () => room.TimeOutCurrentTurn(Now.AddMinutes(10), turnTimeoutSeconds: 60);
+        var act = () => room.TimeOutCurrentTurn(Now.AddMinutes(10), turnTimeoutSeconds: 60, BuiltInGameRules.Gomoku);
 
         act.Should().Throw<RoomNotInPlayException>();
     }
@@ -96,7 +96,7 @@ public class RoomTimeOutTests
         var (room, black, _) = PlayingRoom();
         room.Resign(black, Now.AddSeconds(2));
 
-        var act = () => room.TimeOutCurrentTurn(Now.AddMinutes(10), turnTimeoutSeconds: 60);
+        var act = () => room.TimeOutCurrentTurn(Now.AddMinutes(10), turnTimeoutSeconds: 60, BuiltInGameRules.Gomoku);
 
         act.Should().Throw<RoomNotInPlayException>();
     }
@@ -106,7 +106,7 @@ public class RoomTimeOutTests
     {
         var (room, _, _) = PlayingRoom();
 
-        var act = () => room.TimeOutCurrentTurn(Now.AddMinutes(1), turnTimeoutSeconds: 0);
+        var act = () => room.TimeOutCurrentTurn(Now.AddMinutes(1), turnTimeoutSeconds: 0, BuiltInGameRules.Gomoku);
 
         act.Should().Throw<ArgumentOutOfRangeException>();
     }

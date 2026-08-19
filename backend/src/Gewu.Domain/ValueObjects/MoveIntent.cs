@@ -191,23 +191,47 @@ public static class MovePayload
 /// </summary>
 /// <param name="Result">走完之后的对局状态。</param>
 /// <param name="WinnerSeat">赢家座位号;<see cref="GameResult.Decided"/> 之外一律 <c>null</c>。</param>
-public readonly record struct MoveApplication(GameResult Result, int? WinnerSeat)
+/// <param name="NextSeat">
+/// 下一手轮到几号;<c>null</c> 表示**按环轮转**(<c>(seat + 1) % SeatCount</c>)。
+/// <para>
+/// 斗地主需要它:叫分结束之后先出牌的是**地主**,而地主可能是任何一个座位,与最后叫分的是谁无关。
+/// </para>
+/// <para>
+/// <b><c>null</c> 有默认语义,而这与「参数不给默认值」不矛盾。</b> 本平台的纪律是"默认值会让
+/// '忘了传'和'故意不传'长得一样"(见 <c>Room.JoinAsPlayer</c> 的 <c>setup</c>),而判据是
+/// **忘了会不会有人发现**:忘了传 <c>setup</c> 会开出一局没有牌的棋,要到第一次出牌才炸;
+/// 忘了给 <c>NextSeat</c> 的表现是**下一手轮到错的人**,在那个棋种的第一条测试里就会红。
+/// </para>
+/// <para>
+/// 而且 <c>null</c> 在这里有真实含义,不是"没填":四个现有棋种的每一手、以及斗地主出牌阶段的
+/// 每一手,答案确实都是"按环轮转"。让五个实现每次都算一遍内核已经知道的事,是重复而不是明确。
+/// </para>
+/// </param>
+public readonly record struct MoveApplication(GameResult Result, int? WinnerSeat, int? NextSeat)
 {
     /// <summary>走完之后的对局状态。</summary>
-    public GameResult Result { get; } = Validate(Result, WinnerSeat).result;
+    public GameResult Result { get; } = Validate(Result, WinnerSeat, NextSeat).result;
 
     /// <summary>赢家座位号;<see cref="GameResult.Decided"/> 之外一律 <c>null</c>。</summary>
-    public int? WinnerSeat { get; } = Validate(Result, WinnerSeat).winnerSeat;
+    public int? WinnerSeat { get; } = Validate(Result, WinnerSeat, NextSeat).winnerSeat;
 
-    /// <summary>对局仍在进行。</summary>
-    public static MoveApplication Ongoing() => new(GameResult.Ongoing, null);
+    /// <summary>下一手轮到几号;<c>null</c> 表示按环轮转。</summary>
+    public int? NextSeat { get; } = Validate(Result, WinnerSeat, NextSeat).nextSeat;
+
+    /// <summary>对局仍在进行,下一手按环轮转。</summary>
+    public static MoveApplication Ongoing() => new(GameResult.Ongoing, null, null);
+
+    /// <summary>对局仍在进行,而下一手轮到指定的座位。</summary>
+    /// <param name="nextSeat">下一手的座位号。</param>
+    public static MoveApplication OngoingWithTurn(int nextSeat)
+        => new(GameResult.Ongoing, null, nextSeat);
 
     /// <summary>某个座位赢了。</summary>
     /// <param name="seat">赢家座位号。</param>
-    public static MoveApplication Won(int seat) => new(GameResult.Decided, seat);
+    public static MoveApplication Won(int seat) => new(GameResult.Decided, seat, null);
 
     /// <summary>和局。</summary>
-    public static MoveApplication Drawn() => new(GameResult.Draw, null);
+    public static MoveApplication Drawn() => new(GameResult.Draw, null, null);
 
     /// <summary>
     /// 强制「有赢家 ⇔ 判出胜负」。
@@ -216,7 +240,8 @@ public readonly record struct MoveApplication(GameResult Result, int? WinnerSeat
     /// 是同一种机制、同一个理由:一个 record struct 的主构造器随时能被直接调用,而工厂只是约定。
     /// </para>
     /// </summary>
-    private static (GameResult result, int? winnerSeat) Validate(GameResult result, int? winnerSeat)
+    private static (GameResult result, int? winnerSeat, int? nextSeat) Validate(
+        GameResult result, int? winnerSeat, int? nextSeat)
     {
         if (result == GameResult.Decided && winnerSeat is null)
         {
@@ -230,11 +255,24 @@ public readonly record struct MoveApplication(GameResult Result, int? WinnerSeat
                 $"A {result} game has no winner; got seat {winnerSeat}.");
         }
 
+        // 结束了的对局没有下一手。这一条与上面那两条是同一种机制:一个说不通的组合
+        // 在构造时就不成立,而不是留给读代码的人去猜它意味着什么。
+        if (result != GameResult.Ongoing && nextSeat is not null)
+        {
+            throw new InvalidMoveException(
+                $"A {result} game has no next turn; got seat {nextSeat}.");
+        }
+
         if (winnerSeat < 0)
         {
             throw new InvalidMoveException($"Seat {winnerSeat} is not a seat.");
         }
 
-        return (result, winnerSeat);
+        if (nextSeat < 0)
+        {
+            throw new InvalidMoveException($"Seat {nextSeat} is not a seat.");
+        }
+
+        return (result, winnerSeat, nextSeat);
     }
 }

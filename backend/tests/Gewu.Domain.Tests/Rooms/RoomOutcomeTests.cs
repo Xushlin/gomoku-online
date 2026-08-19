@@ -119,7 +119,7 @@ public class RoomOutcomeTests
         // 房间永远停在那里。所以三座位棋种落地**之前**必须先给出它的超时语义。
         var (room, _) = PlayingRoom(3);
 
-        var act = () => room.TimeOutCurrentTurn(Now.AddHours(1), 60);
+        var act = () => room.TimeOutCurrentTurn(Now.AddHours(1), 60, new OutcomeRules(3));
 
         act.Should().Throw<SeatCountNotSupportedException>();
     }
@@ -141,7 +141,7 @@ public class RoomOutcomeTests
     [InlineData(GameResult.Draw)]
     public void A_result_without_a_winner_must_not_carry_one(GameResult result)
     {
-        var act = () => new MoveApplication(result, 0);
+        var act = () => new MoveApplication(result, 0, null);
 
         act.Should().Throw<InvalidMoveException>();
     }
@@ -149,7 +149,7 @@ public class RoomOutcomeTests
     [Fact]
     public void A_decided_result_must_carry_a_winner()
     {
-        var act = () => new MoveApplication(GameResult.Decided, null);
+        var act = () => new MoveApplication(GameResult.Decided, null, null);
 
         act.Should().Throw<InvalidMoveException>();
     }
@@ -157,7 +157,7 @@ public class RoomOutcomeTests
     [Fact]
     public void A_negative_seat_is_not_a_seat()
     {
-        var act = () => new MoveApplication(GameResult.Decided, -1);
+        var act = () => new MoveApplication(GameResult.Decided, -1, null);
 
         act.Should().Throw<InvalidMoveException>();
     }
@@ -167,8 +167,8 @@ public class RoomOutcomeTests
     {
         // 工厂是约定,构造器是机制 —— 上面四条钉的是机制。这一条钉的是三个工厂确实落在
         // 机制允许的那三种组合上,免得工厂自己写错却没人发现。
-        MoveApplication.Ongoing().Should().Be(new MoveApplication(GameResult.Ongoing, null));
-        MoveApplication.Drawn().Should().Be(new MoveApplication(GameResult.Draw, null));
-        MoveApplication.Won(2).Should().Be(new MoveApplication(GameResult.Decided, 2));
+        MoveApplication.Ongoing().Should().Be(new MoveApplication(GameResult.Ongoing, null, null));
+        MoveApplication.Drawn().Should().Be(new MoveApplication(GameResult.Draw, null, null));
+        MoveApplication.Won(2).Should().Be(new MoveApplication(GameResult.Decided, 2, null));
     }
 }
