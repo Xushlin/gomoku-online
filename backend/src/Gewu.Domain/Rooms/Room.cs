@@ -307,8 +307,9 @@ public sealed class Room
             return;
         }
 
-        var isPlayer = userId == BlackPlayerId || userId == WhitePlayerId;
-        if (!isPlayer)
+        // 「不在这个房间」= 既不围观、也不占任何一个座位。判据是 IsPlayer,不是列举黑白 ——
+        // 后者会把三座位房间里 2 号座位上的人当成外人,拒绝他离开他自己在的房间。
+        if (!IsPlayer(userId))
         {
             throw new NotInRoomException($"User {userId.Value} is not in this room.");
         }
@@ -348,26 +349,39 @@ public sealed class Room
         // 两项校验通过 —— 方法到此结束,聚合状态保持不变。
     }
 
-    /// <summary>加入围观者集合。玩家不可围观自己的对局。重复加入幂等。</summary>
     /// <summary>
-    /// 这个用户是否是本房间的**玩家**(黑方或白方)。
+    /// 这个用户是否是本房间的**玩家** —— 即他**占着任何一个座位**。
     /// <para>
     /// 加它是为了一件安全判定:围观频道的消息只能给围观者看,而"谁不是玩家"是那条规则的判据。
     /// 此前没有这个谓词,于是判定散在各处 —— 而实际情况是**三条读取路径全都没做这个判定**,
     /// 围观频道的保密性完全依赖客户端自觉。
     /// </para>
+    /// <para>
+    /// **它此前写的是 <c>BlackPlayerId || WhitePlayerId</c>,也就是只认 0 号与 1 号座位。**
+    /// 斗地主落地之后那是错的,而后果实测过:2 号座位上的人 <c>Leave</c> 拿到
+    /// <c>NotInRoomException</c>(离不开自己在的房间),而 <c>JoinAsSpectator</c> **放他过去**
+    /// —— 于是一个占着座位的玩家同时是围观者,拿到围观视角与围观频道,正是
+    /// <c>fix-spectator-chat-leak</c> 建起来的那条不变量。
+    /// </para>
+    /// <para>
+    /// 判据用 <see cref="SeatOf"/>,不再列举座位号:**"他是几号"与"他是不是玩家"是同一个事实的
+    /// 两种问法**,而此前只有前者被收敬到一处,后者仍在四个地方各写了一遍(本方法、
+    /// <see cref="Leave"/>、<see cref="JoinAsSpectator"/>,以及 Application 层的
+    /// <c>LeaveRoomCommandHandler</c>)。
+    /// </para>
     /// </summary>
     /// <param name="userId">要判断的用户。</param>
-    public bool IsPlayer(UserId userId)
-        => userId == BlackPlayerId || (WhitePlayerId is not null && userId == WhitePlayerId.Value);
+    public bool IsPlayer(UserId userId) => SeatOf(userId) is not null;
 
     /// <summary>这个用户是否在围观者集合里。</summary>
     /// <param name="userId">要判断的用户。</param>
     public bool IsSpectator(UserId userId) => _spectators.Any(s => s.UserId == userId);
 
+    /// <summary>加入围观者集合。玩家不可围观自己的对局。重复加入幂等。</summary>
+    /// <param name="userId">要加入围观的用户。</param>
     public void JoinAsSpectator(UserId userId)
     {
-        if (userId == BlackPlayerId || userId == WhitePlayerId)
+        if (IsPlayer(userId))
         {
             throw new PlayerCannotSpectateException(
                 $"User {userId.Value} is a player in this room and cannot spectate.");
@@ -631,7 +645,11 @@ public sealed class Room
                 $"Chat content length {content.Length} is out of range [1..{MaxChatContentLength}].");
         }
 
-        var isPlayer = senderId == BlackPlayerId || senderId == WhitePlayerId;
+        // **这是围观频道那条规则的写入侧,而它此前只认 0 号与 1 号座位。**
+        // `fix-spectator-chat-leak` 的结论是「写入侧一直是强制的,漏的是三条读取路径」——
+        // 那句话对两座位棋种成立,对三座位不成立:2 号座位上的玩家 `isPlayer == false`,
+        // 于是他**发得进围观频道**。又一次"结论在旧世界里为真,而世界变了"。
+        var isPlayer = IsPlayer(senderId);
         var isSpectator = _spectators.Any(s => s.UserId == senderId);
         if (!isPlayer && !isSpectator)
         {
@@ -666,7 +684,15 @@ public sealed class Room
         var senderSeat = SeatOf(senderId)
             ?? throw new NotAPlayerException(
                 $"User {senderId.Value} is not a player and cannot urge.");
-        var urgedUser = senderSeat == FirstSeat ? WhitePlayerId!.Value : BlackPlayerId;
+        // 催的是**该走棋的那个人**,而不是"另一个座位"。
+        //
+        // 两座位下这两句话完全等价(下面那条守卫已经保证 senderSeat != CurrentTurn,所以
+        // "该走棋的人"就是对手),所以五子棋 / 象棋一行行为都不变。三座位下前者仍然唯一,
+        // 而后者根本没有意义:2 号座位有两个"对手",而原式**永远催 0 号**,并且 2 号
+        // 自己永远催不到。催促这件事本来就只在"等某一个人"时才成立。
+        var urgedUser = PlayerAt(Game.CurrentTurn)
+            ?? throw new NotAPlayerException(
+                $"Seat {Game.CurrentTurn} is empty, so there is nobody to urge.");
 
         if (senderSeat == Game.CurrentTurn)
         {

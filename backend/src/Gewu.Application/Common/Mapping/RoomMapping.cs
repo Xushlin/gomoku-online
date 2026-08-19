@@ -95,17 +95,20 @@ public static class RoomMapping
             CreatedAt: room.CreatedAt);
     }
 
-    /// <summary>把一组 <see cref="UserId"/> 归集为 Guid 列表,便于 handler 一次性 query。</summary>
+    /// <summary>
+    /// 把一组 <see cref="UserId"/> 归集为 Guid 列表,便于 handler 一次性 query。
+    /// <para>
+    /// 走 <see cref="Room.Seats"/> 而不是黑白两个派生读法:后者在三座位房间里漏掉 2 号座位,
+    /// 而漏掉的后果不是缺一个字段,是**那个人的用户名查不到** —— 显示出来会是 <c>&lt;unknown&gt;</c>。
+    /// </para>
+    /// </summary>
+    /// <param name="room">房间。</param>
     public static IReadOnlyList<Guid> CollectUserIds(this Room room)
     {
-        var ids = new HashSet<Guid>
+        var ids = new HashSet<Guid> { room.HostUserId.Value };
+        foreach (var seat in room.Seats)
         {
-            room.HostUserId.Value,
-            room.BlackPlayerId.Value,
-        };
-        if (room.WhitePlayerId is not null)
-        {
-            ids.Add(room.WhitePlayerId.Value.Value);
+            ids.Add(seat.UserId.Value);
         }
         foreach (var s in room.Spectators)
         {
