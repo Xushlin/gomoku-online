@@ -48,7 +48,6 @@ public sealed class LeaveAsSpectatorCommandHandler : IRequestHandler<LeaveAsSpec
         await _notifier.SpectatorLeftAsync(room.Id, leaverDto, cancellationToken);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds, RoomView.For(room, request.UserId));
         await _notifier.RoomStateChangedAsync(room, usernames, _gameOptions.TurnTimeoutSeconds, cancellationToken);
 
         return Unit.Value;

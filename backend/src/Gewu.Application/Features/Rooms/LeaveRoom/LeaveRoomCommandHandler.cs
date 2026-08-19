@@ -40,8 +40,9 @@ public sealed class LeaveRoomCommandHandler : IRequestHandler<LeaveRoomCommand, 
         var room = await _rooms.FindByIdAsync(request.RoomId, cancellationToken)
             ?? throw new RoomNotFoundException($"Room '{request.RoomId.Value}' was not found.");
 
-        var wasPlayer = request.UserId == room.BlackPlayerId
-            || (room.WhitePlayerId.HasValue && request.UserId == room.WhitePlayerId.Value);
+        // Room.IsPlayer 覆盖**全部**座位。这里此前自己列举了黑白两个座位,是那个判定的第四份
+        // 手写副本 —— 三座位房间里 2 号座位上的人会被广播成"围观者离开",而他是个玩家。
+        var wasPlayer = room.IsPlayer(request.UserId);
         var wasSpectator = room.Spectators.Contains(request.UserId);
 
         room.Leave(request.UserId, _clock.UtcNow);
@@ -62,7 +63,6 @@ public sealed class LeaveRoomCommandHandler : IRequestHandler<LeaveRoomCommand, 
         }
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
-        var state = room.ToState(usernames, _gameOptions.TurnTimeoutSeconds, RoomView.For(room, request.UserId));
         await _notifier.RoomStateChangedAsync(room, usernames, _gameOptions.TurnTimeoutSeconds, cancellationToken);
 
         return Unit.Value;
