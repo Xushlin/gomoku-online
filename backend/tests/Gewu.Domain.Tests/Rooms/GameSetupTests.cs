@@ -215,12 +215,16 @@ public class GameSetupTests
     }
 
     [Fact]
-    public void No_built_in_game_deals_a_setup_yet()
+    public void Exactly_one_built_in_game_deals_a_setup()
     {
-        // 这一条会在斗地主落地那天由那次变更改成"恰好一个实现它"。它现在的价值是钉住
-        // **本次变更没有偷偷改动任何现有棋种** —— 那是本变更的验收标准。
+        // 这一条此前是"还没有棋种实现它",注释里写着斗地主落地那天改成"恰好一个"。照办。
+        //
+        // 它现在钉的是:斗地主是**唯一**需要秘密开局的棋种。再多一个的那天这条会红,而那正是
+        // 该问"这两个棋种的设置真是同一种东西吗"的时刻。
         var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
 
-        BuiltInGameRules.All(lexicon).Should().NotContain(r => r is IDealtGameRules);
+        BuiltInGameRules.All(lexicon).Where(r => r is IDealtGameRules)
+            .Should().ContainSingle()
+            .Which.GameKey.Should().Be(GameKeys.Doudizhu);
     }
 }

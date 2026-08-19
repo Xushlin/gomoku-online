@@ -262,13 +262,17 @@ public class TurnFlowTests
     }
 
     [Fact]
-    public void No_built_in_game_falls_back_on_timeout_yet()
+    public void Exactly_one_built_in_game_falls_back_on_timeout()
     {
-        // 这一条会在斗地主落地那天改成"恰好一个实现它"。它现在钉住的是**本次变更没有偷偷
-        // 改动任何现有棋种** —— 两个座位下"判他负、对手胜"是清楚且唯一的答案。
+        // 这一条此前是"还没有棋种实现它",注释里写着斗地主落地那天改成"恰好一个"。照办。
+        //
+        // **"恰好一个"比"至少一个"有牙**:第二个棋种要兜底的那天它会红,而那正是该问
+        // "这两个棋种的超时真是同一种东西吗"的时刻 —— 两个座位下判负仍然是清楚且唯一的答案。
         var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
 
-        BuiltInGameRules.All(lexicon).Should().NotContain(r => r is ITimeoutFallbackRules);
+        BuiltInGameRules.All(lexicon).Where(r => r is ITimeoutFallbackRules)
+            .Should().ContainSingle()
+            .Which.GameKey.Should().Be(GameKeys.Doudizhu);
     }
 
     // ---- TurnTimeoutOutcome 的不变量 ------------------------------------

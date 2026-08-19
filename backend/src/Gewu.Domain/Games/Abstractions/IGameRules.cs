@@ -285,4 +285,7 @@ public static class GameKeys
 
     /// <summary>成语接龙 —— 平台第一个不在盘面上进行的对战棋种。</summary>
     public const string IdiomChain = "idiom-chain";
+
+    /// <summary>斗地主 —— 平台第一个三座位、有隐藏信息、按分结算的棋种。</summary>
+    public const string Doudizhu = "doudizhu";
 }
