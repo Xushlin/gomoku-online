@@ -1,5 +1,18 @@
 # gomoku-domain Specification Delta
 
+## RENAMED Requirements
+
+标题里的「四种状态」现在是错的 —— 合并 `BlackWin` / `WhiteWin` 之后只剩三种。改名走 RENAMED,
+应用顺序是 RENAMED → REMOVED → MODIFIED → ADDED,所以下面 MODIFIED 用的是新标题。
+
+**这个坑 `add-tictactoe` 与 `add-web-tictactoe-ai` 都已经踩过并写下来了,而我又踩了一次。**
+只写 MODIFIED 会在归档时报「not found」—— 那是好的失败(它拦住了),但它拦住的时候三个后续变更
+已经先归档了,于是本变更的旧 requirement 正文会把它们**更新过的正文覆盖回去**。真正的教训有两条:
+**改标题就要写 RENAMED**,以及**归档必须按合并顺序**。
+
+- FROM: ### Requirement: `GameResult` 枚举有四种状态
+- TO: ### Requirement: `GameResult` 枚举有三种状态
+
 ## MODIFIED Requirements
 
 ### Requirement: `GameResult` 枚举有三种状态

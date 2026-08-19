@@ -116,19 +116,19 @@ MUST 抛 `InvalidMoveException` —— 象棋是走子类棋种，没有「落�
 
 象棋与国际象棋在这里不同:**困毙判负,不是和棋**。
 
-结果 MUST 是 `GameResult.BlackWin` / `WhiteWin`,由聚合根写入 `GameEndReason.Decided`。
+结果 MUST 是 `GameResult.Decided`,且 `MoveApplication.WinnerSeat` MUST 是**走子方的座位号**,
+由聚合根写入 `GameEndReason.Decided` 与对应的 `WinnerUserId`。
+
+此前这里写的是 `GameResult.BlackWin` / `WhiteWin`,由 `side == Stone.Black ? BlackWin : WhiteWin`
+算出 —— 那个颜色恒等于 `side`,即规则把自己的入参重新说了一遍。
 
 #### Scenario: 将死
 - **WHEN** 一步将军之后对方无任何合法走法
-- **THEN** `Apply` 返回走子方获胜
+- **THEN** `Apply` 返回 `(Decided, WinnerSeat: 走子方座位)`
 
 #### Scenario: 困毙同样判负
 - **WHEN** 对方未被将军但没有任何合法走法
-- **THEN** `Apply` 返回走子方获胜 —— MUST NOT 是和棋
-
-#### Scenario: 仅仅将军不结束对局
-- **WHEN** 一步将军但对方有解
-- **THEN** `Apply` 返回 `Ongoing`
+- **THEN** `Apply` 返回 `(Decided, WinnerSeat: 走子方座位)` —— MUST NOT 是和棋
 
 ### Requirement: 内置棋种只有一份清单
 
