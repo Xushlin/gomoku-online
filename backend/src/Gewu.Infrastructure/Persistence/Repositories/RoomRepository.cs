@@ -23,6 +23,7 @@ public sealed class RoomRepository : IRoomRepository
     /// <inheritdoc />
     public Task<Room?> FindByIdAsync(RoomId id, CancellationToken cancellationToken) =>
         _db.Rooms
+            .Include("_seats")
             .Include(r => r.Game!)
                 .ThenInclude(g => g.Moves)
             .Include("_spectators")
@@ -34,6 +35,7 @@ public sealed class RoomRepository : IRoomRepository
         string gameKey, CancellationToken cancellationToken)
     {
         var rooms = await _db.Rooms
+            .Include("_seats")
             .Include(r => r.Game!)
                 .ThenInclude(g => g.Moves)
             .Include("_spectators")
@@ -66,6 +68,7 @@ public sealed class RoomRepository : IRoomRepository
         // 全量加载的代价远小于"复杂 LINQ GroupBy 不能翻译"的后果。
         // 若后续量级变大(上千活跃对局),此处改写为带 correlated subquery 的 raw SQL。
         var playing = await _db.Rooms
+            .Include("_seats")
             .Include(r => r.Game!)
                 .ThenInclude(g => g.Moves)
             .Where(r => r.Status == RoomStatus.Playing && r.Game != null)
@@ -89,12 +92,16 @@ public sealed class RoomRepository : IRoomRepository
         UserId userId, CancellationToken cancellationToken)
     {
         return await _db.Rooms
+            .Include("_seats")
             .Include(r => r.Game!)
                 .ThenInclude(g => g.Moves)
             .Include("_spectators")
             .Where(r => r.Status != RoomStatus.Finished)
-            .Where(r => r.BlackPlayerId == userId
-                     || (r.WhitePlayerId != null && r.WhitePlayerId == userId))
+            // 走 RoomSeats 表本身,而**不是** r.Seats —— 后者是个派生属性
+            // (`_seats.OrderBy(...).ToList()`),EF 翻不成 SQL:要么运行时抛,要么静静地
+            // 退化成客户端求值,把整张 Rooms 拉进内存再过滤。后者不会报错,只会在数据变多的
+            // 那天变慢,而那时已经没人记得这行改过。
+            .Where(r => _db.RoomSeats.Any(x => x.RoomId == r.Id && x.UserId == userId))
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -107,12 +114,12 @@ public sealed class RoomRepository : IRoomRepository
         // 直接 `==` 依赖 EF Core 的值转换器生成正确 WHERE 子句。
         var baseQuery = _db.Rooms
             .Where(r => r.Status == RoomStatus.Finished)
-            .Where(r => r.BlackPlayerId == userId
-                     || (r.WhitePlayerId != null && r.WhitePlayerId == userId));
+            .Where(r => _db.RoomSeats.Any(x => x.RoomId == r.Id && x.UserId == userId));
 
         var total = await baseQuery.CountAsync(cancellationToken);
 
         var rooms = await baseQuery
+            .Include("_seats")
             .Include(r => r.Game!)
                 .ThenInclude(g => g.Moves)
             .OrderByDescending(r => r.Game!.EndedAt)

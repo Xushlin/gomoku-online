@@ -21,7 +21,7 @@ public class GetGameReplayQueryHandlerTests
     private static Room FinishedRoom(User alice, User bob)
     {
         var room = Room.Create(RoomId.NewId(), "replay-test", alice.Id, RoomsFixtures.Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(bob.Id, RoomsFixtures.Now.AddSeconds(1));
+        room.JoinAsPlayer(bob.Id, RoomsFixtures.Now.AddSeconds(1), BuiltInGameRules.Gomoku);
 
         // Alice (黑) 在第 7 行连五,Bob 在第 0 行被动应对
         var start = RoomsFixtures.Now.AddSeconds(2);

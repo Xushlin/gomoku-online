@@ -18,7 +18,7 @@ public class GetUserGamesPagedQueryHandlerTests
     private static Room MakeFinishedRoom(User alice, User bob, int movesCount = 9)
     {
         var room = Room.Create(RoomId.NewId(), "game", alice.Id, RoomsFixtures.Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(bob.Id, RoomsFixtures.Now.AddSeconds(1));
+        room.JoinAsPlayer(bob.Id, RoomsFixtures.Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         // Alice 黑方连五:9 步
         var start = RoomsFixtures.Now.AddSeconds(2);
         for (var i = 0; i < 4; i++)

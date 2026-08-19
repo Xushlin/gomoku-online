@@ -1,4 +1,5 @@
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.IdiomChain;
@@ -26,7 +27,7 @@ public class IdiomChainThroughRoomTests
         var first = UserId.NewId();
         var second = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "chain room", first, Now, GameKeys.IdiomChain);
-        room.JoinAsPlayer(second, Now.AddSeconds(1));
+        room.JoinAsPlayer(second, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         return (room, first, second);
     }
 

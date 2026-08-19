@@ -46,6 +46,8 @@ public sealed class Room
     public string GameKey { get; private set; } = string.Empty;
 
     /// <summary>创建者 / Host。当前规则下默认也是黑方玩家。</summary>
+    private readonly List<RoomSeat> _seats = [];
+
     public UserId HostUserId { get; private set; }
 
     /// <summary>黑方玩家(创建时即 Host)。</summary>
@@ -55,10 +57,31 @@ public sealed class Room
     /// <summary>后手座位号。</summary>
     public static readonly int SecondSeat = 1;
 
-    public UserId BlackPlayerId { get; private set; }
+    /// <summary>
+    /// 先手座位上的玩家 —— **两人棋种的"黑方"就是 0 号座位**。
+    /// <para>
+    /// 这是**派生**的,不是字段:座位存在 <see cref="Seats"/> 里,只有一份。名字留着,是因为
+    /// 87 处调用点读的正是"黑方是谁",而对两人棋种那句话仍然成立 —— 与 <c>Stone</c> 的处理同一条:
+    /// 名字留着,含义降到它真正成立的那一层。
+    /// </para>
+    /// <para>
+    /// **牌类棋种 MUST NOT 用这两个名字** —— 三个座位没有"黑白",用 <see cref="PlayerAt"/>。
+    /// </para>
+    /// </summary>
+    public UserId BlackPlayerId => _seats.Single(x => x.Index == FirstSeat).UserId;
 
-    /// <summary>白方玩家;Waiting 状态下为 <c>null</c>。</summary>
-    public UserId? WhitePlayerId { get; private set; }
+    /// <summary>后手座位上的玩家;还没人坐时为 <c>null</c>。见 <see cref="BlackPlayerId"/>。</summary>
+    public UserId? WhitePlayerId =>
+        _seats.SingleOrDefault(x => x.Index == SecondSeat)?.UserId;
+
+    /// <summary>本房间的座位,按座位号升序。</summary>
+    public IReadOnlyList<RoomSeat> Seats =>
+        _seats.OrderBy(x => x.Index).ToList();
+
+    /// <summary>第 <paramref name="index"/> 号座位上的玩家;空座位为 <c>null</c>。</summary>
+    /// <param name="index">座位号。</param>
+    public UserId? PlayerAt(int index) =>
+        _seats.SingleOrDefault(x => x.Index == index)?.UserId;
 
     /// <summary>生命周期状态。</summary>
     public RoomStatus Status { get; private set; }
@@ -109,23 +132,23 @@ public sealed class Room
                 $"Room name length {trimmed.Length} is out of range [{MinNameLength}..{MaxNameLength}].");
         }
 
-        return new Room
+        var room = new Room
         {
             Id = id,
             Name = trimmed,
             GameKey = gameKey,
             HostUserId = hostUserId,
-            BlackPlayerId = hostUserId,
-            WhitePlayerId = null,
             Status = RoomStatus.Waiting,
             CreatedAt = createdAt,
         };
+        room._seats.Add(new RoomSeat(id, FirstSeat, hostUserId));
+        return room;
     }
 
     /// <summary>
     /// 第二位玩家加入为白方,对局启动。若加入者此前是围观者,先从 <see cref="Spectators"/> 移除。
     /// </summary>
-    public void JoinAsPlayer(UserId userId, DateTime now)
+    public void JoinAsPlayer(UserId userId, DateTime now, IGameRules rules)
     {
         if (Status != RoomStatus.Waiting)
         {
@@ -133,9 +156,10 @@ public sealed class Room
                 $"Cannot join as player when room status is {Status}.");
         }
 
-        if (userId == BlackPlayerId)
+        if (SeatOf(userId) is int taken)
         {
-            throw new AlreadyInRoomException($"User {userId.Value} is already the black player.");
+            throw new AlreadyInRoomException(
+                $"User {userId.Value} is already seated at {taken}.");
         }
 
         var existing = _spectators.FirstOrDefault(s => s.UserId == userId);
@@ -144,14 +168,21 @@ public sealed class Room
             _spectators.Remove(existing);
         }
 
-        if (WhitePlayerId is not null)
+        if (_seats.Count >= rules.SeatCount)
         {
-            throw new RoomFullException("Room already has two players.");
+            throw new RoomFullException(
+                $"Room already has all {rules.SeatCount} players.");
         }
 
-        WhitePlayerId = userId;
-        TransitionStatus(RoomStatus.Playing);
-        Game = new Game(Id, now);
+        _seats.Add(new RoomSeat(Id, _seats.Count, userId));
+
+        // 坐满才开局。两人棋种下与此前逐步等价(第二个人一坐满就开局);三座位棋种下
+        // 第二个人坐进来之后房间**留在 Waiting**。
+        if (_seats.Count == rules.SeatCount)
+        {
+            TransitionStatus(RoomStatus.Playing);
+            Game = new Game(Id, now);
+        }
     }
 
     /// <summary>
@@ -181,7 +212,12 @@ public sealed class Room
                 "Cannot swap players after the first move.");
         }
 
-        (BlackPlayerId, WhitePlayerId) = (WhitePlayerId!.Value, BlackPlayerId);
+        var first = _seats.Single(x => x.Index == FirstSeat);
+        var second = _seats.Single(x => x.Index == SecondSeat);
+        _seats.Remove(first);
+        _seats.Remove(second);
+        _seats.Add(new RoomSeat(Id, FirstSeat, second.UserId));
+        _seats.Add(new RoomSeat(Id, SecondSeat, first.UserId));
     }
 
     /// <summary>
@@ -310,9 +346,7 @@ public sealed class Room
     /// <param name="userId">用户。</param>
     public int? SeatOf(UserId userId)
     {
-        if (userId == BlackPlayerId) return FirstSeat;
-        if (WhitePlayerId is not null && userId == WhitePlayerId.Value) return SecondSeat;
-        return null;
+        return _seats.SingleOrDefault(x => x.UserId == userId)?.Index;
     }
 
     public MoveOutcome PlayMove(UserId userId, MoveIntent intent, DateTime now, IGameRules rules)

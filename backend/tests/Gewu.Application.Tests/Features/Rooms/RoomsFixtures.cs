@@ -49,7 +49,7 @@ internal static class RoomsFixtures
         User host, User challenger, string name = "Test Room", string gameKey = GameKeys.Gomoku)
     {
         var room = Room.Create(RoomId.NewId(), name, host.Id, Now, gameKey);
-        room.JoinAsPlayer(challenger.Id, Now.AddSeconds(1));
+        room.JoinAsPlayer(challenger.Id, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         return room;
     }
 
