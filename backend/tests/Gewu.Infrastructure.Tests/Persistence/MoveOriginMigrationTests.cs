@@ -1,4 +1,5 @@
 using System.Globalization;
+using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Rooms;
@@ -45,6 +46,7 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
     private async Task<HashSet<string>> MoveColumnsAsync()
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seatsAreATable = await RoomShape.SeatsAreATableAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT name FROM pragma_table_info('Moves')";
         await using var reader = await cmd.ExecuteReaderAsync();
@@ -68,13 +70,13 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
         var roomId = Guid.NewGuid();
         var hostId = Guid.NewGuid();
         var side = await MoveSideColumn.DetectAsync(_connection);
+        var seatsAreATable = await RoomShape.SeatsAreATableAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"""
             INSERT INTO Users (Id, Email, Username, PasswordHash, IsActive, IsBot, CreatedAt, RowVersion)
             VALUES ('{Sql(hostId)}', 'seed@example.com', 'Seed', 'x', 1, 0, '{Now:o}', randomblob(16));
 
-            INSERT INTO Rooms (Id, Name, GameKey, HostUserId, BlackPlayerId, WhitePlayerId, Status, CreatedAt)
-            VALUES ('{Sql(roomId)}', 'seeded', 'gomoku', '{Sql(hostId)}', '{Sql(hostId)}', NULL, 1, '{Now:o}');
+            {RoomShape.InsertRoom(seatsAreATable, Sql(roomId), Sql(hostId), Now.ToString("o"))}
 
             INSERT INTO Games (Id, RoomId, StartedAt, CurrentTurn, RowVersion)
             VALUES ('{Sql(gameId)}', '{Sql(roomId)}', '{Now:o}', 1, randomblob(16));
@@ -141,7 +143,7 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
             UserId.NewId(), new Email("b@example.com"), new Username("Bob"), "h", Now);
         db.Users.AddRange(host, guest);
         var room = Room.Create(RoomId.NewId(), "origin room", host.Id, Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(guest.Id, Now.AddSeconds(1));
+        room.JoinAsPlayer(guest.Id, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         db.Rooms.Add(room);
         await db.SaveChangesAsync();
 
@@ -185,6 +187,7 @@ public sealed class MoveOriginMigrationTests : IAsyncLifetime
         columns.Should().NotContain("FromRow");
         columns.Should().NotContain("FromCol");
 
+        var seatsAreATable = await RoomShape.SeatsAreATableAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"SELECT COUNT(*) FROM Moves WHERE GameId = '{Sql(gameId)}'";
         var remaining = Convert.ToInt32(await cmd.ExecuteScalarAsync());

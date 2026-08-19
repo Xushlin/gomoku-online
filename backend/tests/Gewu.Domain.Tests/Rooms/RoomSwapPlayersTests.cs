@@ -13,7 +13,7 @@ public class RoomSwapPlayersTests
         hostId = UserId.NewId();
         opponentId = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "Swap Test", hostId, Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(opponentId, Now.AddSeconds(1));
+        room.JoinAsPlayer(opponentId, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         return room;
     }
 

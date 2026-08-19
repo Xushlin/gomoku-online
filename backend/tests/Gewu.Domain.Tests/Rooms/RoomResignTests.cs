@@ -14,7 +14,7 @@ public class RoomResignTests
         var host = UserId.NewId();
         var white = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "test", host, Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(white, Now.AddSeconds(1));
+        room.JoinAsPlayer(white, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         return (room, host, white);
     }
 

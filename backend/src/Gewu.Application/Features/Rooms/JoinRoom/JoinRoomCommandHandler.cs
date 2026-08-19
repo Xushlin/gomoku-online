@@ -1,4 +1,5 @@
 using Gewu.Application.Abstractions;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Common.Exceptions;
 using Gewu.Application.Common.Mapping;
@@ -16,6 +17,7 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
     private readonly IUnitOfWork _uow;
     private readonly IRoomNotifier _notifier;
     private readonly GameOptions _gameOptions;
+    private readonly IGameRulesRegistry _rules;
 
     /// <inheritdoc />
     public JoinRoomCommandHandler(
@@ -24,7 +26,8 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
         IDateTimeProvider clock,
         IUnitOfWork uow,
         IRoomNotifier notifier,
-        IOptions<GameOptions> gameOptions)
+        IOptions<GameOptions> gameOptions,
+        IGameRulesRegistry rules)
     {
         _rooms = rooms;
         _users = users;
@@ -32,6 +35,7 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
         _uow = uow;
         _notifier = notifier;
         _gameOptions = gameOptions.Value;
+        _rules = rules;
     }
 
     /// <inheritdoc />
@@ -40,7 +44,13 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
         var room = await _rooms.FindByIdAsync(request.RoomId, cancellationToken)
             ?? throw new RoomNotFoundException($"Room '{request.RoomId.Value}' was not found.");
 
-        room.JoinAsPlayer(request.UserId, _clock.UtcNow);
+        // 座位数由规则说,而不是房间自己存一份 —— 与 PlayMove 收规则是同一个形状。
+        // 未知棋种的处理与落子路径一致:那是一条损坏的房间记录,不是一次非法加入。
+        var rules = _rules.For(room.GameKey)
+            ?? throw new RoomNotFoundException(
+                $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
+
+        room.JoinAsPlayer(request.UserId, _clock.UtcNow, rules);
         await _uow.SaveChangesAsync(cancellationToken);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);

@@ -1,4 +1,5 @@
 using Gewu.Domain.Enums;
+using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.Users;
@@ -67,7 +68,7 @@ public sealed class RoomRepositoryGameKeyTests : IAsyncLifetime
     private static Room Playing(string name, UserId host, UserId guest, string gameKey)
     {
         var room = Waiting(name, host, gameKey);
-        room.JoinAsPlayer(guest, Now);
+        room.JoinAsPlayer(guest, Now, BuiltInGameRules.Gomoku);
         return room;
     }
 

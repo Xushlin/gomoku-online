@@ -41,6 +41,9 @@ public sealed class AppDbContext : DbContext
     /// <summary>房间围观者联结记录。</summary>
     public DbSet<RoomSpectator> RoomSpectators => Set<RoomSpectator>();
 
+    /// <summary>房间座位 —— 谁坐在第几号。</summary>
+    public DbSet<RoomSeat> RoomSeats => Set<RoomSeat>();
+
     /// <summary>成语词典(参考数据,游戏侧只读)。</summary>
     public DbSet<Idiom> Idioms => Set<Idiom>();
 

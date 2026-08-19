@@ -28,6 +28,7 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
     private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
     private readonly GameOptions _gameOptions;
+    private readonly IGameRulesRegistry _rules;
 
     /// <inheritdoc />
     public CreateAiRoomCommandHandler(
@@ -35,13 +36,15 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
         IUserRepository users,
         IDateTimeProvider clock,
         IUnitOfWork uow,
-        Microsoft.Extensions.Options.IOptions<GameOptions> gameOptions)
+        Microsoft.Extensions.Options.IOptions<GameOptions> gameOptions,
+        IGameRulesRegistry rules)
     {
         _rooms = rooms;
         _users = users;
         _clock = clock;
         _uow = uow;
         _gameOptions = gameOptions.Value;
+        _rules = rules;
     }
 
     /// <inheritdoc />
@@ -65,7 +68,14 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
 
         var now = _clock.UtcNow;
         var room = Room.Create(RoomId.NewId(), request.Name, request.HostUserId, now, request.GameKey);
-        room.JoinAsPlayer(bot.Id, now);
+        // 人机房只可能是两个座位 —— `enforce-ai-availability` 保证被点名的棋种有 AI,
+        // 而 AI 只存在于棋盘类棋种。但座位数仍然问规则,不写死 2:写死就是那种
+        // "第一个三座位棋种有了 AI 的那天,这里静静地少坐一个人"的代码。
+        var rules = _rules.For(request.GameKey)
+            ?? throw new RoomNotFoundException(
+                $"Room '{room.Id.Value}' declares unknown game '{request.GameKey}'.");
+
+        room.JoinAsPlayer(bot.Id, now, rules);
         // Human picked White → seat the bot on Black so it plays first. Same
         // transaction as create + join, so the AI worker can't race with
         // the swap (room invisible until commit).

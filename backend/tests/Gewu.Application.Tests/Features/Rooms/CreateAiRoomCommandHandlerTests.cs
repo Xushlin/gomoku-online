@@ -25,7 +25,7 @@ public class CreateAiRoomCommandHandlerTests
             .Returns(Task.CompletedTask);
         _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions(), GomokuRules.Registry);
         var state = await sut.Handle(
             new CreateAiRoomCommand(host.Id, "AI match", BotDifficulty.Medium, Stone.Black, GameKeys.Gomoku),
             default);
@@ -52,7 +52,7 @@ public class CreateAiRoomCommandHandlerTests
             .ReturnsAsync((User?)null);
         RoomsFixtures.SetupClock(_clock);
 
-        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions(), GomokuRules.Registry);
         var act = () => sut.Handle(new CreateAiRoomCommand(missingId, "AI", BotDifficulty.Easy, Stone.Black, GameKeys.Gomoku), default);
 
         await act.Should().ThrowAsync<UserNotFoundException>();
@@ -67,7 +67,7 @@ public class CreateAiRoomCommandHandlerTests
             .ReturnsAsync((User?)null);
         RoomsFixtures.SetupClock(_clock);
 
-        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions(), GomokuRules.Registry);
         var act = () => sut.Handle(new CreateAiRoomCommand(host.Id, "AI", BotDifficulty.Easy, Stone.Black, GameKeys.Gomoku), default);
 
         await act.Should().ThrowAsync<UserNotFoundException>();
@@ -87,7 +87,7 @@ public class CreateAiRoomCommandHandlerTests
             .Returns(Task.CompletedTask);
         _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions(), GomokuRules.Registry);
         var state = await sut.Handle(
             new CreateAiRoomCommand(host.Id, "AI Hard match", BotDifficulty.Hard, Stone.Black, GameKeys.Gomoku),
             default);
@@ -111,7 +111,7 @@ public class CreateAiRoomCommandHandlerTests
             .Returns(Task.CompletedTask);
         _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions(), GomokuRules.Registry);
         var state = await sut.Handle(
             new CreateAiRoomCommand(host.Id, "Defense", BotDifficulty.Medium, Stone.White, GameKeys.Gomoku),
             default);
@@ -133,7 +133,7 @@ public class CreateAiRoomCommandHandlerTests
         RoomsFixtures.SetupUserLookup(_users, botHost);
         RoomsFixtures.SetupClock(_clock);
 
-        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions());
+        var sut = new CreateAiRoomCommandHandler(_rooms.Object, _users.Object, _clock.Object, _uow.Object, RoomsFixtures.TestGameOptions(), GomokuRules.Registry);
         var act = () => sut.Handle(
             new CreateAiRoomCommand(botHost.Id, "AI", BotDifficulty.Easy, Stone.Black, GameKeys.Gomoku),
             default);

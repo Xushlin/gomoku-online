@@ -41,7 +41,7 @@ public class SeatKernelTests
         var host = new Domain.Users.UserId(System.Guid.NewGuid());
         var guest = new Domain.Users.UserId(System.Guid.NewGuid());
         var room = Room.Create(new RoomId(System.Guid.NewGuid()), "seats", host, Now, "seats-probe");
-        room.JoinAsPlayer(guest, Now.AddSeconds(1));
+        room.JoinAsPlayer(guest, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         return room;
     }
 

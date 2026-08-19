@@ -13,7 +13,7 @@ public class RoomChatTests
         black = UserId.NewId();
         white = UserId.NewId();
         var room = Room.Create(RoomId.NewId(), "Chat Room", black, Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(white, Now.AddMinutes(1));
+        room.JoinAsPlayer(white, Now.AddMinutes(1), BuiltInGameRules.Gomoku);
         return room;
     }
 

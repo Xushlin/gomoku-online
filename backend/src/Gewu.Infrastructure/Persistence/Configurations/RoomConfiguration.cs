@@ -28,10 +28,10 @@ public sealed class RoomConfiguration : IEntityTypeConfiguration<Room>
         builder.Property(r => r.GameKey).IsRequired().HasMaxLength(64);
 
         builder.Property(r => r.HostUserId).HasConversion<UserIdConverter>().IsRequired();
-        builder.Property(r => r.BlackPlayerId).HasConversion<UserIdConverter>().IsRequired();
-        builder.Property(r => r.WhitePlayerId)
-            .HasConversion(v => v.HasValue ? v.Value.Value : (Guid?)null,
-                           v => v.HasValue ? new UserId(v.Value) : (UserId?)null);
+
+        // BlackPlayerId / WhitePlayerId 不再是列 —— 它们是 Seats[0] / Seats[1] 的派生读法,
+        // 只有一份存储。见 Room 上的说明。
+        builder.Ignore(r => r.Seats);
 
         builder.Property(r => r.Status).HasConversion<int>().IsRequired();
         builder.Property(r => r.CreatedAt).IsRequired();
@@ -45,6 +45,14 @@ public sealed class RoomConfiguration : IEntityTypeConfiguration<Room>
             .WithOne()
             .HasForeignKey<Game>(g => g.RoomId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // _seats backing field → RoomSeats 表
+        builder.HasMany<RoomSeat>("_seats")
+            .WithOne()
+            .HasForeignKey(s => s.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Metadata.FindNavigation("_seats")!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
 
         // _spectators backing field → RoomSpectators 表
         builder.HasMany<RoomSpectator>("_spectators")

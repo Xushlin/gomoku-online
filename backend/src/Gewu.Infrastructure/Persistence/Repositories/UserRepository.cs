@@ -160,17 +160,18 @@ public sealed class UserRepository : IUserRepository
     /// <inheritdoc />
     public async Task<IReadOnlyList<RoomId>> GetRoomsNeedingBotMoveAsync(CancellationToken cancellationToken)
     {
-        // "Playing 且当前回合玩家是 bot"。CurrentTurn == Black → BlackPlayerId 是 bot;
-        // CurrentTurn == White → WhitePlayerId 是 bot。
-        // 为让 EF 能翻译,避免 navigation 到 User 的 subquery,先 JOIN User 两次:
+        // "Playing 且当前回合那个座位上坐的是 bot"。
+        //
+        // **座位化之后这条查询变简单了。** 此前它 JOIN 两次 `Users`(黑方一次、白方一次),
+        // 再用两个分支各写一遍同一件事 —— 而那两个分支正是三座位下要加第三个的形状。
+        // 现在是一次 JOIN,条件就是 `s.Index == g.CurrentTurn`:座位数不再出现在查询里。
         var query =
             from r in _db.Rooms
             where r.Status == RoomStatus.Playing
             join g in _db.Games on r.Id equals g.RoomId
-            join blackUser in _db.Users on r.BlackPlayerId equals blackUser.Id
-            join whiteUser in _db.Users on r.WhitePlayerId!.Value equals whiteUser.Id
-            where (g.CurrentTurn == Gewu.Domain.Rooms.Room.FirstSeat && blackUser.IsBot)
-               || (g.CurrentTurn == Gewu.Domain.Rooms.Room.SecondSeat && whiteUser.IsBot)
+            join s in _db.RoomSeats on r.Id equals s.RoomId
+            join u in _db.Users on s.UserId equals u.Id
+            where s.Index == g.CurrentTurn && u.IsBot
             select r.Id;
 
         var ids = await query.ToListAsync(cancellationToken);

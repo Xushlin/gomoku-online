@@ -1,4 +1,5 @@
 using Gewu.Application.Common.Mapping;
+using Gewu.Domain.Games.NInARow;
 using Gewu.Application.Features.Rooms.GetRoomRole;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Games.Abstractions;
@@ -35,7 +36,7 @@ public class SpectatorChatVisibilityTests
         var stranger = UserId.NewId();
 
         var room = Room.Create(RoomId.NewId(), "watched", black, Now, GameKeys.Gomoku);
-        room.JoinAsPlayer(white, Now.AddSeconds(1));
+        room.JoinAsPlayer(white, Now.AddSeconds(1), BuiltInGameRules.Gomoku);
         room.JoinAsSpectator(fan1);
         room.JoinAsSpectator(fan2);
 

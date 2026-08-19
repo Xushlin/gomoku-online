@@ -49,13 +49,13 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
         var roomId = Guid.NewGuid();
         var hostId = Guid.NewGuid();
         var side = await MoveSideColumn.DetectAsync(_connection);
+        var seatsAreATable = await RoomShape.SeatsAreATableAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"""
             INSERT INTO Users (Id, Email, Username, PasswordHash, IsActive, IsBot, CreatedAt, RowVersion)
             VALUES ('{Sql(hostId)}', 'seed@example.com', 'Seed', 'x', 1, 0, '{Now:o}', randomblob(16));
 
-            INSERT INTO Rooms (Id, Name, GameKey, HostUserId, BlackPlayerId, WhitePlayerId, Status, CreatedAt)
-            VALUES ('{Sql(roomId)}', 'seeded', 'gomoku', '{Sql(hostId)}', '{Sql(hostId)}', NULL, 1, '{Now:o}');
+            {RoomShape.InsertRoom(seatsAreATable, Sql(roomId), Sql(hostId), Now.ToString("o"))}
 
             INSERT INTO Games (Id, RoomId, StartedAt, CurrentTurn, RowVersion)
             VALUES ('{Sql(gameId)}', '{Sql(roomId)}', '{Now:o}', 1, randomblob(16));
@@ -70,6 +70,7 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
     private async Task InsertTextualMoveAsync(Guid gameId)
     {
         var side = await MoveSideColumn.DetectAsync(_connection);
+        var seatsAreATable = await RoomShape.SeatsAreATableAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"""
             INSERT INTO Moves (Id, GameId, Ply, Row, Col, Text, {side.Name}, PlayedAt)
@@ -125,6 +126,7 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
 
         await MigrateToAsync(db, BeforeText);
 
+        var seatsAreATable = await RoomShape.SeatsAreATableAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"SELECT Row, Col FROM Moves WHERE GameId = '{Sql(gameId)}'";
         await using var reader = await cmd.ExecuteReaderAsync();
@@ -149,6 +151,7 @@ public sealed class MoveTextPayloadMigrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<SqliteException>();
 
         // And the data is still there: the guard runs before anything is dropped.
+        var seatsAreATable = await RoomShape.SeatsAreATableAsync(_connection);
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = $"SELECT Text FROM Moves WHERE GameId = '{Sql(gameId)}' AND Ply = 2";
         (await cmd.ExecuteScalarAsync()).Should().Be("一心一意");

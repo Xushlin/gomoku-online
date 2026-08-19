@@ -21,7 +21,7 @@ public class RoomJoinLeaveTests
         var room = NewRoom(out _);
         var bobId = UserId.NewId();
 
-        room.JoinAsPlayer(bobId, Now.AddMinutes(1));
+        room.JoinAsPlayer(bobId, Now.AddMinutes(1), BuiltInGameRules.Gomoku);
 
         room.WhitePlayerId.Should().Be(bobId);
         room.Status.Should().Be(RoomStatus.Playing);
@@ -34,7 +34,7 @@ public class RoomJoinLeaveTests
     public void Host_Rejoin_Throws()
     {
         var room = NewRoom(out var hostId);
-        var act = () => room.JoinAsPlayer(hostId, Now.AddMinutes(1));
+        var act = () => room.JoinAsPlayer(hostId, Now.AddMinutes(1), BuiltInGameRules.Gomoku);
         act.Should().Throw<AlreadyInRoomException>();
     }
 
@@ -42,8 +42,8 @@ public class RoomJoinLeaveTests
     public void Room_Full_Throws()
     {
         var room = NewRoom(out _);
-        room.JoinAsPlayer(UserId.NewId(), Now.AddMinutes(1));
-        var act = () => room.JoinAsPlayer(UserId.NewId(), Now.AddMinutes(2));
+        room.JoinAsPlayer(UserId.NewId(), Now.AddMinutes(1), BuiltInGameRules.Gomoku);
+        var act = () => room.JoinAsPlayer(UserId.NewId(), Now.AddMinutes(2), BuiltInGameRules.Gomoku);
         act.Should().Throw<RoomNotWaitingException>();
     }
 
@@ -55,7 +55,7 @@ public class RoomJoinLeaveTests
         room.JoinAsSpectator(bobId);
         room.Spectators.Should().Contain(bobId);
 
-        room.JoinAsPlayer(bobId, Now.AddMinutes(1));
+        room.JoinAsPlayer(bobId, Now.AddMinutes(1), BuiltInGameRules.Gomoku);
 
         room.WhitePlayerId.Should().Be(bobId);
         room.Spectators.Should().NotContain(bobId);
@@ -120,7 +120,7 @@ public class RoomJoinLeaveTests
     {
         var room = NewRoom(out var host);
         var bob = UserId.NewId();
-        room.JoinAsPlayer(bob, Now.AddMinutes(1));
+        room.JoinAsPlayer(bob, Now.AddMinutes(1), BuiltInGameRules.Gomoku);
         var gameBefore = room.Game;
 
         room.Leave(host, Now.AddMinutes(2));
