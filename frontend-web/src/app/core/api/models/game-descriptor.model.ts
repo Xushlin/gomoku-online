@@ -38,6 +38,27 @@ export interface GameDescriptor {
   readonly supportsAi: boolean;
 
   /**
+   * How many seats this game needs — projected from `IGameRules.SeatCount`.
+   *
+   * **Non-null, and that is the difference from {@link GameDescriptor.rows}:**
+   * every game with `IGameRules` has a seat count, so there is no
+   * "not applicable" — whereas 成语接龙 really has no board.
+   *
+   * It exists because the client could not otherwise answer *how many seats
+   * does this game have*. The room sidebar used `RoomState.seats.length` for
+   * that, and it is a different question — that one is *how many seats are
+   * **taken***. The two disagree until the room fills, which is why a **waiting**
+   * three-seat room rendered as a two-seat one and said 「黑方 / 白方」.
+   * Measured in the browser, not deduced.
+   *
+   * The client MUST NOT keep its own copy (a `seatCount` on `GameManifest`) —
+   * that is exactly what `remove-manifest-board` deleted, for a reason that
+   * holds verbatim here: **a copy nobody reads is a copy whose errors nobody
+   * notices.**
+   */
+  readonly seatCount: number;
+
+  /**
    * Board rows — `null` when the game has **no board at all** (成语接龙).
    *
    * That is a different claim from "this client does not know the game", and the

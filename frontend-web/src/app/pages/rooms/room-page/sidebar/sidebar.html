@@ -19,16 +19,23 @@
            「白方走棋」改成了座位号,却没看旁边这份名单:一桌三个人时它只列黑白两个,
            **2 号座位上的人在自己的房间里不出现**。判据仍是 `seats.length`,不是棋种键。 -->
       @if (moreThanTwoSeats()) {
-        @for (seat of room.seats; track seat.index) {
+        <!-- **判据是 `seatCount`,不是 `seats.length`** —— 后者是「坐了几个人」,
+             于是一个等待中的三座位房间此前落进了下面那条颜色分支。见 sidebar.ts。
+             座位数已知之后,空座位也画得出来了。 -->
+        @for (seat of allSeats(); track seat.index) {
           <p>
             <span class="text-muted">{{
               'game.room.seat-label' | transloco: { seat: seat.index + 1 }
             }}:</span>
-            <a
-              class="username-link mx-1"
-              [routerLink]="['/users', seat.player.id]"
-              (click)="$event.stopPropagation()"
-            >{{ seat.player.username }}</a>
+            @if (seat.player; as player) {
+              <a
+                class="username-link mx-1"
+                [routerLink]="['/users', player.id]"
+                (click)="$event.stopPropagation()"
+              >{{ player.username }}</a>
+            } @else {
+              <span class="mx-1">{{ 'game.room.seat-empty' | transloco }}</span>
+            }
           </p>
         }
       } @else {

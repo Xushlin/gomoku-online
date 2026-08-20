@@ -193,7 +193,7 @@ describe('Catalog', () => {
       [AVAILABLE_UNRATED],
       'en',
       new StubGameCapabilities([
-        { gameKey: 'tictactoe', isRated: false, supportsHumanVsHuman: false, supportsAi: true, rows: 3, cols: 3 },
+        { gameKey: 'tictactoe', isRated: false, supportsHumanVsHuman: false, supportsAi: true, seatCount: 2, rows: 3, cols: 3 },
       ]),
     );
     expect(cards(fixture)[0].querySelector('a[href$="/leaderboard"]')).toBeNull();

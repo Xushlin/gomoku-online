@@ -13,6 +13,7 @@ const GOMOKU: GameDescriptor = {
   isRated: true,
   supportsHumanVsHuman: true,
   supportsAi: true,
+  seatCount: 2,
   rows: 15,
   cols: 15,
 };
@@ -22,6 +23,7 @@ const TICTACTOE: GameDescriptor = {
   isRated: false,
   supportsHumanVsHuman: false,
   supportsAi: true,
+  seatCount: 2,
   rows: 3,
   cols: 3,
 };
