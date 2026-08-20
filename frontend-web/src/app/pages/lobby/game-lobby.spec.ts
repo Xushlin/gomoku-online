@@ -71,7 +71,7 @@ describe('GameLobby', () => {
     // A permanently empty board reads as "nobody has played this yet", which is
     // a different claim from "this game has no ladder".
     const capabilities = new StubGameCapabilities([
-      { gameKey: 'friendly', isRated: false, supportsHumanVsHuman: true, supportsAi: true, rows: 9, cols: 9 },
+      { gameKey: 'friendly', isRated: false, supportsHumanVsHuman: true, supportsAi: true, seatCount: 2, rows: 9, cols: 9 },
     ]);
     const { html } = mount('friendly', capabilities);
 

@@ -48,6 +48,9 @@ public sealed class GetGameDescriptorsQueryHandler
                 // 问 AI 注册表,不问规则。规则不知道自己有没有机器人,而让它"知道"就是
                 // 在同一件事上开第二个真源 —— 那正是 IsRated 当初被约束成不变量的理由。
                 SupportsAi: _ai.For(r.GameKey) is not null,
+                // 座位数是**棋种形状**,直接投影。客户端此前只能拿「坐了几个人」当它用,
+                // 而那两个数在房间坐满之前不相等。
+                SeatCount: r.SeatCount,
                 // 有盘面才有尺寸。无盘面的棋种在这里是 null,而不是 0 —— 客户端把
                 // "没有盘面"与"不认识这个键"当作两件事处理。
                 Rows: (r as IBoardGameRules)?.Rows,

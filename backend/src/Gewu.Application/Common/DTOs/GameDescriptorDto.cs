@@ -25,6 +25,24 @@ namespace Gewu.Application.Common.DTOs;
 /// 不可能不一致。它不是 <c>IGameRules</c> 上的一个手写布尔:那会是同一件事的第二个真源,
 /// 而它失配的症状是**一个永远 400 的按钮**。
 /// </param>
+/// <param name="SeatCount">
+/// 这个棋种要几个座位 —— 投影自 <c>IGameRules.SeatCount</c>。
+/// <para>
+/// **它非空,而那正是它与 <paramref name="Rows"/> / <paramref name="Cols"/> 的区别:**
+/// 每个有 <c>IGameRules</c> 的棋种都有座位数,不存在「不适用」;而成语接龙真的没有盘面。
+/// </para>
+/// <para>
+/// **它存在是因为客户端读不到「这个棋种有几个座位」,而它需要。** 房间侧栏此前拿
+/// <c>RoomStateDto.Seats.Count</c> 当那个数用,而那是「有几个座位**被坐上了**」——
+/// 于是一个**等待中**的三座位房间被当成两座位房间渲染,说出「黑方 / 白方」。
+/// 在浏览器里量到的,不是读代码推的。
+/// </para>
+/// <para>
+/// 前端 MUST NOT 存一份副本(在 <c>GameManifest</c> 上加一个 <c>seatCount</c>)——
+/// 那正是 <c>remove-manifest-board</c> 删掉的东西,而它的理由在这里逐字成立:
+/// **一份没人读的副本错了不会有人发现。**
+/// </para>
+/// </param>
 /// <param name="Rows">行数。</param>
 /// <param name="Cols">列数。</param>
 public sealed record GameDescriptorDto(
@@ -32,5 +50,6 @@ public sealed record GameDescriptorDto(
     bool IsRated,
     bool SupportsHumanVsHuman,
     bool SupportsAi,
+    int SeatCount,
     int? Rows,
     int? Cols);

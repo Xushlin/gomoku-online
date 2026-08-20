@@ -319,16 +319,20 @@ Assert(waiting?.GameKey == "doudizhu", "and the room remembers which game it is"
 // (generalize-match-contract),`RoomStateDto.Seats` 也确实有了(add-doudizhu-visibility),
 // 而这两条断言**照样是绿的**。原因是它们看的是另一个 DTO:
 //
-// **`RoomSummaryDto`(大厅列表用的那个)至今只有 `Black` / `White`,没有座位列表。**
-// 于是三座位房间的第三个人在**大厅的房间行里**不出现 —— 与 add-doudizhu-table-visuals 在
-// 侧栏修掉的是同一个缺陷的**第三处**。触发条件:add-web-wakeng 要给一个三座位棋种画大厅。
+// **这笔账已经付了(fix-lobby-seats):`RoomSummaryDto` 现在也有 `Seats`。**
+// 所以下面那条 `White: null` 不再是「第三个座位无处可去」,而是一条更窄、更诚实的断言:
+// **`White` 仍然只是 1 号座位**,而三号座位在 `Seats` 里。两句话同时成立,才说明那个字段
+// 是加上去的、不是把旧字段改了意思。
 //
-// 在那之前,把"今天它长什么样"断言下来,好过让下一个人以为这形状是对的。
+// (这段注释被改过两次,而两次都是同一个教训:它上一版说「add-doudizhu-visibility 付这笔账」,
+// 而那个变更改的是 `RoomStateDto` —— **一条描述另一个 DTO 的注释,会在自己这个 DTO 被修好
+// 之后继续错着**。)
 //
 // 写成 `waiting is { White: null }` 而不是 `waiting?.White is null`:后者在 `waiting` 本身
 // 为 null 时**空转通过** —— 上面那次变异跑里,它是建房失败之后唯一还绿着的断言。
 Assert(waiting?.Black?.Username == aliceUsername, "seat 0 shows up as Black");
-Assert(waiting is { White: null }, "seat 2 has nowhere to go in a two-seat DTO — SeatWire's own trigger");
+Assert(waiting is { White: null }, "White is still just seat 1, not \"the last player\"");
+Assert(waiting?.Seats?.Count == 1, "and the lobby summary now carries the seat list itself");
 
 var botRoom = await http.PostAsJsonAsync("/api/rooms/ai", new
 {
@@ -352,6 +356,14 @@ Assert(wakeng?.IsRated == false, "wakeng is unrated, structurally (points, not E
 // 而那不需要任何新代码:不在 BuiltInGameAis.All 里就够了。
 Assert(wakeng?.SupportsAi == false, "wakeng has no AI");
 Assert(wakeng is { Rows: null, Cols: null }, "wakeng reports no board");
+// publish-seat-count:座位数是结构性事实,而客户端此前只能拿「坐了几个人」当它用。
+Assert(wakeng?.SeatCount == 3, $"wakeng seats three (was {wakeng?.SeatCount})");
+Assert(doudizhu?.SeatCount == 3, $"doudizhu seats three (was {doudizhu?.SeatCount})");
+Assert(descriptors.Single(g => g.GameKey == "gomoku").SeatCount == 2, "gomoku seats two");
+// **两侧都要有样本** —— 一条只走到 2 的遍历,在一个恒返回 2 的实现下是绿的。
+Assert(descriptors.Any(g => g.SeatCount == 2) && descriptors.Any(g => g.SeatCount > 2),
+    "seat counts cover both two and more than two");
+Assert(descriptors.All(g => g.SeatCount >= 2), "no versus game seats fewer than two");
 
 var wakengRoom = await http.PostAsJsonAsync("/api/rooms", new
 {
@@ -395,7 +407,8 @@ record GameEndedPayload(string Result, Guid? WinnerUserId, DateTime EndedAt);
 record LeaderboardEntry(int Rank, Guid UserId, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws);
 record PagedResult<T>(List<T> Items, int Total, int Page, int PageSize);
 // `POST /api/rooms` 回的是 summary,不是 state —— 只声明这里真读的字段。
-record RoomSummary(Guid Id, string Name, string GameKey, string Status, PlayerDto Host, PlayerDto? Black, PlayerDto? White, int SpectatorCount);
+record RoomSummary(Guid Id, string Name, string GameKey, string Status, PlayerDto Host, PlayerDto? Black, PlayerDto? White, List<SeatDto>? Seats, int SpectatorCount);
+record SeatDto(int Index, PlayerDto Player);
 // Rows / Cols 必须可空:generalize-match-payload 起,无盘面的棋种(成语接龙)报 null。
 // SupportsAi 是 enforce-ai-availability 加的。
 //
@@ -403,5 +416,5 @@ record RoomSummary(Guid Id, string Name, string GameKey, string Status, PlayerDt
 // 因为它只是个 DTO;跑起来就炸,因为 /api/games 里真有 null。没人发现,因为它不在 CI 里。
 // 这正是把它接进 CI 的最强论据,而且它是自己给出的。
 record GameDescriptor(
-    string GameKey, bool IsRated, bool SupportsHumanVsHuman, bool SupportsAi, int? Rows, int? Cols);
+    string GameKey, bool IsRated, bool SupportsHumanVsHuman, bool SupportsAi, int SeatCount, int? Rows, int? Cols);
 record UserPublicProfileDto(Guid Id, string Username, int Rating, int GamesPlayed, int Wins, int Losses, int Draws, DateTime CreatedAt);

@@ -45,6 +45,8 @@ public class GetGameDescriptorsQueryHandlerTests
             // 尺寸当且仅当规则有盘面时非空。
             dto.Rows.Should().Be((rules as IBoardGameRules)?.Rows);
             dto.Cols.Should().Be((rules as IBoardGameRules)?.Cols);
+            // 座位数是棋种形状,直接投影 —— 不像 SupportsAi 要问另一份注册表。
+            dto.SeatCount.Should().Be(rules.SeatCount);
         }
     }
 
@@ -142,6 +144,24 @@ public class GetGameDescriptorsQueryHandlerTests
     }
 
     [Fact]
+    public async Task The_seat_counts_cover_both_two_and_more_than_two()
+    {
+        // **上面那条遍历只断言 DTO 与规则一致,它在一个恒返回 2 的实现下也是绿的** ——
+        // 因为它比的是 `rules.SeatCount`,而如果投影写死 2,那条比较会红……只有当注册表里
+        // 真的存在一个座位数不是 2 的棋种时才会。所以这一条钉的是**样本**:
+        // 两侧都得有,否则那条遍历是单边的。
+        //
+        // 这与 `enable-xiangqi-human-play` 记下的是同一条:一条走到空集合、或只走到同一类的
+        // 遍历,会全绿地什么都不验。
+        var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
+
+        var counts = items.Select(i => i.SeatCount).Distinct().ToList();
+        counts.Should().Contain(2, "五子棋 / 一字棋 / 象棋 / 成语接龙都是两个座位");
+        counts.Should().Contain(c => c > 2, "斗地主与挖坑是三个 —— 少了它这条遍历只走一边");
+        items.Should().OnlyContain(i => i.SeatCount >= 2, "一个人下不了对战棋种");
+    }
+
+    [Fact]
     public async Task Entries_are_ordered_by_game_key()
     {
         // 注册表是 DI 集合 → 字典,顺序不作保证。一个每次刷新都换序的列表在 UI 上
@@ -175,6 +195,7 @@ public class GetGameDescriptorsQueryHandlerTests
             .Should().BeEquivalentTo(new[]
             {
                 nameof(Gewu.Application.Common.DTOs.GameDescriptorDto.SupportsAi),
+                nameof(Gewu.Application.Common.DTOs.GameDescriptorDto.SeatCount),
                 "GameKey", "IsRated", "SupportsHumanVsHuman", "Rows", "Cols",
             });
     }
