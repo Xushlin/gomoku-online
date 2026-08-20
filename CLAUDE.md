@@ -498,6 +498,31 @@ Not yet done — platform roadmap:
 
   **动画的证据全部来自 headless CDP,而这纠正了本文件里的一句话。** 之前记的是「Browser pane 不显示时读到的 DOM 属性是旧的」;更准确的说法是**时间线根本不走** —— `document.timeline.currentTime` 冻在 0,所有动画 `running@0`、`opacity: 0`,牌停在 `from` 关键帧上(而这反倒让我能直接读出那一帧的散开量,于是发现它是 0)。`chrome --headless --screenshot` 也不行:它只能靠 `--virtual-time-budget`,而 SignalR 的长轮询一直挂着,虚拟时间到点时页面还停在骨架屏上。用 CDP 真实时间采样量到的是:t=432ms 时 17 个动画全 `running`、第一张牌在 `x=216, y=-108, opacity 0`;t=882ms 时 15 个还在跑、第一张已就位;t=2482ms 时**一个都不剩**;而 `--force-prefers-reduced-motion` 下同一组采样**每次都是 0 个动画**。375 px 的检查是在**满屏内容**下做的(20 张牌 / 两家各 17 张牌背 / 桌上一手牌),**没有任何元素** `scrollWidth > clientWidth` —— 这一条是必要的:三次溢出里有两次在页面级 `scrollWidth - clientWidth === 0` 下完全看不见。
 
+- [x] **`draw-card-suits`** — 花色从素材 PNG 换成自绘的 SVG path。用户的判断是「换成自己的更好」,而按下去之后**三样为迁就位图搭的脚手架一起消失了**。
+
+  `fill="currentColor"` 让花色跟着牌面的 `color`,也就是 `--card-red` / `--card-black` —— **皮肤重新拿回了「深浅」那一半**,而 `add-web-xiangqi` 定的约束仍然成立。量过,因为这是换路线的全部意义:同一张 ♥ 在 wood 下是 `rgb(198,40,40)`、midnight 下是 `rgb(217,59,57)`;同一张 ♠ 是 `rgb(43,43,43)` / `rgb(29,36,48)`。**一张 PNG 在两个皮肤下只会是同一个值。** 一起消失的还有:`--ddz-pip` 那条 style 绑定、那条用惰性 `import.meta.glob` 证明文件在磁盘上的测试、以及那条防止绑定被清洗掉后花色**静静不见**的断言。**能被删掉的机制才是最好的机制。**
+
+  四条 path 是手写之后**画出来看**的:梅花第一版没有梗(像一株三叶草),黑桃取了肩部更饱满的那版。**一条 path 写得对不对,只有画出来才知道。**
+
+  **顺带修一个我自己造的回归,而它只有截图看得见。** 上一个 change 为了压 4 kB 的组件样式预算,我删掉了 `:host { width: 100% }`,理由写的是「宽度由父级 flex 给」——**那是错的**:房间页的容器是 `flex-col items-center`,于是整张桌子按内容收窄(felt 从 ~730px 变成 **~430px**),而牌宽是 `8.6vw` 跟视口不跟容器。**上一个 change 的所有断言都是绿的** —— jsdom 没有排版引擎。这是「shrink-to-fit 咬到这张牌桌」的**第四次**,现在被 `check-styles.mjs` 钉住并变异验过。
+
+- [x] **`add-card-sounds`** — 发牌与出牌有了声音,而**内置 sound pack 改成了按需加载**,因为前者把 480 kB 的预算顶穿了。
+
+  斗地主此前**每一个**动作 —— 叫分、不要、出牌 —— 都在放 `move-place`(一颗棋子落在木头上),而发牌一声不响。现在出牌是 `card-play`,而**叫分与不要刻意留在 `move-place` 上**:不看屏幕也听得出别人是出了牌还是过了牌。**这正是分成两个事件的理由,不是副产品。**
+
+  量到的音频图 —— 一个 `AudioContext`,唯一的变量是发生了什么事,而页面是打开着的、另两家这时才入座:发牌 `buffer 5 / filter 5 / osc 0`(wood 的五连 tick,没有别的事件长这样)、叫分 `1/1/0`、**出牌 `1/1/1`**、不要 `1/1/0`。**没有人听过它们** —— 这里量的是「三件事建出的图互不相同且各是设计的那一张」,不是「好听」,`add-xiangqi-ai` 那条规则同样适用。
+
+  **发牌只在牌到手的那一刻响一次,而动画在每次刷新都重播。** 两者由同一个事实驱动(手牌出现),但声音的触发条件更严:**重播一个动画是装饰,重播一个声音是在报告一件没有发生的事。** 第一版的哨兵被 effect 的第一次运行吃掉(构造时 `state()` 是 null),于是第一份真快照成了「0 → 17」的跳变,打开一局进行中的牌局也会响 —— 三条断言当场变红。
+
+  **`unhandledSoundEvent` 那个机制当场生效**:两个事件加进 `SOUND_EVENTS`、三个 pack 一行不改时,`tsc` 报三处 `Argument of type '"card-deal" | "card-play"' is not assignable to parameter of type 'never'`。而 `web-sound` 里那份把九个事件名逐个抄进代码块的 requirement 同时作废 —— 换的是它的**形状**(清单在源码里,规格说规则),因为 `web-game-board` 抄过一整个源文件、过期了四次。
+
+  **预算这件事按上一条记录预测的方式发生了,而出路也是那条记录写下的。** 加两个事件之后初始包 **481.23 kB**。量法是把三个 pack 换成空实现再构建:**472.54 kB** —— 所以三个 pack 是**首屏的 8.69 kB**,而它们在用户第一次与页面交互之前一声都发不出来。`BUILT_IN_PACKS` 于是变成 `PACK_LOADERS`(动态 import),构造时不 await 地预热当前 pack,而万一 `play()` 先到就**排队而不丢**(「这一局的第一手是静的」是一个只在会话第一次出现、之后永远复现不出来的缺陷),`AudioContext` 仍同步构造 —— autoplay 策略要的是用户手势那一帧。结果 **473.29 kB,余量 6.71 kB**,比这一整轮开始前(474.16)还宽。
+
+  一条顺带钉住的:「已知 pack」= 有实现**或**有 loader。只查已加载实现的那一版会让持久化的选择在**每次启动**时失效 —— 启动那刻内置 pack 一个都还没加载。
+
+  **「一个会崩的变异不是变异」,这一轮里第二次。** 哨兵那条第一次把 `if (!state) return` 换成空块,那让 effect 在 `state` 为 null 时**抛异常** —— 一条崩溃路径,不是「另一种合理实现」,所以它活了下来。写成第一版真正的样子之后,3 条测试变红。(第一次是 `@if (false)` 变成模板编译错误:exit 1,而没有一条测试跑起来。)
+
+
 
 Discipline: **do not start a new game until the previous one is archived.** Eight games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished. And the rule is narrower than the failure it needs to prevent: `enable-xiangqi-human-play` was not a game, so nothing stopped it sitting unarchived for 36 commits with the live spec contradicting the code. **A merged PR whose change directory is still in `openspec/changes/` is the signal** — check that list, because strict validation will not.
 
@@ -530,7 +555,7 @@ Deferred follow-ups, each with a reason:
 
   Existing dev databases keep their pretty-printed rows, because the seeder is a no-op once levels exist. Not worth a data migration: a local DB can be deleted, and there is no deployed one.
 
-- **The `bundle initial exceeded maximum budget` warning is gone, and the budget is now 480 kB** — 504.65 kB → **470.37 kB**, against a threshold tightened from 500 kB so the win cannot quietly erode (transfer 132.15 → 124.70 kB). See `close-bundle-budget` and `tighten-bundle-budget`. Headroom **was** 9.63 kB, deliberately narrow: the whole point of the signal is that it fires before anyone has to go looking. `add-doudizhu-table-visuals` then spent almost all of it — **479.66 kB, i.e. 0.34 kB left** — and the reason is worth knowing before the next change: that game's own stylesheet sits in a lazy chunk, but the **skin tokens it reads live in `board-skins.css`, which is eager**, and four skin blocks × ten new variables is ~5.5 kB that every first paint pays for. The budget fired three times during that change and was never raised. **The next person who adds a token to every skin will hit it immediately**, and the honest options then are to shrink the per-skin values (hoisting a shared *pattern* into component CSS worked once — the card back's lattice was byte-identical in all three skins) or to make skin variables lazy, which nothing here does yet.
+- **The `bundle initial exceeded maximum budget` warning is gone, and the budget is now 480 kB** — 504.65 kB → **470.37 kB**, against a threshold tightened from 500 kB so the win cannot quietly erode (transfer 132.15 → 124.70 kB). See `close-bundle-budget` and `tighten-bundle-budget`. Headroom has moved three times and the trail is the useful part: 9.63 kB after `tighten-bundle-budget`, then **0.34 kB** after `add-doudizhu-table-visuals` (four skin blocks × ten new `--card-*` / `--felt-*` variables, and `board-skins.css` is eager), and the very next change hit the wall exactly as that note predicted — `add-card-sounds` built at **481.23 kB**. The fix was the option that note named: **make it lazy.** Measured by stubbing the three sound packs and rebuilding — 481.23 → 472.54 kB, so the packs were **8.69 kB of first paint** for audio that cannot play before the first user gesture. They are `import()`ed on demand now, and the budget sits at **473.29 kB with 6.71 kB free**. The budget fired five times across those two changes and was never raised. **The pattern worth copying: when it fires, ask what is eager that does not need to be, and measure it by stubbing rather than by reasoning.**
 
   The fix was one component. `find-player` — a single debounced text box on `/home` — was the **only eagerly-loaded consumer of `@angular/forms`**: the auth pages, the lobby dialogs and the chat panel are all behind lazy routes. One `FormControl` was therefore pulling **34 kB** of forms machinery into every first paint. Replacing it with a plain signal + `[value]`/`(input)` removed exactly that, and the deferred note's guess — "one small thing rather than an architectural change" — turned out right.
 
