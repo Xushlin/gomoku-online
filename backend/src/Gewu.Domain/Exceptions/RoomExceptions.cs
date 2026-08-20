@@ -59,6 +59,19 @@ public sealed class MissingGameSetupException : DomainException
 }
 
 /// <summary>
+/// 规则给出的首手座位不在 <c>[0, SeatCount)</c> 内。Api 层映射 409。
+/// <para>
+/// 存下来会造出一局**谁都动不了**的棋:每个人都不是当前回合,于是几十秒后由超时兜底
+/// 暴露出来 —— 而那时报出来的是超时,不是"首手座位是 7"。所以在开局那一刻抛。
+/// </para>
+/// </summary>
+public sealed class InvalidFirstSeatException : DomainException
+{
+    /// <inheritdoc />
+    public InvalidFirstSeatException(string message) : base("invalid-first-seat", message) { }
+}
+
+/// <summary>
 /// 这条路径只对两座位棋种有定义,而本房间的座位数不是 2。Api 层映射 409。
 /// <para>
 /// "认输"与"超时判负"都要指出**一个**赢家,而"对手"只在两个座位时唯一。三个座位时它有两个,
