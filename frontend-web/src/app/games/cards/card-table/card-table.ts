@@ -4,22 +4,19 @@ import { TranslocoPipe } from '@jsverse/transloco';
 
 import type { RoomState } from '../../../core/api/models/room.model';
 import { pipPath } from '../card-art';
-import { encodeHand, suitSymbol, type DoudizhuCard } from '../cards';
-import { parseSeatView, type DoudizhuSeatView } from '../seat-view';
+import { encodeHand, suitSymbol, type PlayingCard } from '../cards';
+import type { CardTableConfig, CardTableView } from '../card-table-config';
 import { relativeSeat, seatInitial, seatRing, type SeatDirection } from '../table-layout';
 import { currentTrick, type TrickAction } from '../trick';
 
 /** 一次动作 —— 直接就是 `Move.Text` 的内容(`bid:N` / `pass` / `play:<cards>`)。 */
-export type DoudizhuAction = string;
+export type CardAction = string;
 
-/**
- * 底牌是三张。
- *
- * **这是客户端唯一一处写下的斗地主规则常量,而它只用于显示。** 叫分阶段服务端给 `kitty: null`
- * (还没翻开),而屏幕上要有三张背面朝上的牌 —— 那个「三」没有别的来源。它错了的表现是
- * 桌心多画或少画一张扑克牌,是最显眼的一种坏,而它 MUST NOT 参与任何判断。
- */
-const KITTY_SIZE = 3;
+// 底牌张数搬进了 `CardTableConfig.kittySize`(斗地主 3、挖坑 4)。
+//
+// 它仍然是**客户端唯一一处写下的牌类规则常量,而它只用于显示**:叫分阶段服务端给
+// `kitty: null`(还没翻开),而屏幕上要有那么多张背面朝上的牌 —— 那个数没有别的来源。
+// 它错了的表现是桌心多画或少画一张扑克牌,是最显眼的一种坏,而它 MUST NOT 参与任何判断。
 
 /** 一个座位在牌桌上的样子 —— 全部来自快照,没有一处是推断的。 */
 interface TableSeat {
@@ -30,7 +27,7 @@ interface TableSeat {
   readonly count: number;
   /** 牌背的下标序列;`@for` 需要一个可迭代的东西,而张数本身不是。 */
   readonly backs: readonly number[];
-  readonly isLandlord: boolean;
+  readonly hasRole: boolean;
   readonly isTurn: boolean;
   /** 「不要」/「叫 2 分」—— 当前一轮里这个座位说的那句话。出牌不进气泡:牌在桌心。 */
   readonly bubbleKey: string | null;
@@ -76,24 +73,34 @@ interface TableSeat {
 export class CardTable {
   readonly state = input<RoomState | null>(null);
 
+  /**
+   * 这个棋种与另一个的**全部**差别 —— 见 `CardTableConfig`。
+   *
+   * 必填:一个默认值会让「忘了传」和「故意用斗地主那份」长得一样,而后者的症状是
+   * 挖坑的底牌少画一张、手牌顺序反着、首叫者标记不见 —— 三样都只在屏幕上看得见。
+   */
+  readonly config = input.required<CardTableConfig>();
+
   /** 看这一桌的人坐第几号;`null` 表示围观者 / 尚未入座。 */
   readonly mySeat = input<number | null>(null);
   readonly submitting = input<boolean>(false);
   readonly readonly = input<boolean>(false);
 
   /** 一次动作的文本载荷。父组件转给 hub。 */
-  readonly action = output<DoudizhuAction>();
+  readonly action = output<CardAction>();
 
-  /** 叫分的四个选项。3 分是上限 —— 与服务端 `DoudizhuScoring.MaxBaseScore` 一致。 */
+  /** 叫分的四个选项。3 分是上限 —— 两个棋种都是(`MaxBaseScore` / `MaxBid`)。 */
   protected readonly bids = [0, 1, 2, 3] as const;
 
-  /** 叫分阶段桌心那三张背面朝上的底牌。 */
-  protected readonly kittyBacks = Array.from({ length: KITTY_SIZE }, (_, i) => i);
+  /** 叫分阶段桌心那几张背面朝上的底牌 —— 张数按棋种。 */
+  protected readonly kittyBacks = computed(() =>
+    Array.from({ length: this.config().kittySize }, (_, i) => i),
+  );
 
   private readonly selected = signal<ReadonlySet<string>>(new Set());
 
-  protected readonly view = computed<DoudizhuSeatView | null>(() =>
-    parseSeatView(this.state()?.game?.seatView),
+  protected readonly view = computed<CardTableView | null>(() =>
+    this.config().parseView(this.state()?.game?.seatView),
   );
 
   protected readonly isSpectator = computed(() => this.mySeat() === null);
@@ -113,7 +120,16 @@ export class CardTable {
       !this.myTurn(),
   );
 
-  protected readonly hand = computed<readonly DoudizhuCard[]>(() => this.view()?.myHand ?? []);
+  /**
+   * 自己的手牌,**按这个棋种的大小排**。
+   *
+   * 服务端送来的是 `Card.Encode` 的输出,也就是**编码顺序**(3、4、…、K、A、2)。
+   * 斗地主的大小恰好就是这个顺序;挖坑是 `3 > 2 > A > … > 4`,不排的话最强的那张会在最左边。
+   * 见 `CardTableConfig.compareForDisplay`。
+   */
+  protected readonly hand = computed<readonly PlayingCard[]>(() =>
+    [...(this.view()?.myHand ?? [])].sort(this.config().compareForDisplay),
+  );
 
   /** 当前一轮里每个座位做了什么 —— 从已经公开的 `moves` 算出来,不参与判断。 */
   private readonly trick = computed<readonly TrickAction[]>(() =>
@@ -145,9 +161,9 @@ export class CardTable {
         initial: seatInitial(username),
         count,
         backs: Array.from({ length: count }, (_, i) => i),
-        isLandlord: seat === view.landlord,
+        hasRole: seat === view.roleSeat,
         isTurn: current === seat && room.status === 'Playing',
-        bubbleKey: bubbleKeyFor(action),
+        bubbleKey: bubbleKeyFor(action, this.config().i18nPrefix),
         bubblePoints: action?.kind === 'bid' ? action.points : 0,
       };
     });
@@ -199,7 +215,7 @@ export class CardTable {
    * `suitSymbol()` 的地方:牌面上的花色不再是字符,于是 `♥` 在某些平台被渲染成彩色 emoji
    * 的老问题在视觉上消失了,而在 aria-label 里它无所谓。
    */
-  protected label(card: DoudizhuCard): string {
+  protected label(card: PlayingCard): string {
     return `${suitSymbol(card.suit)}${card.label}`;
   }
 
@@ -209,19 +225,19 @@ export class CardTable {
    * 形状在 TS 里而颜色不在 —— `fill="currentColor"` 让它跟着牌面的 `color`,也就是
    * `--card-red` / `--card-black`。上一版是一张 PNG,而位图在每个皮肤下都一样。
    */
-  protected pip(card: DoudizhuCard): string | null {
+  protected pip(card: PlayingCard): string | null {
     return pipPath(card.suit);
   }
 
-  protected isJoker(card: DoudizhuCard): boolean {
+  protected isJoker(card: PlayingCard): boolean {
     return card.suit === 'none';
   }
 
-  protected isSelected(card: DoudizhuCard): boolean {
+  protected isSelected(card: PlayingCard): boolean {
     return this.selected().has(card.code);
   }
 
-  protected toggle(card: DoudizhuCard): void {
+  protected toggle(card: PlayingCard): void {
     if (this.actionsDisabled()) return;
     const next = new Set(this.selected());
     if (!next.delete(card.code)) next.add(card.code);
@@ -253,11 +269,12 @@ export class CardTable {
  *
  * 出牌**不进气泡** —— 那手牌就在桌心,而同一件事说两遍会让人去找两者的差别。
  */
-function bubbleKeyFor(action: TrickAction | undefined): string | null {
+function bubbleKeyFor(action: TrickAction | undefined, prefix: string): string | null {
   if (!action) return null;
-  if (action.kind === 'pass') return 'doudizhu.bubble.pass';
+  if (action.kind === 'pass') return 'cards.bubble.pass';
   if (action.kind === 'bid') {
-    return action.points === 0 ? 'doudizhu.bubble.no-bid' : 'doudizhu.bubble.bid';
+    // 「不叫」/「不挖」按棋种 —— 不看屏幕也该听得出他说的是哪一句。
+    return action.points === 0 ? `${prefix}.no-bid` : `${prefix}.bid`;
   }
   return null;
 }

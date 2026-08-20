@@ -25,7 +25,7 @@ import { readFileSync } from 'node:fs';
 
 const CSS = 'src/styles/board-skins.css';
 const SERVICE = 'src/app/core/theme/board-skin.service.ts';
-const CARD_CSS = 'src/app/games/doudizhu/card-table/card-table.css';
+const CARD_CSS = 'src/app/games/cards/card-table/card-table.css';
 const DEFAULT_SKIN = 'wood';
 
 /**

@@ -1,4 +1,5 @@
-import { decodeHand, type DoudizhuCard } from './cards';
+import type { CardTableConfig, CardTableView } from '../cards/card-table-config';
+import { decodeHand, type PlayingCard } from '../cards/cards';
 
 /**
  * `GameSnapshotDto.seatView` 里那份**按座位裁剪过**的斗地主局面。
@@ -14,11 +15,11 @@ export interface DoudizhuSeatView {
   readonly landlord: number | null;
   readonly baseScore: number;
   readonly bidsMade: number;
-  readonly myHand: readonly DoudizhuCard[];
+  readonly myHand: readonly PlayingCard[];
   readonly handCounts: readonly number[];
-  readonly kitty: readonly DoudizhuCard[] | null;
+  readonly kitty: readonly PlayingCard[] | null;
   readonly tableSeat: number | null;
-  readonly tableCards: readonly DoudizhuCard[] | null;
+  readonly tableCards: readonly PlayingCard[] | null;
   readonly winner: number | null;
 }
 
@@ -67,3 +68,40 @@ function numberOrNull(value: unknown): number | null {
 function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
+
+/**
+ * 归一到牌桌要画的那一份视图。
+ *
+ * **`firstBidder` 是 `null`,而那不是「还没算出来」** —— 斗地主里根本没有这个概念:
+ * 谁先叫分是约定(0 号先),而挖坑是发牌决定的。用一个 `null` 表示「不适用」在这里是
+ * 对的,因为牌桌问的是「要不要画这个标记」,而答案永远是不要。
+ */
+export function toTableView(raw: string | null | undefined): CardTableView | null {
+  const v = parseSeatView(raw);
+  if (!v) return null;
+  return {
+    phase: v.phase,
+    roleSeat: v.landlord,
+    bid: v.baseScore,
+    bidsMade: v.bidsMade,
+    myHand: v.myHand,
+    handCounts: v.handCounts,
+    kitty: v.kitty,
+    tableSeat: v.tableSeat,
+    tableCards: v.tableCards,
+    winner: v.winner,
+    firstBidder: null,
+  };
+}
+
+/** 斗地主的牌桌配置。 */
+export const DOUDIZHU_TABLE: CardTableConfig = {
+  kittySize: 3,
+  i18nPrefix: 'game.doudizhu',
+  roleLabelKey: 'game.doudizhu.landlord',
+  showsFirstBidder: false,
+  // 斗地主的大小**恰好**就是编码顺序,所以按 `rank` 排是对的 —— 而那是巧合,
+  // 不是通则:挖坑是 `3 > 2 > A > … > 4`。见 `cards.ts` 上 `rank` 的说明。
+  compareForDisplay: (a, b) => a.rank - b.rank || a.code.localeCompare(b.code),
+  parseView: toTableView,
+};

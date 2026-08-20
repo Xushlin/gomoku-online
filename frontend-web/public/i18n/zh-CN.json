@@ -394,6 +394,10 @@
     "doudizhu": {
       "title": "斗地主",
       "description": "三个人、一副牌,地主对两个农民。手牌只有你自己看得见。"
+    },
+    "wakeng": {
+      "title": "挖坑",
+      "description": "三人 52 张牌,3 最大、没有炸弹。持最小 ♣ 的人首叫且首出。"
     }
   },
   "idiom-crossword": {
@@ -599,15 +603,13 @@
     "next": "下一页",
     "page-of": "第 {{page}} / {{total}} 页"
   },
-  "doudizhu": {
+  "cards": {
     "phase": {
       "Bidding": "叫分",
       "Playing": "出牌",
       "Finished": "本局结束"
     },
     "table": {
-      "landlord": "地主:{{seat}} 号座位",
-      "landlord-badge": "地主",
       "base-score": "底分 {{score}}",
       "kitty": "底牌",
       "seat": "{{seat}} 号座位",
@@ -622,8 +624,6 @@
       "kitty-hidden": "底牌,还没翻开"
     },
     "action": {
-      "no-bid": "不叫",
-      "bid": "叫 {{points}} 分",
       "play": "出牌({{count}})",
       "pass": "不要",
       "waiting": "等其他人行动…"
@@ -632,9 +632,20 @@
       "joker": "王"
     },
     "bubble": {
-      "pass": "不要",
+      "pass": "不要"
+    },
+    "doudizhu": {
       "bid": "叫 {{points}} 分",
-      "no-bid": "不叫"
+      "no-bid": "不叫",
+      "role": "地主",
+      "role-seat": "地主:{{seat}} 号座位"
+    },
+    "wakeng": {
+      "bid": "挖 {{points}} 分",
+      "first-bidder": "首叫:{{seat}} 号座位",
+      "no-bid": "不挖",
+      "role": "挖坑者",
+      "role-seat": "挖坑者:{{seat}} 号座位"
     }
   }
 }

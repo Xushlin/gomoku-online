@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { RoomState } from '../../../core/api/models/room.model';
 import { decodeCard, decodeHand, encodeHand } from '../cards';
-import { parseSeatView } from '../seat-view';
+import { DOUDIZHU_TABLE, parseSeatView } from '../../doudizhu/seat-view';
+import type { CardTableConfig } from '../card-table-config';
 import { CardTable } from './card-table';
 
 /** 一份 `seatView` 载荷 —— 形状与服务端 `DoudizhuSeatView` 一致。 */
@@ -62,12 +63,16 @@ function room(view: string | null, currentSeat = 0): RoomState {
   imports: [CardTable],
   template: `<app-card-table
     [state]="state()"
+    [config]="config()"
     [mySeat]="mySeat()"
     (action)="actions.push($event)"
   />`,
 })
 class Host {
   readonly state = signal<RoomState | null>(room(seatView()));
+  // **默认是斗地主那份,而这是刻意的**:本文件全部既有断言在共享化之后 MUST 一条不改 ——
+  // 那是「搬家没有改行为」的可执行形式。挖坑的断言在 `wakeng-table.spec.ts` 里。
+  readonly config = signal<CardTableConfig>(DOUDIZHU_TABLE);
   readonly mySeat = signal<number | null>(0);
   readonly actions: string[] = [];
 }

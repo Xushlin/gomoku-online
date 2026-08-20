@@ -7,6 +7,7 @@ import { idiomGuessManifest } from './idiom-guess/manifest';
 import { klotskiManifest } from './klotski/manifest';
 import { tetrisManifest } from './tetris/manifest';
 import { ticTacToeManifest } from './tictactoe/manifest';
+import { wakengManifest } from './wakeng/manifest';
 import { xiangqiManifest } from './xiangqi/manifest';
 
 /**
@@ -24,6 +25,7 @@ export const GAME_REGISTRY: readonly GameManifest[] = [
   ticTacToeManifest,
   xiangqiManifest,
   doudizhuManifest,
+  wakengManifest,
   klotskiManifest,
   tetrisManifest,
 ];
