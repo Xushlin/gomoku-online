@@ -234,7 +234,8 @@ card MUST 用 `bg-surface text-text border-border rounded-card shadow-elevated` 
 
 应用位置:
 
-- `pages/lobby/cards/active-rooms/` —— host / black / white
+- `pages/lobby/cards/active-rooms/` —— host,以及 `seats` 里每一个在座玩家
+  (此前写的是 host / black / white;`fix-lobby-seats` 之后房间行渲染的是座位)
 - `pages/lobby/cards/my-active-rooms/` —— host / black / white
 - `pages/lobby/cards/leaderboard/` —— top-10 player names
 - `pages/rooms/room-page/sidebar/` —— host / black / white
