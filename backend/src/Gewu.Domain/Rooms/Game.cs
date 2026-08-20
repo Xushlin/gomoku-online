@@ -85,7 +85,7 @@ public sealed class Game
     // EF 物化用。
     private Game() { }
 
-    internal Game(RoomId roomId, DateTime startedAt, string? setup)
+    internal Game(RoomId roomId, DateTime startedAt, string? setup, int firstSeat)
     {
         Id = Guid.NewGuid();
         RoomId = roomId;
@@ -95,7 +95,9 @@ public sealed class Game
         Result = null;
         WinnerUserId = null;
         EndReason = null;
-        CurrentTurn = FirstSeat;
+        // 首手座位由调用方(<see cref="Room"/>)给,默认仍是 <see cref="FirstSeat"/> ——
+        // 挖坑的先手是发牌决定的,而不是"谁坐 0 号"。
+        CurrentTurn = firstSeat;
         RowVersion = Guid.NewGuid().ToByteArray();
     }
 

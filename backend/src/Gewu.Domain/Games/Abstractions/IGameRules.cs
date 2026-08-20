@@ -282,6 +282,38 @@ public interface IPerSeatViewRules : IGameRules
 }
 
 /// <summary>
+/// **谁先走由规则决定**的棋种 —— 挖坑是第一个。
+/// <para>
+/// 内核的默认是 0 号座位,而那对到目前为止的每一个棋种都成立:五子棋 / 一字棋 / 象棋 / 成语接龙
+/// 的先手是**约定**(谁坐 0 号谁先),斗地主的叫分从 0 号起也只是约定。挖坑不是:
+/// **持最小 ♣ 的人首叫且首出**,而那是发牌决定的,是规则的一部分。而且它必须**每局轮换** ——
+/// 把发牌旋转成"最小 ♣ 总在 0 号"在统计上等价、在体验上不等价:那样同一个人每一局都先叫。
+/// </para>
+/// <para>
+/// 从 <see cref="IGameRules"/> 分出来,理由与 <see cref="IDealtGameRules"/> /
+/// <see cref="IPerSeatViewRules"/> 相同:留在基接口上,五个现有棋种就得各写一个骗人的实现,
+/// 而**骗人的实现是下一个人删不掉的东西**。
+/// </para>
+/// </summary>
+public interface IFirstSeatRules : IGameRules
+{
+    /// <summary>
+    /// 本局谁先走。开局那一刻调用,此时 <paramref name="state"/> 的走子历史是空的,
+    /// 唯一有内容的是设置(发牌)。
+    /// <para>
+    /// 返回值 MUST 落在 <c>[0, SeatCount)</c> 内 —— 否则这一局**谁都动不了**,而那是一种
+    /// 几十秒后才由超时兜底暴露出来的坏。内核会校验并抛
+    /// <c>InvalidFirstSeatException</c>,而不是把它存下来。
+    /// </para>
+    /// <para>
+    /// 它 MUST 是纯函数:同一份设置给出同一个座位。重放靠这一点。
+    /// </para>
+    /// </summary>
+    /// <param name="state">规则知道的关于这一局的一切;开局时只有设置。</param>
+    int FirstSeat(MatchState state);
+}
+
+/// <summary>
 /// 按棋种键解析 <see cref="IGameRules"/>。未注册的键返回 <c>null</c>,
 /// 由 handler 映射成 404 —— 与 <c>IPuzzleRulesRegistry</c> 同一形状,
 /// 平台上"按游戏键解析实现"只该有一种写法。

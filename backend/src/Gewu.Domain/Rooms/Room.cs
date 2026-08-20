@@ -252,8 +252,21 @@ public sealed class Room
                     $"'{rules.GameKey}' has no setup, but one was supplied.");
             }
 
+            // 谁先走:规则说了算,而默认仍是 0 号座位。**两个方向都钉住了** ——
+            // 忽略规则的实现会让挖坑每局都从 0 号开叫,而把它当成必选会让五个现有棋种
+            // 全部需要一个骗人的实现。
+            var firstSeat = rules is IFirstSeatRules firstSeatRules
+                ? firstSeatRules.FirstSeat(new MatchState(setup, []))
+                : Game.FirstSeat;
+            if (firstSeat < 0 || firstSeat >= rules.SeatCount)
+            {
+                throw new InvalidFirstSeatException(
+                    $"'{rules.GameKey}' asked to start at seat {firstSeat}, "
+                    + $"which is outside [0, {rules.SeatCount}).");
+            }
+
             TransitionStatus(RoomStatus.Playing);
-            Game = new Game(Id, now, setup);
+            Game = new Game(Id, now, setup, firstSeat);
         }
     }
 
