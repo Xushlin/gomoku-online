@@ -24,8 +24,13 @@
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       <span class="text-sm font-semibold">{{ 'cards.phase.' + v.phase | transloco }}</span>
       @if (v.roleSeat !== null) {
+        <!-- **叫分阶段它不是「挖坑者 / 地主」,是「当前最高叫分」。** `roleSeat` 在有人叫过
+             一次分的那一刻就非空,而叫分结束前谁都可能被压过去 —— 用同一个词说两件事,
+             屏幕上就会出现「叫分中」与「挖坑者:1 号座位」并排。 -->
         <span class="ddz-muted">{{
-          config().i18nPrefix + '.role-seat' | transloco: { seat: v.roleSeat + 1 }
+          (v.phase === 'Bidding'
+            ? 'cards.table.high-bid-seat'
+            : config().i18nPrefix + '.role-seat') | transloco: { seat: v.roleSeat + 1 }
         }}</span>
         <span class="ddz-muted tabular-nums">{{
           'cards.table.base-score' | transloco: { score: v.bid }
@@ -78,7 +83,7 @@
                 other.username || ('cards.table.seat' | transloco: { seat: other.seat + 1 })
               }}</span>
               @if (other.hasRole) {
-                <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ config().i18nPrefix + '.role' | transloco }}</span>
+                <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ (view()?.phase === 'Bidding' ? 'cards.table.high-bid' : config().i18nPrefix + '.role') | transloco }}</span>
               }
             </div>
             <span class="ddz-muted text-center text-xs tabular-nums">{{
@@ -159,7 +164,9 @@
               </span>
             }
           </div>
-        } @else {
+        } @else if (v.phase === 'Playing') {
+          <!-- **只在出牌阶段说。** 叫分阶段桌上当然没有要压的牌,那句「自由出牌」既是废话
+               又误导 —— 用户在挖坑的叫分界面上看到过它。 -->
           <p class="ddz-free-lead ddz-muted self-center rounded-lg border border-dashed px-3 py-2 text-sm">{{ 'cards.table.free-lead' | transloco }}</p>
         }
       </div>
@@ -180,7 +187,7 @@
             me.username || ('cards.table.seat' | transloco: { seat: me.seat + 1 })
           }}</span>
           @if (me.hasRole) {
-            <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ config().i18nPrefix + '.role' | transloco }}</span>
+            <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ (view()?.phase === 'Bidding' ? 'cards.table.high-bid' : config().i18nPrefix + '.role') | transloco }}</span>
           }
           <span class="ddz-muted text-xs tabular-nums">{{
             'cards.table.my-hand' | transloco: { count: me.count }

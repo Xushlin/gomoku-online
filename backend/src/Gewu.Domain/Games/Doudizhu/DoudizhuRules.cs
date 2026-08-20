@@ -200,9 +200,13 @@ public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbac
             ? Card.Encode(table.HandOf(s))
             : string.Empty;
 
-        // 底牌:定下地主之后才公开。叫分阶段它 MUST 为 null —— 那时它还没被翻开,
+        // 底牌:**叫分结束之后**才公开。叫分阶段它 MUST 为 null —— 那时它还没被翻开,
         // 而它恰恰决定了谁值得抢地主,所以早给一步就是给了不该有的信息。
-        var kitty = table.Landlord is null ? null : Card.Encode(table.Kitty);
+        //
+        // **这里此前写的是 `table.Landlord is null`,而那是一条真泄漏** —— `Landlord` 在有人
+        // 叫过一次分的那一刻就非空(它是「当前最高叫分者」)。挖坑那边的同一行被用户在屏幕上
+        // 抓到,而这一行是同一个缺陷:**两个牌类棋种各写了一遍,所以各错了一遍。**
+        var kitty = table.Phase == DoudizhuPhase.Bidding ? null : Card.Encode(table.Kitty);
 
         var view = new DoudizhuSeatView(
             Phase: table.Phase.ToString(),

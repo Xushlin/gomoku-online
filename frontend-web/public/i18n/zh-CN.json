@@ -141,7 +141,7 @@
     "create-room": {
       "dialog-title": "创建新房间",
       "name-label": "房间名",
-      "name-placeholder": "我的五子棋房",
+      "name-placeholder": "我的{{game}}房",
       "submit": "创建",
       "submit-loading": "创建中…",
       "cancel": "取消",
@@ -621,7 +621,9 @@
       "my-hand-label": "我的手牌,点一下选中",
       "waiting-for-deal": "等待发牌…",
       "hidden-hand": "{{count}} 张暗牌",
-      "kitty-hidden": "底牌,还没翻开"
+      "kitty-hidden": "底牌,还没翻开",
+      "high-bid-seat": "最高叫分:{{seat}} 号座位",
+      "high-bid": "最高"
     },
     "action": {
       "play": "出牌({{count}})",

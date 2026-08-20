@@ -24,7 +24,7 @@ class StubRoomsApi {
   );
 }
 
-function mount() {
+function mount(gameKey = 'gomoku') {
   const rooms = new StubRoomsApi();
   const dialogRef = { close: vi.fn() };
   TestBed.resetTestingModule();
@@ -42,7 +42,7 @@ function mount() {
       provideHttpClientTesting(),
       { provide: RoomsApiService, useValue: rooms },
       { provide: DialogRef, useValue: dialogRef },
-      { provide: LOBBY_GAME_KEY, useValue: 'gomoku' },
+      { provide: LOBBY_GAME_KEY, useValue: gameKey },
     ],
   });
   const fixture = TestBed.createComponent(CreateRoomDialog);
@@ -51,6 +51,50 @@ function mount() {
 }
 
 describe('CreateRoomDialog', () => {
+  it('the name placeholder names the game of THIS lobby, not a fixed one', () => {
+    // **它此前写死成「我的五子棋房」** —— 大厅泛化之后 `/g/:gameKey/lobby` 是一个棋种的大厅,
+    // 于是在挖坑的大厅里那句话点名了另一个棋种。用户在屏幕上看见的。
+    //
+    // **而没有任何测试断言过那句文案,这正是它活下来的原因** —— 规格只列了键名,不列内容。
+    //
+    // 这条**自带翻译**:共享的 mount 用的是空 `langs`,那样两个棋种渲染出来是同一个键,
+    // 断言不出插值有没有发生。要验的正是插值。
+    const withTranslations = (gameKey: string): string => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [
+          CreateRoomDialog,
+          TranslocoTestingModule.forRoot({
+            langs: {
+              en: {
+                lobby: { 'create-room': { 'name-placeholder': 'My {{game}} room' } },
+                games: { wakeng: { title: 'Wakeng' }, gomoku: { title: 'Gomoku' } },
+              },
+            },
+            translocoConfig: { availableLangs: ['en'], defaultLang: 'en' },
+            preloadLangs: true,
+          }),
+        ],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: RoomsApiService, useValue: new StubRoomsApi() },
+          { provide: DialogRef, useValue: { close: vi.fn() } },
+          { provide: LOBBY_GAME_KEY, useValue: gameKey },
+        ],
+      });
+      const f = TestBed.createComponent(CreateRoomDialog);
+      f.detectChanges();
+      return (f.nativeElement.querySelector('input') as HTMLInputElement).placeholder;
+    };
+
+    expect(withTranslations('wakeng')).toBe('My Wakeng room');
+    // 关键的负向:挖坑的大厅里 MUST NOT 出现五子棋。
+    expect(withTranslations('wakeng')).not.toContain('Gomoku');
+    // 正面对照:五子棋的大厅里它当然还该说五子棋。
+    expect(withTranslations('gomoku')).toBe('My Gomoku room');
+  });
+
   beforeEach(() => TestBed.resetTestingModule());
 
   it('submit with valid name calls create() + closes with result', () => {

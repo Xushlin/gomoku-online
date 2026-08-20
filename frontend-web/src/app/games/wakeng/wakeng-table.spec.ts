@@ -183,6 +183,51 @@ describe('WakengTable', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="first-bidder"]')).toBeNull();
   });
 
+  it('during the bidding the leading seat is the high bid, not the digger', () => {
+    // **用户在屏幕上抓到的第三处**:阶段写着「叫分」,旁边并排写着「挖坑者:1 号座位」。
+    // `roleSeat` 在有人叫过一次分的那一刻就非空 —— 那时它是「当前最高叫分」,
+    // 而叫分结束前谁都可能被压过去。**用同一个词说两件事,屏幕上就会自相矛盾。**
+    const bidding = mount(WAKENG_TABLE);
+    bidding.componentInstance.state.set(
+      room(seatView({ phase: 'Bidding', digger: 0, bid: 1, bidsMade: 1 })),
+    );
+    bidding.detectChanges();
+
+    const text = (bidding.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('cards.table.high-bid');
+    expect(text).not.toContain('cards.wakeng.role');
+  });
+
+  it('once the bidding is over the same seat is the digger', () => {
+    // 正面对照 —— 少了它,一个永远说「最高叫分」的实现在上一条下也是绿的。
+    const playing = mount(WAKENG_TABLE);
+    playing.componentInstance.state.set(
+      room(seatView({ phase: 'Playing', digger: 0, bid: 1, bidsMade: 3 })),
+    );
+    playing.detectChanges();
+
+    const text = (playing.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('cards.wakeng.role');
+    expect(text).not.toContain('cards.table.high-bid');
+  });
+
+  it('does not offer a free lead while the bidding is still going', () => {
+    // 叫分阶段桌上当然没有要压的牌 —— 那句「自由出牌」既是废话又误导。
+    const bidding = mount(WAKENG_TABLE);
+    bidding.componentInstance.state.set(room(seatView({ phase: 'Bidding' })));
+    bidding.detectChanges();
+    expect((bidding.nativeElement as HTMLElement).textContent ?? '')
+      .not.toContain('cards.table.free-lead');
+
+    const playing = mount(WAKENG_TABLE);
+    playing.componentInstance.state.set(
+      room(seatView({ phase: 'Playing', digger: 0, bid: 1, bidsMade: 3 })),
+    );
+    playing.detectChanges();
+    expect((playing.nativeElement as HTMLElement).textContent ?? '')
+      .toContain('cards.table.free-lead');
+  });
+
   it('says 挖 rather than 叫 on the bid buttons', () => {
     const fixture = mount(WAKENG_TABLE);
 
