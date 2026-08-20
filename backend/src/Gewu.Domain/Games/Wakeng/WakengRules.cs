@@ -263,7 +263,11 @@ public sealed class WakengRules
             Kitty: kitty,
             TableSeat: table.CurrentSeat,
             TableCards: table.Current is null ? null : Card.Encode(table.CurrentCards),
-            Winner: table.Winner);
+            Winner: table.Winner,
+            // 「假如此刻轮到你,你出得起吗」—— 与「是不是轮到你」无关,见 WakengSeatView。
+            // 不占座位的人恒为 false:他没有手牌,也不该拿到一个关于别人手牌的答案。
+            CanFollow: seat is int s2 && s2 >= 0 && s2 < SeatCount
+                && WakengFollows.CanFollow(table.HandOf(s2), table.Current));
 
         return JsonSerializer.Serialize(view, ViewJson);
     }

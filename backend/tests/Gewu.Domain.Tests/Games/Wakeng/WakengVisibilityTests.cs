@@ -161,6 +161,46 @@ public class WakengVisibilityTests
     }
 
     [Fact]
+    public void CanFollow_answers_hand_versus_table_and_not_whose_turn_it_is()
+    {
+        // **定义写死在这里,因为一个「有时是 false 只因为还没轮到你」的字段会让客户端
+        // 在错的时候自动过牌。** `ViewFor` 收的 `MatchState` 里根本没有当前回合。
+        var state = Dealt();
+        var table = WakengTable.Reconstruct(state);
+
+        for (var seat = 0; seat < WakengDeal.SeatCount; seat++)
+        {
+            var expected = WakengFollows.CanFollow(table.HandOf(seat), table.Current);
+            View(state, seat).GetProperty("canFollow").GetBoolean().Should().Be(
+                expected, $"seat {seat} 的答案只由「手牌 × 桌面」决定");
+        }
+    }
+
+    [Fact]
+    public void Free_lead_means_everyone_can_follow()
+    {
+        // 桌面为空时一张单牌永远合法,所以只要手里还有牌它就是 true。
+        var state = Dealt();
+
+        WakengTable.Reconstruct(state).Current.Should().BeNull("前提:这时桌面是空的");
+        for (var seat = 0; seat < WakengDeal.SeatCount; seat++)
+        {
+            View(state, seat).GetProperty("canFollow").GetBoolean().Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public void Someone_with_no_seat_can_never_follow()
+    {
+        // 围观者没有手牌,也不该拿到一个关于别人手牌的答案 —— 恒 false,而不是「看某一家的」。
+        foreach (int? seat in new int?[] { null, -1, 3, 99 })
+        {
+            View(Dealt(), seat).GetProperty("canFollow").GetBoolean().Should().BeFalse(
+                $"seat {seat} 不占座位");
+        }
+    }
+
+    [Fact]
     public void The_view_does_not_publish_the_base_score()
     {
         // 基数今天恒等于 1,而那不是这一局的*状态*,是一个还不存在的房间设置。

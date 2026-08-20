@@ -89,6 +89,17 @@ export class CardTable {
   /** 一次动作的文本载荷。父组件转给 hub。 */
   readonly action = output<CardAction>();
 
+  /**
+   * 候选出法 —— 父组件按需从 `GET /api/rooms/:id/hints` 拉来的那一份,已解成牌。
+   *
+   * **牌桌自己不算它。** 牌型识别与压牌比大小是这一局唯一的判据,而它在服务端;
+   * 客户端再写一遍就是一份会悄悄分叉的第二真源。这里只是把服务端给的东西点起来。
+   */
+  readonly hints = input<readonly (readonly PlayingCard[])[]>([]);
+
+  /** 请父组件去拉一次候选 —— 点提示按钮时发。 */
+  readonly hintRequested = output<void>();
+
   /** 叫分的四个选项。3 分是上限 —— 两个棋种都是(`MaxBaseScore` / `MaxBid`)。 */
   protected readonly bids = [0, 1, 2, 3] as const;
 
@@ -98,6 +109,15 @@ export class CardTable {
   );
 
   private readonly selected = signal<ReadonlySet<string>>(new Set());
+
+  /**
+   * 提示轮换到第几手。
+   *
+   * 它**不随 `hints` 自动归零**,而是由 `hint()` 自己推进 —— 一个 effect 在这里会与
+   * 「点一次提示」竞争:候选到达时归零,而那一刻用户可能已经点了第二次。
+   * 取模让越界的光标自己绕回来,所以不需要那个 effect。
+   */
+  private readonly hintCursor = signal(0);
 
   protected readonly view = computed<CardTableView | null>(() =>
     this.config().parseView(this.state()?.game?.seatView),
@@ -242,6 +262,25 @@ export class CardTable {
     const next = new Set(this.selected());
     if (!next.delete(card.code)) next.add(card.code);
     this.selected.set(next);
+  }
+
+  /**
+   * 提示 —— 把候选里的下一手点起来。
+   *
+   * 第一次点先请父组件去拉(`hintRequested`),拉到之后 `hints` 变化会把光标归零;
+   * 再点就是下一手,到末尾回到开头。**选中的就是牌桌本来的选中态**,所以点完可以直接按
+   * 「出牌」,也可以手工再改 —— 提示是一个建议,不是一次代打。
+   */
+  protected hint(): void {
+    if (this.actionsDisabled()) return;
+    const options = this.hints();
+    if (options.length === 0) {
+      this.hintRequested.emit();
+      return;
+    }
+    const index = this.hintCursor() % options.length;
+    this.hintCursor.set(index + 1);
+    this.selected.set(new Set(options[index].map((c) => c.code)));
   }
 
   protected bid(points: number): void {

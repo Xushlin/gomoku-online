@@ -1,14 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type {
-  BotDifficulty,
-  BotSide,
-  GameEndedDto,
-  GameReplayDto,
-  RoomState,
-  RoomSummary,
-} from './models/room.model';
+import type { BotDifficulty, BotSide, GameEndedDto, GameReplayDto, PlayHints, RoomState, RoomSummary } from './models/room.model';
 
 /**
  * Room reads and writes.
@@ -42,10 +35,22 @@ export abstract class RoomsApiService {
   abstract spectate(roomId: string): Observable<void>;
   abstract resign(roomId: string): Observable<GameEndedDto>;
   abstract getReplay(roomId: string): Observable<GameReplayDto>;
+
+  /**
+   * 我现在能出哪些牌 —— 提示按钮用它。
+   *
+   * **按需,不进 `RoomState` 广播**:候选可能有几十项,而广播里带的只是一个布尔
+   * `seatView.canFollow`。服务端只回答**调用者自己**的那一份 —— 候选由这个座位的手牌决定。
+   */
+  abstract getHints(roomId: string): Observable<PlayHints>;
 }
 
 @Injectable({ providedIn: 'root' })
 export class DefaultRoomsApiService extends RoomsApiService {
+  getHints(roomId: string): Observable<PlayHints> {
+    return this.http.get<PlayHints>(`/api/rooms/${roomId}/hints`);
+  }
+
   private readonly http = inject(HttpClient);
 
   list(gameKey: string): Observable<readonly RoomSummary[]> {

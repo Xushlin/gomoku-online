@@ -206,3 +206,14 @@ export interface RoomState {
   readonly chatMessages: readonly ChatMessage[];
   readonly createdAt: string;
 }
+
+/**
+ * 候选出法 —— `GET /api/rooms/:id/hints`,提示按钮用它。
+ *
+ * 每一项是一串**牌的编码**(与 `play:<cards>` 里那一段同一个格式),按**先弱后强**排。
+ * 空列表的含义是「你要不起」,而它与 `seatView.canFollow === false` 是**同一个事实的两个
+ * 出口** —— 服务端有一条断言把它们钉在一起。
+ */
+export interface PlayHints {
+  readonly plays: readonly string[];
+}

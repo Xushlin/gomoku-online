@@ -113,6 +113,7 @@ class StubHub implements GameHubService {
 
 class StubRoomsApi {
   getById = vi.fn(() => of(makeRoomState()));
+  getHints = vi.fn(() => of({ plays: [] as readonly string[] }));
   leave = vi.fn(() => of(undefined));
   dissolve = vi.fn(() => of(undefined));
   resign = vi.fn(() =>
@@ -192,6 +193,76 @@ function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS
 
 describe('RoomPage', () => {
   beforeEach(() => TestBed.resetTestingModule());
+
+  /** 一个挖坑房间:轮到我(0 号座位)、桌上有牌,而 `canFollow` 由参数决定。 */
+  function wakengRoom(canFollow: boolean): RoomState {
+    const base = makeRoomState();
+    return {
+      ...base,
+      gameKey: 'wakeng',
+      seats: [
+        { index: 0, player: { id: 'u-1', username: 'alice' } },
+        { index: 1, player: { id: 'u-2', username: 'bob' } },
+        { index: 2, player: { id: 'u-3', username: 'carol' } },
+      ],
+      game: {
+        ...base.game!,
+        currentSeat: 0,
+        seatView: JSON.stringify({
+          phase: 'Playing',
+          firstBidder: 0,
+          firstBidderCard: 'A',
+          digger: 0,
+          bid: 1,
+          bidsMade: 3,
+          myHand: 'A',
+          handCounts: [1, 1, 1],
+          kitty: 'BCDE',
+          tableSeat: 1,
+          tableCards: 'z',
+          winner: null,
+          canFollow,
+        }),
+      },
+    } as RoomState;
+  }
+
+  it('auto-passes when the server says this hand cannot follow', () => {
+    // **判据是服务端算的 `canFollow`,不是客户端自己推的** —— 后者是这一局唯一判据的
+    // 第二个副本,而它错了的表现是「明明能出,系统替我过了」。
+    const { hub, fixture } = mount();
+    hub.state.set(wakengRoom(false));
+    fixture.detectChanges();
+
+    expect(hub.sayWord).toHaveBeenCalledWith('r-1', 'pass');
+  });
+
+  it('does not auto-pass when the hand can follow', () => {
+    // **负向必须钉住**,否则一个「永远替你过牌」的实现在上一条下也是绿的 ——
+    // 而它的后果是玩家永远出不了牌。
+    const { hub, fixture } = mount();
+    hub.state.set(wakengRoom(true));
+    fixture.detectChanges();
+
+    expect(hub.sayWord).not.toHaveBeenCalled();
+  });
+
+  it('auto-passes at most once per turn', async () => {
+    // 同一个回合里快照可能刷新多次(聊天、观众进出)。一个每次都发的实现会连发好几手 `pass`。
+    //
+    // **两次之间必须 await,而这是变异测试逼出来的。** 第一版是同步的两次 `detectChanges`,
+    // 而那样第二次是被 `submittingMove` 挡住的 —— 于是把哨兵整行删掉,测试**照样是绿的**:
+    // 它测的是另一个守卫。让那个 promise 落地之后,哨兵才是唯一挡着的东西。
+    const { hub, fixture } = mount();
+    hub.state.set(wakengRoom(false));
+    fixture.detectChanges();
+    await Promise.resolve();
+    await Promise.resolve();
+    hub.state.set({ ...wakengRoom(false), chatMessages: [] });
+    fixture.detectChanges();
+
+    expect(hub.sayWord).toHaveBeenCalledTimes(1);
+  });
 
   it('on init: fetches room and joins hub', async () => {
     const { hub, rooms } = mount();

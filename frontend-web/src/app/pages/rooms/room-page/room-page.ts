@@ -22,6 +22,7 @@ import { DOUDIZHU_TABLE } from '../../../games/doudizhu/seat-view';
 import { WAKENG_KEY } from '../../../games/wakeng/game-key';
 import { WAKENG_TABLE } from '../../../games/wakeng/seat-view';
 import { moveKind } from '../../../games/cards/trick';
+import { decodeHand, type PlayingCard } from '../../../games/cards/cards';
 
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
@@ -147,6 +148,17 @@ export class RoomPage implements OnInit, OnDestroy {
 
   protected readonly isWakeng = computed(() => this.state()?.gameKey === WAKENG_KEY);
 
+  /** 服务端给的候选出法,已解成牌 —— 提示按钮点一次拉一次。 */
+  protected readonly hints = signal<readonly (readonly PlayingCard[])[]>([]);
+
+  /**
+   * 上一次自动过牌是在第几手之后 —— 哨兵,防止同一个回合发两次 `pass`。
+   *
+   * 用「走了多少手」而不是一个布尔:一个布尔要在「轮到别人」时被清掉,而那需要另一个
+   * effect 去清;手数是单调的,比一次就够。`add-card-sounds` 里那个发牌哨兵是同一个形状。
+   */
+  private autoPassedAfter = -1;
+
   /**
    * 牌类棋种走**同一个**牌桌组件,只是配置不同 —— 所以这个 `@if` 分支**不因挖坑增加一支**。
    *
@@ -208,6 +220,12 @@ export class RoomPage implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
+      // **要不起就替他过牌。** 判据是服务端算的 —— 见 `autoPassIfHopeless`。
+      // 挂在 effect 上而不是某个事件回调上,是因为它要在**每一次快照变化**之后重问一遍:
+      // 别人出了一手更大的牌之后,同一手手牌的答案会变。
+      this.autoPassIfHopeless();
+    });
+    effect(() => {
       const ended = this.hub.gameEnded();
       if (!ended) return;
       if (!this.gameEndedDialogOpen) this.openGameEndedDialog(ended);
@@ -268,6 +286,53 @@ export class RoomPage implements OnInit, OnDestroy {
    * Every other game plays `move-place`, 成语接龙 included — that event means "a
    * move landed", and what it sounds like is the pack's business.
    */
+  /**
+   * 点了提示 —— 去服务端要一份候选。
+   *
+   * **客户端不自己枚举。** 牌型识别与压牌比大小是这一局唯一的判据,而它在服务端;
+   * 客户端算一遍就是一份会悄悄分叉的第二真源,而分叉在玩家眼里是「这游戏有 bug」。
+   */
+  /**
+   * **要不起就替他过牌。**
+   *
+   * 判据是服务端算的 `seatView.canFollow` —— 客户端**不自己判**「我压不压得住」,
+   * 那是这一局唯一判据的第二个副本。这里只是照服务端算出来的事实行动。
+   *
+   * 发出去的是一手**真的** `pass`:进走子历史、别人看得见「不要」、走与真人完全相同的路径。
+   * MUST NOT 是「跳过这个座位」——「连续两家过牌清桌」数的就是 `pass`。
+   *
+   * 三个前提缺一不可:轮到他、桌上有牌(首出不许过牌)、而服务端说他要不起。
+   * `canFollow` 在自由首出时恒为 true,所以那一格本来也不会命中。
+   */
+  private autoPassIfHopeless(): void {
+    const room = this.state();
+    const table = this.cardTable();
+    if (!room || !table || this.submittingMove()) return;
+    if (room.status !== 'Playing') return;
+
+    const seat = this.mySeat();
+    if (seat === null || room.game?.currentSeat !== seat) return;
+
+    const view = table.parseView(room.game?.seatView);
+    if (!view || view.phase !== 'Playing' || view.tableCards === null) return;
+    if (view.canFollow) return;
+
+    const played = room.game?.moves.length ?? 0;
+    if (this.autoPassedAfter === played) return;
+    this.autoPassedAfter = played;
+    this.handleTextMove('pass');
+  }
+
+  protected requestHints(): void {
+    const room = this.state();
+    if (!room) return;
+    this.rooms.getHints(room.id).subscribe({
+      next: (h) => this.hints.set(h.plays.map((p) => decodeHand(p))),
+      // 提示是一个可有可无的便利 —— 拉不到就是没有提示,不是一条错误路径。
+      error: () => this.hints.set([]),
+    });
+  }
+
   private moveSound(moves: readonly MoveDto[]): SoundEventName {
     if (this.isXiangqi()) return lastMoveCaptured(moves) ? 'capture' : 'move-place';
     // 斗地主的**出牌**有自己的声音,而**叫分与不要**留在 `move-place` 上 ——

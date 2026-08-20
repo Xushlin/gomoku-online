@@ -91,6 +91,8 @@ export function toTableView(raw: string | null | undefined): CardTableView | nul
     tableCards: v.tableCards,
     winner: v.winner,
     firstBidder: null,
+    // 斗地主还没有「要不起自动过牌」—— `false` 在这里是「没有这个信号」。
+    canFollow: false,
   };
 }
 

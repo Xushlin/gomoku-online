@@ -39,6 +39,23 @@ namespace Gewu.Domain.Games.Wakeng;
 /// <param name="TableSeat">桌上那一手是谁打的;自由首出时 <c>null</c>。</param>
 /// <param name="TableCards">桌上那一手的牌;自由首出时 <c>null</c>。</param>
 /// <param name="Winner">赢家座位号;还没结束时 <c>null</c>。</param>
+/// <param name="CanFollow">
+/// **假如此刻轮到你,你出得起吗** —— 亦即 <see cref="WakengFollows.For"/> 非空。
+/// <para>
+/// <b>它刻意与「是不是轮到你」无关。</b> 这是一个「手牌 × 桌面」的事实,而
+/// <c>ViewFor</c> 收的 <c>MatchState</c> 里根本没有当前回合(那在 <c>Game.CurrentTurn</c> 上)。
+/// 一个「有时是 false 只因为还没轮到你」的字段,会让客户端在错的时候自动过牌 ——
+/// 所以定义写死在这里:**它只回答手牌压不压得住桌面**,轮次由客户端自己合。
+/// </para>
+/// <para>
+/// 桌面为空(自由首出)时它恒为 <c>true</c>:只要手里还有牌,一张单牌永远是合法牌型。
+/// 叫分阶段它没有意义 —— 客户端只在出牌阶段、且桌上有牌时读它。
+/// </para>
+/// <para>
+/// **它是一个布尔而不是一个列表**,而那是刻意的:候选出法可能有几十项,每次广播都带着它
+/// 是「一个没人渲染但所有人付钱的切片」。列表走按需的 <c>GET /api/rooms/{id}/hints</c>。
+/// </para>
+/// </param>
 public sealed record WakengSeatView(
     string Phase,
     int FirstBidder,
@@ -51,4 +68,5 @@ public sealed record WakengSeatView(
     string? Kitty,
     int? TableSeat,
     string? TableCards,
-    int? Winner);
+    int? Winner,
+    bool CanFollow);

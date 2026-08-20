@@ -84,6 +84,8 @@
           <app-card-table
             [state]="room"
             [config]="table"
+            [hints]="hints()"
+            (hintRequested)="requestHints()"
             [mySeat]="mySeat()"
             [submitting]="submittingMove()"
             (action)="handleTextMove($event)"
