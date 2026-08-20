@@ -141,7 +141,7 @@
     "create-room": {
       "dialog-title": "Create a new room",
       "name-label": "Room name",
-      "name-placeholder": "My gomoku room",
+      "name-placeholder": "My {{game}} room",
       "submit": "Create",
       "submit-loading": "Creating…",
       "cancel": "Cancel",
@@ -621,7 +621,9 @@
       "my-hand-label": "My hand; tap to select",
       "waiting-for-deal": "Waiting for the deal…",
       "hidden-hand": "{{count}} cards face down",
-      "kitty-hidden": "Kitty, not yet revealed"
+      "kitty-hidden": "Kitty, not yet revealed",
+      "high-bid-seat": "High bid: seat {{seat}}",
+      "high-bid": "High"
     },
     "action": {
       "play": "Play ({{count}})",

@@ -240,9 +240,16 @@ public sealed class WakengRules
             ? Card.Encode(table.HandOf(s))
             : string.Empty;
 
-        // 底牌:定下挖坑者之后才公开。叫分阶段它 MUST 为 null —— 那时它还没被翻开,
+        // 底牌:**叫分结束之后**才公开。叫分阶段它 MUST 为 null —— 那时它还没被翻开,
         // 而它恰恰决定了这一局值不值得挖。
-        var kitty = table.Digger is null ? null : Card.Encode(table.Kitty);
+        //
+        // **这里此前写的是 `table.Digger is null`,而那是一条真泄漏。** `Digger` 在**有人叫过
+        // 一次分**的那一刻就非空 —— 它的含义是「当前最高叫分者」,不是「已经定下的挖坑者」。
+        // 于是首家一叫,四张底牌就对**所有人**公开了,而后面两家正是靠看不见它才要下判断。
+        // 用户在屏幕上抓到的:阶段还是「叫分」,而底牌四张全亮。
+        //
+        // 判据只能是**阶段**:`WakengTable` 只在叫分真正结束时才把 Phase 推出 Bidding。
+        var kitty = table.Phase == WakengPhase.Bidding ? null : Card.Encode(table.Kitty);
 
         var view = new WakengSeatView(
             Phase: table.Phase.ToString(),

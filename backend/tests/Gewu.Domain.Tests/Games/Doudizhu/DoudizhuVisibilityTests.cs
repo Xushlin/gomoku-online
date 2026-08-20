@@ -122,6 +122,32 @@ public class DoudizhuVisibilityTests
     }
 
     [Fact]
+    public void The_kitty_stays_hidden_while_someone_has_bid_but_the_bidding_is_not_over()
+    {
+        // **上面那条测试有一个盲点,而它与挖坑那条一模一样。** 它用「一步都没走」验隐藏、
+        // 用 `bid:3` 验公开 —— 而 `bid:3` **立刻**结束叫分,所以「有人叫过分、但叫分还没结束」
+        // 那一格从来没有被走到。
+        //
+        // 而 `ViewFor` 当时的判据是 `Landlord is null`,`Landlord` 在有人叫过一次分的那一刻
+        // 就非空(它是「当前最高叫分者」)。于是首家叫 1 分,三张底牌就对所有人公开了。
+        //
+        // 这个缺陷是在挖坑的界面上被用户抓到的 —— 而**两个牌类棋种各写了一遍那一行,
+        // 所以各错了一遍**。
+        var state = Dealt("bid:1");
+
+        DoudizhuTable.Reconstruct(state).Landlord.Should().NotBeNull(
+            "前提:这一步之后确实有一个「当前最高叫分者」");
+        DoudizhuTable.Reconstruct(state).Phase.Should().Be(
+            DoudizhuPhase.Bidding, "而叫分还没结束");
+
+        foreach (int? seat in new int?[] { null, 0, 1, 2 })
+        {
+            View(state, seat).GetProperty("kitty").ValueKind.Should().Be(
+                JsonValueKind.Null, $"seat {seat} MUST NOT 在叫分未结束时看到底牌");
+        }
+    }
+
+    [Fact]
     public void The_hand_on_the_table_is_public_together_with_who_played_it()
     {
         var state = Dealt("bid:3");

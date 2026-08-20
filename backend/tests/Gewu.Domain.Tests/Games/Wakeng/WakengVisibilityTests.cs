@@ -108,6 +108,30 @@ public class WakengVisibilityTests
     }
 
     [Fact]
+    public void The_kitty_stays_hidden_while_someone_has_bid_but_the_bidding_is_not_over()
+    {
+        // **这一条是用户在屏幕上抓到的那个缺陷的可执行形式。**
+        //
+        // 上面那条「叫分阶段底牌为 null」用的是**一步都没走**的局面,于是 `Digger` 本来就是
+        // null —— 它一直因为**别的理由**通过。而 `ViewFor` 当时的判据是 `Digger is null`,
+        // 而 `Digger` 在**有人叫过一次分**的那一刻就非空(它的含义是「当前最高叫分者」)。
+        //
+        // 于是首家一叫,四张底牌就对所有人公开了 —— 而后面两家正是靠看不见它才要下判断。
+        var state = Dealt("bid:1");
+
+        WakengTable.Reconstruct(state).Digger.Should().NotBeNull(
+            "前提:这一步之后确实有一个「当前最高叫分者」,否则这条断言什么都不验");
+        WakengTable.Reconstruct(state).Phase.Should().Be(
+            WakengPhase.Bidding, "而叫分还没结束");
+
+        foreach (int? seat in new int?[] { null, 0, 1, 2 })
+        {
+            View(state, seat).GetProperty("kitty").ValueKind.Should().Be(
+                JsonValueKind.Null, $"seat {seat} MUST NOT 在叫分未结束时看到底牌");
+        }
+    }
+
+    [Fact]
     public void The_kitty_is_public_to_everyone_once_the_digger_is_decided()
     {
         var state = Dealt("bid:3");

@@ -21,7 +21,10 @@
         type="text"
         autocomplete="off"
         formControlName="name"
-        [placeholder]="'lobby.create-room.name-placeholder' | transloco"
+        [placeholder]="
+          'lobby.create-room.name-placeholder'
+            | transloco: { game: gameTitleKey | transloco }
+        "
         class="bg-bg text-text border-border rounded-card border px-3 py-2"
       />
       @let nameCtrl = form.controls.name;
