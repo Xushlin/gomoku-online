@@ -237,5 +237,12 @@ public static class BuiltInGameRules
     /// </summary>
     /// <param name="idioms">成语词典 —— 成语接龙的规则需要它。</param>
     public static IReadOnlyList<IGameRules> All(IIdiomLexicon idioms) =>
-        [Gomoku, TicTacToe, Xiangqi, new IdiomChain.IdiomChainRules(idioms), new Doudizhu.DoudizhuRules()];
+    [
+        Gomoku,
+        TicTacToe,
+        Xiangqi,
+        new IdiomChain.IdiomChainRules(idioms),
+        new Doudizhu.DoudizhuRules(),
+        new Wakeng.WakengRules(),
+    ];
 }

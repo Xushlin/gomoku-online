@@ -137,33 +137,15 @@ public readonly record struct DoudizhuMove
 
         if (text.StartsWith(PlayPrefix, StringComparison.Ordinal))
         {
-            IReadOnlyList<Card> cards;
-            try
-            {
-                cards = Card.DecodeMany(text[PlayPrefix.Length..]);
-            }
-            catch (FormatException e)
-            {
-                // **这个 catch 是一条真缺陷的修复,不是防御性编程。**
-                //
-                // `Card.DecodeMany` 对"不认识的字符"和"同一张牌出现两次"都抛 `FormatException`,
-                // 而那不是 `DomainException` —— 于是一个畸形的客户端载荷(`play:!!!`、`play:AA`)
-                // 会以未映射异常冒出去,变成 500,而不是一个有错误码的拒绝。
-                // 客户端因此看到"服务器出错了",而实际上是它自己发错了。
-                throw new InvalidMoveException($"'{text}' does not name a legal set of cards.", e);
-            }
-
-            if (cards.Count == 0)
-            {
-                throw new InvalidMoveException("A play must name at least one card.");
-            }
-
-            // **这里此前还有一条"同一张牌不能出现两次"的检查,而它是死代码。**
-            // `Card.DecodeMany` 早就在拦这件事(它自己的注释就写着"早在这里拦下,规则层就不必
-            // 再想这手牌是不是自己重复了")。这与 add-doudizhu-cards 里 `WingsAreLegal` 是同一个
-            // 缺陷:一个看起来承重的检查,前面已经有人把路堵上了。发现它的方式也一样 ——
-            // 为它写的那条测试拿到的是 `FormatException`。
-            return Playing(cards);
+            // 解牌与"畸形的牌是一次领域拒绝"这条映射在 `CardPlay` 里,与挖坑共用 —— 见那个类的
+            // 说明。此前这里是一段 `try/catch`,而那个 `catch` 是一条真缺陷的修复
+            // (`play:!!!` 会以 `FormatException` 冒出去变成 500);挖坑要写第二个解析器,
+            // 而**一个需要被记得的 catch 会在第三个解析器那里被忘掉**。
+            //
+            // **这里此前还有一条"同一张牌不能出现两次"的检查,而它是死代码** ——
+            // `Card.DecodeMany` 早就在拦这件事。与 add-doudizhu-cards 里 `WingsAreLegal`
+            // 是同一个缺陷,发现方式也一样:为它写的那条测试拿到的是 `FormatException`。
+            return Playing(CardPlay.Decode(text[PlayPrefix.Length..], text));
         }
 
         throw new InvalidMoveException($"'{text}' is not a doudizhu move.");

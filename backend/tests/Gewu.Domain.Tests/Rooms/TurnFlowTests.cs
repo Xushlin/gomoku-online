@@ -262,17 +262,20 @@ public class TurnFlowTests
     }
 
     [Fact]
-    public void Exactly_one_built_in_game_falls_back_on_timeout()
+    public void Exactly_two_built_in_games_fall_back_on_timeout()
     {
-        // 这一条此前是"还没有棋种实现它",注释里写着斗地主落地那天改成"恰好一个"。照办。
+        // 它按预告红了第二次,而该问的问题是"这两个棋种的超时真是同一种东西吗"。是,而
+        // **理由比『都是牌类』窄**:两者的座位数都是 3,所以"判他负、对手胜"里的"对手"都不唯一;
+        // 而两者的兜底动作都能推进,因为**牌只会变少**。这两条与花色、大小、牌型全都无关 ——
+        // 一个三座位的非牌类棋种会落进同一条。
         //
-        // **"恰好一个"比"至少一个"有牙**:第二个棋种要兜底的那天它会红,而那正是该问
-        // "这两个棋种的超时真是同一种东西吗"的时刻 —— 两个座位下判负仍然是清楚且唯一的答案。
+        // 一处差别记下来,因为它是这两个实现唯一不同的地方:斗地主三家都不叫是**流局**,
+        // 兜底三次就终局;挖坑三家都不挖是**第一家兜底 1 倍**,叫分结束后对局继续,所以它的
+        // "推进"要靠出牌阶段每次让一张牌离开某只手。**同一条要求,两条不同的终止论证。**
         var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
 
-        BuiltInGameRules.All(lexicon).Where(r => r is ITimeoutFallbackRules)
-            .Should().ContainSingle()
-            .Which.GameKey.Should().Be(GameKeys.Doudizhu);
+        BuiltInGameRules.All(lexicon).Where(r => r is ITimeoutFallbackRules).Select(r => r.GameKey)
+            .Should().BeEquivalentTo([GameKeys.Doudizhu, GameKeys.Wakeng]);
     }
 
     // ---- TurnTimeoutOutcome 的不变量 ------------------------------------

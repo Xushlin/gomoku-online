@@ -160,17 +160,35 @@ public class GameSetupMigrationTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Exactly_one_built_in_game_can_produce_a_non_null_setup()
+    public async Task Exactly_two_built_in_games_can_produce_a_non_null_setup()
     {
-        // 上面那条演的是后果;这一条盯的是**范围**。今天只有斗地主会写非 NULL 的 Setup,
-        // 所以那笔"加一个带守卫的新迁移"的账只涉及一个棋种。第二个棋种要设置的那天这条会红 ——
-        // 那时这笔账变大,该重新估。
+        // 上面那条演的是后果;这一条盯的是**范围**。它此前说"今天只有斗地主会写非 NULL 的
+        // Setup,所以那笔『加一个带守卫的新迁移』的账只涉及一个棋种",并预告"第二个棋种要设置
+        // 的那天这条会红 —— 那时这笔账变大,该重新估"。挖坑落地了,它红了,这里是重新估的结果。
+        //
+        // **重估的结论是:那句话把账算错了 —— 这笔账从来不是按棋种算的。**
+        // 要修就是**一个**新迁移,给那一列的 Down 加守卫;它守的是**列**,不是游戏,所以
+        // 一个棋种和五个棋种的修复成本一模一样。棋种数量真正跟踪的是**暴露面**(有多少行可能
+        // 被毁),而暴露面只在"有人在乎的数据存在"之后才有价值。
+        //
+        // 而那件事没有变:本仓库没有部署、没有生产库,本地那份 SQLite 随时可删。所以
+        // **结论不变、理由换了** —— 不是"账小所以先欠着",是"这笔钱现在买不到任何东西"。
+        //
+        // 这条断言的用途因此也变了:它不再是"账有多大"的度量,而是**一个带守卫的迁移得把
+        // 哪些棋种的数据搬回来**的清单。第三个棋种要设置的那天它还会红,而那时要看的是
+        // "有没有部署",不是"几个棋种"。
+        await Task.CompletedTask;
+
         var lexicon = new Gewu.Domain.Idioms.InMemoryIdiomLexicon(["一心一意"]);
 
         Gewu.Domain.Games.NInARow.BuiltInGameRules.All(lexicon)
             .Where(r => r is Gewu.Domain.Games.Abstractions.IDealtGameRules)
-            .Should().ContainSingle()
-            .Which.GameKey.Should().Be(Gewu.Domain.Games.Abstractions.GameKeys.Doudizhu);
+            .Select(r => r.GameKey)
+            .Should().BeEquivalentTo(
+            [
+                Gewu.Domain.Games.Abstractions.GameKeys.Doudizhu,
+                Gewu.Domain.Games.Abstractions.GameKeys.Wakeng,
+            ]);
     }
 
     public async ValueTask DisposeAsync()

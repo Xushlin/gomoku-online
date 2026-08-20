@@ -314,12 +314,16 @@ var waiting = humanRoom.IsSuccessStatusCode
 // 两人棋种在这里是 Waiting 是因为"还差一个",而这里是"还差两个",同一段代码不同的数。
 Assert(waiting?.Status == "Waiting", "a one-player three-seat room stays Waiting");
 Assert(waiting?.GameKey == "doudizhu", "and the room remembers which game it is");
-// **这两条钉的是一笔已经到期的债,不是一个正确的形状。** `SeatWire` 在 add-room-seats 里
-// 把座位号翻成 'Black'/'White' 只到 DTO 边界,它自己的文档写了触发条件:第一个
-// `SeatCount != 2` 的棋种落地。它落地了 —— 于是这份契约描述不了这个房间:三号座位在
-// 这个 DTO 里**没有位置**,坐满之后 `White` 仍然只是二号座位。
-// add-doudizhu-visibility 付这笔账(DTO 加座位字段,`SeatWire` 删除);在那之前,把
-// "今天它长什么样"断言下来,好过让下一个人以为这形状是对的。
+// **这两条钉的仍是一笔债,而这段注释此前把它记错了。** 它写的是「add-doudizhu-visibility
+// 付这笔账(DTO 加座位字段,`SeatWire` 删除)」—— `SeatWire` 确实删了
+// (generalize-match-contract),`RoomStateDto.Seats` 也确实有了(add-doudizhu-visibility),
+// 而这两条断言**照样是绿的**。原因是它们看的是另一个 DTO:
+//
+// **`RoomSummaryDto`(大厅列表用的那个)至今只有 `Black` / `White`,没有座位列表。**
+// 于是三座位房间的第三个人在**大厅的房间行里**不出现 —— 与 add-doudizhu-table-visuals 在
+// 侧栏修掉的是同一个缺陷的**第三处**。触发条件:add-web-wakeng 要给一个三座位棋种画大厅。
+//
+// 在那之前,把"今天它长什么样"断言下来,好过让下一个人以为这形状是对的。
 //
 // 写成 `waiting is { White: null }` 而不是 `waiting?.White is null`:后者在 `waiting` 本身
 // 为 null 时**空转通过** —— 上面那次变异跑里,它是建房失败之后唯一还绿着的断言。
@@ -335,6 +339,43 @@ var botRoom = await http.PostAsJsonAsync("/api/rooms/ai", new
 // 400,不是 201。这条路径此前对成语接龙返回过 201,而 65 秒后那个调用方白拿了 +46 分。
 Assert((int)botRoom.StatusCode == 400,
     $"POST /api/rooms/ai doudizhu -> 400 (was {(int)botRoom.StatusCode})");
+
+Console.WriteLine("=== 10. 挖坑 —— 第九个棋种,先手由发牌决定 ===");
+// 与斗地主同一组四条描述符事实 + 两条建房事实。**两半都量**,因为
+// enforce-human-vs-human 与 enforce-ai-availability 的成因都是从一半推另一半。
+var wakeng = descriptors.SingleOrDefault(g => g.GameKey == "wakeng");
+Assert(wakeng is not null, "wakeng is published in the descriptor list");
+Assert(wakeng?.SupportsHumanVsHuman == true, "wakeng is open to human play");
+// ELO 是两人模型,而挖坑按分结算 —— 与斗地主同一条结构性理由。
+Assert(wakeng?.IsRated == false, "wakeng is unrated, structurally (points, not ELO)");
+// 一个能算牌的机器人在没有炸弹、跟牌必须同型同张的牌型下强得离谱 —— 所以没有 AI,
+// 而那不需要任何新代码:不在 BuiltInGameAis.All 里就够了。
+Assert(wakeng?.SupportsAi == false, "wakeng has no AI");
+Assert(wakeng is { Rows: null, Cols: null }, "wakeng reports no board");
+
+var wakengRoom = await http.PostAsJsonAsync("/api/rooms", new
+{
+    name = "wakeng smoke",
+    gameKey = "wakeng",
+});
+Assert((int)wakengRoom.StatusCode == 201,
+    $"POST /api/rooms wakeng -> 201 (was {(int)wakengRoom.StatusCode})");
+// 只在 2xx 时解析 —— 400 的正文是 ProblemDetails,解析它会抛,而那会让后面的断言一条都不报。
+var wakengWaiting = wakengRoom.IsSuccessStatusCode
+    ? await wakengRoom.Content.ReadFromJsonAsync<RoomSummary>()
+    : null;
+// `is { Status: ... }` 而不是 `?.Status ==`:后者在建房失败时空转通过。
+Assert(wakengWaiting is { Status: "Waiting" }, "a one-player three-seat wakeng room stays Waiting");
+Assert(wakengWaiting?.GameKey == "wakeng", "and the room remembers which game it is");
+
+var wakengBotRoom = await http.PostAsJsonAsync("/api/rooms/ai", new
+{
+    name = "wakeng bot smoke",
+    difficulty = "Easy",
+    gameKey = "wakeng",
+});
+Assert((int)wakengBotRoom.StatusCode == 400,
+    $"POST /api/rooms/ai wakeng -> 400 (was {(int)wakengBotRoom.StatusCode})");
 
 await hub.DisposeAsync();
 

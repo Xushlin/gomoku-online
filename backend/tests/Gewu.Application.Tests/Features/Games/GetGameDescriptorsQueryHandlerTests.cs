@@ -104,21 +104,26 @@ public class GetGameDescriptorsQueryHandlerTests
     }
 
     [Fact]
-    public async Task The_unrated_games_are_tictactoe_and_doudizhu()
+    public async Task The_unrated_games_are_tictactoe_doudizhu_and_wakeng()
     {
-        // 此前这条是"一字棋是唯一不计分的对战棋种"。斗地主加入了那一侧,而**两者不计分的
-        // 理由不同**,值得分开写下来:
+        // 此前这条是"一字棋是唯一不计分的对战棋种",再之前是"一字棋与斗地主"。名单在变,而
+        // **每一次变的都是理由,不是数量** —— 三个棋种不计分,理由有两种:
         //
         // - 一字棋:没有人人对战,唯一的对手是机器人,而机器人对局是计分的 —— 那种阶梯排出来的
-        //   是"谁刷弱档刷得多"。
-        // - 斗地主:ELO 是两人模型,而它按分结算 —— 一个按分的阶梯是另一条榜。
+        //   是"谁刷弱档刷得多"。这是一处**判断**。
+        // - 斗地主 / 挖坑:ELO 是两人模型,而它们按分结算 —— 一个按分的阶梯是另一条榜。
+        //   这是**结构性**的,而它也让 `IsRated ⇒ SeatCount == 2` 不需要开例外。
         //
         // 这条断言仍然在守同一件事:不计分那一侧非空,所以那几条"两类都要出现过"的遍历断言
         // 不会退化成单边空转。
+        //
+        // **这一条是本变更里唯一没被预告的红灯。** 另外五条走查都在自己的注释里写了"挖坑落地
+        // 那天这条会红";这一条只是一份写死的名单,没有预告 —— 它被那句"全库搜一遍别的硬编码
+        // 棋种计数"的收尾任务翻出来,而不是被它自己的注释翻出来。
         var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
 
         items.Where(i => !i.IsRated).Select(i => i.GameKey)
-            .Should().BeEquivalentTo([GameKeys.TicTacToe, GameKeys.Doudizhu]);
+            .Should().BeEquivalentTo([GameKeys.TicTacToe, GameKeys.Doudizhu, GameKeys.Wakeng]);
     }
 
     [Fact]
