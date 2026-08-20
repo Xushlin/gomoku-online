@@ -524,7 +524,7 @@ Not yet done — platform roadmap:
 
 
 
-Next game: **挖坑 (wakeng)**, a three-handed 52-card game from the same family as 斗地主 — and the first one whose rules were supplied by the user as a URL rather than by me. Rules of record (jj.cn 的官方帮助页,读到的原文):**一副牌 52 张、去掉大小王;3 人;每人 16 张 + 4 张底牌;3 > 2 > A > K > … > 4;跟牌必须同型同张数;单 / 对 / 三头 / 四头 / 顺子(3 张起)/ 连对(3 对起)/ 连三头(飞机,3 组起)/ 连四头(火箭,3 组起);计分 叫分 × 基数,挖坑者 ×2**。
+Next game: **挖坑 (wakeng)** — 规则已经落地(`hoist-card-model` / `add-wakeng-cards` / `add-wakeng`),**只差 UI**,与 `add-doudizhu` 到 `add-web-doudizhu` 之间是同一个状态。它是第一个规则由用户以 URL 给出、而不是由我拟的棋种。 Rules of record (jj.cn 的官方帮助页,读到的原文):**一副牌 52 张、去掉大小王;3 人;每人 16 张 + 4 张底牌;3 > 2 > A > K > … > 4;跟牌必须同型同张数;单 / 对 / 三头 / 四头 / 顺子(3 张起)/ 连对(3 对起)/ 连三头(飞机,3 组起)/ 连四头(火箭,3 组起);计分 叫分 × 基数,挖坑者 ×2**。
 
 它与斗地主的差别不是「多几个牌型」,而是**几乎每一条都不同**:3 最大而不是王最大、**没有炸弹**、三条四条**不能带牌**、2 和 3 不能进顺子。所以它复用的是 `Card`(编码、花色、点数)与洗牌,而**大小与牌型是一整套自己的** —— 这与「一字棋复用 `NInARowRules`」是相反的一端:同一个家族里,牌可以共享,规则不行。
 
@@ -567,7 +567,35 @@ Next game: **挖坑 (wakeng)**, a three-handed 52-card game from the same family
 
   还有一次踩坑值得留着:测试 helper 里 `Parse("2c")` 写成 `(CardRank)int.Parse("2")`,而 `CardRank.Two` 的值是 **15** —— 那个枚举的数值是编码顺序。我在上一条 change 里刚写下这句话,几分钟后自己踩了进去。那个 helper 现在有一句 `Enum.IsDefined`:**它不是防御性编程,它是那次踩坑的可执行形式。**
 
-  1357 后端测试绿(新增 45)。**下一步是 `add-wakeng`** —— 规则接内核,验收标准同 `add-doudizhu`:`Rooms/` 零改动,而那两条「恰好一个」的注册表走查会红,按它们自己的注释改成「恰好两个」。
+  1357 后端测试绿(新增 45)。
+- [x] **`add-wakeng`** — 挖坑的**规则接内核**。后端;没有 UI。**验收标准继承 `add-doudizhu` 并成立:`Gewu.Domain/Rooms/` 零改动**,`Games/Abstractions/` 只多一行 `GameKeys` 常量,五个现有棋种一行不动,DI 一行不动(它从 `BuiltInGameRules.All` 派生)。`WakengThroughRoomTests` 用真 `Room` 打一整局真挖坑。
+
+  **它是 `generalize-match-kickoff` 那个 seam 的第一个真实现** —— 先手由**发牌**决定,而不是「谁坐 0 号」。斗地主证明了三个座位、隐藏信息、规则指名下一手能过同一个聚合;这一条加上「开局那一刻由发牌决定谁先动」。量到的:三个真账号坐满一个房间,`currentSeat == firstBidder == **2**`。**那个「不是 0」是这条证据的全部** —— 内核的默认值就是 0,所以首叫者恰好是 0 的那一局什么也证明不了。同一条前提在两处单测里是显式断言的,不是碰运气。
+
+  **首出权归首叫者,不归挖坑者** —— 与斗地主相反(那边地主先出),而这是原文的话(「首叫权和首出权」)。两条叫分结束路径都**显式**指名那个座位,因为三家各叫一次时自然轮转恰好也落在他身上,而那是 **3 个座位 × 3 次叫分的巧合**;有人叫 3 时它会给错人。变异验过:改用自然轮转 7 条红。
+
+  **三家都不挖时首叫者兜底 1 倍,于是挖坑没有流局。** 斗地主在同一条路径上是和局。这一条不是靠一个例子钉的,而是**穷举**:三家每一种合法叫分组合都走一遍,`GameResult.Draw` 一次都不出现 —— 一个照抄斗地主流局分支的实现在那里 9 条红。
+
+  **`WakengMove` 是另一个类型,而不是复用 `DoudizhuMove`。** 两者语法一模一样 —— 而它们**产出不同的字符串、喂给不同的规则**,没有一段代码同时读两者:共享的只有形状。**形状相同不等于事实相同**,而「它们可以分歧」(挖坑哪天要 `bid:4`,斗地主一行不动)正是这条的检验。`Card` 当初必须提出去是因为挖坑**真的在用同一批值**(同样 52 张、同样的字母表、同一个 `DecodeMany`),那是一个事实;这不是。同一条判据 `hoist-card-model` 拒绝把 `TetrisPieceSequence` 并进 `CardShuffle` 时刚用过。
+
+  唯一真正必要的那一小块提成了 `Games/Cards/CardPlay`:「畸形的牌是一次领域拒绝而不是 `FormatException`」。它修的是一条**量过的**缺陷(`play:!!!` 以未映射异常冒出去变成 **500**,客户端看到「服务器出错了」而实际是它自己发错了),而**一个需要被记得的 `catch` 会在第三个解析器那里被忘掉**。它 MUST 留在 move 层、MUST NOT 下沉到 `Card.DecodeMany` —— 两个 `Deal.Decode` 也调它,而它们**要的正是** `FormatException`:一份坏掉的发牌是**损坏的记录**,不是一步非法的棋。两个调用方要两种异常,所以映射只能在上面这一层,而这一条有测试(两个游戏各走一遍,加一条阳性对照)。
+
+  **一条真缺陷,而它是「一个只被一个实现验证过的巧合」的第二次咬人。** 超时兜底照抄斗地主写成 `HandOf(seat)[0]`,注释还写着「手牌按大小升序」。手牌按 `Card` 的自然序排,而那是**编码**顺序(3、4、…、K、A、2)—— 恰好就是斗地主的大小顺序。挖坑是 `3 > 2 > A > … > 4`,于是**手上有 3 的时候 `[0]` 是最强那张**:托管会替人把最好的牌打掉。`hoist-card-model` 刚修过 `CardRank` 那句「数值就是大小顺序」,同一个巧合在**上面一层**又成立了一次。那条断言**带前提**:那手牌里必须有 3 或 2,否则编码序的第一张恰好也是最弱的,而两种实现给出同一个答案。变异验过:1 条红,而它是唯一那条。
+
+  **六条走查按它们自己的注释改,第七条没有预告。** 前六条都在注释里写着「挖坑落地那天这条会红」;`The_unrated_games_are_tictactoe_and_doudizhu` 只是一份写死的名单,是收尾任务里那句「全库搜一遍别的硬编码棋种计数」翻出来的。**一份没有预告的名单,和一份有预告的名单,过期时长得一样;区别只在谁会去找它。**
+
+  `GameSetupMigrationTests` 那条要求「第二个棋种要设置的那天……这笔账变大,该重新估」。重估的结论是**那句话把账算错了**:要修就是**一个**新迁移,它守的是那一**列**,不是游戏 —— 一个棋种和五个棋种的修复成本一模一样。棋种数量跟踪的是**暴露面**,而暴露面在没有部署时买不到任何东西。**结论不变、理由换了**,而那条断言的用途也变了:它不再度量账有多大,而是一份「带守卫的迁移得把哪些棋种的数据搬回来」的清单。
+
+  **一条从来没有被实现过的 Scenario,本仓库同一个缺陷的第四次。** `game-rules-registry` 自 `add-doudizhu-visibility` 起就写着「恰好一个内置棋种实现 `IPerSeatViewRules`」,而 `backend/tests/` 下**一次都没有出现过这个接口名** —— 用阳性对照量的(同样的搜法必须搜得到 `IDealtGameRules`,它在四个文件里)。它的两个邻居各有一条真断言,所以它读起来像也有。前三次是 `web-board-skins` 抄的 11 个变量名、`web-shell` 数 sound pack 的那条、`web-idiom-chain` 的 375 px 断言。**一条没有实现的 Scenario 与一条错的 Scenario 在归档时长得一模一样**,而 `openspec validate --strict` 两者都放行。
+
+  **一个量出来的坑,留给下一个做变异测试的人:恢复步骤会骗过编译器。** `shutil.copy2` 保留 mtime,于是恢复后的源文件比 `obj/` 里的产物**更旧**,MSBuild 的增量判断认为无事发生 —— `dotnet build` 报 **0 errors、什么也没编**,接着的 `--no-build` 测的是**变异体**。它表现成两条测试莫名变红。这一次红的恰好是一眼能认出的那两条,三分钟就查到了;**一个更隐蔽的变异会长得像一个真缺陷**。与本文件已记的「`--no-build` 会跑磁盘上碰巧存在的那份二进制」同族,而更阴:**一次成功而什么都没做的构建,和一次真的构建,长得一模一样。** 两条只杀一条测试的变异因此带强制重编重量了一遍,结果不变。
+
+  验证:**1439** 后端测试绿(新增 82)、827 前端测试绿、七处变异全红且恢复后工作树逐字节校验一致。真 HTTP:`AiSmoke` **45** 条全过(新增步骤 10;退出码是**不经管道**测的 —— 一个管道会吃掉你想量的那个退出码)。三个真账号 + 一个围观者:手牌 16/16/16、两两交集 **0/0/0**、并集 **48**(另 4 张在底牌里,叫分阶段谁都看不见)、围观者手牌为空而公开计数在、房间 DTO 里搜不到 `setup`。三条真 SignalR 长轮询连接:`SayWord` 载着 `bid:3` 与 `play:E` 走通,挖坑者 16 → **20** 且底牌 `RTrv` 转为公开,另一家看到 `[16,20,16]` 而**一张都没看到**;`MakeMove(7,7)` 与「出一张不在手上的牌」都回 `invalid-move`。
+
+  **下一步是 `add-web-wakeng`** —— 牌桌组件大概能复用(底牌 4 张而不是 3 张),而它会撞上上面记的那笔大厅列表的债。挖坑因此仍然**不算「ship」**:与 `add-doudizhu` 到 `add-web-doudizhu` 之间是同一个状态,八个棋种的数字不变。
+
+  顺带记下三笔:`IGameRules.SeatCount` 的注释「现有实现全部为 2」自 `add-doudizhu` 起就是假的(改掉了);`WakengScoring.Settle` 与 `DoudizhuScoring.Settle` 一样**仍然没有生产调用方**,触发条件不变(平台需要一条**点数榜**的那天);以及 **`RoomSummaryDto`(大厅列表用的那个)至今只有 `Black` / `White`,没有座位列表**,所以三座位房间的第三个人在**大厅的房间行里**不出现 —— 与 `add-doudizhu-table-visuals` 在侧栏修掉的是同一个缺陷的**第三处**,触发条件是 `add-web-wakeng` 要给一个三座位棋种画大厅。AiSmoke 里那段声称这笔债已经付掉的注释也一并改对了:`SeatWire` 确实删了、`RoomStateDto.Seats` 确实有了,而那两条断言**照样是绿的**,因为它们看的是另一个 DTO。
+
 
 Discipline: **do not start a new game until the previous one is archived.** Eight games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished. And the rule is narrower than the failure it needs to prevent: `enable-xiangqi-human-play` was not a game, so nothing stopped it sitting unarchived for 36 commits with the live spec contradicting the code. **A merged PR whose change directory is still in `openspec/changes/` is the signal** — check that list, because strict validation will not.
 
