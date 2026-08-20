@@ -450,13 +450,18 @@ public interface IDealtGameRules : IGameRules
 
 返回的字符串对内核完全不透明,但**规则读得到它**(`MatchState.Setup`)—— 见 `IGameRules.Apply`。
 
-#### Scenario: 恰好一个内置棋种实现它
+#### Scenario: 恰好两个内置棋种实现它
 - **WHEN** 遍历 `BuiltInGameRules.All(lexicon)`
-- **THEN** 恰好一个实现 `IDealtGameRules`,且它的 `GameKey == "doudizhu"`
+- **THEN** 恰好两个实现 `IDealtGameRules`,它们的 `GameKey` 恰好是 `{"doudizhu", "wakeng"}`
 
-  这一条此前是"没有一个实现它" —— 那时它钉的是"`add-match-setup` 没有偷偷改动任何现有棋种"。
-  现在它钉的是斗地主是**唯一**需要秘密开局的棋种:再多一个的那天,这条会红,而那正是该问
-  "这两个棋种的设置真是同一种东西吗"的时刻。
+  这一条走过两级:先是"没有一个实现它"(`add-match-setup` 钉的是"没有偷偷改动现有棋种"),
+  再是"恰好一个"(斗地主)。它按自己的预告红了第二次,而**那个时刻要问的问题被真的问了**:
+  这两个棋种的设置是同一种东西吗?是 —— 两者都是"一副洗好的牌",都由一个种子确定,都
+  MUST NOT 出服务端。**这个 seam 因此第一次被一个不同的游戏验证过**,而不只是被第二个
+  实现填满:挖坑的牌是 52 张无王、16/16/16 + 4,与斗地主的 54 张、17/17/17 + 3 没有一处
+  共用的常量。
+
+  「恰好」的牙没有拔掉:第三个的那天它还会红。
 
 #### Scenario: 同一个种子给出同一份设置
 - **WHEN** 对同一个实现两次调 `CreateSetup(20260819)`
@@ -501,13 +506,18 @@ public interface ITimeoutFallbackRules : IGameRules
 > `MatchState` 那两段取新的,"恰好一个实现"与斗地主的兜底形式取本变更的。
 > **按合并顺序归档是必要的,不是充分的。**
 
-#### Scenario: 恰好一个内置棋种实现它
+#### Scenario: 恰好两个内置棋种实现它
 - **WHEN** 遍历 `BuiltInGameRules.All(lexicon)`
-- **THEN** 恰好一个实现 `ITimeoutFallbackRules`,且它的 `GameKey == "doudizhu"`
+- **THEN** 恰好两个实现 `ITimeoutFallbackRules`,它们的 `GameKey` 恰好是 `{"doudizhu", "wakeng"}`
 
-  这一条此前是"没有一个实现它" —— `generalize-turn-flow` 加接缝时钉的是"没有偷偷改动现有棋种"。
-  斗地主落地那天它按预告变红,改成"恰好一个":第二个要兜底的棋种出现时它会再红一次,而那正是
-  该问"这两个棋种的超时真是同一种东西吗"的时刻。
+  它按预告红了第二次,而该问的问题是"这两个棋种的超时真是同一种东西吗"。是,而**理由比
+  '都是牌类'窄**:两者的座位数都是 3,所以"判他负、对手胜"里的"对手"都不唯一;而两者的兜底
+  动作都能推进,因为**牌只会变少**。这两条与花色、大小、牌型全都无关 —— 一个三座位的非牌类
+  棋种会落进同一条。
+
+  一处差别写下来,因为它是这两个实现唯一不同的地方:斗地主三家都不叫是**流局**,兜底三次就
+  终局;挖坑三家都不挖是**第一家兜底 1 倍**,叫分阶段结束后对局继续,所以它的"推进"要靠出牌
+  阶段每次让一张牌离开某只手。**同一条要求,两条不同的终止论证。**
 
 #### Scenario: 兜底看得到对局设置
 - **WHEN** 一个实现设置的棋种超时,规则的 `MoveOnTimeout` 被调用
@@ -579,9 +589,22 @@ public interface IPerSeatViewRules : IGameRules
 
 **实现 MUST NOT 泄漏别人的隐藏状态**,而这条 MUST 有一条**逐项比对**的断言,MUST NOT 只断言"我看得到我自己的":后者在一个把三家手牌都塞进去的实现上同样是绿的。
 
-#### Scenario: 恰好一个内置棋种实现它
+#### Scenario: 恰好两个内置棋种实现它
 - **WHEN** 遍历 `BuiltInGameRules.All(lexicon)`
-- **THEN** 恰好一个实现 `IPerSeatViewRules`,且它的 `GameKey == "doudizhu"`
+- **THEN** 恰好两个实现 `IPerSeatViewRules`,它们的 `GameKey` 恰好是 `{"doudizhu", "wakeng"}`
+
+  **这条 Scenario 在被改成"两个"之前从来没有被实现过。** `add-doudizhu-visibility` 写下了
+  "恰好一个实现 `IPerSeatViewRules`,且它的 `GameKey == \"doudizhu\"`",而
+  `backend/tests/` 下**一次都没有出现过 `IPerSeatViewRules` 这个词** —— 用一条阳性对照
+  (同样的搜法必须搜得到 `IDealtGameRules`)量过,不是读代码推出来的。它的两个邻居
+  (`IDealtGameRules` / `ITimeoutFallbackRules`)各有一条真断言,所以这一条读起来像也有。
+
+  这是本仓库同一个缺陷的第四次:`web-board-skins` 抄了 11 个变量名的 requirement、
+  `web-shell` 数 sound pack 的 Scenario、`web-idiom-chain` 的 375 px 断言,都是"写下来了、
+  没有实现"。**一条没有实现的 Scenario 与一条错的 Scenario 在归档时长得一模一样**,而
+  `openspec validate --strict` 两者都放行 —— 它验的是形状,从不验真假。
+
+  它现在有断言了,并且是变异验过的。
 
 #### Scenario: 没有隐藏信息的棋种不带私有切片
 - **WHEN** 为一个不实现本接口的棋种投影房间快照
