@@ -29,6 +29,7 @@ function sampleRoom(overrides: Partial<RoomSummary> = {}): RoomSummary {
     host: { id: 'u-1', username: 'alice' },
     black: { id: 'u-1', username: 'alice' },
     white: null,
+    seats: [{ index: 0, player: { id: 'u-1', username: 'alice' } }],
     spectatorCount: 0,
     createdAt: '2026-04-23T00:00:00Z',
     ...overrides,

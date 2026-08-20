@@ -114,20 +114,17 @@
       "status-waiting": "等待中",
       "status-playing": "对局中",
       "status-finished": "已结束",
-      "seat-black": "黑方",
-      "seat-white": "白方",
-      "seat-empty": "空位",
       "host": "房主",
-      "spectators": "观众"
+      "spectators": "观众",
+      "players": "玩家"
     },
     "my-rooms": {
       "title": "我的对局",
       "empty": "你目前没有进行中的对局。",
       "resume": "回到对局",
-      "you-are-black": "你执黑",
-      "you-are-white": "你执白",
       "you-are-spectator": "围观中",
-      "game-label": "棋种"
+      "game-label": "棋种",
+      "you-are-seated": "你在座"
     },
     "leaderboard": {
       "title": "排行榜",

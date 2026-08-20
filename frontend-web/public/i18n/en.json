@@ -114,20 +114,17 @@
       "status-waiting": "Waiting",
       "status-playing": "Playing",
       "status-finished": "Finished",
-      "seat-black": "Black",
-      "seat-white": "White",
-      "seat-empty": "open",
       "host": "Host",
-      "spectators": "Spectators"
+      "spectators": "Spectators",
+      "players": "Players"
     },
     "my-rooms": {
       "title": "My active rooms",
       "empty": "You have no games in progress.",
       "resume": "Resume",
-      "you-are-black": "You are Black",
-      "you-are-white": "You are White",
       "you-are-spectator": "Spectating",
-      "game-label": "Game"
+      "game-label": "Game",
+      "you-are-seated": "You are seated"
     },
     "leaderboard": {
       "title": "Top players",

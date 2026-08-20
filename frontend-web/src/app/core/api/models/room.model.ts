@@ -39,6 +39,16 @@ export interface RoomSummary {
   readonly host: UserSummary;
   readonly black: UserSummary | null;
   readonly white: UserSummary | null;
+  /**
+   * 全部**在座**的座位。见 {@link RoomSeat}。
+   *
+   * **它是这份摘要里唯一读得到第三个座位的地方**,而大厅列表读的正是这份摘要 ——
+   * 在它之前,三座位房间里 2 号座位上的人在大厅的房间行里根本不出现。
+   *
+   * 注意它是「坐上了几个」而不是「一共有几个」:一个等待中的三座位房间这里只有一项。
+   * 需要后者的地方要读棋种描述符,而 `GET /api/games` 今天不发那个数。
+   */
+  readonly seats: readonly RoomSeat[];
   readonly spectatorCount: number;
   readonly createdAt: string;
 }
