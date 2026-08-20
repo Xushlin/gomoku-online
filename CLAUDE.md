@@ -547,6 +547,28 @@ Next game: **挖坑 (wakeng)**, a three-handed 52-card game from the same family
 
   1304 后端测试绿(新增 10),**五个现有棋种一行不动**。
 
+- [x] **`hoist-card-model`** — 一张牌不属于任何一个棋种。`Card` 从 `Games/Doudizhu/` 搬到 `Games/Cards/`,洗牌提成 `CardShuffle`,新增 `Card.SuitedDeck`(52 张,`FullDeck` 的子集而不是另一份构造)。**行为零改动**,由斗地主既有的 `The_encoded_deal_is_pinned` 保证 —— 那条测试把一个种子发出的整副牌写死成一个字符串,搬家之后仍然绿,而那就是「一个字节都没变」的可执行形式。没有它,这次重构只能是「看起来等价」。
+
+  搬家的理由不是整洁:让挖坑 `using Gewu.Domain.Games.Doudizhu` 会让**一个棋种的命名空间成为另一个棋种的承重结构**,而下一个读代码的人有理由问「删掉斗地主会不会弄坏挖坑」。
+
+  **`TetrisPieceSequence` 刻意不动。** 洗牌提出来是因为挖坑会让 Fisher–Yates 加 xorshift32 变成第三份副本;但俄罗斯方块那一份的存在理由是**客户端必须用 TypeScript 实现同一个算法**,而那份 TS 已经与它逐项对齐过(三个整袋、21 个方块)。让它去依赖一个叫 `CardShuffle` 的东西,是把「方块序列」说成「洗牌」。**共享要按「是不是同一件事」分,而不是按「代码长得像不像」分。**
+
+  **一句只被一个实现验证过的注释,在第二个实现出现时才显出它是个巧合。** `CardRank` 的注释写的是「**数值就是大小顺序**,所以比大小是整数比较」—— 那只对斗地主成立。挖坑是 `3 > 2 > A > … > 4`,3 最大而不是最小。数值不能改(它是编码下标的来源,也就是持久化格式),所以改的是注释,并补了一条断言。
+
+- [x] **`add-wakeng-cards`** — 挖坑的纯逻辑:大小、八种牌型、压牌、发牌、首叫权、计分。照 `add-doudizhu-cards` 的形状,**`git status` 里没有一个 `M`,只有 `A`**。
+
+  **挖坑的牌型模型比斗地主简单得多,而那不是巧合:它没有带牌、也没有炸弹。** 于是每一手合法牌都是同一句话 —— **k 组等大的牌,k > 1 时点数连续**:k=1 得到单/对/三头/四头,k≥3 得到顺子/连对/飞机/火箭,而 **k=2 不是任何牌型**(那是「连牌 3 组起」的直接后果,不是特例)。一条规则覆盖八种;斗地主那边要单独处理三带一、四带二、飞机带翅膀,还要判「翅膀不能拆炸弹」。**同一个家族里,牌可以共享,规则不行** —— 而这次是规则更简单的那一边。
+
+  「强弱」与「连续位置」刻意是两个函数:它们在 4–K 上给出同一个数,合起来能省几行,但强弱覆盖 13 个点数、连续性只覆盖 10 个,合并会让「A 算第 11 位」这种错悄悄成立。
+
+  **变异八处,七处一次就红,一处活了下来 —— 而那一处是这次最值得留下的东西。** 「四头不是炸弹」那条测试**在四头真变成炸弹时照样是绿的**:去掉「同型」之后 `Beats` 还剩「同张数 + 更大」,而四头与它想压的东西**张数几乎从不相同**(4 对 3、4 对 2、4 对 1),于是每一条断言都因为**别的理由**通过。唯一能区分的形状是**同张数、不同牌型、而且压的那一手更大** —— `KKKK` 对 `4567`。**这是「断言的结论对、判据不对」的又一例**,而读那段测试的名字与断言,它看起来正是在说「四头不是炸弹」。
+
+  首叫权那三条断言也是这个形状的正面例子:「比它更小的每一张梅花都在底牌里」「三个座位都当过首叫」「200 个种子里多数首叫牌是 ♣4」—— **从大往小扫也能通过前两条,但过不了第三条**。
+
+  还有一次踩坑值得留着:测试 helper 里 `Parse("2c")` 写成 `(CardRank)int.Parse("2")`,而 `CardRank.Two` 的值是 **15** —— 那个枚举的数值是编码顺序。我在上一条 change 里刚写下这句话,几分钟后自己踩了进去。那个 helper 现在有一句 `Enum.IsDefined`:**它不是防御性编程,它是那次踩坑的可执行形式。**
+
+  1357 后端测试绿(新增 45)。**下一步是 `add-wakeng`** —— 规则接内核,验收标准同 `add-doudizhu`:`Rooms/` 零改动,而那两条「恰好一个」的注册表走查会红,按它们自己的注释改成「恰好两个」。
+
 Discipline: **do not start a new game until the previous one is archived.** Eight games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished. And the rule is narrower than the failure it needs to prevent: `enable-xiangqi-human-play` was not a game, so nothing stopped it sitting unarchived for 36 commits with the live spec contradicting the code. **A merged PR whose change directory is still in `openspec/changes/` is the signal** — check that list, because strict validation will not.
 
 Deferred follow-ups, each with a reason:
