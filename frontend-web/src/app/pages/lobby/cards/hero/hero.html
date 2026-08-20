@@ -1,7 +1,12 @@
 <section
   class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-2 border p-6 sm:flex-row sm:items-center sm:justify-between"
 >
-  <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">
+  <!-- **break-words 不是装饰。** 用户名上限是 20 个字符,而一个 20 字符的名字里没有一个
+       换行机会 —— 「Welcome, Caa11WWWWWWWWWWWWWWW!」在 375px 下是 335px 的文字挤在
+       293px 的盒子里,整页横向溢出 1px。它是**既有缺陷**,由 fix-lobby-seats 用最长用户名
+       铺数据时量到的;此前每一次 375px 检查用的都是 alice / bob。
+       与 guard-long-content-wrapping 修聊天面板与成语列表的是同一族。 -->
+  <h1 class="text-xl font-semibold tracking-tight break-words sm:text-2xl">
     {{
       'lobby.hero.welcome'
         | transloco: { username: auth.user()?.username ?? '' }

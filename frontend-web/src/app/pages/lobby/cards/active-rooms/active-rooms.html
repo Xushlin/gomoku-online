@@ -72,26 +72,17 @@
                   (click)="$event.stopPropagation()"
                 >{{ room.host.username }}</a>
                 <span>·</span>
-                <span>{{ 'lobby.rooms.seat-black' | transloco }}:</span>
-                @if (room.black; as black) {
+                <span>{{ 'lobby.rooms.players' | transloco }}:</span>
+                @for (seat of room.seats; track seat.index) {
+                  @if (!$first) {
+                    <span aria-hidden="true">·</span>
+                  }
                   <a
                     class="username-link"
-                    [routerLink]="['/users', black.id]"
+                    data-testid="room-player"
+                    [routerLink]="['/users', seat.player.id]"
                     (click)="$event.stopPropagation()"
-                  >{{ black.username }}</a>
-                } @else {
-                  <span>{{ 'lobby.rooms.seat-empty' | transloco }}</span>
-                }
-                <span>·</span>
-                <span>{{ 'lobby.rooms.seat-white' | transloco }}:</span>
-                @if (room.white; as white) {
-                  <a
-                    class="username-link"
-                    [routerLink]="['/users', white.id]"
-                    (click)="$event.stopPropagation()"
-                  >{{ white.username }}</a>
-                } @else {
-                  <span>{{ 'lobby.rooms.seat-empty' | transloco }}</span>
+                  >{{ seat.player.username }}</a>
                 }
                 <span>·</span>
                 <span>{{ 'lobby.rooms.spectators' | transloco }}: {{ room.spectatorCount }}</span>

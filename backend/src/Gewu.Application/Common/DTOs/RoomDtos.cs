@@ -78,6 +78,18 @@ public sealed record GameEndedDto(
 /// 该房间玩的是哪个棋种。客户端据此决定盘面尺寸等与棋种有关的呈现 ——
 /// 详见 <see cref="RoomStateDto"/> 上的说明。
 /// </param>
+/// <param name="Seats">
+/// 全部**在座**的座位,按 <c>Index</c>。
+/// <para>
+/// **它是这个 DTO 里唯一读得到第三个座位的地方。** <paramref name="Black"/> /
+/// <paramref name="White"/> 是 0 号与 1 号座位的派生读法,所以三座位房间里 2 号座位上的人
+/// 在这份摘要里此前**根本不出现** —— 而大厅列表读的正是这份摘要。
+/// </para>
+/// <para>
+/// 那两个字段**保留**,与 <see cref="RoomStateDto"/> 加 <c>Seats</c> 时的先例一致:
+/// 四个两座位棋种的每一个读者都还在用它们,而删它是另一个变更。
+/// </para>
+/// </param>
 public sealed record RoomSummaryDto(
     Guid Id,
     string Name,
@@ -86,6 +98,7 @@ public sealed record RoomSummaryDto(
     UserSummaryDto Host,
     UserSummaryDto? Black,
     UserSummaryDto? White,
+    IReadOnlyList<RoomSeatDto> Seats,
     int SpectatorCount,
     DateTime CreatedAt);
 

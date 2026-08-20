@@ -23,6 +23,10 @@ public static class RoomMapping
             Host: UserSummary(room.HostUserId, usernames),
             Black: UserSummary(room.BlackPlayerId, usernames),
             White: room.WhitePlayerId is null ? null : UserSummary(room.WhitePlayerId.Value, usernames),
+            Seats: room.Seats
+                .Select(seat => new RoomSeatDto(seat.Index, UserSummary(seat.UserId, usernames)))
+                .ToList()
+                .AsReadOnly(),
             SpectatorCount: room.Spectators.Count,
             CreatedAt: room.CreatedAt);
     }
