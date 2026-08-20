@@ -3,13 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Gewu.Domain.Games.Doudizhu;
+namespace Gewu.Domain.Games.Cards;
 
 /// <summary>
-/// 一张牌的点数。**数值就是大小顺序**,所以比大小是整数比较,不需要查表。
+/// 一张牌的点数。**数值是编码顺序,而不是任何一个棋种的大小顺序。**
 /// <para>
-/// 3 最小,然后一路到 A,再是 2,最后两张王。这个顺序是斗地主的,不是扑克的 ——
-/// 2 比 A 大,而 A 不能当 1 用(顺子里 A 是上界)。
+/// 3 最小,然后一路到 A,再是 2,最后两张王。它与**斗地主**的大小顺序恰好一致
+/// (2 比 A 大,A 不能当 1 用),所以斗地主比大小就是整数比较。
+/// </para>
+/// <para>
+/// **这段注释原来写的是「数值就是大小顺序」,而那句话只对当时唯一存在的那个棋种成立。**
+/// 挖坑的顺序是 <c>3 &gt; 2 &gt; A &gt; K &gt; … &gt; 4</c> —— 3 最大而不是最小,所以它 MUST
+/// 自己映一层,而 MUST NOT 直接拿这个数值比大小。数值不能改:它是
+/// <see cref="Card.Encode()"/> 的下标来源,也就是持久化格式的一部分。
 /// </para>
 /// </summary>
 public enum CardRank
@@ -55,7 +61,7 @@ public enum CardSuit
 /// <summary>
 /// 一张牌。
 /// <para>
-/// **它有一个一字符编码,而那个编码是持久化格式的一部分,永远不能变。** 一手牌最多 20 张,
+/// **它有一个一字符编码,而那个编码是持久化格式的一部分,永远不能变。** 斗地主一手牌最多 20 张,
 /// 而 <c>Move.Text</c> 的上限是 64 字符 —— 所以斗地主的出牌**用现有的文本载荷就装得下**,
 /// 不需要第四种载荷、也不需要为它加列。
 /// </para>
@@ -100,6 +106,16 @@ public readonly record struct Card(CardRank Rank, CardSuit Suit) : IComparable<C
 
     /// <summary>一副完整的 54 张牌,顺序固定(未洗)。</summary>
     public static IReadOnlyList<Card> FullDeck { get; } = BuildDeck();
+
+    /// <summary>
+    /// 52 张,**不含大小王**,顺序固定(未洗)—— 挖坑用的就是这一副。
+    /// <para>
+    /// 它是 <see cref="FullDeck"/> 去掉最后两张,而不是另建一份:一副牌就是一副牌,
+    /// 两份构造会给下一个人两个改的地方。
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<Card> SuitedDeck { get; } =
+        FullDeck.Where(c => !c.IsJoker).ToList();
 
     private static List<Card> BuildDeck()
     {

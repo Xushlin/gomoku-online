@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using FluentAssertions;
+using Gewu.Domain.Games.Cards;
 using Gewu.Domain.Games.Doudizhu;
 using Gewu.Domain.ValueObjects;
 

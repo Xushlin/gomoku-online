@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using Gewu.Domain.Games.Cards;
+
 namespace Gewu.Domain.Games.Doudizhu;
 
 /// <summary>一次发牌的结果:三家的手牌 + 三张底牌。</summary>
@@ -26,36 +28,12 @@ public readonly record struct DoudizhuDeal(
     /// <param name="seed">发牌种子。</param>
     public static DoudizhuDeal FromSeed(int seed)
     {
-        var deck = Card.FullDeck.ToArray();
+        var deck = Card.FullDeck.ToList();
 
-        // Fisher–Yates,从后往前 —— 与 TetrisPieceSequence 同一个洗法、同一个理由:
-        // **算法写死在这里,不用运行时的 RNG。** `System.Random` 的算法在 .NET 版本之间
-        // 变过,而这副牌必须在任何运行时上都发得一模一样,否则升级一次运行时,
-        // 所有历史对局的重放都会读出别的牌。
-        var state = unchecked((uint)seed);
-        if (state == 0)
-        {
-            // 状态 0 会让 xorshift 永远停在 0。
-            //
-            // **我先把这里的后果写错了。** 原注释说"那会退化成永远不洗" —— 不对:状态恒为 0
-            // 时每次的 `j` 都是 0,于是每一步都跟 0 号位交换,得到的是**一个与牌无关的固定置换**。
-            // 牌确实动了,54 张也还各一次,所以"没洗"那种一眼可见的症状不会出现。真正的后果是
-            // **熵全丢**:任何落到零状态的种子发出的是同一副牌。
-            //
-            // 这个区别是变异测试指出来的:把这行改成 `state = 0`,我原本那条断言
-            // (第一手不等于牌堆前 17 张)照样绿。现在钉的是那条精确的性质 ——
-            // `FromSeed(0)` 必须与直接给出这个常数的种子发出同一副牌。
-            //
-            // 与 TetrisPieceSequence 用的是同一个替代常数。
-            state = 0x9E3779B9;
-        }
-
-        for (var i = deck.Length - 1; i > 0; i--)
-        {
-            state = NextState(state);
-            var j = (int)(state % (uint)(i + 1));
-            (deck[i], deck[j]) = (deck[j], deck[i]);
-        }
+        // 洗法与零状态陷阱都在 CardShuffle 里 —— 挖坑要洗同一副牌,而那会是这段
+        // Fisher–Yates 加 xorshift32 的第三份副本。`The_encoded_deal_is_pinned` 钉住了
+        // 这次搬家一个字节都没改变输出。
+        CardShuffle.Shuffle(deck, seed);
 
         var hands = new List<IReadOnlyList<Card>>(SeatCount);
         for (var seat = 0; seat < SeatCount; seat++)
@@ -119,12 +97,4 @@ public readonly record struct DoudizhuDeal(
         return new DoudizhuDeal(hands, kitty);
     }
 
-    /// <summary>xorshift32 —— 与 <c>TetrisPieceSequence</c> 同一个实现,同一个理由。</summary>
-    private static uint NextState(uint state)
-    {
-        state ^= state << 13;
-        state ^= state >> 17;
-        state ^= state << 5;
-        return state;
-    }
 }

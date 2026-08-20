@@ -4,6 +4,8 @@ using System.Linq;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.ValueObjects;
 
+using Gewu.Domain.Games.Cards;
+
 namespace Gewu.Domain.Games.Doudizhu;
 
 /// <summary>一局斗地主此刻在哪个阶段。</summary>

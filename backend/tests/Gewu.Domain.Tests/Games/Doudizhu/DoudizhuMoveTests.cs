@@ -1,6 +1,7 @@
 using System.Linq;
 using FluentAssertions;
 using Gewu.Domain.Exceptions;
+using Gewu.Domain.Games.Cards;
 using Gewu.Domain.Games.Doudizhu;
 
 namespace Gewu.Domain.Tests.Games.Doudizhu;

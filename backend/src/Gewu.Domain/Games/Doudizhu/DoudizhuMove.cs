@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Gewu.Domain.Exceptions;
 
+using Gewu.Domain.Games.Cards;
+
 namespace Gewu.Domain.Games.Doudizhu;
 
 /// <summary>一步斗地主是哪一种。</summary>

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Gewu.Application.Common.Mapping;
 using Gewu.Domain.Games.Abstractions;
+using Gewu.Domain.Games.Cards;
 using Gewu.Domain.Games.Doudizhu;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Application.Tests.Features.Rooms;
