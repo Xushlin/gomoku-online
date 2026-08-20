@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using Gewu.Domain.Games.Cards;
+
 namespace Gewu.Domain.Games.Doudizhu;
 
 /// <summary>斗地主的牌型。</summary>

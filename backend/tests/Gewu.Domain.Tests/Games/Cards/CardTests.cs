@@ -1,9 +1,10 @@
 using System;
 using System.Linq;
 using FluentAssertions;
+using Gewu.Domain.Games.Cards;
 using Gewu.Domain.Games.Doudizhu;
 
-namespace Gewu.Domain.Tests.Games.Doudizhu;
+namespace Gewu.Domain.Tests.Games.Cards;
 
 /// <summary>牌与它的一字符编码。**编码是持久化格式**,所以这里钉的是字节,不只是行为。</summary>
 public class CardTests
@@ -113,5 +114,25 @@ public class CardTests
         var highClub = new Card(CardRank.Four, CardSuit.Clubs);
 
         lowSpade.CompareTo(highClub).Should().BeNegative("花色不参与点数比较");
+    }
+
+    [Fact]
+    public void The_suited_deck_is_fifty_two_cards_with_no_jokers()
+    {
+        // 挖坑用的是这一副。它是 FullDeck 去掉最后两张,而不是另建一份 ——
+        // 一副牌就是一副牌,两份构造会给下一个人两个改的地方。
+        Card.SuitedDeck.Should().HaveCount(52);
+        Card.SuitedDeck.Should().OnlyContain(c => !c.IsJoker);
+        Card.SuitedDeck.Should().Equal(Card.FullDeck.Take(52));
+    }
+
+    [Fact]
+    public void The_rank_value_is_the_encoding_order_not_every_game_s_ranking()
+    {
+        // **这条钉的是一段注释曾经说错的话。** 它原来写「数值就是大小顺序」,而那只对当时
+        // 唯一存在的棋种(斗地主)成立。挖坑是 3 > 2 > A > … > 4 —— 3 最大而不是最小。
+        // 数值不能改(它是编码下标的来源),所以另一个棋种 MUST 自己映一层。
+        ((int)CardRank.Three).Should().BeLessThan((int)CardRank.Two, "编码顺序里 3 在 2 之前");
+        Card.Decode('A').Rank.Should().Be(CardRank.Three, "字母表第一张是 ♣3");
     }
 }

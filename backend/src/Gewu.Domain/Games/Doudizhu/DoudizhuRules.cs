@@ -6,6 +6,8 @@ using Gewu.Domain.Exceptions;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.ValueObjects;
 
+using Gewu.Domain.Games.Cards;
+
 namespace Gewu.Domain.Games.Doudizhu;
 
 /// <summary>

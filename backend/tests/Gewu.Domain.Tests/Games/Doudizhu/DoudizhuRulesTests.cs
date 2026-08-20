@@ -4,6 +4,7 @@ using FluentAssertions;
 using Gewu.Domain.Enums;
 using Gewu.Domain.Exceptions;
 using Gewu.Domain.Games.Abstractions;
+using Gewu.Domain.Games.Cards;
 using Gewu.Domain.Games.Doudizhu;
 using Gewu.Domain.ValueObjects;
 
