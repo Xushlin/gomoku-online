@@ -524,6 +524,29 @@ Not yet done — platform roadmap:
 
 
 
+Next game: **挖坑 (wakeng)**, a three-handed 52-card game from the same family as 斗地主 — and the first one whose rules were supplied by the user as a URL rather than by me. Rules of record (jj.cn 的官方帮助页,读到的原文):**一副牌 52 张、去掉大小王;3 人;每人 16 张 + 4 张底牌;3 > 2 > A > K > … > 4;跟牌必须同型同张数;单 / 对 / 三头 / 四头 / 顺子(3 张起)/ 连对(3 对起)/ 连三头(飞机,3 组起)/ 连四头(火箭,3 组起);计分 叫分 × 基数,挖坑者 ×2**。
+
+它与斗地主的差别不是「多几个牌型」,而是**几乎每一条都不同**:3 最大而不是王最大、**没有炸弹**、三条四条**不能带牌**、2 和 3 不能进顺子。所以它复用的是 `Card`(编码、花色、点数)与洗牌,而**大小与牌型是一整套自己的** —— 这与「一字棋复用 `NInARowRules`」是相反的一端:同一个家族里,牌可以共享,规则不行。
+
+四处原文没说或自相矛盾的地方由用户定了下来,记在这里因为它们是**判断,不是推导**:
+
+1. **A 不能进顺子。** 原文只排除了 3 和 2,却又说「因此连到 K 的顺子是最大的」—— 而 A 在它自己的大小表里比 K 大,所以那个「因此」只有在 A 也不能进顺子时才成立。用户确认按后者。
+2. **三家都说不挖时,第一家挖,兜底 1 倍。** 原文没写。不是重新发牌。
+3. **基数默认 1**,将来做成房间设置。
+4. **首叫者亮的那张牌公开进 `seatView`。** 按规则它本来就是明示的,而服务端算得出 —— 客户端不该自己猜。
+
+- [x] **`generalize-match-kickoff`** — 挖坑的第一个使能改动,而它找到了**内核第五处「对到目前为止的每个棋种都成立、于是被写死」的假设**:`Game` 的构造函数里是 `CurrentTurn = FirstSeat`(常量 0)。前四处是两个座位、颜色命名的胜负、开局设置、以及下一手是谁。
+
+  五个现有棋种的先手都是**约定**(谁坐 0 号谁先);挖坑不是,它的先手是**发牌**决定的。`IFirstSeatRules.FirstSeat(MatchState) → int`,默认仍是 0,越界当场抛 —— 存下来会造出一局**谁都动不了**的棋,而它要到几十秒后由超时兜底才暴露,那时报的是超时,不是「首手座位是 99」。
+
+  **一个绕过它的聪明办法被否掉并写进了规格**:把发牌旋转成「最小 ♣ 总在 0 号」在统计上等价、在体验上不等价 —— 那样同一个人每一局都先叫。写进规格是为了下一个人不必重新发现它是个坏主意。
+
+  又是一个**单独的接口**而不是给 `IGameRules` 加成员,理由与 `IDealtGameRules` / `IPerSeatViewRules` 当初分出来时逐字相同。这已经是这个模式的第四次,而它每次都省掉五个骗人的实现。
+
+  **变异三处、两个方向都红**:忽略 seam 7 红、默认改成 1 号 2 红、去掉范围校验 4 红。中间那一条是 `generalize-turn-flow` 给 `NextSeat` 留下的教训 —— **一个带默认含义的东西,只钉一边会让「默认被当成必选」悄悄通过**。两条注册表走查也刻意是两条:「没有人实现这个接口」与「于是每一局都从 0 号开始」是两件事,而只有后者会被那个「默认改成 1 号」的变异抓到。
+
+  1304 后端测试绿(新增 10),**五个现有棋种一行不动**。
+
 Discipline: **do not start a new game until the previous one is archived.** Eight games × (rules + AI + UI + i18n + tests) will otherwise all rot half-finished. And the rule is narrower than the failure it needs to prevent: `enable-xiangqi-human-play` was not a game, so nothing stopped it sitting unarchived for 36 commits with the live spec contradicting the code. **A merged PR whose change directory is still in `openspec/changes/` is the signal** — check that list, because strict validation will not.
 
 Deferred follow-ups, each with a reason:

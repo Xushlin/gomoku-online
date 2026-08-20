@@ -191,6 +191,12 @@ HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id
 `(CurrentTurn + 1) % SeatCount`,而 MUST NOT 是两值之间的布尔翻转;规则可以用
 `MoveApplication.NextSeat` **覆盖**它。
 
+**首手座位同样有默认、也同样可被规则覆盖。** 默认 MUST 是 `0`;实现 `IFirstSeatRules` 的棋种
+在开局那一刻决定它,而内核 MUST 校验返回值落在 `[0, SeatCount)` 内。挖坑是第一个需要它的:
+**持最小 ♣ 的人首叫且首出**,而那是发牌决定的,不是「谁坐 0 号」这条约定。
+**把发牌旋转成「最小 ♣ 总在 0 号」MUST NOT 被用来绕开它** —— 统计上等价,体验上不等价:
+那样同一个人每一局都先叫。
+
 **`Stone` MUST NOT 出现在 `Gewu.Domain/Rooms/` 下的任何文件中。** 这是"内核不知道一个游戏有几个人"的可执行形式,MUST 由一条测试强制而不是靠约定。
 
 `Stone` 本身不废弃,它下沉到棋盘类棋种的规则内部。`add-xiangqi` 立下的「`Stone.Black` 就是红」那条读法**一个字不动**。
@@ -202,8 +208,18 @@ HTTP 表面:`POST/GET /api/rooms`、`GET /api/rooms/{id}`、`POST /api/rooms/{id
 `Game` 不独立于 `Room` 存活;构造仅由 `Room.JoinAsPlayer` 内部发生。`Game.FinishWith` 的签名 MUST 为 `FinishWith(GameResult, UserId?, GameEndReason, DateTime)`。
 
 #### Scenario: 初始 Game 状态
-- **WHEN** 坐满触发 `JoinAsPlayer`
+- **WHEN** 坐满触发 `JoinAsPlayer`,且棋种不实现 `IFirstSeatRules`
 - **THEN** `Game.StartedAt == now`;`CurrentTurn == 0`;`Moves` 空;`EndedAt == null`;`Result == null`;`EndReason == null`
+
+#### Scenario: 规则可以指名首手座位
+- **WHEN** 棋种实现 `IFirstSeatRules` 并返回 `2`
+- **THEN** `Game.CurrentTurn == 2`;而**不实现它的棋种一行不动**,仍从 `0` 开始
+
+#### Scenario: 越界的首手座位在开局那一刻被拒
+- **WHEN** `IFirstSeatRules.FirstSeat` 返回 `[0, SeatCount)` 之外的值
+- **THEN** MUST 抛 `InvalidFirstSeatException`(code `invalid-first-seat`),房间 MUST 留在
+  `Waiting`、`Game` MUST 仍是 `null` —— 存下来会造出一局**谁都动不了**的棋,而它要到几十秒后
+  由超时兜底才暴露出来
 
 #### Scenario: 不需要设置的棋种其 Setup 为 null
 - **WHEN** 一个不实现 `IDealtGameRules` 的棋种开局
