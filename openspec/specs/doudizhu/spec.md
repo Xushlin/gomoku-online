@@ -5,7 +5,18 @@ TBD - created by archiving change add-doudizhu-cards. Update Purpose after archi
 ## Requirements
 ### Requirement: 牌与它的一字符编码
 
-`Gewu.Domain/Games/Doudizhu/Card.cs` SHALL 定义一副 54 张牌,并给每张牌一个**一字符编码**。
+`Gewu.Domain/Games/**Cards**/Card.cs` SHALL 定义一副 54 张牌,并给每张牌一个**一字符编码**。
+它 SHALL 同时导出 `SuitedDeck`(52 张,不含大小王),而后者 MUST 是 `FullDeck` 的子集而
+MUST NOT 是另建的一份 —— 一副牌就是一副牌,两份构造会给下一个人两个改的地方。
+
+**它不在 `Games/Doudizhu/` 下,而这是挖坑逼出来的。** 一张牌是一张牌:挖坑用同一副牌、
+同一份编码,而让它去 `using Gewu.Domain.Games.Doudizhu` 会让一个棋种的命名空间成为另一个
+棋种的承重结构 —— 下一个读代码的人有理由问「删掉斗地主会不会弄坏挖坑」。
+
+`CardRank` 的**数值是编码顺序,而不是任何一个棋种的大小顺序**。它与斗地主的顺序恰好一致,
+所以斗地主比大小就是整数比较;而挖坑是 `3 > 2 > A > K > … > 4`,它 MUST 自己映一层。
+数值 MUST NOT 改:它是编码下标的来源,也就是持久化格式的一部分。
+**那段注释原来写的是「数值就是大小顺序」,而那句话只对当时唯一存在的那个棋种成立。**
 
 点数的**数值就是大小顺序**:`3 < 4 < … < K < A < 2 < 小王 < 大王`。这是斗地主序,不是扑克序 —— 2 比 A 大,而 A 不能当 1 用。花色 MUST NOT 参与任何比较,它只影响显示与编码。
 
@@ -31,7 +42,13 @@ TBD - created by archiving change add-doudizhu-cards. Update Purpose after archi
 - **WHEN** 解码 `"AA"`
 - **THEN** 抛 `FormatException`
 
----
+#### Scenario: 一张牌不属于任何一个棋种
+- **WHEN** 检查 `Card` 所在的命名空间
+- **THEN** 它 MUST 是 `Gewu.Domain.Games.Cards`,而 MUST NOT 是任何单个棋种的命名空间
+
+#### Scenario: 52 张的牌堆是 54 张的子集
+- **WHEN** 比较 `SuitedDeck` 与 `FullDeck`
+- **THEN** 前者 MUST 是后者去掉两张王,而 MUST NOT 是另一份构造
 
 ### Requirement: 牌型识别与压牌
 
