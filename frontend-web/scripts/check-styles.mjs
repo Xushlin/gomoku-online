@@ -116,14 +116,13 @@ if (!baseline) {
 }
 
 /*
- * 花色图的路径由组件绑成 `--ddz-pip`(见 card-art.ts —— 同一个 loader 限制)。
- * 这里守的是反面:样式表里 MUST NOT 再写一份路径,否则同一件事有两个来源。
+ * **牌桌的样式表里不许有 `url()`。** 花色是自绘的 SVG path(`card-art.ts`,`fill="currentColor"`),
+ * 所以这份样式表不需要任何素材;而这条断言守的是它不再需要 —— 上一版为了绕开「测试构建没有
+ * .png 的 loader」,带着一条 `--ddz-pip` 绑定、一条惰性 glob 的存在性测试、和一条「绑定没被清洗
+ * 掉」的断言。三样东西一起删掉了,而这一行是它们不会悄悄回来的理由。
  */
-if (!cardCss.includes('var(--ddz-pip)')) {
-  errors.push(`${CARD_CSS}: nothing consumes var(--ddz-pip)`);
-}
-for (const m of cardCss.matchAll(/^\s*--ddz-pip:\s*url\(/gm)) {
-  errors.push(`${CARD_CSS}:${m.index}: hard-codes a pip path; the component binds it`);
+for (const m of cardCss.matchAll(/url\(/g)) {
+  errors.push(`${CARD_CSS}:${m.index}: references an asset; suit shapes are SVG paths in card-art.ts`);
 }
 
 /*
@@ -142,11 +141,20 @@ if (!deal) {
   );
 }
 
+/*
+ * 牌桌的 `:host` 必须占满宽度。房间页的容器是 `flex-col items-center`,而 `items-center` 让子元素
+ * shrink-to-fit —— 少了这一行,整张桌子按内容收窄(量到 felt 从 ~730px 变成 ~430px)。
+ * 这一条是因为我为了压 4 kB 的预算把它删过一次,而只有截图看得见。
+ */
+if (!/:host\s*\{[^}]*width:\s*100%/.test(cardCss)) {
+  errors.push(`${CARD_CSS}: :host must set width: 100% (the room page centres its children)`);
+}
+
 if (errors.length) {
   console.error(`style check failed (${errors.length}):`);
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
 console.log(
-  `style check: ${skins.length} skins x ${baseline.size} variables, card art bound not hard-coded`,
+  `style check: ${skins.length} skins x ${baseline.size} variables, card table asset-free`,
 );

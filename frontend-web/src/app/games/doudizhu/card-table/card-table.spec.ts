@@ -270,14 +270,19 @@ describe('CardTable — 牌桌与动作', () => {
     fixture = mount();
   });
 
-  it('binds the suit image and the fan geometry onto every card', () => {
-    // **这条守的是一个静默失败**:`--ddz-pip` 是一个 `[style.--x]` 绑定,若被 Angular 清洗掉,
-    // 花色会一声不响地不见 —— 而屏幕上仍然是一张有角标的牌,所以没人会立刻发现。
+  it('draws the suit and binds the fan geometry onto every card', () => {
+    // 花色是**画出来的**,所以断言读的是 `<path d>`:三张牌是 ♣3 / ♦3 / ♥3,于是三条 path
+    // 必须两两不同 —— 「每张牌都有花色」在一份复制粘贴忘了改的形状表下也是真的。
     const cards = handButtons(fixture);
     expect(cards).toHaveLength(3);
-    expect(styleOf(cards[0])).toContain('--ddz-pip: url("/cards/club.png")');
-    expect(styleOf(cards[1])).toContain('--ddz-pip: url("/cards/diamond.png")');
-    expect(styleOf(cards[2])).toContain('--ddz-pip: url("/cards/heart.png")');
+    const shapes = cards.map((c) => c.querySelector('path')!.getAttribute('d'));
+    expect(shapes.every((d) => d && d.startsWith('M'))).toBe(true);
+    expect(new Set(shapes).size).toBe(3);
+    // 每张牌两个尺寸,同一条 path。
+    expect([...cards[0].querySelectorAll('path')].map((p) => p.getAttribute('d'))).toEqual([
+      shapes[0],
+      shapes[0],
+    ]);
 
     // 发牌动画的散开几何全在 CSS 里算,而它要的三个数就是这三个。
     expect(styleOf(cards[0])).toContain('--ddz-i: 0');
@@ -288,15 +293,15 @@ describe('CardTable — 牌桌与动作', () => {
     expect(styleOf(hand)).toContain('--ddz-gaps: 2');
   });
 
-  it('never gives a card of mine a joker pip, and never gives a joker one', () => {
+  it('never gives a joker a suit, and never leaves a suited card without one', () => {
     fixture.componentInstance.state.set(room(seatView({ myHand: 'A@#', handCounts: [3, 17, 17] })));
     fixture.detectChanges();
 
     const cards = handButtons(fixture);
-    expect(styleOf(cards[0])).toContain('--ddz-pip');
+    expect(cards[0].querySelectorAll('path')).toHaveLength(2);
     // 王没有花色 —— 给它凑一个,就是用一个合法值表示「不适用」。
-    expect(styleOf(cards[1])).not.toContain('--ddz-pip');
-    expect(styleOf(cards[2])).not.toContain('--ddz-pip');
+    expect(cards[1].querySelectorAll('path')).toHaveLength(0);
+    expect(cards[2].querySelectorAll('path')).toHaveLength(0);
     expect(root(fixture).querySelectorAll('.ddz-card__joker')).toHaveLength(2);
   });
 
@@ -306,9 +311,7 @@ describe('CardTable — 牌桌与动作', () => {
     const first = seats[0];
     expect(first.getAttribute('data-count')).toBe('17');
     expect(first.querySelectorAll('.ddz-card--back')).toHaveLength(17);
-    expect([...first.querySelectorAll('*')].filter((el) => styleOf(el).includes('--ddz-pip'))).toEqual(
-      [],
-    );
+    expect(first.querySelectorAll('path')).toHaveLength(0);
   });
 
   it('keeps the kitty face down while bidding and turns it face up after', () => {

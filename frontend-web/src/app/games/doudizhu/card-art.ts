@@ -1,47 +1,39 @@
 import type { CardSuit } from './cards';
 
 /**
- * 一张牌的**花色图** —— 只有路径,没有颜色。
+ * 四个花色的形状 —— **自绘的 SVG path,没有素材依赖**。
  *
- * 素材是用户提供的那份素材包里的四个花色图(♠♣♥♦),降到 96×96 放在 `public/cards/`。
- * 整张牌的**牌面**没有用位图:那 54 张定死的位图既不跟 app 主题、也不跟棋盘皮肤,而这个仓库的
- * 硬规则是组件里不许写死颜色。判据与 `add-web-xiangqi` 给象棋棋子的那条相同,连约束一起继承 ——
- * **皮肤挑的是深浅,不是色相**。纸面、边框、角标、牌背、桌面因此全部走 token,而**花色的色相
- * 是这个游戏的身份**(♥ 必须是红的),所以花色用图。
+ * 上一版用的是素材包里的四张 96×96 PNG。换成 path 有三件事一起变好,而它们都不是审美问题:
  *
- * 顺带解决一个老问题:`♥` 在部分平台会被渲染成彩色 emoji,而一张图不会。
+ *   1. **颜色回到 token。** `fill="currentColor"` 让花色跟着牌面的 `color`,也就是
+ *      `--card-red` / `--card-black` —— 于是皮肤重新拿回了「深浅」那一半,而
+ *      `add-web-xiangqi` 定的约束(**皮肤挑的是深浅,不是色相**)仍然成立:红的仍然是红的。
+ *      位图给不了这个:一张定死的图在每个皮肤下都一样。
+ *   2. **那套 loader 绕路整段消失。** 上一版因为测试构建没有 `.png` 的 loader,路径只能由组件
+ *      绑成 `--ddz-pip`,还要一条「惰性 glob 只取键名」的测试去证明文件在磁盘上,以及一条
+ *      「绑定没被清洗掉」的断言 —— 三样东西现在都不需要了。**能被删掉的机制才是最好的机制。**
+ *   3. 任意尺寸都清晰,而且不占字节(四条 path 加起来不到 700 字符)。
  *
- * **路径为什么在 TS 而不在 CSS 里,是被测出来的。** 第一版写在 `card-table.css` 的 `url()` 里
- * (CSS 才是绘制权威),而测试用的那份构建**没有 .png 的 loader**:绝对路径报
- * `Could not resolve`,相对路径报 `No loader is configured for ".png"` —— 两次都是整个测试构建
- * 失败,而样式表的完整性测试要用 `?raw` 读它。于是路径回到这里,图片留在 `public/`(原样拷贝的
- * 静态资源,不进打包器),而「路径指着一个真存在的文件」由一条走遍 54 个编码的测试钉住。
+ * 顺带,`♥` 在部分平台会被渲染成彩色 emoji 的老问题,path 一样没有。
+ *
+ * viewBox 统一 `0 0 100 100`,四条 path 都是闭合的(`M…Z`),尺寸由 CSS 决定。
  */
-
-/** 花色图的文件名(不含扩展名)。测试用它去 `public/cards/` 找文件。 */
-export const SUIT_ASSETS = ['spade', 'heart', 'club', 'diamond'] as const;
-
-const SUIT_ASSET: Record<Exclude<CardSuit, 'none'>, (typeof SUIT_ASSETS)[number]> = {
-  spades: 'spade',
-  hearts: 'heart',
-  clubs: 'club',
-  diamonds: 'diamond',
+const SUIT_PATHS: Record<Exclude<CardSuit, 'none'>, string> = {
+  spades:
+    'M50 5C50 5 12 34 12 57c0 13 9.5 22 21 22 6.5 0 12-3 15.5-8.6C47 83 41.5 93 34 99h32' +
+    'c-7.5-6-13-16-14.5-28.6C55 76 60.5 79 67 79c11.5 0 21-9 21-22C88 34 50 5 50 5Z',
+  hearts:
+    'M50 92C18 68 8 52 8 37 8 23 19 12 32 12c8 0 15 4 18 11 3-7 10-11 18-11 13 0 24 11 24 25 0 15-10 31-42 55Z',
+  clubs:
+    'M50 6a19 19 0 0 1 14 31.7A19 19 0 1 1 78 70a19 19 0 0 1-24-8.4c1.5 12 6.8 22 14 28H32' +
+    'c7.2-6 12.5-16 14-28A19 19 0 0 1 22 70 19 19 0 1 1 36 37.7 19 19 0 0 1 50 6Z',
+  diamonds: 'M50 5 92 50 50 95 8 50Z',
 };
 
-/** 花色图的路径;王没有花色,返回 `null`。 */
-export function pipUrl(suit: CardSuit): string | null {
-  if (suit === 'none') return null;
-  const asset = SUIT_ASSET[suit];
-  return asset ? `/cards/${asset}.png` : null;
+/** 花色的形状;王没有花色,返回 `null`。 */
+export function pipPath(suit: CardSuit): string | null {
+  return suit === 'none' ? null : (SUIT_PATHS[suit] ?? null);
 }
 
-/**
- * 绑给 `--ddz-pip` 的值。
- *
- * 王返回 `null` —— 给它凑一个花色,就是用一个合法值表示「不适用」,而内核那条规则
- * (`MoveIntent` 上加粗的那句)在显示层同样成立。牌面上它画的是一个「王」字。
- */
-export function pipStyle(suit: CardSuit): string | null {
-  const url = pipUrl(suit);
-  return url === null ? null : `url("${url}")`;
-}
+/** 四个花色的键 —— 测试用它走一遍,而它是从形状表推出来的,不是另抄一份。 */
+export const SUITS_WITH_ART = Object.keys(SUIT_PATHS) as readonly Exclude<CardSuit, 'none'>[];

@@ -21,15 +21,23 @@
  *   2. **选中抬起用 `translate:`,而入场动画用 `transform:`。** 两个是不同的属性,会各自
  *      生效并叠加 —— 如果都写 `transform`,发牌动画那一段会把抬起状态抹掉。
  *
- * **花色图的路径不在这里,而在 `card-art.ts`,而那也是量出来的。** 第一版把 `url()` 写在这个文件里
- * (CSS 才是绘制权威),而测试用的那份构建**没有 .png 的 loader**:绝对路径报
- * `Could not resolve`,相对路径报 `No loader is configured for ".png"` —— 两次都是整个测试构建
- * 失败。所以路径成了组件绑上来的 `--ddz-pip`。代价写在这里:那个绑定若被清洗掉,花色会**静静地
- * 不见**,所以有一条断言读 inline style 里的 `url(`。
+ * **这个文件里没有一处 `url()`,而那不是巧合。** 花色是自绘的 SVG path(`card-art.ts`),
+ * `fill="currentColor"` 让它跟着牌面的 `color`,也就是 `--card-red` / `--card-black` ——
+ * 于是皮肤连花色的深浅也一起管了,而位图给不了这个。上一版用素材 PNG,为了绕开「测试构建没有
+ * .png 的 loader」还带着一条 `--ddz-pip` 绑定、一条惰性 glob 的存在性测试、和一条「绑定没被
+ * 清洗掉」的断言 —— 三样东西随素材一起删掉了。`check-styles.mjs` 守着这里不再出现 `url(`。
  */
 
+/*
+ * **`width: 100%` 不能省,而这是我自己省掉之后在截图上看见的。**
+ * 房间页把棋盘放在一个 `flex-col items-center` 的容器里,而 `items-center` 让子元素
+ * shrink-to-fit —— 少了这一行,整张桌子按内容收窄(量到:felt 从 ~730px 变成 ~430px,
+ * 而牌宽是 `8.6vw` 跟视口而不跟容器,于是牌挤在一张窄桌上)。
+ * 这是「shrink-to-fit 咬到扇形」的**第四次**,前三次在 tasks 里。
+ */
 :host {
   display: block;
+  width: 100%;
 }
 
 /* ---------------------------------------------------------------- 桌面 */
@@ -197,13 +205,14 @@
   position: absolute;
   inset: calc(var(--ddz-w) * 0.5) auto auto 8%;
   width: calc(var(--ddz-w) * 0.26);
-  aspect-ratio: 1;
-  background: var(--ddz-pip) center / contain no-repeat;
+  height: calc(var(--ddz-w) * 0.26);
+  display: block;
 }
 
 .ddz-card__pip--big {
   inset: auto 7% 5% auto;
   width: calc(var(--ddz-w) * 0.5);
+  height: calc(var(--ddz-w) * 0.5);
 }
 
 /* 王没有花色 —— 给它凑一个,就是用一个合法值表示「不适用」。 */

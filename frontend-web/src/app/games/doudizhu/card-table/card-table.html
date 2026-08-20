@@ -6,9 +6,14 @@
   >{{ card.label }}</span>
   @if (isJoker(card)) {
     <span class="ddz-card__joker">{{ 'doudizhu.card.joker' | transloco }}</span>
-  } @else {
-    <span class="ddz-card__pip"></span>
-    <span class="ddz-card__pip ddz-card__pip--big"></span>
+  } @else if (pip(card); as d) {
+    <!-- 同一条 path,两个尺寸。`currentColor` 让花色跟着牌面的 color(= 皮肤 token)。 -->
+    <svg class="ddz-card__pip" viewBox="0 0 100 100" aria-hidden="true">
+      <path [attr.d]="d" fill="currentColor" />
+    </svg>
+    <svg class="ddz-card__pip ddz-card__pip--big" viewBox="0 0 100 100" aria-hidden="true">
+      <path [attr.d]="d" fill="currentColor" />
+    </svg>
   }
 </ng-template>
 
@@ -90,7 +95,6 @@
               <span
                 class="ddz-card"
                 [class.ddz-card--red]="card.red"
-                [style.--ddz-pip]="pip(card)"
                 [style.--ddz-i]="i"
                 [style.--ddz-n]="kitty.length"
                 [attr.aria-label]="label(card)"
@@ -126,7 +130,6 @@
               <span
                 class="ddz-card"
                 [class.ddz-card--red]="card.red"
-                [style.--ddz-pip]="pip(card)"
                 [style.--ddz-i]="i"
                 [style.--ddz-n]="table.length"
                 [attr.aria-label]="label(card)"
@@ -182,7 +185,6 @@
             class="ddz-card"
             [class.ddz-card--red]="card.red"
             [class.ddz-card--selected]="isSelected(card)"
-            [style.--ddz-pip]="pip(card)"
             [style.--ddz-i]="i"
             [style.--ddz-n]="hand().length"
             [attr.aria-pressed]="isSelected(card)"

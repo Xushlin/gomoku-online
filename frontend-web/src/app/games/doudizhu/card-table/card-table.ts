@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { TranslocoPipe } from '@jsverse/transloco';
 
 import type { RoomState } from '../../../core/api/models/room.model';
-import { pipStyle } from '../card-art';
+import { pipPath } from '../card-art';
 import { encodeHand, suitSymbol, type DoudizhuCard } from '../cards';
 import { parseSeatView, type DoudizhuSeatView } from '../seat-view';
 import { relativeSeat, seatInitial, seatRing, type SeatDirection } from '../table-layout';
@@ -204,12 +204,13 @@ export class CardTable {
   }
 
   /**
-   * 绑给 `--ddz-pip` 的花色图;王没有花色,返回 `null`(那一格什么都不画)。
+   * 花色的形状(SVG path);王没有花色,返回 `null`。
    *
-   * 这是**唯一**一处颜色以外的画法进到 TS 里,而它是被测出来的 —— 见 `card-art.ts`。
+   * 形状在 TS 里而颜色不在 —— `fill="currentColor"` 让它跟着牌面的 `color`,也就是
+   * `--card-red` / `--card-black`。上一版是一张 PNG,而位图在每个皮肤下都一样。
    */
   protected pip(card: DoudizhuCard): string | null {
-    return pipStyle(card.suit);
+    return pipPath(card.suit);
   }
 
   protected isJoker(card: DoudizhuCard): boolean {
