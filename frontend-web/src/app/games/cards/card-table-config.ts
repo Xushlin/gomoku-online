@@ -37,6 +37,15 @@ export interface CardTableView {
    * 所以客户端不该自己猜。
    */
   readonly firstBidder: { readonly seat: number; readonly card: PlayingCard } | null;
+
+  /**
+   * 「假如此刻轮到我,我出得起吗」—— **服务端算的**,客户端只照它行动。
+   *
+   * 斗地主今天恒 `false`(它还没有这个功能),而 `false` 在那里的含义是
+   * **「没有这个信号」**而不是「你要不起」—— 所以自动过牌只在提供了它的棋种上生效,
+   * 由那个棋种的 `seatView` 真的带着这个字段来决定。
+   */
+  readonly canFollow: boolean;
 }
 
 /**

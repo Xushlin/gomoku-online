@@ -628,7 +628,8 @@
     "action": {
       "play": "Play ({{count}})",
       "pass": "Pass",
-      "waiting": "Waiting for the others…"
+      "waiting": "Waiting for the others…",
+      "hint": "Hint"
     },
     "card": {
       "joker": "JK"

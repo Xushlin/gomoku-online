@@ -7,6 +7,7 @@ using Gewu.Application.Features.Rooms.Dissolve;
 using Gewu.Application.Features.Rooms.GetGameReplay;
 using Gewu.Application.Features.Rooms.Resign;
 using Gewu.Application.Features.Rooms.GetRoomList;
+using Gewu.Application.Features.Rooms.GetPlayHints;
 using Gewu.Application.Features.Rooms.GetRoomState;
 using Gewu.Application.Features.Rooms.JoinAsSpectator;
 using Gewu.Application.Features.Rooms.JoinRoom;
@@ -91,6 +92,26 @@ public sealed class RoomsController : ControllerBase
     {
         var state = await _mediator.Send(new GetRoomStateQuery(new RoomId(id), GetUserId()), cancellationToken);
         return Ok(state);
+    }
+
+    /// <summary>
+    /// 调用者自己那一份候选出法 —— 提示按钮用它。
+    /// <para>
+    /// **按需,而不是塞进每一次 <c>RoomState</c> 广播**:候选可能有几十项,广播里带的只是一个
+    /// 布尔 <c>seatView.canFollow</c>。**只回答调用者自己的那一份** —— 候选由这个座位的手牌
+    /// 决定,一个能查别人候选的端点等于把别人的手牌算出来给你。
+    /// </para>
+    /// <para>
+    /// 围观者、非玩家、非挖坑的房间都拿到空列表而不是 403:提示是一个**可有可无的便利**,
+    /// 而「这里没有可提示的东西」在客户端的正确反应是那个按钮不出现,不是一条错误路径。
+    /// </para>
+    /// </summary>
+    [HttpGet("{id:guid}/hints")]
+    public async Task<ActionResult<PlayHintsDto>> Hints(Guid id, CancellationToken cancellationToken)
+    {
+        var hints = await _mediator.Send(
+            new GetPlayHintsQuery(GetUserId(), new RoomId(id)), cancellationToken);
+        return Ok(hints);
     }
 
     /// <summary>作为白方加入房间,触发对局启动。</summary>

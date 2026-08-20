@@ -628,7 +628,8 @@
     "action": {
       "play": "出牌({{count}})",
       "pass": "不要",
-      "waiting": "等其他人行动…"
+      "waiting": "等其他人行动…",
+      "hint": "提示"
     },
     "card": {
       "joker": "王"

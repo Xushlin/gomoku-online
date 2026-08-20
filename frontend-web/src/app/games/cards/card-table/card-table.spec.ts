@@ -196,7 +196,11 @@ describe('CardTable', () => {
   it('cannot pass on a free lead but can once there is something to beat', () => {
     // 这一条**不需要规则**:桌上没牌就是没牌。它是"客户端判得出"那一侧的边界 ——
     // 再往前一步(这手压不压得住)就要一整套牌型识别,而那会造出第二个真源。
-    const pass = () => actionButtons(fixture).at(-1)!;
+    // **按 testid 取,不按位置取。** 这一行原本是 `actionButtons(fixture).at(-1)`,
+    // 而加一个「提示」按钮就把它指到了另一个按钮上 —— 一个按位置找元素的夹具,
+    // 会在任何一次加按钮时静静指错。
+    const pass = () =>
+      fixture.nativeElement.querySelector('[data-testid="pass"]') as HTMLButtonElement;
     expect(pass().disabled).toBe(true);
 
     fixture.componentInstance.state.set(room(seatView({ tableSeat: 1, tableCards: 'Q' })));

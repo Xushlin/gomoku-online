@@ -253,11 +253,23 @@
             </button>
             <button
               type="button"
+              data-testid="pass"
               class="ddz-btn rounded-card border px-4 py-2 disabled:cursor-default disabled:opacity-50"
               [disabled]="!canPass()"
               (click)="pass()"
             >
               {{ 'cards.action.pass' | transloco }}
+            </button>
+            <!-- 提示 —— 候选来自服务端,所以它不会点起一手服务端会拒的牌。
+                 连点轮换不同的出法。 -->
+            <button
+              type="button"
+              data-testid="hint"
+              class="ddz-btn rounded-card border px-4 py-2 disabled:cursor-default disabled:opacity-50"
+              [disabled]="actionsDisabled()"
+              (click)="hint()"
+            >
+              {{ 'cards.action.hint' | transloco }}
             </button>
           }
 

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { RoomState } from '../../core/api/models/room.model';
 import type { CardTableConfig } from '../cards/card-table-config';
 import { CardTable } from '../cards/card-table/card-table';
-import { decodeCard } from '../cards/cards';
+import { decodeCard, type PlayingCard } from '../cards/cards';
 import { DOUDIZHU_TABLE } from '../doudizhu/seat-view';
 import { WAKENG_TABLE } from './seat-view';
 import { compareWakengForDisplay, wakengStrength } from './strength';
@@ -78,12 +78,20 @@ function room(view: string): RoomState {
 @Component({
   standalone: true,
   imports: [CardTable],
-  template: `<app-card-table [state]="state()" [config]="config()" [mySeat]="mySeat()" />`,
+  template: `<app-card-table
+    [state]="state()"
+    [config]="config()"
+    [hints]="hints()"
+    (hintRequested)="hintRequests = hintRequests + 1"
+    [mySeat]="mySeat()"
+  />`,
 })
 class Host {
   readonly state = signal<RoomState | null>(room(seatView()));
   readonly config = signal<CardTableConfig>(WAKENG_TABLE);
+  readonly hints = signal<readonly (readonly PlayingCard[])[]>([]);
   readonly mySeat = signal<number | null>(2);
+  hintRequests = 0;
 }
 
 function mount(config: CardTableConfig = WAKENG_TABLE) {
@@ -226,6 +234,50 @@ describe('WakengTable', () => {
     playing.detectChanges();
     expect((playing.nativeElement as HTMLElement).textContent ?? '')
       .toContain('cards.table.free-lead');
+  });
+
+  it('the hint button first asks the server, and it does not guess', () => {
+    // **牌桌自己不枚举可出的牌。** 牌型识别与压牌比大小是这一局唯一的判据,而它在服务端;
+    // 客户端算一遍就是一份会悄悄分叉的第二真源。所以第一次点只是「去问」。
+    const fixture = mount(WAKENG_TABLE);
+    fixture.componentInstance.state.set(
+      room(seatView({ phase: 'Playing', digger: 2, bid: 1, bidsMade: 3, tableSeat: 0, tableCards: C4 })),
+    );
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('[data-testid="hint"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.hintRequests).toBe(1);
+    // 而它 MUST NOT 自己挑一张牌点起来。
+    expect(fixture.nativeElement.querySelectorAll('.ddz-card--selected')).toHaveLength(0);
+  });
+
+  it('clicking hint again cycles to a different play', () => {
+    const fixture = mount(WAKENG_TABLE);
+    fixture.componentInstance.state.set(
+      room(seatView({ phase: 'Playing', digger: 2, bid: 1, bidsMade: 3, tableSeat: 0, tableCards: C4 })),
+    );
+    // 服务端给了两手候选:♣3 和 ♣4。
+    fixture.componentInstance.hints.set([[decodeCard(C3)!], [decodeCard(C4)!]]);
+    fixture.detectChanges();
+
+    const hint = () => {
+      (fixture.nativeElement.querySelector('[data-testid="hint"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      return [...fixture.nativeElement.querySelectorAll('.ddz-card--selected')].map(
+        (el) => (el as HTMLElement).textContent?.trim().replace(/\s+/g, '') ?? '',
+      );
+    };
+
+    const first = hint();
+    const second = hint();
+
+    expect(first).toHaveLength(1);
+    expect(second).toHaveLength(1);
+    expect(first).not.toEqual(second); // 连点要换一手,否则「多次点提示」没有意义
+    // 绕回来 —— 到末尾回到开头。
+    expect(hint()).toEqual(first);
   });
 
   it('says 挖 rather than 叫 on the bid buttons', () => {

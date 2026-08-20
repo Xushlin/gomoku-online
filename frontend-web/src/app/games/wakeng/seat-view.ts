@@ -29,6 +29,8 @@ export interface WakengSeatView {
   readonly tableSeat: number | null;
   readonly tableCards: readonly PlayingCard[] | null;
   readonly winner: number | null;
+  /** 「假如此刻轮到我,我出得起吗」—— 服务端算的,见 `WakengSeatView`。 */
+  readonly canFollow: boolean;
 }
 
 /** 解 `seatView`。**解不出来时返回 `null`**,而不是抛 —— 与斗地主那份同一条理由。 */
@@ -64,6 +66,7 @@ export function parseSeatView(raw: string | null | undefined): WakengSeatView | 
     tableCards:
       stringOrNull(parsed['tableCards']) === null ? null : decodeHand(stringOrNull(parsed['tableCards'])),
     winner: numberOrNull(parsed['winner']),
+    canFollow: parsed['canFollow'] === true,
   };
 }
 
@@ -85,6 +88,7 @@ export function toTableView(raw: string | null | undefined): CardTableView | nul
     // 首叫者与他亮的那张 ♣ —— **公开的**,而服务端算得出,客户端不该自己猜。
     firstBidder:
       v.firstBidderCard === null ? null : { seat: v.firstBidder, card: v.firstBidderCard },
+    canFollow: v.canFollow,
   };
 }
 
