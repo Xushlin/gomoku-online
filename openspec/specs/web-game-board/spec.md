@@ -151,9 +151,26 @@ API 契约:
 `src/app/pages/rooms/room-page/sidebar/sidebar.ts` SHALL 渲染:
 
 - 房间名 `state.name` + 房主 `state.host.username`(`game.room.*` i18n)。**房主用户名 SHALL 是 `routerLink` 链接到 `/users/<host.id>`,使用 `.username-link` class + `(click)="$event.stopPropagation()"`**。
-- 黑方座位 `state.black?.username` / 白方座位 `state.white?.username`,每个座位显示是否在线(未实现在线探测则显示 `username` 字面量)。**座位上的 username SHALL 同样是 `/users/<id>` 链接**(空座位文案不变)。
+- **座位名单,而判据是这个棋种的座位数,不是坐了几个人。** 判据 SHALL 是
+  `GET /api/games` 给的 `seatCount`,MUST NOT 是 `state.seats.length` —— 后者是
+  「有几个座位**被坐上了**」,于是一个**等待中**的三座位房间会被当成两座位房间渲染。
+  (那正是本要求此前的写法留下的缺陷,在浏览器里量到:一个两人在座的斗地主房间,
+  侧栏原文是 `Black: … White: …`。)
+  - `seatCount == 2`:渲染「黑方 / 白方」两个座位(象棋读作红 / 黑)。**颜色留着**,
+    因为你正看着一张摆着黑白子的棋盘,而「谁是黑方」是座位号给不出的信息。
+  - `seatCount > 2`:按座位号逐个渲染,**含空座位**。
+  - 两支的 username SHALL 都是 `/users/<id>` 链接。
+  - 描述符尚未到达时 MUST NOT 猜:`RoomPage` 的 loading 状态里本来就含
+    `!capabilities.loaded()`,所以整页是骨架屏。
+
+  **大厅行的答案与这里不同,而两个都对。** 大厅 MUST NOT 说颜色(`fix-lobby-seats`):
+  它是跨棋种的列表,而 `board-seats.ts` 的文档写着那套读法只有棋盘家族可以调用。
+  侧栏在一个具体棋种的房间里,那个房间要么有棋盘要么没有。**同一个问题,两个层次,
+  两个答案。**
 - 当前状态徽章(`Waiting / Playing / Finished`)
-- 当前回合指示:`state.game.currentSeat === FIRST_SEAT ? game.turn.black-turn : game.turn.white-turn`;若 `mySide()` 对应的座位等于 `currentSeat`,额外突出 `game.turn.your-turn`
+- 当前回合指示:两座位棋种读作 `game.turn.black-turn` / `white-turn`,座位数大于二的棋种
+  MUST 说座位号 —— 「白方走棋」在一个没有白方的棋种里是错的(`add-web-doudizhu` 修的)。
+  若 `mySide()` 对应的座位等于 `currentSeat`,额外突出 `game.turn.your-turn`
 - **回合倒计时**:
   - 计算 `deadline = state.game.turnStartedAt + state.game.turnTimeoutSeconds`
   - 显示剩余时间 `M:SS`,驱动源是 RoomPage 的 1 Hz `now` signal
@@ -192,6 +209,14 @@ API 契约:
 #### Scenario: 用户名是链接
 - **WHEN** 侧栏渲染 host=alice、black=alice、white=bob
 - **THEN** "alice" 与 "bob" 文本均为 `<a>`,`href` 解析到 `/users/<id>`;有 `username-link` class
+
+#### Scenario: 等待中的三座位房间不说颜色
+- **WHEN** 一个 `seatCount == 3` 的房间只坐了两个人
+- **THEN** 侧栏按座位号渲染,MUST NOT 出现「黑方」/「白方」
+
+#### Scenario: 两座位棋种仍然说颜色
+- **WHEN** 一个 `seatCount == 2` 的房间
+- **THEN** 侧栏说「黑方 / 白方」—— 棋盘上就是黑白子
 
 ### Requirement: `ChatPanel` —— 双通道不对称可见性
 

@@ -179,13 +179,27 @@ public sealed record GameDescriptorDto(
     bool IsRated,
     bool SupportsHumanVsHuman,
     bool SupportsAi,
+    int SeatCount,
     int? Rows,
     int? Cols);
 ```
 
+`SeatCount` MUST **非空**,投影自 `IGameRules.SeatCount`。每个有 `IGameRules` 的棋种都有座位数,
+不存在「不适用」—— 这正是它与 `Rows` / `Cols` 的区别。
+
+**它存在是因为客户端读不到「这个棋种有几个座位」,而它需要。** 房间侧栏此前用
+`state.seats.length` 当那个数用,而 `seats` 只含**在座的**座位 —— 于是一个**等待中**的
+三座位房间被当成两座位房间渲染,说出「黑方 / 白方」。在屏幕上量到的。
+
+前端 MUST NOT 存一份副本(`GameManifest` 上加一个 `seatCount`)——
+那正是 `remove-manifest-board` 删掉的东西,而它的理由在这里逐字成立。
+
 `Rows` / `Cols` MUST 可空,且**当且仅当**该规则实现 `IBoardGameRules` 时非空。`null` 的含义是"这个棋种没有盘面",与"客户端还没拿到描述符"是两件不同的事,客户端 MUST 分别处理(见 `web-game-board`)。
 
 `SupportsAi` MUST 投影自 `IGameAiRegistry.For(gameKey) is not null` —— 与 `POST /api/rooms/ai` 的校验读同一份注册表,所以客户端看到的与服务端会接受的**不可能不一致**。它 MUST NOT 来自 `IGameRules` 上的一个手写布尔:那会是同一件事的第二个真源,而它失配的症状是**一个永远 400 的按钮**。
+
+投影的**遍历断言 MUST 两侧都有样本**:`SeatCount` 的取值集合里 MUST 同时出现 `2` 与大于 `2`
+的值 —— 一条只走到 2 的遍历,在一个恒返回 2 的实现下是绿的。
 
 它 MUST 是**投影**而不是第二份清单:注册表加一个棋种,本端点自动多一条;实现 MUST NOT 内联任何
 "哪些棋种存在"的硬编码列表 —— 与建房校验不许内联棋种白名单是同一条理由。
