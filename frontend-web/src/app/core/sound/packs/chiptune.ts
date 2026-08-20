@@ -20,6 +20,8 @@ import { unhandledSoundEvent, type SoundEventName, type SoundPack } from '../sou
  *                       ("level up" feel)
  *   - game-lose       : square descending 640 → 160 Hz over 700 ms
  *                       ("game over" feel)
+ *   - card-deal       : five very short ascending square blips — a flurry
+ *   - card-play       : two descending triangle blips — a slap, not a reward
  *   - game-draw       : two triangle 440 Hz pulses, neutral
  *
  * MUST NOT use sawtooth (too harsh for the events on this list).
@@ -51,6 +53,14 @@ export const chiptunePack: SoundPack = {
         return;
       case 'level-up':
         playRun(ctx, masterGain, now, [783.99, 1046.5], 'triangle', 0.1, 0.2);
+        return;
+      case 'card-deal':
+        // 五个很短的方波,越发越高 —— 与 line-clear 的四个、quad 的六个都不同长。
+        playRun(ctx, masterGain, now, [523.25, 587.33, 659.25, 698.46, 783.99], 'square', 0.032, 0.13);
+        return;
+      case 'card-play':
+        // 两个下行的三角波 —— 「啪」的一下,而不是升调的奖励音。
+        playRun(ctx, masterGain, now, [880, 587.33], 'triangle', 0.055, 0.17);
         return;
       case 'urge':
         playUrge(ctx, masterGain, now);

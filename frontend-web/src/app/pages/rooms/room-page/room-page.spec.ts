@@ -495,6 +495,90 @@ describe('RoomPage board selection', () => {
       expect(playedEvents(sound)).toEqual(['move-place']);
     });
 
+    /** 一份带 seatView 的斗地主快照。`hand` 为 `''` 表示还没发到牌。 */
+    const doudizhuRoom = (moves: readonly MoveDto[], hand: string): RoomState => {
+      const base = makeRoomState();
+      return {
+        ...base,
+        gameKey: 'doudizhu',
+        game: {
+          ...base.game!,
+          moves,
+          seatView: JSON.stringify({
+            phase: 'Playing',
+            landlord: 0,
+            baseScore: 2,
+            bidsMade: 3,
+            myHand: hand,
+            handCounts: [hand.length, 17, 17],
+            kitty: 'DEF',
+            tableSeat: null,
+            tableCards: null,
+          }),
+        },
+      };
+    };
+
+    it('plays card-play when cards go on the table', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+
+      hub.state.set(
+        doudizhuRoom([{ ply: 1, row: null, col: null, text: 'play:AB', seat: 0, playedAt: 'x' }], 'CD'),
+      );
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual(['card-play']);
+    });
+
+    it('leaves a pass and a bid on move-place, so the two are audibly different', async () => {
+      // **这是把出牌与过牌分成两个事件的理由**,不是副产品:不看屏幕也听得出别人是出了牌
+      // 还是过了牌。所以这条断言与上一条必须一起看。
+      for (const text of ['pass', 'bid:2']) {
+        const { fixture, hub, sound } = mount();
+        await Promise.resolve();
+
+        hub.state.set(
+          doudizhuRoom([{ ply: 1, row: null, col: null, text, seat: 0, playedAt: 'x' }], 'CD'),
+        );
+        fixture.detectChanges();
+
+        expect(playedEvents(sound), `${text} should stay on move-place`).toEqual(['move-place']);
+      }
+    });
+
+    it('plays card-deal once, when the hand arrives', async () => {
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+
+      // 第一次观察不响 —— 与 previousMoveCount 同一个哨兵:打开页面不是「发牌」。
+      hub.state.set(doudizhuRoom([], ''));
+      fixture.detectChanges();
+      expect(playedEvents(sound)).toEqual([]);
+
+      hub.state.set(doudizhuRoom([], 'ABCDE'));
+      fixture.detectChanges();
+      expect(playedEvents(sound)).toEqual(['card-deal']);
+
+      // 手牌变少(出掉一张)不再响,而**底牌进手也不响**:那不是发牌。
+      hub.state.set(doudizhuRoom([], 'ABCD'));
+      hub.state.set(doudizhuRoom([], 'ABCDEFG'));
+      fixture.detectChanges();
+      expect(playedEvents(sound)).toEqual(['card-deal']);
+    });
+
+    it('does not play card-deal for a hand that was already there on arrival', async () => {
+      // 刷新页面时发牌**动画**会重播(牌的 DOM 节点是新建的),而声音不该重播 ——
+      // 重播一个装饰是装饰,重播一个声音是在报告一件没发生的事。
+      const { fixture, hub, sound } = mount();
+      await Promise.resolve();
+
+      hub.state.set(doudizhuRoom([], 'ABCDEFGH'));
+      fixture.detectChanges();
+
+      expect(playedEvents(sound)).toEqual([]);
+    });
+
     // The three end-of-game sounds had **no test at all**, which mutation testing is
     // what found: swapping `'game-win'` for `'game-lose'` in the dispatch left the whole
     // suite green. The dialog's title had tests; the sound that plays beside it did not,

@@ -28,6 +28,23 @@ export const SOUND_EVENTS = [
   'line-clear-quad',
   /** The level advanced, which in 俄罗斯方块 means gravity just got faster. */
   'level-up',
+  /**
+   * A hand was dealt. 斗地主 only so far.
+   *
+   * Fires on the deal *arriving*, not on the page rendering one: a reload paints
+   * the dealing animation again (new DOM nodes, so the CSS runs), and that is
+   * decoration — but replaying the sound would report an event that did not
+   * happen. See `RoomPage.previousHandCount`.
+   */
+  'card-deal',
+  /**
+   * Cards were played onto the table.
+   *
+   * Distinct from `move-place`, which every other game's move uses and which
+   * 斗地主's **pass** and **bid** keep — so a player can hear the difference
+   * between someone playing and someone passing without looking.
+   */
+  'card-play',
   'game-win',
   'game-lose',
   'game-draw',

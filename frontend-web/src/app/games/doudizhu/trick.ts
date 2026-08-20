@@ -29,6 +29,16 @@ export function currentTrick(moves: readonly MoveDto[] | null | undefined): read
   return actions.filter((a) => a.kind === 'bid');
 }
 
+/**
+ * 这条 move 是哪一类动作 —— `null` 表示读不懂或不是斗地主的载荷。
+ *
+ * 导出它是为了让房间页能问「刚到的这一手是出牌还是过牌」而**不必再抄一遍编码**:
+ * `play:` / `pass` / `bid:` 这三个前缀在客户端只有这一个文件认得。
+ */
+export function moveKind(move: MoveDto): TrickAction['kind'] | null {
+  return parse(move)?.kind ?? null;
+}
+
 /** 解一条 move 的文本载荷。认不出来的返回 `null` —— 与 `cards.ts` 同一条:看起来不对,但不要白屏。 */
 function parse(move: MoveDto): TrickAction | null {
   const text = move.text;

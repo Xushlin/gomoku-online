@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { makeFakeGraph, stopTimes, type FakeGraph } from '../../../testing/audio-graph';
 import { SOUND_EVENTS, type SoundEventName, type SoundPack } from '../sound.tokens';
-import { BUILT_IN_PACKS } from './index';
+import { PACK_LOADERS } from './index';
 
 /**
  * The contract every pack owes, walked over every built-in pack × every event.
  *
- * Both lists are derived, not written here: `BUILT_IN_PACKS` is the same object
+ * Both lists are derived, not written here: `PACK_LOADERS` is the same object
  * `DefaultSoundService` registers from, and `SOUND_EVENTS` is the array
  * `SoundEventName` is derived from. A hand-written copy of either is the defect
  * this repo has paid for three times — and `minimal.spec.ts`'s `ALL_EVENTS` was a
@@ -17,14 +17,18 @@ import { BUILT_IN_PACKS } from './index';
  * eight of the twelve new voices land in files nothing looked at.
  */
 
-const packs = Object.entries(BUILT_IN_PACKS);
+// 顶层 await:pack 现在是按需加载的(见 index.ts —— 它们曾是首屏包里的 8.69 kB)。
+// 这里把三个都解出来,断言仍然走同一份列表。
+const packs = await Promise.all(
+  Object.entries(PACK_LOADERS).map(async ([name, load]) => [name, await load()] as const),
+);
 
 /**
  * Which oscillator timbres each pack is allowed, from its own spec requirement:
  * `minimal` is sine-only, `chiptune` is square/triangle and never sawtooth, and
  * `wood` uses sine for its tonal events (its taps are filtered noise instead).
  *
- * Keys are asserted equal to `BUILT_IN_PACKS` below, so a new pack cannot slip in
+ * Keys are asserted equal to `PACK_LOADERS` below, so a new pack cannot slip in
  * without declaring an identity — silently skipping it is exactly how a walking
  * test ends up covering less than it claims.
  */
@@ -64,7 +68,7 @@ function fingerprint(graph: FakeGraph): string {
 
 describe('sound pack contract', () => {
   it('declares an identity for every built-in pack', () => {
-    expect(Object.keys(ALLOWED_TYPES).sort()).toEqual(Object.keys(BUILT_IN_PACKS).sort());
+    expect(Object.keys(ALLOWED_TYPES).sort()).toEqual(Object.keys(PACK_LOADERS).sort());
   });
 
   it('covers every event the type allows', () => {

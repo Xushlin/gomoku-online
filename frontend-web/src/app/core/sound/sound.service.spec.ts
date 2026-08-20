@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BUILT_IN_PACKS } from './packs';
+import { PACK_NAMES } from './packs';
 import { DefaultSoundService, SoundService } from './sound.service';
 import type { SoundPack } from './sound.tokens';
 
@@ -10,8 +10,32 @@ const STORAGE_VOLUME = 'gewu:sound-volume';
 
 class FakeAudioContextSpy {
   createGain = vi.fn(() => ({
-    gain: { value: 1 },
-    connect: vi.fn(),
+    gain: {
+      value: 1,
+      setValueAtTime: vi.fn(),
+      linearRampToValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
+    connect: vi.fn(() => ({ connect: vi.fn() })),
+  }));
+  createBuffer = vi.fn(() => ({ getChannelData: () => new Float32Array(64) }));
+  createBufferSource = vi.fn(() => ({
+    buffer: null,
+    connect: vi.fn(() => ({ connect: vi.fn(() => ({ connect: vi.fn() })) })),
+    start: vi.fn(),
+    stop: vi.fn(),
+  }));
+  createBiquadFilter = vi.fn(() => ({
+    type: '',
+    frequency: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    connect: vi.fn(() => ({ connect: vi.fn(() => ({ connect: vi.fn() })) })),
+  }));
+  createOscillator = vi.fn(() => ({
+    type: '',
+    frequency: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    connect: vi.fn(() => ({ connect: vi.fn() })),
+    start: vi.fn(),
+    stop: vi.fn(),
   }));
   destination = {};
   resume = vi.fn();
@@ -49,7 +73,7 @@ describe('DefaultSoundService', () => {
   });
 
   it('registers exactly the built-in pack list, in its order', () => {
-    // Item-by-item against `BUILT_IN_PACKS` rather than three `toContain`s: the
+    // Item-by-item against `PACK_NAMES` rather than three `toContain`s: the
     // service walks that object, so this is the assertion that the walk is
     // complete. Three `toContain`s pass just as happily when a fourth pack has
     // been added and forgotten — the same shape as the hand-written registry
@@ -58,7 +82,7 @@ describe('DefaultSoundService', () => {
     // Order matters too: it is the order the header's pack menu renders.
     const svc = setup();
 
-    expect(svc.availablePacks()).toEqual(Object.keys(BUILT_IN_PACKS));
+    expect(svc.availablePacks()).toEqual([...PACK_NAMES]);
     expect(svc.availablePacks()).toEqual(['wood', 'chiptune', 'minimal']);
   });
 
@@ -149,6 +173,34 @@ describe('DefaultSoundService', () => {
     svc.play('move-place');
     expect(stubPlay).toHaveBeenCalledTimes(1);
     expect(stubPlay.mock.calls[0][0]).toBe('move-place');
+  });
+
+  it('queues the first play() until the built-in pack has loaded', async () => {
+    // **这是「按需加载」唯一真正新增的行为路径**:第一声可能在 pack 解出来之前就到了。
+    // 丢掉它的表现是「这一局的第一手是静的」—— 一个只在会话的第一次出现、之后永远
+    // 复现不出来的缺陷。所以它排队。
+    const svc = setup();
+    svc.play('move-place');
+
+    const ctx = (svc as unknown as { ctx: FakeAudioContextSpy | null }).ctx;
+    // AudioContext 是**同步**建的:autoplay 策略要的是用户手势那一帧,而 pack 的加载不在其中。
+    expect(ctx, 'play() should construct the AudioContext synchronously').not.toBeNull();
+
+    // 然后那一声要真的响 —— 用 waitFor 而不是数几个 tick:动态 import 花多少轮微任务
+    // 是打包器的实现细节,而「最终会响」才是要钉的东西。
+    // wood 的 move-place 是一段滤波噪声,所以至少要建一个 buffer 和一个 filter。
+    await vi.waitFor(() => {
+      expect(ctx!.createBuffer).toHaveBeenCalled();
+      expect(ctx!.createBiquadFilter).toHaveBeenCalled();
+    });
+  });
+
+  it('keeps a persisted pack across construction even before it has loaded', async () => {
+    // `resolveInitialPack` 若只查已加载的实现,持久化的选择会在**每次启动**时掉回 wood ——
+    // 而内置 pack 在启动那一刻一个都还没加载。
+    localStorage.setItem(STORAGE_PACK, 'minimal');
+    const svc = setup();
+    expect(svc.packName()).toBe('minimal');
   });
 
   describe('volume', () => {

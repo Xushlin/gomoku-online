@@ -18,6 +18,8 @@ import { GameCatalogService } from '../../../games/game-catalog.service';
 import { CardTable } from '../../../games/doudizhu/card-table/card-table';
 import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
 import { DOUDIZHU_KEY } from '../../../games/doudizhu/game-key';
+import { moveKind } from '../../../games/doudizhu/trick';
+import { parseSeatView } from '../../../games/doudizhu/seat-view';
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
 import { lastMoveCaptured } from '../../../games/xiangqi/position';
@@ -73,6 +75,11 @@ export class RoomPage implements OnInit, OnDestroy {
   /** Sentinel `-1` means "no observation yet" — first state hydration sets the
    * count without firing a sound. Subsequent increments fire `move-place`. */
   private previousMoveCount = -1;
+  /**
+   * 上一次看到的手牌张数,`-1` 表示还没观察过 —— 与 {@link previousMoveCount} 同一个哨兵。
+   * 只有 0 → 非 0 那一次跳变算「发牌」;抢到地主后底牌进手(17 → 20)不算,那不是发牌。
+   */
+  private previousHandCount = -1;
 
   /**
    * Board dimensions for this room's game, from the server's descriptors.
@@ -205,6 +212,26 @@ export class RoomPage implements OnInit, OnDestroy {
       if (n > this.previousMoveCount) this.sound.play(this.moveSound(moves));
       this.previousMoveCount = n;
     });
+    effect(() => {
+      // 发牌只在牌**到手的那一刻**响一次:从「没有手牌」到「有手牌」的那一次跳变。
+      //
+      // 重新加载页面时,发牌**动画**会重播(牌的 DOM 节点是新建的,CSS 就放一次)——
+      // 那是装饰;而重播声音是在报告一件没有发生的事。所以这里和 `previousMoveCount`
+      // 一样用一个哨兵跳过第一次观察,于是刷新是静的,而真的发牌是响的。
+      // **同一个事实驱动两者,但声音的触发条件更严。**
+      const state = this.state();
+      // 没有快照 = 什么都还没观察到。**哨兵必须被第一份真快照吃掉,而不是被 effect 的第一次
+      // 运行吃掉** —— 第一版是后者,于是它在构造时先被 `state() === null` 消费掉,接着第一份
+      // 真快照就成了「0 → 17」的跳变,打开一局进行中的牌局也会响。三条断言当场变红。
+      if (!state) return;
+      const count = parseSeatView(state.game?.seatView)?.myHand.length ?? 0;
+      if (this.previousHandCount === -1) {
+        this.previousHandCount = count;
+        return;
+      }
+      if (this.previousHandCount === 0 && count > 0) this.sound.play('card-deal');
+      this.previousHandCount = count;
+    });
   }
 
   /**
@@ -224,8 +251,14 @@ export class RoomPage implements OnInit, OnDestroy {
    * move landed", and what it sounds like is the pack's business.
    */
   private moveSound(moves: readonly MoveDto[]): SoundEventName {
-    if (!this.isXiangqi()) return 'move-place';
-    return lastMoveCaptured(moves) ? 'capture' : 'move-place';
+    if (this.isXiangqi()) return lastMoveCaptured(moves) ? 'capture' : 'move-place';
+    // 斗地主的**出牌**有自己的声音,而**叫分与不要**留在 `move-place` 上 ——
+    // 于是不用看屏幕也听得出别人是出了牌还是过了牌。这是分两个事件的理由,不是副产品。
+    if (this.isDoudizhu()) {
+      const last = moves.at(-1);
+      return last && moveKind(last) === 'play' ? 'card-play' : 'move-place';
+    }
+    return 'move-place';
   }
 
   private playGameEndSound(ended: GameEndedDto): void {
