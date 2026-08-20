@@ -141,13 +141,18 @@ TBD - created by archiving change add-web-doudizhu. Update Purpose after archive
 **皮肤挑的是深浅,不是色相。** 纸面、边框、角标、牌背、桌面 SHALL 全部走皮肤 token;
 **花色的色相是这个游戏的身份**(♥ MUST 是红的),因此花色形状用素材图,而 MUST NOT 由皮肤改色相。
 
-花色图的路径 SHALL 由组件绑成 `--ddz-pip`(`games/doudizhu/card-art.ts`),而样式表 MUST NOT 再写
-一份。**这个位置是量出来的,不是选出来的:** 路径写在 CSS 里更符合「CSS 是绘制权威」,但这个仓库的
-测试构建**没有 .png 的 loader** —— 绝对路径报 `Could not resolve`,相对路径报
-`No loader is configured for ".png"`,两次都让整个测试构建失败。代价是一个 `[style.--ddz-pip]` 绑定
-若被清洗掉花色会**静静地不见**,所以 MUST 有一条断言读 inline style 里的 `url(`。
-图片放 `public/`(原样拷贝的静态资源,不进打包器),而「这条路径指着一个真存在的文件」由一条走遍
-**全部 54 个编码**的测试钉住,它用**惰性** `import.meta.glob` 只取键名、不加载模块。
+花色 SHALL 是**自绘的 SVG path**,以 `fill="currentColor"` 上色 —— 于是它跟着牌面的 `color`
+(即 `--card-red` / `--card-black`),**皮肤连花色的深浅也一起管**,而「皮肤挑的是深浅,不是色相」
+这条约束仍然成立。牌桌 MUST NOT 依赖任何图片素材,`card-table.css` 里 MUST NOT 出现 `url(`。
+
+这替掉了上一版的位图,而它同时删掉了三样为迁就位图而搭的脚手架:一条 `--ddz-pip` 的 style 绑定
+(这份测试构建没有 `.png` 的 loader,路径进不了 CSS)、一条用**惰性** `import.meta.glob` 证明文件
+在磁盘上的测试、以及一条防止那个绑定被清洗掉后花色**静静地不见**的断言。**能被删掉的机制才是
+最好的机制。**
+
+「每张牌都画得出花色」SHALL 由一条走遍**全部 54 个编码**的测试钉住:52 张有花色的牌各有一条闭合
+path,两张王 MUST 没有;并且四条 path MUST 两两不同 —— 一份复制粘贴忘了改的形状表,在「每张牌
+都有花色」这条断言下是绿的。
 
 牌桌的样式表 SHALL 是**组件自己的**,而 MUST NOT 注册进 `angular.json` 的全局样式 —— 全局样式首屏
 就要下载,而牌桌只在斗地主房间里画。量到的是:放全局时初始包 474.16 → 484.83 kB,480 kB 的预算
@@ -167,7 +172,12 @@ TBD - created by archiving change add-web-doudizhu. Update Purpose after archive
 
 #### Scenario: 皮肤换深浅,不换花色色相
 - **WHEN** 切换任一已注册棋盘皮肤或明暗模式
-- **THEN** 纸面 / 边框 / 桌面 MUST 随之变化;♥ / ♦ MUST 仍是红色
+- **THEN** 纸面 / 边框 / 桌面 MUST 随之变化,**花色的深浅随 `--card-red` / `--card-black` 一起变**;
+  ♥ / ♦ MUST 仍是红色
+
+#### Scenario: 牌桌不依赖素材
+- **WHEN** 检查 `card-table.css`
+- **THEN** MUST 没有 `url(`;`public/` 下 MUST 没有为牌桌准备的图片
 
 ### Requirement: 发牌与出牌有动作,而动作由牌的身份驱动
 
@@ -264,4 +274,34 @@ jsdom 没有排版引擎,量不到这两件事;所以源码级的那一半 SHALL
 #### Scenario: 两座位一字不变
 - **WHEN** `seats.length === 2`
 - **THEN** 仍然是「黑方 / 白方」两行
+
+### Requirement: 出牌与过牌是两个声音,发牌只在牌到手时响一次
+
+斗地主的**出牌** SHALL 放 `card-play`,而**叫分与不要** SHALL 留在 `move-place` 上。
+
+**这正是分成两个事件的理由,不是副产品**:不看屏幕也听得出别人是出了牌还是过了牌。
+`move-place` 的语义是「有人走了一手」,而它对叫分与不要是准确的 —— 所以它们不需要各自的声音。
+
+**发牌** SHALL 在手牌**第一次到手**时放一次 `card-deal`:从「没有手牌」到「有手牌」的那一次跳变。
+
+- 哨兵 MUST 被**第一份真快照**吃掉,而不是被 effect 的第一次运行吃掉 —— 后者会让打开一局
+  进行中的牌局也响一声。
+- 抢到地主后底牌进手(17 → 20)MUST NOT 响:那不是发牌。
+- 刷新页面时发牌**动画**会重播(牌的 DOM 节点是新建的),而声音 MUST NOT ——
+  **重播一个动画是装饰,重播一个声音是在报告一件没有发生的事。**
+
+判据 SHALL 由 `games/doudizhu/trick.ts` 的 `moveKind(move)` 给出,房间页 MUST NOT 再抄一份
+`play:` / `pass` / `bid:` 的前缀编码。
+
+#### Scenario: 出牌与过牌听得出区别
+- **WHEN** 一手 `play:` 到达,以及一手 `pass` 或 `bid:` 到达
+- **THEN** 前者 MUST 放 `card-play`,后两者 MUST 放 `move-place`
+
+#### Scenario: 发牌响一次
+- **WHEN** 页面打开时还没发牌,随后第三个人入座、牌发下来
+- **THEN** MUST 放且只放一次 `card-deal`
+
+#### Scenario: 打开一局进行中的牌局是静的
+- **WHEN** 页面打开时手上已经有牌
+- **THEN** MUST NOT 放 `card-deal`
 
