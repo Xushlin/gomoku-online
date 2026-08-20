@@ -28,7 +28,11 @@ public interface IGameRules
     string GameKey { get; }
 
     /// <summary>
-    /// 本棋种需要几个座位。现有实现全部为 2。
+    /// 本棋种需要几个座位。五子棋 / 一字棋 / 象棋 / 成语接龙是 2,斗地主与挖坑是 3。
+    /// <para>
+    /// (这一行此前写的是「现有实现全部为 2」,而它自 <c>add-doudizhu</c> 起就是假的 ——
+    /// 一句只描述现状的注释会在现状变化时静静过期,而没有任何机制会报告它。)
+    /// </para>
     /// <para>
     /// 这不是"平台能力"声明,而是**棋种形状**,与 <c>Rows</c> / <c>Cols</c> 同类 —— 所以它不计入
     /// 本接口顶部那条「能力声明超过三个就抽成 <c>GameCapabilities</c>」的门槛。
@@ -359,4 +363,7 @@ public static class GameKeys
 
     /// <summary>斗地主 —— 平台第一个三座位、有隐藏信息、按分结算的棋种。</summary>
     public const string Doudizhu = "doudizhu";
+
+    /// <summary>挖坑 —— 平台第一个先手由发牌决定的棋种。</summary>
+    public const string Wakeng = "wakeng";
 }

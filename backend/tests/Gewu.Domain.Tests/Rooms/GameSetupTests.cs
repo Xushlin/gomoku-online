@@ -215,16 +215,20 @@ public class GameSetupTests
     }
 
     [Fact]
-    public void Exactly_one_built_in_game_deals_a_setup()
+    public void Exactly_two_built_in_games_deal_a_setup()
     {
-        // 这一条此前是"还没有棋种实现它",注释里写着斗地主落地那天改成"恰好一个"。照办。
+        // 这一条走过两级:先是"还没有棋种实现它"(`add-match-setup` 钉的是"没有偷偷改动现有
+        // 棋种"),再是"恰好一个"(斗地主)。它按自己的预告红了第二次,而**那个时刻要问的
+        // 问题被真的问了**:这两个棋种的设置是同一种东西吗?
         //
-        // 它现在钉的是:斗地主是**唯一**需要秘密开局的棋种。再多一个的那天这条会红,而那正是
-        // 该问"这两个棋种的设置真是同一种东西吗"的时刻。
+        // 是 —— 两者都是"一副洗好的牌",都由一个种子确定,都 MUST NOT 出服务端。而这个 seam
+        // 因此第一次被一个**不同的**游戏验证过,而不只是被第二个实现填满:挖坑的牌是 52 张无王、
+        // 16/16/16 + 4,斗地主是 54 张、17/17/17 + 3,两边没有一个共用的常量。
+        //
+        // 「恰好」的牙没有拔掉:第三个的那天它还会红。
         var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
 
-        BuiltInGameRules.All(lexicon).Where(r => r is IDealtGameRules)
-            .Should().ContainSingle()
-            .Which.GameKey.Should().Be(GameKeys.Doudizhu);
+        BuiltInGameRules.All(lexicon).Where(r => r is IDealtGameRules).Select(r => r.GameKey)
+            .Should().BeEquivalentTo([GameKeys.Doudizhu, GameKeys.Wakeng]);
     }
 }

@@ -142,32 +142,58 @@ public class FirstSeatTests
     }
 
     [Fact]
-    public void No_built_in_game_picks_its_first_seat_yet()
+    public void Exactly_one_built_in_game_picks_its_first_seat()
     {
-        // **挖坑落地那天这条会红,那时把它改成"恰好一个"** —— 与
-        // `Exactly_one_built_in_game_deals_a_setup` 走过的同一条路(那一条也是从
-        // "还没有棋种实现它"改过来的)。「恰好一个」比「至少一个」有牙:第二个出现时它会红,
-        // 而那正是该问"这两个棋种的先手真是同一种东西吗"的时刻。
+        // 这一条此前是"还没有棋种实现它",注释里写着挖坑落地那天改成"恰好一个"。照办。
+        //
+        // 「恰好一个」比「至少一个」有牙:第二个出现时它会红,而那正是该问"这两个棋种的先手
+        // 真是同一种东西吗"的时刻。
         var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
 
         BuiltInGameRules.All(lexicon).Where(r => r is IFirstSeatRules)
-            .Should().BeEmpty();
+            .Should().ContainSingle()
+            .Which.GameKey.Should().Be(GameKeys.Wakeng);
     }
 
     [Fact]
-    public void Every_built_in_game_still_starts_at_seat_zero()
+    public void Every_game_without_the_seam_still_starts_at_seat_zero()
     {
-        // 上一条是"没有人实现这个接口";这一条是"于是每一局都从 0 号开始"。
-        // 两条都要有:接口没被实现,和默认没被改坏,是两件事。
+        // 上一条是"恰好一个棋种实现这个接口";这一条是"于是其余每一个都还从 0 号开始"。
+        // 两条都要有:接口被谁实现了,和默认有没有被改坏,是两件事。
+        //
+        // 它此前遍历**全部**棋种并要求每一个都是 0 —— 挖坑落地那天它当然会红,而红法很有用:
+        // 它报的是 `found 1`,也就是挖坑在这个种子下的首叫者是 1 号而不是 0 号。
+        // 下面 `The_first_seat_of_wakeng_is_its_own_first_bidder` 用的就是那个事实。
         var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
+        var walked = 0;
 
-        foreach (var rules in BuiltInGameRules.All(lexicon))
+        foreach (var rules in BuiltInGameRules.All(lexicon).Where(r => r is not IFirstSeatRules))
         {
             var setup = rules is IDealtGameRules dealt ? dealt.CreateSetup(20260820) : null;
             var room = Seated(rules, setup);
 
             room.Game!.CurrentTurn.Should().Be(
                 0, $"'{rules.GameKey}' 的先手仍然是约定,不是规则");
+            walked++;
         }
+
+        walked.Should().BeGreaterThan(1, "遍历若走空,这条断言什么都没验");
+    }
+
+    [Fact]
+    public void The_first_seat_of_wakeng_is_its_own_first_bidder()
+    {
+        // 上面那条遍历**不覆盖**实现了 seam 的棋种,所以这一条单独钉它 —— 一条只走"其余棋种"
+        // 的遍历,在挖坑的 `FirstSeat` 被改成 `=> 0` 之后照样全绿。
+        //
+        // 这个种子下首叫者是 **1 号**,而不是 0 号 —— 那不是巧合,是这条断言的**前提**:
+        // 若首叫者恰好是 0 号,"轮到首叫者"与"轮到 0 号"在同一个断言下不可区分,
+        // 而一个忽略发牌的实现会因为别的理由通过。
+        var rules = new Gewu.Domain.Games.Wakeng.WakengRules();
+        var setup = rules.CreateSetup(20260820);
+        var expected = Gewu.Domain.Games.Wakeng.WakengDeal.Decode(setup).FirstBidder().Seat;
+
+        expected.Should().NotBe(0, "这个种子的首叫者必须不是 0 号,否则下一条断言证明不了什么");
+        Seated(rules, setup).Game!.CurrentTurn.Should().Be(expected);
     }
 }
