@@ -1,5 +1,5 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
-import { BUILT_IN_PACKS } from './packs';
+import { PACK_LOADERS } from './packs';
 import type { SoundEventName, SoundPack } from './sound.tokens';
 
 const MUTED_STORAGE_KEY = 'gewu:sound-muted';
@@ -23,8 +23,15 @@ const DEFAULT_VOLUME = 100;
  * down browser) is silently absorbed; subsequent `play()`s are no-ops.
  *
  * Adding a new sound pack = a new TS file under `packs/` + one entry in
- * `BUILT_IN_PACKS`. Components stay untouched — they emit the same closed set of
+ * `PACK_LOADERS`. Components stay untouched — they emit the same closed set of
  * `SoundEventName`s, packs decide what those events sound like.
+ *
+ * **The built-in packs are loaded on demand** (see `packs/index.ts`: they were
+ * 8.69 kB of the initial bundle, for audio that cannot play before the first user
+ * gesture). The active one is warmed at construction without awaiting; a `play()`
+ * that still arrives first is queued rather than dropped, because a silent first
+ * move is a defect and a slightly late one is not. `register()` stays synchronous —
+ * an external pack hands over an object, not a loader.
  */
 export abstract class SoundService {
   abstract readonly muted: Signal<boolean>;
@@ -48,6 +55,8 @@ export class DefaultSoundService extends SoundService {
   private readonly _volume = signal<number>(DEFAULT_VOLUME);
   private readonly _packName = signal<string>(DEFAULT_PACK);
   private readonly packs = new Map<string, SoundPack>();
+  private readonly loaders = new Map<string, () => Promise<SoundPack>>();
+  private readonly loading = new Map<string, Promise<SoundPack | null>>();
 
   readonly muted: Signal<boolean> = this._muted.asReadonly();
   readonly volume: Signal<number> = this._volume.asReadonly();
@@ -60,14 +69,16 @@ export class DefaultSoundService extends SoundService {
   constructor() {
     super();
     // One list, walked — not three calls that a test fixture then re-writes by hand.
-    for (const [name, pack] of Object.entries(BUILT_IN_PACKS)) {
-      this.register(name, pack);
+    for (const [name, load] of Object.entries(PACK_LOADERS)) {
+      this.loaders.set(name, load);
     }
 
     this._muted.set(this.readMuted());
     this._volume.set(this.resolveInitialVolume());
     const initialPack = this.resolveInitialPack();
     this._packName.set(initialPack);
+    // 预热,不 await:让第一声在事件到达之前就已经就位,而不把它放进启动的关键路径。
+    void this.resolvePack(initialPack);
   }
 
   play(event: SoundEventName): void {
@@ -75,13 +86,54 @@ export class DefaultSoundService extends SoundService {
     if (this._muted() || this._volume() === 0) return;
     const ctx = this.ensureContext();
     if (!ctx || !this.masterGain) return;
-    const pack = this.packs.get(this._packName());
-    if (!pack) return;
+    const name = this._packName();
+    const pack = this.packs.get(name);
+    if (pack) {
+      this.render(pack, event, ctx, this.masterGain);
+      return;
+    }
+    // 还没加载完:排队,而不是丢掉。丢掉的表现是「这一局的第一手是静的」。
+    const gain = this.masterGain;
+    void this.resolvePack(name).then((loaded) => {
+      if (loaded) this.render(loaded, event, ctx, gain);
+    });
+  }
+
+  private render(pack: SoundPack, event: SoundEventName, ctx: AudioContext, gain: GainNode): void {
     try {
-      pack.play(event, ctx, this.masterGain);
+      pack.play(event, ctx, gain);
     } catch {
       // Broken pack should not crash the app.
     }
+  }
+
+  /**
+   * 解出一个 pack 的实现,并缓存。同一个 pack 并发请求只加载一次。
+   *
+   * 加载失败(chunk 拉不到)吞掉并返回 `null` —— 与 `AudioContext` 构造失败同一条:
+   * 没有声音是可以接受的降级,而白屏不是。
+   */
+  private async resolvePack(name: string): Promise<SoundPack | null> {
+    const cached = this.packs.get(name);
+    if (cached) return cached;
+    const inFlight = this.loading.get(name);
+    if (inFlight) return inFlight;
+    const load = this.loaders.get(name);
+    if (!load) return null;
+    const promise = load()
+      .then((pack) => {
+        this.packs.set(name, pack);
+        return pack;
+      })
+      .catch(() => {
+        this.warn(`pack '${name}' failed to load; staying silent.`);
+        return null;
+      })
+      .finally(() => {
+        this.loading.delete(name);
+      });
+    this.loading.set(name, promise);
+    return promise;
   }
 
   setMuted(muted: boolean): void {
@@ -108,16 +160,20 @@ export class DefaultSoundService extends SoundService {
   }
 
   activate(name: string): void {
-    if (!this.packs.has(name)) {
+    // 「已知」= 已注册的实现,或者有一个 loader —— 内置 pack 在第一次响之前是后者。
+    if (!this.packs.has(name) && !this.loaders.has(name)) {
       this.warn(`activate('${name}'): pack not registered; ignoring.`);
       return;
     }
     this._packName.set(name);
     this.persist(PACK_STORAGE_KEY, name);
+    void this.resolvePack(name);
   }
 
   availablePacks(): readonly string[] {
-    return Array.from(this.packs.keys());
+    // loader 在前(内置的顺序就是 header 菜单的顺序),外部 register 的接在后面。
+    const names = new Set<string>([...this.loaders.keys(), ...this.packs.keys()]);
+    return Array.from(names);
   }
 
   private ensureContext(): AudioContext | null {
@@ -149,7 +205,9 @@ export class DefaultSoundService extends SoundService {
 
   private resolveInitialPack(): string {
     const stored = this.read(PACK_STORAGE_KEY);
-    if (stored && this.packs.has(stored)) return stored;
+    // 已知 = 有实现或有 loader。**只查 `packs` 的那一版会让持久化的选择在启动时失效** ——
+    // 内置 pack 此时还没加载,于是每次启动都掉回默认的 wood。
+    if (stored && (this.packs.has(stored) || this.loaders.has(stored))) return stored;
     if (stored) this.persist(PACK_STORAGE_KEY, DEFAULT_PACK);
     return DEFAULT_PACK;
   }

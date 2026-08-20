@@ -11,6 +11,11 @@ import { unhandledSoundEvent, type SoundEventName, type SoundPack } from '../sou
  *   - line-clear      : three ascending sine notes — rows going away
  *   - line-clear-quad : four ascending notes, higher and longer
  *   - level-up        : two notes an octave apart
+ *   - card-deal       : five very short bright noise ticks, 55 ms apart, cutoff
+ *                       rising — a riffle, not five taps
+ *   - card-play       : one dull noise burst (low cutoff, longer tail) plus a
+ *                       soft 150 Hz body — a card slapping felt, which is a
+ *                       different object from a stone hitting wood
  *   - urge            : sine sweep 220 → 520 Hz over 120 ms — attention pop
  *   - game-win        : ascending C5–E5–G5 arpeggio (sine + AD envelope)
  *   - game-lose       : sine sweep 600 → 180 Hz over 600 ms with linear gain decay
@@ -37,6 +42,12 @@ export const woodPack: SoundPack = {
         return;
       case 'level-up':
         playAscending(ctx, masterGain, now, [523.25, 1046.5], 0.11, 0.26);
+        return;
+      case 'card-deal':
+        playCardDeal(ctx, masterGain, now);
+        return;
+      case 'card-play':
+        playCardPlay(ctx, masterGain, now);
         return;
       case 'urge':
         playUrge(ctx, masterGain, now);
@@ -220,4 +231,84 @@ function playDraw(ctx: AudioContext, dest: GainNode, now: number): void {
     osc.start(start);
     osc.stop(start + 0.18);
   }
+}
+
+/**
+ * 一副牌发下来 —— 五下很短的亮噪声,越发越亮。
+ *
+ * 刻意**不是**五次 `move-place`:那是「五个人各落了一子」,而发牌是一个动作。
+ * 所以每一下更短(18 ms 对 60 ms)、更亮,而且滤波器的截止频率一路上行。
+ */
+function playCardDeal(ctx: AudioContext, dest: GainNode, now: number): void {
+  const ticks = 5;
+  for (let i = 0; i < ticks; i++) {
+    const start = now + i * 0.055;
+    const duration = 0.018;
+    const buffer = ctx.createBuffer(
+      1,
+      Math.max(1, Math.floor(ctx.sampleRate * duration)),
+      ctx.sampleRate,
+    );
+    const data = buffer.getChannelData(0);
+    for (let s = 0; s < data.length; s++) {
+      const env = Math.exp(-s / (ctx.sampleRate * 0.004));
+      data[s] = (Math.random() * 2 - 1) * env;
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 1400 + i * 260;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.16, start);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+
+    source.connect(filter).connect(gain).connect(dest);
+    source.start(start);
+    source.stop(start + duration + 0.01);
+  }
+}
+
+/**
+ * 一手牌拍在桌上 —— 闷一点的噪声加一点低频的身体。
+ *
+ * 与 `capture` 共享「噪声 + 正弦」的形状而不共享参数:那一下是亮而硬的(木头对木头),
+ * 这一下是钝的(纸对呢面)。两者在 `pack-contract.spec` 的指纹下必须不同。
+ */
+function playCardPlay(ctx: AudioContext, dest: GainNode, now: number): void {
+  const duration = 0.085;
+  const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    const env = Math.exp(-i / (ctx.sampleRate * 0.02));
+    data[i] = (Math.random() * 2 - 1) * env;
+  }
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 900;
+
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.22, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  source.connect(filter).connect(noiseGain).connect(dest);
+  source.start(now);
+  source.stop(now + duration + 0.01);
+
+  const body = ctx.createOscillator();
+  body.type = 'sine';
+  body.frequency.value = 150;
+
+  const bodyGain = ctx.createGain();
+  bodyGain.gain.setValueAtTime(0.14, now);
+  bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+  body.connect(bodyGain).connect(dest);
+  body.start(now);
+  body.stop(now + 0.08);
 }

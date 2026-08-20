@@ -1,4 +1,4 @@
-import { BUILT_IN_PACKS } from '../sound/packs';
+import { PACK_NAMES } from '../sound/packs';
 import { describe, expect, it } from 'vitest';
 import en from '../../../../public/i18n/en.json';
 import zhCN from '../../../../public/i18n/zh-CN.json';
@@ -79,7 +79,7 @@ describe('i18n locale parity', () => {
   // fourth pack's key would have been required by nothing. The spec it serves had the
   // same defect: it enumerated `wood` / `chiptune` and was wrong from the day
   // `minimal` shipped.
-  it.each(Object.keys(BUILT_IN_PACKS))('both locales translate the %s pack', (pack) => {
+  it.each(PACK_NAMES)('both locales translate the %s pack', (pack) => {
     for (const entry of locales) {
       const key = `header.sound-pack.${pack}`;
       expect(entry.keys.get(key), `${entry.locale} missing ${key}`).toBeTruthy();

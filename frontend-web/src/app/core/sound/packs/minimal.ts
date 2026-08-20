@@ -13,6 +13,8 @@ import { unhandledSoundEvent, type SoundEventName, type SoundPack } from '../sou
  *                       C5 → G5, or the two events would read as the same one
  *   - line-clear-quad : three-note rise E5 → B5 → E6, still inside 400 ms
  *   - level-up        : one high C6 pulse
+ *   - card-deal       : three very light 520 Hz ticks, 60 ms apart
+ *   - card-play       : one low 330 Hz click — the quiet pack's version of a slap
  *   - urge            : two short 880 Hz clicks, 80 ms apart
  *   - game-win        : understated two-note rise C5 → G5
  *   - game-lose       : two-note fall G4 → C4
@@ -43,6 +45,15 @@ export const minimalPack: SoundPack = {
         return;
       case 'level-up':
         note(ctx, masterGain, now, 1046.5, 0.14, 0.15); // C6
+        return;
+      case 'card-deal':
+        // 三下极轻的 tick —— 与 urge 的两下 880 不同高也不同数。
+        click(ctx, masterGain, now, 520, 0.04, 0.1);
+        click(ctx, masterGain, now + 0.06, 520, 0.04, 0.1);
+        click(ctx, masterGain, now + 0.12, 520, 0.04, 0.1);
+        return;
+      case 'card-play':
+        click(ctx, masterGain, now, 330, 0.06, 0.13);
         return;
       case 'urge':
         click(ctx, masterGain, now, 880, 0.05, 0.15);
