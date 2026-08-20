@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **格物 / Gewu** — a multi-platform online game hall. Planned games: idiom games (成语纵横 / 成语接龙 / 猜成语), 五子棋, 一字棋, 中国象棋, 华容道, 俄罗斯方块. 「格」 means grid cell, which is what they all have in common.
 
-Eight games ship today, and between them they establish the three kernels every later game reuses:
+Nine games ship today, and between them they establish the three kernels every later game reuses:
 
 - **斗地主 (doudizhu)** — the match kernel's **hardest** proof: three seats, a server-only deal, hands visible to one seat each, and a settlement in points rather than ELO. It cost **eleven** changes — six to stop the kernel assuming two players, one for the cards, one for the rules, one for per-seat visibility, and one for the UI — and the aggregate was never touched by any of them. Playable at `/g/doudizhu/lobby`.
 
@@ -21,14 +21,14 @@ Games fall into three categories that deliberately do **not** share one aggregat
 
 | Category | Games | Realtime | Core concepts |
 | --- | --- | --- | --- |
-| Turn-based adversarial | 五子棋, 一字棋, 中国象棋, 成语接龙, 斗地主 | SignalR | room, N seats, turn order, move sequence, ELO, spectators, replay |
+| Turn-based adversarial | 五子棋, 一字棋, 中国象棋, 成语接龙, 斗地主, 挖坑 | SignalR | room, N seats, turn order, move sequence, ELO, spectators, replay |
 | ↳ what 斗地主 adds | — | — | **hidden per-seat state**, a **server-only setup** (the deal), **three** seats, and a settlement in points rather than ELO |
 | Single-player levels | 成语纵横, 华容道, 猜成语 | none (REST) | level catalogue, progress, stars, hints, time leaderboard |
 | Single-player score-attack | 俄罗斯方块 | none (submit at end) | run record, score validation, periodic leaderboard |
 
 ## Current phase
 
-**Eight games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), 中国象棋 (the change that proved which match seams were actually general), 华容道 (the one that did the same to the puzzle kernel), 成语接龙 (the one with no board at all), 俄罗斯方块 (the only one whose client owns the whole rule set), and 斗地主 (three seats, hidden hands, and the first game whose players do not all see the same room). Detail:
+**Nine games ship**: 五子棋 (the original), 成语纵横 (the first puzzle game), 一字棋 (the change that priced what a second board game costs), 中国象棋 (the change that proved which match seams were actually general), 华容道 (the one that did the same to the puzzle kernel), 成语接龙 (the one with no board at all), 俄罗斯方块 (the only one whose client owns the whole rule set), 斗地主 (three seats, hidden hands, and the first game whose players do not all see the same room), and 挖坑 (the first game whose first mover comes from the deal, and the one that made the card UI shared rather than copied). Detail:
 
 - [x] 4-layer Clean Architecture solution skeleton (`backend/Gewu.slnx`)
 - [x] OpenSpec initialized (`openspec/config.yaml`); each shipped change is archived under `openspec/changes/archive/<date>-<name>/`
@@ -562,7 +562,34 @@ Not yet done — platform roadmap:
 
   (顺带一条工具坑,记下来因为它差点让本条记录整段丢掉:**在这台机器上 `python - <<EOF` 的 stdin 默认不是 UTF-8**,含中文的脚本会直接 `SyntaxError: Non-UTF-8 code`。而它失败之后 `git commit` 照样跑了 —— 于是提交信息里写着「CLAUDE.md 记的是……」,而 CLAUDE.md 一个字都没改。**一个失败的步骤后面跟一个成功的步骤,和两个成功的步骤,长得一模一样。**)
 
-Next game: **挖坑 (wakeng)** — 规则已经落地(`hoist-card-model` / `add-wakeng-cards` / `add-wakeng`),**只差 UI**,与 `add-doudizhu` 到 `add-web-doudizhu` 之间是同一个状态。它是第一个规则由用户以 URL 给出、而不是由我拟的棋种。 Rules of record (jj.cn 的官方帮助页,读到的原文):**一副牌 52 张、去掉大小王;3 人;每人 16 张 + 4 张底牌;3 > 2 > A > K > … > 4;跟牌必须同型同张数;单 / 对 / 三头 / 四头 / 顺子(3 张起)/ 连对(3 对起)/ 连三头(飞机,3 组起)/ 连四头(火箭,3 组起);计分 叫分 × 基数,挖坑者 ×2**。
+- [x] **`add-web-wakeng`** — 挖坑可玩了,`/g/wakeng/lobby`。**九个棋种 ship。** 后端**零改动**。
+
+  **这一步真正做的事是把 `hoist-card-model` 那把尺子用在界面上,逐件问「共享的是事实,还是形状」。** 判据一字不改:**按「是不是同一件事」分,不按「代码长得像不像」分。**
+
+  - **共享**(搬到 `games/cards/`):牌的一字符编码(服务端 `Card.Alphabet` 的那份副本)、四个花色的 SVG path、三座位环绕的方位、「当前一轮是从最后一手 `play:` 起到末尾」—— 挖坑用**同一批值**、同一个下标,那是一个事实。
+  - **各一份**:`seatView` 的形状(`landlord` / `baseScore` 对 `digger` / `bid` / `firstBidder`)、大小顺序。**「它们可以分歧」正是「这不是一个事实」的检验。**
+
+  **牌桌组件共享 + 参数化,而不是复制,理由是具体的:** 那 374 行 CSS 里的扇形公式**被 shrink-to-fit 咬过四次**,而它的不变量由 `check-styles.mjs` 按文件名钉着 —— 复制它就是复制一个已经出过四次错的公式,**而那是一份真的会分叉的第二真源**。两个游戏的差别是四个数和几个标签:那是**参数**,不是分歧,与 `NInARowRules(key, rows, cols, winLength)` 让一字棋贡献零行判胜是同一个形状。于是 `room-page` 那个 `@if` **不因挖坑增加一支** —— 两个棋种渲染同一个组件,只是配置不同。
+
+  **「搬家没有改行为」有一条可执行形式:既有的 844 条断言一条都没改**(只改 import 路径),而 `config` 是**必填输入**,所以编译器把每一处调用点列了出来 —— 一个默认值会让「忘了传」和「故意用斗地主那份」长得一样,而后者的症状是底牌少一张、手牌顺序反着、首叫者标记不见,三样都只在屏幕上看得见。
+
+  **`compareForDisplay` 不是凑数的配置项,是一处真缺陷的预防 —— 同一个巧合第三次咬人。** 服务端送来的 `myHand` 是 `Card.Encode` 的输出,也就是**编码顺序**(3、4、…、K、A、2)。斗地主的大小恰好就是它,所以按原样渲染是对的;**挖坑是 `3 > 2 > A > … > 4`**,按原样渲染会把**最强的那张放在最左边**、第二张是最弱的 4。前两次是 `hoist-card-model` 改掉服务端 `CardRank` 那句「数值就是大小顺序」、`add-wakeng` 修掉超时兜底照抄的 `HandOf(seat)[0]`;这一次在客户端,而 `PlayingCard.rank` 的文档一并改对。**一句只被一个实现验证过的话,会在每一层各错一次。**
+
+  三处变异全红,而它们各只杀一条测试 —— 那是刻意的:每一条都构造成「配置换成斗地主那份就会红」。`compareForDisplay` → 排序那条;`kittySize` 3 → 底牌那条;`showsFirstBidder` false → 标记那条。
+
+  **五件计划之外的事,而其中三件是「我的测量本身错了」。**
+
+  1. **我自己建的那个 lint 期检查抓住了这次搬家。** `check-styles.mjs` 按**文件名**钉 `card-table.css`,于是 `npm run lint` 当场炸。**按文件名钉正是它有用的原因**:一次搬家若让那些不变量静静失效,谁都不会发现。
+  2. **首叫者标记第一版让组件样式预算红了 90 字节。** 我加的 `.ddz-card--mini` 写了 `width` / `height` / `font-size`,而 `.ddz-card` 本来就从 `--ddz-w` 推出这三样 —— 那个类**整个删掉**,改成内联绑一个 `--ddz-w`(底牌那一支本来就在内联绑 `--ddz-gaps`),**新增 CSS 零行**。`add-doudizhu-table-visuals` 记过:为绕开这个预算去用 Tailwind arbitrary utility,会把字节挪进**首屏**样式表,更糟。
+  3. **一条断言我先写错了,而改对之后比原来更强。** 「标记显示 3 号座位」—— 而测试用的 transloco **没有翻译**,`{{seat}}` 根本不插值。改成断言**哪一张牌**在:服务端点名 ♣4,而手里另有一张 3,于是它证明的是「画的是被点名的那张」,不是「从手牌里随便挑了一张」。
+  4. **暗色我第一次量错了属性。** `--felt-bg` / `--card-face` 是**渐变**,所以落在 `background-image` 上,而我读的是 `backgroundColor` —— 读到 `rgba(0,0,0,0)`,看起来像「暗色下没有底色」。改读 `backgroundImage` 之后两个模式逐值不同(felt `#2f7a4a` → `#1f5334`,牌面 `#fffdf6` → `#f6f1e2`)。**一个量错了属性的测量,和一个真的缺陷,长得一模一样。**
+  5. **点牌出牌这条交互在这个 pane 里验不了。** Browser pane 不显示时页面不合成帧,zoneless 的变更检测不同步跑,所以点完一张牌再读 DOM 读到的是 `Play (0)` 与 `disabled`。那是本文件已记过两次的已知限制,不是缺陷;那条路径的权威是单测(`emits the selected cards in ascending order`),而载荷本身在 `add-wakeng` 的真 SignalR 探针里走通过。**说清楚哪一半没量,比说「都验过了」诚实。**
+
+  浏览器(375 px,**满屏内容**:18 张手牌 + 32 张牌背 + 4 张底牌 + 桌上一手):手牌读作 `4,4 … A,3`(最弱在左、3 在右)、叫分按钮说 **Dig 1/2/3 / No dig**、底牌 **4** 张牌背、首叫者标记带 ♣4、侧栏列出 **Seat 1 / 2 / 3** 三个人(`publish-seat-count` 的效果)。页面级溢出 **0**,而唯三个 `scrollWidth > clientWidth` 的元素**实测**是 `text-overflow: ellipsis` 的 `truncate`(20 字符用户名),按设计如此 —— **「有元素溢出」和「布局坏了」不是一回事,而分清它们要读 computed style,不能只看数字。**
+
+  一个坑:**一局挖坑会自己往前走**(超时兜底 60 秒一手),所以我第一次打开房间时叫分已经结束、底牌已经公开。「叫分阶段长什么样」要**新开一局立刻看** —— 与 `fix-lobby-seats` 记的「Playing 的三座位房间约一分钟自己消失」同源:**一个会自己演化的系统,观察它要挑时机。**
+
+**挖坑 (wakeng) 已经 ship** —— 四个变更（`generalize-match-kickoff` / `hoist-card-model` / `add-wakeng-cards` / `add-wakeng`）把规则送进内核，`add-web-wakeng` 给它界面，而中途插了两笔它逆出来的债（`fix-lobby-seats` / `publish-seat-count`）。它是第一个**规则由用户以 URL 给出**、而不是由我拟的棋种；四处原文没说或自相矛盾的地方由用户定下（**A 不能进顺子**、**三家都不挖则首叫者兜底 1 倍**、**基数默认 1**、**首叫者亮的那张牌公开进 `seatView`**），详细记在 `add-wakeng-cards` 那一条里。
 
 它与斗地主的差别不是「多几个牌型」,而是**几乎每一条都不同**:3 最大而不是王最大、**没有炸弹**、三条四条**不能带牌**、2 和 3 不能进顺子。所以它复用的是 `Card`(编码、花色、点数)与洗牌,而**大小与牌型是一整套自己的** —— 这与「一字棋复用 `NInARowRules`」是相反的一端:同一个家族里,牌可以共享,规则不行。
 
@@ -629,8 +656,6 @@ Next game: **挖坑 (wakeng)** — 规则已经落地(`hoist-card-model` / `add-
   **一个量出来的坑,留给下一个做变异测试的人:恢复步骤会骗过编译器。** `shutil.copy2` 保留 mtime,于是恢复后的源文件比 `obj/` 里的产物**更旧**,MSBuild 的增量判断认为无事发生 —— `dotnet build` 报 **0 errors、什么也没编**,接着的 `--no-build` 测的是**变异体**。它表现成两条测试莫名变红。这一次红的恰好是一眼能认出的那两条,三分钟就查到了;**一个更隐蔽的变异会长得像一个真缺陷**。与本文件已记的「`--no-build` 会跑磁盘上碰巧存在的那份二进制」同族,而更阴:**一次成功而什么都没做的构建,和一次真的构建,长得一模一样。** 两条只杀一条测试的变异因此带强制重编重量了一遍,结果不变。
 
   验证:**1439** 后端测试绿(新增 82)、827 前端测试绿、七处变异全红且恢复后工作树逐字节校验一致。真 HTTP:`AiSmoke` **45** 条全过(新增步骤 10;退出码是**不经管道**测的 —— 一个管道会吃掉你想量的那个退出码)。三个真账号 + 一个围观者:手牌 16/16/16、两两交集 **0/0/0**、并集 **48**(另 4 张在底牌里,叫分阶段谁都看不见)、围观者手牌为空而公开计数在、房间 DTO 里搜不到 `setup`。三条真 SignalR 长轮询连接:`SayWord` 载着 `bid:3` 与 `play:E` 走通,挖坑者 16 → **20** 且底牌 `RTrv` 转为公开,另一家看到 `[16,20,16]` 而**一张都没看到**;`MakeMove(7,7)` 与「出一张不在手上的牌」都回 `invalid-move`。
-
-  **下一步是 `add-web-wakeng`** —— 牌桌组件大概能复用(底牌 4 张而不是 3 张),而它会撞上上面记的那笔大厅列表的债。挖坑因此仍然**不算「ship」**:与 `add-doudizhu` 到 `add-web-doudizhu` 之间是同一个状态,八个棋种的数字不变。
 
   顺带记下三笔:`IGameRules.SeatCount` 的注释「现有实现全部为 2」自 `add-doudizhu` 起就是假的(改掉了);`WakengScoring.Settle` 与 `DoudizhuScoring.Settle` 一样**仍然没有生产调用方**,触发条件不变(平台需要一条**点数榜**的那天);以及 **`RoomSummaryDto`(大厅列表用的那个)至今只有 `Black` / `White`,没有座位列表**,所以三座位房间的第三个人在**大厅的房间行里**不出现 —— 与 `add-doudizhu-table-visuals` 在侧栏修掉的是同一个缺陷的**第三处**,触发条件是 `add-web-wakeng` 要给一个三座位棋种画大厅。AiSmoke 里那段声称这笔债已经付掉的注释也一并改对了:`SeatWire` 确实删了、`RoomStateDto.Seats` 确实有了,而那两条断言**照样是绿的**,因为它们看的是另一个 DTO。
 
