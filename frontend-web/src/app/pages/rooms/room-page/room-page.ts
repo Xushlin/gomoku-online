@@ -15,11 +15,14 @@ import { SoundService } from '../../../core/sound/sound.service';
 import type { SoundEventName } from '../../../core/sound/sound.tokens';
 import { gameEntryRoute, PLATFORM_HOME } from '../../../games/game-entry-route';
 import { GameCatalogService } from '../../../games/game-catalog.service';
-import { CardTable } from '../../../games/doudizhu/card-table/card-table';
+import { CardTable } from '../../../games/cards/card-table/card-table';
 import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
 import { DOUDIZHU_KEY } from '../../../games/doudizhu/game-key';
-import { moveKind } from '../../../games/doudizhu/trick';
-import { parseSeatView } from '../../../games/doudizhu/seat-view';
+import { DOUDIZHU_TABLE } from '../../../games/doudizhu/seat-view';
+import { WAKENG_KEY } from '../../../games/wakeng/game-key';
+import { WAKENG_TABLE } from '../../../games/wakeng/seat-view';
+import { moveKind } from '../../../games/cards/trick';
+
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
 import { lastMoveCaptured } from '../../../games/xiangqi/position';
@@ -142,6 +145,19 @@ export class RoomPage implements OnInit, OnDestroy {
   /** 斗地主是第四种棋盘形状,而它是第一个用座位号而不是颜色描述自己的。 */
   protected readonly isDoudizhu = computed(() => this.state()?.gameKey === DOUDIZHU_KEY);
 
+  protected readonly isWakeng = computed(() => this.state()?.gameKey === WAKENG_KEY);
+
+  /**
+   * 牌类棋种走**同一个**牌桌组件,只是配置不同 —— 所以这个 `@if` 分支**不因挖坑增加一支**。
+   *
+   * `null` 表示这不是牌类棋种。
+   */
+  protected readonly cardTable = computed(() => {
+    if (this.isDoudizhu()) return DOUDIZHU_TABLE;
+    if (this.isWakeng()) return WAKENG_TABLE;
+    return null;
+  });
+
   /**
    * 我坐第几号座位;`null` 表示不占座位(围观者 / 尚未入座)。
    *
@@ -224,7 +240,9 @@ export class RoomPage implements OnInit, OnDestroy {
       // 运行吃掉** —— 第一版是后者,于是它在构造时先被 `state() === null` 消费掉,接着第一份
       // 真快照就成了「0 → 17」的跳变,打开一局进行中的牌局也会响。三条断言当场变红。
       if (!state) return;
-      const count = parseSeatView(state.game?.seatView)?.myHand.length ?? 0;
+      // 手牌张数走**这个棋种的**解析函数 —— 两个牌类棋种的 `seatView` 是两种形状,
+      // 而拿斗地主那份去解挖坑的会静静得到 0(字段名对不上),于是发牌永远不响。
+      const count = this.cardTable()?.parseView(state.game?.seatView)?.myHand.length ?? 0;
       if (this.previousHandCount === -1) {
         this.previousHandCount = count;
         return;
@@ -254,7 +272,7 @@ export class RoomPage implements OnInit, OnDestroy {
     if (this.isXiangqi()) return lastMoveCaptured(moves) ? 'capture' : 'move-place';
     // 斗地主的**出牌**有自己的声音,而**叫分与不要**留在 `move-place` 上 ——
     // 于是不用看屏幕也听得出别人是出了牌还是过了牌。这是分两个事件的理由,不是副产品。
-    if (this.isDoudizhu()) {
+    if (this.cardTable() !== null) {
       const last = moves.at(-1);
       return last && moveKind(last) === 'play' ? 'card-play' : 'move-place';
     }

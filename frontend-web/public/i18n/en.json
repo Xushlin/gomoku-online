@@ -394,6 +394,10 @@
     "doudizhu": {
       "title": "Dou Dizhu",
       "description": "Three players, one deck: the landlord against two peasants. Your hand is visible only to you."
+    },
+    "wakeng": {
+      "title": "Wakeng",
+      "description": "Three-handed 52-card game: 3 is highest, no bombs. Smallest club bids and leads."
     }
   },
   "idiom-crossword": {
@@ -599,15 +603,13 @@
     "next": "Next",
     "page-of": "Page {{page}} of {{total}}"
   },
-  "doudizhu": {
+  "cards": {
     "phase": {
       "Bidding": "Bidding",
       "Playing": "Playing",
       "Finished": "Finished"
     },
     "table": {
-      "landlord": "Landlord: seat {{seat}}",
-      "landlord-badge": "Landlord",
       "base-score": "Base score {{score}}",
       "kitty": "Kitty",
       "seat": "Seat {{seat}}",
@@ -622,8 +624,6 @@
       "kitty-hidden": "Kitty, not yet revealed"
     },
     "action": {
-      "no-bid": "Pass on bidding",
-      "bid": "Bid {{points}}",
       "play": "Play ({{count}})",
       "pass": "Pass",
       "waiting": "Waiting for the others…"
@@ -632,9 +632,20 @@
       "joker": "JK"
     },
     "bubble": {
-      "pass": "Pass",
+      "pass": "Pass"
+    },
+    "doudizhu": {
       "bid": "Bid {{points}}",
-      "no-bid": "No bid"
+      "no-bid": "Pass",
+      "role": "Landlord",
+      "role-seat": "Landlord: seat {{seat}}"
+    },
+    "wakeng": {
+      "bid": "Dig {{points}}",
+      "first-bidder": "First bid: seat {{seat}}",
+      "no-bid": "No dig",
+      "role": "Digger",
+      "role-seat": "Digger: seat {{seat}}"
     }
   }
 }

@@ -1,11 +1,11 @@
 import type { MoveDto } from '../../core/api/models/room.model';
-import { decodeHand, type DoudizhuCard } from './cards';
+import { decodeHand, type PlayingCard } from './cards';
 
 /** 一个座位在当前一轮里做的事。 */
 export type TrickAction =
   | { readonly seat: number; readonly ply: number; readonly kind: 'bid'; readonly points: number }
   | { readonly seat: number; readonly ply: number; readonly kind: 'pass' }
-  | { readonly seat: number; readonly ply: number; readonly kind: 'play'; readonly cards: readonly DoudizhuCard[] };
+  | { readonly seat: number; readonly ply: number; readonly kind: 'play'; readonly cards: readonly PlayingCard[] };
 
 /**
  * 当前一轮里每个座位做了什么 —— 从**已经公开的 `moves`** 算出来。

@@ -5,7 +5,7 @@
     [class.ddz-card__rank--wide]="card.label.length > 1"
   >{{ card.label }}</span>
   @if (isJoker(card)) {
-    <span class="ddz-card__joker">{{ 'doudizhu.card.joker' | transloco }}</span>
+    <span class="ddz-card__joker">{{ 'cards.card.joker' | transloco }}</span>
   } @else if (pip(card); as d) {
     <!-- 同一条 path,两个尺寸。`currentColor` 让花色跟着牌面的 color(= 皮肤 token)。 -->
     <svg class="ddz-card__pip" viewBox="0 0 100 100" aria-hidden="true">
@@ -22,21 +22,42 @@
   <div class="ddz-table relative flex w-full flex-col gap-2 p-2.5">
     <!-- 公开信息:阶段、地主、底分。三家与围观者看到的完全相同。 -->
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-      <span class="text-sm font-semibold">{{ 'doudizhu.phase.' + v.phase | transloco }}</span>
-      @if (v.landlord !== null) {
+      <span class="text-sm font-semibold">{{ 'cards.phase.' + v.phase | transloco }}</span>
+      @if (v.roleSeat !== null) {
         <span class="ddz-muted">{{
-          'doudizhu.table.landlord' | transloco: { seat: v.landlord + 1 }
+          config().i18nPrefix + '.role-seat' | transloco: { seat: v.roleSeat + 1 }
         }}</span>
         <span class="ddz-muted tabular-nums">{{
-          'doudizhu.table.base-score' | transloco: { score: v.baseScore }
+          'cards.table.base-score' | transloco: { score: v.bid }
         }}</span>
+      }
+      <!-- 首叫者与他亮的那张牌 —— **挖坑独有**,而它是公开的:按规则本来就是明示的
+           (它决定了谁首叫首出),而服务端算得出,客户端不该自己猜。
+           斗地主的配置里 `showsFirstBidder` 是 false —— 那个概念在斗地主里不存在。 -->
+      @if (config().showsFirstBidder && v.firstBidder; as first) {
+        <span class="ddz-muted flex items-center gap-1" data-testid="first-bidder">
+          {{ config().i18nPrefix + '.first-bidder' | transloco: { seat: first.seat + 1 } }}
+          <!-- 同一个 `#face` 模板 —— 一张牌的正面只写一遍,四处共用,现在是五处。 -->
+          <!-- 尺寸只给 `--ddz-w` 一个数,宽 / 高 / 字号全由 `.ddz-card` 从它推出 ——
+               所以这个标记**没有新增一行 CSS**。第一版加了个 `.ddz-card--mini` 类,而它让
+               组件样式预算(4 kB)红了 90 字节;`add-doudizhu-table-visuals` 记过那条:
+               为了绕开它去用 Tailwind arbitrary utility 会把字节挪进**首屏**的样式表,更糟。
+               底牌那一支本来就在内联绑 `--ddz-gaps`,这是同一个做法。 -->
+          <span
+            class="ddz-card"
+            [class.ddz-card--red]="first.card.red"
+            [style.--ddz-w]="'1.5rem'"
+          >
+            <ng-container *ngTemplateOutlet="face; context: { $implicit: first.card }" />
+          </span>
+        </span>
       }
     </div>
 
     <div
       class="ddz-arena items-start gap-2"
       role="group"
-      [attr.aria-label]="'doudizhu.table.others-label' | transloco"
+      [attr.aria-label]="'cards.table.others-label' | transloco"
     >
       <!-- 另外两家(挖坑那天是三家):头像、名字、还剩几张、地主标、当前一轮说的那句话。 -->
       @for (other of others(); track other.seat) {
@@ -54,20 +75,20 @@
                 aria-hidden="true"
               >{{ other.initial }}</span>
               <span class="min-w-0 truncate text-xs">{{
-                other.username || ('doudizhu.table.seat' | transloco: { seat: other.seat + 1 })
+                other.username || ('cards.table.seat' | transloco: { seat: other.seat + 1 })
               }}</span>
-              @if (other.isLandlord) {
-                <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ 'doudizhu.table.landlord-badge' | transloco }}</span>
+              @if (other.hasRole) {
+                <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ config().i18nPrefix + '.role' | transloco }}</span>
               }
             </div>
             <span class="ddz-muted text-center text-xs tabular-nums">{{
-              'doudizhu.table.cards-left' | transloco: { count: other.count }
+              'cards.table.cards-left' | transloco: { count: other.count }
             }}</span>
             <!-- 对家的牌只看得到背面 —— 服务端逐张裁剪过,客户端手上本来就没有那些牌。 -->
             <div
               class="ddz-fan ddz-fan--backs"
               [style.--ddz-gaps]="gaps(other.count)"
-              [attr.aria-label]="'doudizhu.table.hidden-hand' | transloco: { count: other.count }"
+              [attr.aria-label]="'cards.table.hidden-hand' | transloco: { count: other.count }"
             >
               @for (i of other.backs; track i) {
                 <span class="ddz-card ddz-card--back"></span>
@@ -85,11 +106,11 @@
       <!-- 桌心:底牌 + 要压的那手牌。 -->
       <div class="ddz-centre flex flex-col justify-center gap-1.5">
         @if (v.kitty; as kitty) {
-          <p class="ddz-muted text-center text-xs">{{ 'doudizhu.table.kitty' | transloco }}</p>
+          <p class="ddz-muted text-center text-xs">{{ 'cards.table.kitty' | transloco }}</p>
           <div
             class="ddz-kitty ddz-fan"
             [style.--ddz-gaps]="gaps(kitty.length)"
-            [attr.aria-label]="'doudizhu.table.kitty' | transloco"
+            [attr.aria-label]="'cards.table.kitty' | transloco"
           >
             @for (card of kitty; track card.code; let i = $index) {
               <span
@@ -107,10 +128,10 @@
           <!-- 还没翻开的底牌。三张背面朝上 —— 那个「三」是客户端唯一一处规则常量,只用于显示。 -->
           <div
             class="ddz-kitty ddz-fan"
-            [style.--ddz-gaps]="gaps(kittyBacks.length)"
-            [attr.aria-label]="'doudizhu.table.kitty-hidden' | transloco"
+            [style.--ddz-gaps]="gaps(kittyBacks().length)"
+            [attr.aria-label]="'cards.table.kitty-hidden' | transloco"
           >
-            @for (i of kittyBacks; track i) {
+            @for (i of kittyBacks(); track i) {
               <span class="ddz-card ddz-card--back"></span>
             }
           </div>
@@ -118,7 +139,7 @@
 
         @if (v.tableCards; as table) {
           <p class="ddz-muted text-center text-xs tabular-nums">
-            {{ 'doudizhu.table.played-by' | transloco: { seat: (v.tableSeat ?? 0) + 1 } }}
+            {{ 'cards.table.played-by' | transloco: { seat: (v.tableSeat ?? 0) + 1 } }}
           </p>
           <!-- 出牌从出牌人的方位飞来。方位是算出来的,不是量出来的。 -->
           <div
@@ -139,7 +160,7 @@
             }
           </div>
         } @else {
-          <p class="ddz-free-lead ddz-muted self-center rounded-lg border border-dashed px-3 py-2 text-sm">{{ 'doudizhu.table.free-lead' | transloco }}</p>
+          <p class="ddz-free-lead ddz-muted self-center rounded-lg border border-dashed px-3 py-2 text-sm">{{ 'cards.table.free-lead' | transloco }}</p>
         }
       </div>
     </div>
@@ -156,13 +177,13 @@
                 aria-hidden="true"
               >{{ me.initial }}</span>
           <span class="min-w-0 truncate text-xs">{{
-            me.username || ('doudizhu.table.seat' | transloco: { seat: me.seat + 1 })
+            me.username || ('cards.table.seat' | transloco: { seat: me.seat + 1 })
           }}</span>
-          @if (me.isLandlord) {
-            <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ 'doudizhu.table.landlord-badge' | transloco }}</span>
+          @if (me.hasRole) {
+            <span class="ddz-landlord rounded px-1 text-xs font-bold">{{ config().i18nPrefix + '.role' | transloco }}</span>
           }
           <span class="ddz-muted text-xs tabular-nums">{{
-            'doudizhu.table.my-hand' | transloco: { count: me.count }
+            'cards.table.my-hand' | transloco: { count: me.count }
           }}</span>
           @if (me.bubbleKey; as key) {
             <span class="ddz-bubble rounded-lg border px-1.5 py-px text-xs">{{ key | transloco: { points: me.bubblePoints } }}</span>
@@ -177,7 +198,7 @@
         class="ddz-hand ddz-fan"
         role="group"
         [style.--ddz-gaps]="gaps(hand().length)"
-        [attr.aria-label]="'doudizhu.table.my-hand-label' | transloco"
+        [attr.aria-label]="'cards.table.my-hand-label' | transloco"
       >
         @for (card of hand(); track card.code; let i = $index) {
           <button
@@ -209,8 +230,8 @@
               >
                 {{
                   points === 0
-                    ? ('doudizhu.action.no-bid' | transloco)
-                    : ('doudizhu.action.bid' | transloco: { points: points })
+                    ? (config().i18nPrefix + '.no-bid' | transloco)
+                    : (config().i18nPrefix + '.bid' | transloco: { points: points })
                 }}
               </button>
             }
@@ -221,7 +242,7 @@
               [disabled]="!canPlay()"
               (click)="play()"
             >
-              {{ 'doudizhu.action.play' | transloco: { count: selectedCount() } }}
+              {{ 'cards.action.play' | transloco: { count: selectedCount() } }}
             </button>
             <button
               type="button"
@@ -229,13 +250,13 @@
               [disabled]="!canPass()"
               (click)="pass()"
             >
-              {{ 'doudizhu.action.pass' | transloco }}
+              {{ 'cards.action.pass' | transloco }}
             </button>
           }
 
           @if (actionsDisabled() && !readonly()) {
             <p class="ddz-muted w-full text-center text-xs">
-              {{ 'doudizhu.action.waiting' | transloco }}
+              {{ 'cards.action.waiting' | transloco }}
             </p>
           }
         </div>
@@ -247,6 +268,6 @@
   <!-- seatView 解不出来:棋种没有隐藏状态、对局还没开始、或形状读不懂。
        三种的正确反应都是「这一块先不画」,而不是让房间页整页挂掉。 -->
   <p class="text-muted border-border rounded-card border border-dashed p-6 text-center text-sm">
-    {{ 'doudizhu.table.waiting-for-deal' | transloco }}
+    {{ 'cards.table.waiting-for-deal' | transloco }}
   </p>
 }

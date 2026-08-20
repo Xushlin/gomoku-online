@@ -80,9 +80,10 @@
             [submitting]="submittingMove()"
             (pieceMove)="handlePieceMove($event)"
           />
-        } @else if (isDoudizhu()) {
+        } @else if (cardTable(); as table) {
           <app-card-table
             [state]="room"
+            [config]="table"
             [mySeat]="mySeat()"
             [submitting]="submittingMove()"
             (action)="handleTextMove($event)"

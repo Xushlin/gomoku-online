@@ -19,10 +19,20 @@ const SUITS = ['clubs', 'diamonds', 'hearts', 'spades'] as const;
 export type CardSuit = (typeof SUITS)[number] | 'none';
 
 /** 一张牌 —— 只为显示,不参与任何判断。 */
-export interface DoudizhuCard {
+export interface PlayingCard {
   /** 原始编码字符,回传给服务端时按它拼串。 */
   readonly code: string;
-  /** 点数:3–15(2)、16(小王)、17(大王)。数值就是大小顺序。 */
+  /**
+   * 点数:3–15(2)、16(小王)、17(大王)。
+   *
+   * **它是编码顺序,不是「大小顺序」。** 那两件事在斗地主里恰好一致(3 最小、大王最大),
+   * 所以这一行此前写的是「数值就是大小顺序」—— 而挖坑是 `3 > 2 > A > … > 4`,按这个数排
+   * 会把最强的那张放在最左边。
+   *
+   * **这是同一个巧合第三次咬人**:`hoist-card-model` 改掉服务端 `CardRank` 上同样的一句,
+   * `add-wakeng` 修掉超时兜底照抄的 `HandOf(seat)[0]`,而这一次在客户端。
+   * 要「按这个棋种的大小排」,走各棋种自己的强弱函数(见 `games/wakeng/strength.ts`)。
+   */
   readonly rank: number;
   readonly suit: CardSuit;
   /** 牌面文字:`3`…`10`、`J`/`Q`/`K`/`A`/`2`、`小`/`大`。 */
@@ -53,7 +63,7 @@ function labelOf(rank: number): string {
  * 那一张画不出来,而不是整页崩掉。与棋盘对越界落子的处理同一条 ——
  * "看起来不对,但不要白屏"。
  */
-export function decodeCard(code: string): DoudizhuCard | null {
+export function decodeCard(code: string): PlayingCard | null {
   const index = ALPHABET.indexOf(code);
   if (index < 0 || code.length !== 1) return null;
   if (index >= 52) {
@@ -66,13 +76,13 @@ export function decodeCard(code: string): DoudizhuCard | null {
 }
 
 /** 解一手牌;认不出来的字符**跳过**。 */
-export function decodeHand(encoded: string | null | undefined): readonly DoudizhuCard[] {
+export function decodeHand(encoded: string | null | undefined): readonly PlayingCard[] {
   if (!encoded) return [];
-  return [...encoded].map(decodeCard).filter((c): c is DoudizhuCard => c !== null);
+  return [...encoded].map(decodeCard).filter((c): c is PlayingCard => c !== null);
 }
 
 /** 把选中的牌拼回编码串。顺序按点数升序 —— 服务端的编码是排序过的。 */
-export function encodeHand(cards: readonly DoudizhuCard[]): string {
+export function encodeHand(cards: readonly PlayingCard[]): string {
   return [...cards].sort((a, b) => a.rank - b.rank || a.code.localeCompare(b.code))
     .map((c) => c.code)
     .join('');
