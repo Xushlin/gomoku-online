@@ -204,7 +204,7 @@ Dialogs / popovers / overlays MUST use **Angular CDK** (`@angular/cdk/dialog` or
 ### Theme switching (Material / System / future)
 
 - Themes are kept in a registry: `ThemeService.register(name, tokens)`. `tokens` is a CSS variable bag (`--color-primary`, `--color-surface`, `--radius-card`, `--shadow-elevated`, …). Switching = setting `data-theme="<name>"` on `<html>` and persisting to `localStorage`.
-- Two themes ship: `material` (Angular Material default palette + Material radii / shadows) and `system` (Apple / Fluent-ish minimal — smaller radii, lighter shadows).
+- The shipped themes live in `core/theme/themes/` — **read the directory, this line does not enumerate them.** It used to say "two themes ship" and was wrong from the day `ink` landed; the live spec's requirement *title* said the same thing while its own Scenario said three. A count in prose has no compiler.
 - **Dark/Light is an orthogonal axis to the theme.** Each theme has light + dark token sets. `ThemeService` exposes two signals (`themeName` and `isDark`) that switch independently.
 - Component styles MUST reference CSS variables, never literal colors. "This button uses theme-blue" = `var(--color-primary)`, not `#2962FF`.
 - Adding a new theme = drop one tokens file + one `ThemeService.register(...)` call. No component changes.

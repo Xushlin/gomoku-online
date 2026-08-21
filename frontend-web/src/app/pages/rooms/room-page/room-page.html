@@ -1,20 +1,20 @@
 <section class="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
   @if (connectionStatus() === 'reconnecting') {
     <div
-      class="bg-surface text-text border-border rounded-card border px-3 py-2 text-sm"
+      class="panel-flat text-text border px-3 py-2 text-sm"
       role="status"
     >
       {{ 'game.connection.reconnecting' | transloco }}
     </div>
   } @else if (connectionStatus() === 'disconnected' && !loading() && !notFound()) {
     <div
-      class="bg-surface text-danger border-border rounded-card flex items-center justify-between gap-3 border px-3 py-2 text-sm"
+      class="panel-flat text-danger flex items-center justify-between gap-3 border px-3 py-2 text-sm"
       role="alert"
     >
       <span>{{ 'game.connection.disconnected' | transloco }}</span>
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-2 py-1 text-xs"
+        class="cell text-text hover:bg-bg border px-2 py-1 text-xs"
         (click)="retryConnection()"
       >
         {{ 'game.connection.retry' | transloco }}
@@ -24,7 +24,7 @@
 
   @if (urgeToast()) {
     <div
-      class="bg-surface text-text border-border rounded-card shadow-elevated border px-3 py-2 text-sm"
+      class="panel text-text border px-3 py-2 text-sm"
       role="status"
     >
       {{ 'game.urge.toast' | transloco }}
@@ -33,7 +33,7 @@
 
   @if (errorToastKey(); as key) {
     <div
-      class="bg-surface text-danger border-border rounded-card border px-3 py-2 text-sm"
+      class="panel-flat text-danger border px-3 py-2 text-sm"
       role="alert"
     >
       {{ key | transloco }}
@@ -47,24 +47,24 @@
     </div>
   } @else if (notFound()) {
     <div
-      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+      class="panel-flat text-text flex flex-col items-start gap-3 border p-6 text-sm"
     >
       <p class="text-danger">{{ 'game.room.not-found' | transloco }}</p>
       <a
         routerLink="/home"
-        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+        class="control-primary text-bg px-3 py-1.5 text-sm font-semibold"
       >
         {{ 'game.room.back-to-lobby' | transloco }}
       </a>
     </div>
   } @else if (loadError()) {
     <div
-      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+      class="panel-flat text-text flex flex-col items-start gap-3 border p-6 text-sm"
     >
       <p class="text-danger">{{ 'game.errors.generic' | transloco }}</p>
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+        class="cell text-text hover:bg-bg border px-3 py-1.5 text-sm"
         (click)="retryLoad()"
       >
         {{ 'game.connection.retry' | transloco }}

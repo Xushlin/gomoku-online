@@ -1,5 +1,5 @@
 <header
-  class="bg-surface text-text border-border sticky top-0 z-10 flex items-center gap-2 border-b px-4 py-3 sm:gap-4 sm:px-6"
+  class="bar text-text sticky top-0 z-10 flex items-center gap-2 px-4 py-3 sm:gap-4 sm:px-6"
 >
   <a
     routerLink="/home"
@@ -9,7 +9,7 @@
 
   <a
     routerLink="/games"
-    class="border-border text-text hover:bg-bg rounded-card inline-flex shrink-0 items-center gap-2 border px-3 py-1.5 text-sm"
+    class="cell text-text hover:bg-bg inline-flex shrink-0 items-center gap-2 border px-3 py-1.5 text-sm"
     >{{ 'catalog.title' | transloco }}</a
   >
 
@@ -22,7 +22,7 @@
   <ng-template #optionPanel let-picker>
     <ul
       cdkMenu
-      class="bg-surface text-text border-border shadow-elevated rounded-card min-w-40 overflow-hidden border py-1"
+      class="panel text-text min-w-40 overflow-hidden border py-1"
     >
       @for (option of picker.options; track option) {
         <li>
@@ -69,7 +69,7 @@
     @for (picker of pickers; track picker.prefix) {
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+        class="cell text-text hover:bg-bg inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
         [cdkMenuTriggerFor]="optionPanel"
         [cdkMenuTriggerData]="{ $implicit: picker }"
         [attr.aria-label]="picker.prefix + '.label' | transloco"
@@ -83,7 +83,7 @@
       <button
         type="button"
         role="switch"
-        class="border-border text-text hover:bg-bg rounded-card inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+        class="cell text-text hover:bg-bg inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
         [attr.aria-checked]="toggle.checked"
         [attr.aria-label]="toggle.labelKey | transloco"
         (click)="toggle.toggle()"
@@ -96,7 +96,7 @@
 
   <button
     type="button"
-    class="border-border text-text hover:bg-bg rounded-card inline-flex shrink-0 items-center gap-2 border px-3 py-1.5 text-sm lg:hidden"
+    class="cell text-text hover:bg-bg inline-flex shrink-0 items-center gap-2 border px-3 py-1.5 text-sm lg:hidden"
     [cdkMenuTriggerFor]="settingsMenu"
     [attr.aria-label]="'header.settings.label' | transloco"
   >
@@ -106,7 +106,7 @@
   <ng-template #settingsMenu>
     <div
       cdkMenu
-      class="bg-surface text-text border-border shadow-elevated rounded-card min-w-56 overflow-hidden border py-1"
+      class="panel text-text min-w-56 overflow-hidden border py-1"
     >
       @for (picker of pickers; track picker.prefix) {
         <button
@@ -147,7 +147,7 @@
     }
     <button
       type="button"
-      class="border-border text-text hover:bg-bg rounded-card inline-flex shrink-0 items-center gap-2 border px-3 py-1.5 text-sm"
+      class="cell text-text hover:bg-bg inline-flex shrink-0 items-center gap-2 border px-3 py-1.5 text-sm"
       (click)="logout()"
     >
       {{ 'header.auth.logout' | transloco }}
@@ -155,7 +155,7 @@
   } @else {
     <a
       routerLink="/login"
-      class="bg-primary text-bg rounded-card inline-flex shrink-0 items-center gap-2 px-3 py-1.5 text-sm font-semibold"
+      class="control-primary text-bg inline-flex shrink-0 items-center gap-2 px-3 py-1.5 text-sm font-semibold"
     >
       {{ 'header.auth.login-cta' | transloco }}
     </a>

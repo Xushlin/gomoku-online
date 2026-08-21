@@ -1,7 +1,7 @@
 <app-auth-card [title]="'auth.register.title' | transloco">
   @if (bannerKey(); as key) {
     <div
-      class="bg-surface text-danger border-border rounded-card mb-4 border p-3 text-sm"
+      class="panel-flat text-danger mb-4 border p-3 text-sm"
       role="alert"
     >
       {{ key | transloco }}
@@ -15,7 +15,7 @@
         type="email"
         autocomplete="email"
         formControlName="email"
-        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+        class="well text-text border px-3 py-2"
       />
       @let emailCtrl = form.controls.email;
       @if (emailCtrl.touched && emailCtrl.errors) {
@@ -39,7 +39,7 @@
         type="text"
         autocomplete="username"
         formControlName="username"
-        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+        class="well text-text border px-3 py-2"
       />
       @let usernameCtrl = form.controls.username;
       @if (usernameCtrl.touched && usernameCtrl.errors) {
@@ -63,7 +63,7 @@
         type="password"
         autocomplete="new-password"
         formControlName="password"
-        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+        class="well text-text border px-3 py-2"
       />
       @let passwordCtrl = form.controls.password;
       @if (passwordCtrl.touched && passwordCtrl.errors) {
@@ -87,7 +87,7 @@
 
     <button
       type="submit"
-      class="bg-primary text-bg rounded-card mt-2 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+      class="control-primary text-bg mt-2 px-4 py-2 text-sm font-semibold disabled:opacity-50"
       [disabled]="submitting()"
     >
       @if (submitting()) {

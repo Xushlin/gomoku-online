@@ -22,6 +22,7 @@
   --color-bg: #fafafa;
   --color-surface: #ffffff;
   --color-primary: #1565c0;
+  --color-on-primary: #ffffff;
   --color-text: #1a1a1a;
   --color-muted: #616161;
   --color-border: #e0e0e0;
@@ -31,12 +32,30 @@
 
   --radius-card: 12px;
   --shadow-elevated: 0 4px 12px rgb(0 0 0 / 0.12);
+
+  /* 装饰层 —— 这一套主题不要装饰,所以全部取中性值。
+     中性的定义是「画出来和这一层存在之前一模一样」,而 check-styles.mjs
+     钉住这三套主题必须恰好用这些值。 */
+  --radius-control: 12px;
+  --shadow-raised: 0 0 #0000;
+  --shadow-inset: 0 0 #0000;
+  --surface-image: none;
+  --surface-edge: var(--color-border);
+  --surface-edge-width: 1px;
+  --control-image: none;
+  --control-edge: var(--color-primary);
+  --control-edge-width: 0px;
+  --accent: var(--color-primary);
+  --accent-image: none;
+  --ground-image: none;
+
 }
 
 [data-theme='material'].dark {
   --color-bg: #121212;
   --color-surface: #1e1e1e;
   --color-primary: #90caf9;
+  --color-on-primary: #ffffff;
   --color-text: #e8e8e8;
   --color-muted: #9e9e9e;
   --color-border: #2a2a2a;
@@ -53,6 +72,7 @@
   --color-bg: #ffffff;
   --color-surface: #f7f7f8;
   --color-primary: #0a66d6;
+  --color-on-primary: #ffffff;
   --color-text: #111111;
   --color-muted: #555555;
   --color-border: #e5e5e5;
@@ -62,12 +82,30 @@
 
   --radius-card: 6px;
   --shadow-elevated: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+
+  /* 装饰层 —— 这一套主题不要装饰,所以全部取中性值。
+     中性的定义是「画出来和这一层存在之前一模一样」,而 check-styles.mjs
+     钉住这三套主题必须恰好用这些值。 */
+  --radius-control: 6px;
+  --shadow-raised: 0 0 #0000;
+  --shadow-inset: 0 0 #0000;
+  --surface-image: none;
+  --surface-edge: var(--color-border);
+  --surface-edge-width: 1px;
+  --control-image: none;
+  --control-edge: var(--color-primary);
+  --control-edge-width: 0px;
+  --accent: var(--color-primary);
+  --accent-image: none;
+  --ground-image: none;
+
 }
 
 [data-theme='system'].dark {
   --color-bg: #0b0b0d;
   --color-surface: #151518;
   --color-primary: #4ea3ff;
+  --color-on-primary: #ffffff;
   --color-text: #eaeaea;
   --color-muted: #9a9a9a;
   --color-border: #2a2a2e;
@@ -84,6 +122,7 @@
   --color-bg: #f4ecdb;
   --color-surface: #fbf6ea;
   --color-primary: #a8301f;
+  --color-on-primary: #ffffff;
   --color-text: #26221c;
   --color-muted: #6b5f4a;
   --color-border: #cbbc9d;
@@ -94,12 +133,30 @@
   --radius-card: 8px;
   --shadow-elevated:
     0 2px 6px rgb(38 34 28 / 0.14), 0 1px 2px rgb(38 34 28 / 0.1);
+
+  /* 装饰层 —— 这一套主题不要装饰,所以全部取中性值。
+     中性的定义是「画出来和这一层存在之前一模一样」,而 check-styles.mjs
+     钉住这三套主题必须恰好用这些值。 */
+  --radius-control: 8px;
+  --shadow-raised: 0 0 #0000;
+  --shadow-inset: 0 0 #0000;
+  --surface-image: none;
+  --surface-edge: var(--color-border);
+  --surface-edge-width: 1px;
+  --control-image: none;
+  --control-edge: var(--color-primary);
+  --control-edge-width: 0px;
+  --accent: var(--color-primary);
+  --accent-image: none;
+  --ground-image: none;
+
 }
 
 [data-theme='ink'].dark {
   --color-bg: #171c26;
   --color-surface: #1f2531;
   --color-primary: #e4785f;
+  --color-on-primary: #ffffff;
   --color-text: #ece3cf;
   --color-muted: #9aa0ab;
   --color-border: #39404e;

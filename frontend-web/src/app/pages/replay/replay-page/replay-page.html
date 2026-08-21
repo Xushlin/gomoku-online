@@ -6,24 +6,24 @@
     </div>
   } @else if (notFound()) {
     <div
-      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+      class="panel-flat text-text flex flex-col items-start gap-3 border p-6 text-sm"
     >
       <p class="text-danger">{{ 'replay.errors.not-found' | transloco }}</p>
       <a
         routerLink="/home"
-        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+        class="control-primary text-bg px-3 py-1.5 text-sm font-semibold"
       >
         {{ 'replay.back-to-lobby' | transloco }}
       </a>
     </div>
   } @else if (notFinished()) {
     <div
-      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+      class="panel-flat text-text flex flex-col items-start gap-3 border p-6 text-sm"
     >
       <p class="text-danger">{{ 'replay.errors.still-in-progress' | transloco }}</p>
       <button
         type="button"
-        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+        class="control-primary text-bg px-3 py-1.5 text-sm font-semibold"
         (click)="goLive()"
       >
         {{ 'replay.errors.still-in-progress-go-live' | transloco }}
@@ -31,12 +31,12 @@
     </div>
   } @else if (loadError()) {
     <div
-      class="bg-surface text-text border-border rounded-card flex flex-col items-start gap-3 border p-6 text-sm"
+      class="panel-flat text-text flex flex-col items-start gap-3 border p-6 text-sm"
     >
       <p class="text-danger">{{ 'replay.errors.generic' | transloco }}</p>
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+        class="cell text-text hover:bg-bg border px-3 py-1.5 text-sm"
         (click)="retry()"
       >
         {{ 'replay.retry' | transloco }}
@@ -94,40 +94,40 @@
     }
 
     <div
-      class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-3 text-sm"
+      class="panel text-text flex flex-col gap-3 border p-3 text-sm"
     >
       <div class="flex flex-wrap items-center justify-center gap-2">
         <button
           type="button"
-          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
           [disabled]="atStart()"
           [attr.aria-label]="'replay.scrubber.first' | transloco"
           (click)="first()"
         >⏮</button>
         <button
           type="button"
-          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
           [disabled]="atStart()"
           [attr.aria-label]="'replay.scrubber.prev' | transloco"
           (click)="onPrev()"
         >⏪</button>
         <button
           type="button"
-          class="bg-primary text-bg rounded-card px-3 py-1.5 text-xs font-semibold"
+          class="control-primary text-bg px-3 py-1.5 text-xs font-semibold"
           (click)="togglePlay()"
         >
           {{ playButtonKey() | transloco }}
         </button>
         <button
           type="button"
-          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
           [disabled]="atEnd()"
           [attr.aria-label]="'replay.scrubber.next' | transloco"
           (click)="onNext()"
         >⏩</button>
         <button
           type="button"
-          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-xs disabled:opacity-50"
+          class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
           [disabled]="atEnd()"
           [attr.aria-label]="'replay.scrubber.last' | transloco"
           (click)="last()"
@@ -153,7 +153,7 @@
         @for (s of speeds; track s) {
           <button
             type="button"
-            class="border-border text-text hover:bg-bg rounded-card border px-2 py-0.5"
+            class="cell text-text hover:bg-bg border px-2 py-0.5"
             [class.bg-primary]="speed() === s"
             [class.text-bg]="speed() === s"
             (click)="setSpeed(s)"

@@ -39,7 +39,7 @@
   @if (loading()) {
     <div class="flex flex-col gap-2" aria-hidden="true">
       @for (i of [1, 2, 3, 4, 5]; track i) {
-        <div class="bg-surface border-border rounded-card h-12 animate-pulse border"></div>
+        <div class="panel-flat h-12 animate-pulse border"></div>
       }
     </div>
     <p class="text-muted text-sm">{{ 'scores.loading' | transloco }}</p>
@@ -47,7 +47,7 @@
     <p class="text-danger text-sm" role="alert">{{ 'scores.load-failed' | transloco }}</p>
     <button
       type="button"
-      class="border-border text-text rounded-card focus-visible:outline-primary self-start border px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+      class="cell text-text focus-visible:outline-primary self-start border px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
       (click)="retry()"
     >
       {{ 'scores.retry' | transloco }}
@@ -107,7 +107,7 @@
       <div class="flex items-center justify-between gap-2">
         <button
           type="button"
-          class="border-border text-text rounded-card focus-visible:outline-primary border px-3 py-1.5 text-sm disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2"
+          class="cell text-text focus-visible:outline-primary border px-3 py-1.5 text-sm disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2"
           [disabled]="page() === 1"
           (click)="prev()"
         >
@@ -118,7 +118,7 @@
         </span>
         <button
           type="button"
-          class="border-border text-text rounded-card focus-visible:outline-primary border px-3 py-1.5 text-sm disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2"
+          class="cell text-text focus-visible:outline-primary border px-3 py-1.5 text-sm disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2"
           [disabled]="page() === totalPages()"
           (click)="next()"
         >

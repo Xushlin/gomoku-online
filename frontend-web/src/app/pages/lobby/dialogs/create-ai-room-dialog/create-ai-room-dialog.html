@@ -1,5 +1,5 @@
 <section
-  class="bg-surface text-text border-border rounded-card shadow-elevated w-full max-w-sm border p-6"
+  class="panel text-text w-full max-w-sm border p-6"
 >
   <h2 class="mb-4 text-lg font-semibold tracking-tight">
     {{ 'lobby.ai-game.dialog-title' | transloco }}
@@ -7,7 +7,7 @@
 
   @if (bannerKey(); as key) {
     <div
-      class="bg-bg text-danger border-border rounded-card mb-4 border p-3 text-sm"
+      class="well text-danger mb-4 border p-3 text-sm"
       role="alert"
     >
       {{ key | transloco }}
@@ -22,7 +22,7 @@
         autocomplete="off"
         formControlName="name"
         [placeholder]="'lobby.ai-game.name-placeholder' | transloco"
-        class="bg-bg text-text border-border rounded-card border px-3 py-2"
+        class="well text-text border px-3 py-2"
       />
       @let nameCtrl = form.controls.name;
       @if (nameCtrl.touched && nameCtrl.errors) {
@@ -51,7 +51,7 @@
             type="button"
             role="radio"
             [attr.aria-checked]="active"
-            class="rounded-card border-border flex-1 border px-3 py-1.5 text-sm"
+            class="cell flex-1 border px-3 py-1.5 text-sm"
             [class.bg-primary]="active"
             [class.text-bg]="active"
             [class.font-semibold]="active"
@@ -72,7 +72,7 @@
             type="button"
             role="radio"
             [attr.aria-checked]="active"
-            class="rounded-card border-border flex-1 border px-3 py-1.5 text-sm"
+            class="cell flex-1 border px-3 py-1.5 text-sm"
             [class.bg-primary]="active"
             [class.text-bg]="active"
             [class.font-semibold]="active"
@@ -87,14 +87,14 @@
     <div class="flex justify-end gap-2">
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+        class="cell text-text hover:bg-bg border px-3 py-1.5 text-sm"
         (click)="cancel()"
       >
         {{ 'lobby.ai-game.cancel' | transloco }}
       </button>
       <button
         type="submit"
-        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+        class="control-primary text-bg px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
         [disabled]="submitting()"
       >
         @if (submitting()) {

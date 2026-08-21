@@ -17,7 +17,7 @@
         -->
         @if (game.status === 'available') {
           <div
-            class="bg-surface text-text border-border rounded-card shadow-elevated hover:bg-bg flex w-full flex-col gap-3 border p-4 transition-colors"
+            class="panel text-text hover:bg-bg flex w-full flex-col gap-3 border p-4 transition-colors"
           >
             <!--
               The launch link stretches over the whole card via `after:inset-0`
@@ -39,11 +39,11 @@
             </a>
             <span class="text-muted text-sm">{{ game.descriptionKey | transloco }}</span>
             <span class="mt-auto flex flex-wrap items-center gap-2">
-              <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+              <span class="cell text-muted border px-2 py-0.5 text-xs">{{
                 categoryKey(game) | transloco
               }}</span>
               @if (showsContentWarning(game)) {
-                <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+                <span class="cell text-muted border px-2 py-0.5 text-xs">{{
                   'catalog.chinese-only' | transloco
                 }}</span>
               }
@@ -66,7 +66,7 @@
         } @else {
           <div
             aria-disabled="true"
-            class="bg-surface text-text border-border rounded-card flex w-full flex-col gap-3 border border-dashed p-4 opacity-70"
+            class="panel-flat text-text flex w-full flex-col gap-3 border border-dashed p-4 opacity-70"
           >
             <span class="flex items-center gap-3">
               <span class="text-muted text-2xl leading-none" aria-hidden="true">{{
@@ -78,14 +78,14 @@
             </span>
             <span class="text-muted text-sm">{{ game.descriptionKey | transloco }}</span>
             <span class="mt-auto flex flex-wrap items-center gap-2">
-              <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+              <span class="cell text-muted border px-2 py-0.5 text-xs">{{
                 categoryKey(game) | transloco
               }}</span>
-              <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+              <span class="cell text-muted border px-2 py-0.5 text-xs">{{
                 'catalog.coming-soon' | transloco
               }}</span>
               @if (showsContentWarning(game)) {
-                <span class="border-border text-muted rounded-card border px-2 py-0.5 text-xs">{{
+                <span class="cell text-muted border px-2 py-0.5 text-xs">{{
                   'catalog.chinese-only' | transloco
                 }}</span>
               }

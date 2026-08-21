@@ -245,7 +245,7 @@
           } @else {
             <button
               type="button"
-              class="bg-primary text-bg ddz-focus rounded-card px-4 py-2 font-semibold disabled:cursor-default disabled:opacity-50"
+              class="control-primary text-bg ddz-focus px-4 py-2 font-semibold disabled:cursor-default disabled:opacity-50"
               [disabled]="!canPlay()"
               (click)="play()"
             >
@@ -286,7 +286,7 @@
 } @else {
   <!-- seatView 解不出来:棋种没有隐藏状态、对局还没开始、或形状读不懂。
        三种的正确反应都是「这一块先不画」,而不是让房间页整页挂掉。 -->
-  <p class="text-muted border-border rounded-card border border-dashed p-6 text-center text-sm">
+  <p class="cell text-muted border border-dashed p-6 text-center text-sm">
     {{ 'cards.table.waiting-for-deal' | transloco }}
   </p>
 }

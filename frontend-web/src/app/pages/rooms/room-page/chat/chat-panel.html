@@ -1,5 +1,5 @@
 <section
-  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col border"
+  class="panel text-text flex w-full flex-col border"
 >
   <header class="border-border flex items-center gap-2 border-b p-3">
     <h2 class="mr-2 text-sm font-semibold tracking-tight">
@@ -10,7 +10,7 @@
         type="button"
         role="tab"
         [attr.aria-selected]="activeChannel() === 'Room'"
-        class="rounded-card border-border border px-2 py-1 text-xs"
+        class="cell border px-2 py-1 text-xs"
         [class.bg-primary]="activeChannel() === 'Room'"
         [class.text-bg]="activeChannel() === 'Room'"
         (click)="setTab('Room')"
@@ -22,7 +22,7 @@
           type="button"
           role="tab"
           [attr.aria-selected]="activeChannel() === 'Spectator'"
-          class="rounded-card border-border border px-2 py-1 text-xs"
+          class="cell border px-2 py-1 text-xs"
           [class.bg-primary]="activeChannel() === 'Spectator'"
           [class.text-bg]="activeChannel() === 'Spectator'"
           (click)="setTab('Spectator')"
@@ -63,11 +63,11 @@
         formControlName="content"
         [maxLength]="maxLength"
         [placeholder]="'game.chat.placeholder' | transloco"
-        class="bg-bg text-text border-border rounded-card flex-1 border px-3 py-1.5 text-sm"
+        class="well text-text flex-1 border px-3 py-1.5 text-sm"
       />
       <button
         type="submit"
-        class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+        class="control-primary text-bg px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
         [disabled]="!canSend() || form.invalid || trimmedLength() === 0"
       >
         {{ 'game.chat.send' | transloco }}

@@ -13,7 +13,7 @@
     none. The 一字棋 page says that sentence because there it is provable.
   -->
   <p
-    class="border-border bg-surface text-muted rounded-card border px-3 py-2 text-xs leading-relaxed"
+    class="panel-flat text-muted border px-3 py-2 text-xs leading-relaxed"
   >
     {{ 'xiangqi.notice-ai' | transloco }}
     <span class="block">{{ 'xiangqi.notice-unrated' | transloco }}</span>
@@ -72,7 +72,7 @@
   <div class="flex items-center gap-3">
     <button
       type="button"
-      class="bg-primary rounded-card focus-visible:outline-primary flex-1 px-4 py-2.5 text-sm font-medium text-white transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+      class="control-primary focus-visible:outline-primary flex-1 px-4 py-2.5 text-sm font-medium text-on-primary transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
       [disabled]="submitting()"
       (click)="start()"
     >
@@ -80,7 +80,7 @@
     </button>
     <a
       routerLink="/games"
-      class="border-border text-text rounded-card hover:bg-bg focus-visible:outline-primary border px-4 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+      class="cell text-text hover:bg-bg focus-visible:outline-primary border px-4 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       {{ 'xiangqi.back' | transloco }}
     </a>

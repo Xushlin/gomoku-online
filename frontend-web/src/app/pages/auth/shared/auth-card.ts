@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   standalone: true,
   template: `
     <section
-      class="bg-surface text-text border-border rounded-card shadow-elevated mx-auto w-full max-w-sm border p-6 sm:max-w-md"
+      class="panel text-text mx-auto w-full max-w-sm border p-6 sm:max-w-md"
     >
       <h1 class="mb-6 text-xl font-semibold tracking-tight">{{ title() }}</h1>
       <ng-content />
