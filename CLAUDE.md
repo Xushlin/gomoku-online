@@ -25,7 +25,7 @@ Everything else about how each game landed — including which client judges its
 
 ## Current phase
 
-**Nine games ship** — 五子棋, 成语纵横, 一字棋, 中国象棋, 华容道, 成语接龙, 俄罗斯方块, 斗地主, 挖坑. 100 archived changes. The three kernels are built and each has been proven by a second game that was not a variant of the first.
+**Nine games ship** — 五子棋, 成语纵横, 一字棋, 中国象棋, 华容道, 成语接龙, 俄罗斯方块, 斗地主, 挖坑. 102 archived changes. The three kernels are built and each has been proven by a second game that was not a variant of the first.
 
 ### Where the history lives
 
@@ -48,8 +48,8 @@ Each of these was decided, written down, and left. **A deferral that names its o
 | `AddGameSetup`'s `Down` drops the column, and 斗地主 + 挖坑 now write it. A merged migration is not edited, so the bill is **one new guarded migration** — the cost is per *column*, not per game. `GameSetupMigrationTests` is the list of keys whose data it must carry back. | Anyone needs to roll back past it. |
 | `squash-migration-baseline` — **measured and declined**, so do not re-litigate: the 14 migrations are 400 lines applying in 259 ms, and squashing deletes the 16 tests that stop at a *named intermediate* migration, which is the only point where "did the data move correctly" is observable. | A provider change, ~100 migrations, or an actual deployment. |
 | `--radius-pill` was proposed and **not added** — the class-attribute walk found zero call sites, and a token with no call site is a dead entry every theme pays for. | The first control that genuinely needs a fully rounded shape. |
-| `--color-on-primary` is the literal `#ffffff` in **both** modes, which preserves a real contrast bug: material dark's `--color-primary` is a pale blue and white on it measures about **1.9:1**. Kept on purpose — `extend-theme-tokens` was not allowed to change appearance. | Any change that is allowed to alter the primary button's colours. |
-| The bundle budget is **480 kB** with **~2.8 kB free** (`extend-theme-tokens` spent 3.6 kB of CSS). It has fired five times and was never raised — once it was *lowered*. | **Effectively now:** one more theme's `[data-theme]` block is ~2–3 kB. When it fires, ask **what is eager that need not be** — the non-default themes' token blocks are the obvious candidate — and measure by stubbing, not by reasoning. |
+| `--color-on-primary` is the literal `#ffffff` in **both** modes, which preserves a real contrast bug: material dark's `--color-primary` is a pale blue and white on it measures about **1.9:1**. Kept on purpose — `extend-theme-tokens` was not allowed to change appearance, and `add-qq-game-theme` gave *its own* theme a measured `4.51:1` without touching material's. **So the bug is still there, in the default theme nobody new will see.** | Any change that is allowed to alter the primary button's colours. |
+| The bundle budget is **480 kB** with **~3.9 kB free**. It has fired **six** times and was never raised — once it was *lowered*. The sixth firing was answered by deleting the per-theme TypeScript token mirrors (`drop-theme-token-mirrors`): stubbing predicted 4.88 kB, the real change gave **7.75 kB**. | When it fires: ask **what is eager that need not be**, and **measure by stubbing** — the answers so far have been concrete things, not across-the-board shaving (sound packs that cannot play before the first gesture; token mirrors that only validated a copy). Treat the stub number as a *lower bound*, not an estimate. |
 
 Open questions waiting on the user: 红桃四 and 三带 rules (links promised). Not yet done: 斗地主's play-assist has never been driven in a browser — the client code is shared with 挖坑, whose two paths were measured.
 
@@ -206,7 +206,9 @@ Dialogs / popovers / overlays MUST use **Angular CDK** (`@angular/cdk/dialog` or
 ### Theme switching (Material / System / future)
 
 - Themes are kept in a registry: `ThemeService.register(name, tokens)`. `tokens` is a CSS variable bag (`--color-primary`, `--color-surface`, `--radius-card`, `--shadow-elevated`, …). Switching = setting `data-theme="<name>"` on `<html>` and persisting to `localStorage`.
-- The shipped themes live in `core/theme/themes/` — **read the directory, this line does not enumerate them.** It used to say "two themes ship" and was wrong from the day `ink` landed; the live spec's requirement *title* said the same thing while its own Scenario said three. A count in prose has no compiler.
+- The shipped themes are **only** the `[data-theme='…']` blocks in `src/styles/tokens.css` plus one `register('…')` line each — there is no `themes/` directory any more, and no TypeScript object per theme. `npm run lint` prints the live count (`N themes x M tokens`), derived from those selectors.
+
+  Two corrections in a row landed on this one line, which is why it now points at a *mechanism* instead of a place. It first said "two themes ship" and was wrong from the day `ink` landed. It was then fixed to "read the directory `core/theme/themes/`" — and `drop-theme-token-mirrors` **deleted that directory two changes later**. **"Read the directory" only beats enumerating while the directory exists;** pointing at the thing that fails CI beats both.
 - **Dark/Light is an orthogonal axis to the theme.** Each theme has light + dark token sets. `ThemeService` exposes two signals (`themeName` and `isDark`) that switch independently.
 - Component styles MUST reference CSS variables, never literal colors. "This button uses theme-blue" = `var(--color-primary)`, not `#2962FF`.
 - Adding a new theme = drop one tokens file + one `ThemeService.register(...)` call. No component changes.
