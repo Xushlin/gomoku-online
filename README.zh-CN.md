@@ -119,6 +119,8 @@ openspec archive <name>     # 归档:把 change 的 spec delta 提到 live specs
 
 贡献指南(架构约束、提交 / PR 规范、代码审查标准)看 [`CLAUDE.md`](CLAUDE.md)。
 
+一个变更一条的工程日志在 [`JOURNAL.md`](JOURNAL.md) —— 它记的是每一步花了什么代价、以及哪些当时的判断后来被证伪了。
+
 ## 后端架构
 
 Clean Architecture,严格分层(`Domain ← Application ← Infrastructure / Api`)。
