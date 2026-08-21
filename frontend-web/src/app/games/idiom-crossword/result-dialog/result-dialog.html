@@ -1,5 +1,5 @@
 <div
-  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-[min(26rem,90vw)] max-h-[85dvh] flex-col gap-3 overflow-y-auto border p-6"
+  class="panel text-text flex w-[min(26rem,90vw)] max-h-[85dvh] flex-col gap-3 overflow-y-auto border p-6"
 >
   <h2 class="text-center text-xl font-semibold tracking-widest">
     {{ 'idiom-crossword.result.title' | transloco }}
@@ -49,7 +49,7 @@
   <div class="mt-2 flex justify-center gap-2">
     <button
       type="button"
-      class="border-border text-text hover:bg-bg rounded-card border px-4 py-2 text-sm"
+      class="cell text-text hover:bg-bg border px-4 py-2 text-sm"
       (click)="close('replay')"
     >
       {{ 'idiom-crossword.result.replay' | transloco }}
@@ -57,7 +57,7 @@
     @if (data.isLastLevel) {
       <button
         type="button"
-        class="bg-primary text-bg rounded-card px-4 py-2 text-sm font-semibold"
+        class="control-primary text-bg px-4 py-2 text-sm font-semibold"
         (click)="close('levels')"
       >
         {{ 'idiom-crossword.result.back-to-levels' | transloco }}
@@ -65,7 +65,7 @@
     } @else {
       <button
         type="button"
-        class="bg-primary text-bg rounded-card px-4 py-2 text-sm font-semibold"
+        class="control-primary text-bg px-4 py-2 text-sm font-semibold"
         (click)="close('next')"
       >
         {{ 'idiom-crossword.result.next-level' | transloco }}

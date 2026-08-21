@@ -1,5 +1,5 @@
 <section
-  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col gap-3 border p-4"
+  class="panel text-text flex w-full flex-col gap-3 border p-4"
 >
   <div class="flex items-baseline justify-between gap-2">
     <h2 class="text-base font-semibold tracking-tight">
@@ -16,7 +16,7 @@
     @for (game of games; track game.key) {
       <li>
         <a
-          class="border-border bg-bg text-text rounded-card hover:border-primary focus-visible:border-primary flex items-center gap-2 border px-3 py-2 text-sm transition-colors"
+          class="well text-text hover:border-primary focus-visible:border-primary flex items-center gap-2 border px-3 py-2 text-sm transition-colors"
           [routerLink]="game.launchRoute"
           [attr.data-game-key]="game.key"
         >

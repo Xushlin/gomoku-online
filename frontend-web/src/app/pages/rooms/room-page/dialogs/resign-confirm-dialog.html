@@ -1,5 +1,5 @@
 <section
-  class="bg-surface text-text border-border rounded-card shadow-elevated w-full max-w-xs border p-6"
+  class="panel text-text w-full max-w-xs border p-6"
 >
   <h2 class="mb-2 text-lg font-semibold tracking-tight">
     {{ 'game.actions.resign-confirm-title' | transloco }}
@@ -10,7 +10,7 @@
   <div class="flex justify-end gap-2">
     <button
       type="button"
-      class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+      class="cell text-text hover:bg-bg border px-3 py-1.5 text-sm"
       (click)="cancel()"
     >
       {{ 'game.actions.resign-confirm-cancel' | transloco }}

@@ -21,13 +21,13 @@
   </header>
 
   @if (loading()) {
-    <div class="border-border bg-surface rounded-card h-64 animate-pulse border" aria-hidden="true"></div>
+    <div class="panel-flat h-64 animate-pulse border" aria-hidden="true"></div>
   } @else if (failed()) {
     <div class="flex flex-col items-center gap-3 py-8 text-sm">
       <p class="text-danger">{{ 'idiom-crossword.errors.load-level' | transloco }}</p>
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5"
+        class="cell text-text hover:bg-bg border px-3 py-1.5"
         (click)="load()"
       >
         {{ 'idiom-crossword.actions.retry' | transloco }}
@@ -48,7 +48,7 @@
     <div class="flex min-h-2 flex-col gap-2" aria-live="polite">
       @for (slip of slips(); track slip.index) {
         <p
-          class="bg-surface text-text border-border rounded-card shadow-elevated border px-3 py-2 text-sm leading-relaxed"
+          class="panel text-text border px-3 py-2 text-sm leading-relaxed"
         >
           <b class="font-serif tracking-widest">{{ slip.word }}</b>
           <span class="text-muted"> {{ slip.explanation }}</span>
@@ -65,14 +65,14 @@
     <div class="flex justify-center gap-2">
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-4 py-2 text-sm"
+        class="cell text-text hover:bg-bg border px-4 py-2 text-sm"
         (click)="load()"
       >
         {{ 'idiom-crossword.actions.restart' | transloco }}
       </button>
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-4 py-2 text-sm disabled:opacity-40"
+        class="cell text-text hover:bg-bg border px-4 py-2 text-sm disabled:opacity-40"
         [disabled]="busy()"
         (click)="hint()"
       >

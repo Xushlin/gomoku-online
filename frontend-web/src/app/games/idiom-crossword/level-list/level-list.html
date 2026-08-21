@@ -9,7 +9,7 @@
   @if (loading()) {
     <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-hidden="true">
       @for (i of skeletons; track i) {
-        <li class="border-border bg-surface rounded-card h-24 animate-pulse border"></li>
+        <li class="panel-flat h-24 animate-pulse border"></li>
       }
     </ul>
   } @else if (failed()) {
@@ -17,7 +17,7 @@
       <p class="text-danger">{{ 'idiom-crossword.errors.load-levels' | transloco }}</p>
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5"
+        class="cell text-text hover:bg-bg border px-3 py-1.5"
         (click)="load()"
       >
         {{ 'idiom-crossword.actions.retry' | transloco }}
@@ -35,7 +35,7 @@
           @if (level.unlocked) {
             <a
               [routerLink]="routeFor(level)"
-              class="bg-surface text-text border-border rounded-card shadow-elevated hover:bg-bg focus-visible:outline-primary flex w-full flex-col gap-2 border p-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+              class="panel text-text hover:bg-bg focus-visible:outline-primary flex w-full flex-col gap-2 border p-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <span class="flex items-baseline justify-between">
                 <span class="text-base font-semibold">
@@ -68,7 +68,7 @@
           } @else {
             <div
               aria-disabled="true"
-              class="bg-surface text-text border-border rounded-card flex w-full flex-col gap-2 border border-dashed p-3 opacity-60"
+              class="panel-flat text-text flex w-full flex-col gap-2 border border-dashed p-3 opacity-60"
             >
               <span class="flex items-baseline justify-between">
                 <span class="text-base font-semibold">

@@ -1,4 +1,4 @@
-<section class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4">
+<section class="panel text-text flex flex-col gap-3 border p-4">
   <h2 class="text-base font-semibold tracking-tight">
     <!--
       "all types", not just "Games": the record above this list is scoped to one
@@ -54,7 +54,7 @@
     <div class="flex items-center justify-between gap-2 pt-2 text-xs">
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 disabled:opacity-50"
+        class="cell text-text hover:bg-bg border px-3 py-1.5 disabled:opacity-50"
         [disabled]="!hasPrev()"
         (click)="prevPage()"
       >
@@ -65,7 +65,7 @@
       </span>
       <button
         type="button"
-        class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 disabled:opacity-50"
+        class="cell text-text hover:bg-bg border px-3 py-1.5 disabled:opacity-50"
         [disabled]="!hasNext()"
         (click)="nextPage()"
       >

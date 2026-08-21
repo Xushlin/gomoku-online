@@ -12,7 +12,7 @@
     <!-- Hold the page until the descriptor lands: "not loaded yet" and "not a
          game" must not look the same, and one is one response away from the other. -->
     <div
-      class="bg-surface border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4"
+      class="panel flex flex-col gap-3 border p-4"
       data-testid="game-lobby-skeleton"
     >
       <div class="bg-border h-5 w-40 animate-pulse rounded"></div>
@@ -20,7 +20,7 @@
     </div>
   } @else if (unavailable() === 'unknown') {
     <section
-      class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4"
+      class="panel text-text flex flex-col gap-3 border p-4"
       data-testid="game-lobby-unknown"
     >
       <h2 class="text-base font-semibold">
@@ -30,14 +30,14 @@
         {{ 'lobby.game-lobby.unavailable.unknown-body' | transloco }}
       </p>
       <a
-        class="bg-primary text-bg rounded-card self-start px-3 py-1.5 text-sm font-semibold"
+        class="control-primary text-bg self-start px-3 py-1.5 text-sm font-semibold"
         routerLink="/games"
         >{{ 'lobby.game-lobby.unavailable.unknown-cta' | transloco }}</a
       >
     </section>
   } @else if (unavailable() === 'ai-only') {
     <section
-      class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col gap-3 border p-4"
+      class="panel text-text flex flex-col gap-3 border p-4"
       data-testid="game-lobby-ai-only"
     >
       <h2 class="text-base font-semibold">
@@ -47,7 +47,7 @@
         {{ 'lobby.game-lobby.unavailable.ai-only-body' | transloco }}
       </p>
       <a
-        class="bg-primary text-bg rounded-card self-start px-3 py-1.5 text-sm font-semibold"
+        class="control-primary text-bg self-start px-3 py-1.5 text-sm font-semibold"
         [routerLink]="aiOnlyRoute()"
         >{{ 'lobby.game-lobby.unavailable.ai-only-cta' | transloco }}</a
       >

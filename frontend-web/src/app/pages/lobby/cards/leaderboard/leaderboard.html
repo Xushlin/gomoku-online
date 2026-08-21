@@ -1,5 +1,5 @@
 <section
-  class="bg-surface text-text border-border rounded-card shadow-elevated flex flex-col border"
+  class="panel text-text flex flex-col border"
 >
   <header class="border-border border-b p-4">
     <h2 class="text-lg font-semibold tracking-tight">
@@ -11,7 +11,7 @@
     @if (slice.loading() && slice.data() === null) {
       <ul class="flex flex-col gap-2" aria-hidden="true">
         @for (i of [0, 1, 2, 3, 4]; track i) {
-          <li class="border-border bg-bg rounded-card flex h-8 animate-pulse items-center border"></li>
+          <li class="well flex h-8 animate-pulse items-center border"></li>
         }
       </ul>
     } @else if (slice.error() && slice.data() === null) {
@@ -19,7 +19,7 @@
         <p class="text-danger">{{ 'lobby.errors.generic' | transloco }}</p>
         <button
           type="button"
-          class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5"
+          class="cell text-text hover:bg-bg border px-3 py-1.5"
           (click)="refresh()"
         >
           {{ 'lobby.errors.retry' | transloco }}

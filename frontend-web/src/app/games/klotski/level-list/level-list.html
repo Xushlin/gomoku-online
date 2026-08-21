@@ -10,7 +10,7 @@
     @case ('loading') {
       <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-hidden="true">
         @for (i of [1, 2, 3, 4]; track i) {
-          <li class="bg-surface border-border rounded-card h-24 animate-pulse border"></li>
+          <li class="panel-flat h-24 animate-pulse border"></li>
         }
       </ul>
       <p class="text-muted text-sm">{{ 'klotski.loading' | transloco }}</p>
@@ -22,7 +22,7 @@
       <p class="text-danger text-sm" role="alert">{{ 'klotski.error-load-failed' | transloco }}</p>
       <button
         type="button"
-        class="border-border text-text rounded-card focus-visible:outline-primary self-start border px-4 py-2 text-sm"
+        class="cell text-text focus-visible:outline-primary self-start border px-4 py-2 text-sm"
         (click)="load()"
       >
         {{ 'klotski.retry' | transloco }}
@@ -38,7 +38,7 @@
       <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         @for (level of levels(); track level.levelIndex) {
           <li
-            class="bg-surface border-border rounded-card relative flex flex-col gap-2 border p-4"
+            class="panel-flat relative flex flex-col gap-2 border p-4"
             [class.opacity-60]="!level.unlocked"
           >
             <div class="flex items-baseline justify-between gap-2">

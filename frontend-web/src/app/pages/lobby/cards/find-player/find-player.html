@@ -1,5 +1,5 @@
 <section
-  class="bg-surface text-text border-border rounded-card shadow-elevated flex w-full flex-col gap-3 border p-4"
+  class="panel text-text flex w-full flex-col gap-3 border p-4"
 >
   <h2 class="text-base font-semibold tracking-tight">
     {{ 'lobby.find-player.title' | transloco }}
@@ -10,7 +10,7 @@
     (input)="onInput($event)"
     [placeholder]="'lobby.find-player.placeholder' | transloco"
     [attr.aria-label]="'lobby.find-player.search-button-aria' | transloco"
-    class="bg-bg text-text border-border rounded-card border px-3 py-2 text-sm"
+    class="well text-text border px-3 py-2 text-sm"
   />
 
   @if (hintTooShort()) {

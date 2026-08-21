@@ -1,5 +1,5 @@
 <section
-  class="bg-surface text-text border-border rounded-card shadow-elevated w-full max-w-sm border p-6"
+  class="panel text-text w-full max-w-sm border p-6"
 >
   <h2 class="mb-2 text-lg font-semibold tracking-tight">
     {{ titleKey() | transloco }}
@@ -10,21 +10,21 @@
   <div class="flex flex-wrap justify-end gap-2">
     <button
       type="button"
-      class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+      class="cell text-text hover:bg-bg border px-3 py-1.5 text-sm"
       (click)="stay()"
     >
       {{ 'game.ended.dismiss' | transloco }}
     </button>
     <button
       type="button"
-      class="border-border text-text hover:bg-bg rounded-card border px-3 py-1.5 text-sm"
+      class="cell text-text hover:bg-bg border px-3 py-1.5 text-sm"
       (click)="viewReplay()"
     >
       {{ 'game.ended.view-replay' | transloco }}
     </button>
     <button
       type="button"
-      class="bg-primary text-bg rounded-card px-3 py-1.5 text-sm font-semibold"
+      class="control-primary text-bg px-3 py-1.5 text-sm font-semibold"
       (click)="backToLobby()"
     >
       {{ 'game.ended.back-to-lobby' | transloco }}

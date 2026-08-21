@@ -11,7 +11,7 @@
   </header>
 
   <section
-    class="bg-surface border-border rounded-card shadow-elevated flex flex-col border"
+    class="panel flex flex-col border"
     [attr.aria-busy]="loading()"
   >
     @if (loading()) {
@@ -32,7 +32,7 @@
         <button
           type="button"
           (click)="retry()"
-          class="border-border text-text hover:bg-bg focus-visible:outline-primary rounded-card border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          class="cell text-text hover:bg-bg focus-visible:outline-primary border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {{ 'leaderboard.retry' | transloco }}
         </button>
@@ -102,7 +102,7 @@
           type="button"
           (click)="prev()"
           [disabled]="page() <= 1"
-          class="border-border text-text hover:bg-bg focus-visible:outline-primary rounded-card border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+          class="cell text-text hover:bg-bg focus-visible:outline-primary border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
         >
           {{ 'leaderboard.prev-page' | transloco }}
         </button>
@@ -113,7 +113,7 @@
           type="button"
           (click)="next()"
           [disabled]="page() >= totalPages()"
-          class="border-border text-text hover:bg-bg focus-visible:outline-primary rounded-card border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+          class="cell text-text hover:bg-bg focus-visible:outline-primary border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
         >
           {{ 'leaderboard.next-page' | transloco }}
         </button>
