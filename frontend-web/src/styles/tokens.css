@@ -45,8 +45,6 @@
   --control-image: none;
   --control-edge: var(--color-primary);
   --control-edge-width: 0px;
-  --accent: var(--color-primary);
-  --accent-image: none;
   --ground-image: none;
 
 }
@@ -95,8 +93,6 @@
   --control-image: none;
   --control-edge: var(--color-primary);
   --control-edge-width: 0px;
-  --accent: var(--color-primary);
-  --accent-image: none;
   --ground-image: none;
 
 }
@@ -146,8 +142,6 @@
   --control-image: none;
   --control-edge: var(--color-primary);
   --control-edge-width: 0px;
-  --accent: var(--color-primary);
-  --accent-image: none;
   --ground-image: none;
 
 }

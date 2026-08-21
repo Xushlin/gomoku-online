@@ -1,4 +1,3 @@
-import { inkTokens } from './themes/ink';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DefaultThemeService, ThemeService } from './theme.service';
@@ -68,7 +67,7 @@ describe('DefaultThemeService', () => {
     expect(svc.isDark()).toBe(false);
   });
 
-  it('initial resolution: invalid theme name in localStorage falls back to material and overwrites', () => {
+  it('initial resolution: an invalid stored theme falls back to the default and overwrites', () => {
     localStorage.setItem('gewu:theme', 'nonexistent-theme');
 
     const svc = createService();
@@ -77,31 +76,39 @@ describe('DefaultThemeService', () => {
     expect(localStorage.getItem('gewu:theme')).toBe('material');
   });
 
-  it('availableThemes() exposes the two registered themes', () => {
-    const svc = createService();
-    expect(svc.availableThemes()).toEqual(expect.arrayContaining(['material', 'system']));
-  });
-
-  it('registers the ink theme alongside material and system', () => {
+  it('availableThemes() exposes every registered theme', () => {
     const svc = createService();
 
+    // 断言用**包含**,不是长度:加一套主题是规格明文承诺的单文件改动,所以一条
+    // 会因为「多了一套」而变红的测试只是在要求别人来更新它。
     expect(svc.availableThemes()).toEqual(
       expect.arrayContaining(['material', 'system', 'ink']),
     );
   });
 
-  it('defines every token in both ink modes', () => {
-    // A theme's contract is a matched pair. The 成语纵横 prototype is dark-only;
-    // shipping ink without a light set would break the light/dark axis for
-    // anyone who picks it.
-    for (const mode of ['light', 'dark'] as const) {
-      const set = inkTokens[mode];
-      expect(Object.keys(set.colors).sort()).toEqual(
-        Object.keys(inkTokens.light.colors).sort(),
-      );
-      expect(set.radii.card).toBeTruthy();
-      expect(set.shadows.elevated).toBeTruthy();
-    }
+  it('register() takes a name and nothing else', () => {
+    // token 镜像删掉之后,注册表只存名字。这条钉住的是**它不再需要值** ——
+    // 一个仍然收 token 的签名会让「加一套主题」重新变成两处编辑。
+    const svc = createService();
+
+    svc.register('borrowed');
+
+    expect(svc.availableThemes()).toContain('borrowed');
+    // 这里**不**断言 register 的参数个数:那是抽象签名的事,编译器已经钉住了,
+    // 而第一版还写错了(抽象方法在原型上没有实现,`.length` 是 undefined)——
+    // 一条断言不了自己想断言的东西的断言,不如没有。
+  });
+
+  it('activate() still refuses a name nobody registered', () => {
+    // 编译期不再拦「注册一个 tokens.css 里没有对应块的名字」,所以运行时这道
+    // 拒绝是仅剩的一道 —— 它必须还在。
+    const svc = createService();
+    const before = svc.themeName();
+
+    svc.activate('never-registered');
+
+    expect(svc.themeName()).toBe(before);
+    expect(document.documentElement.dataset['theme']).toBe(before);
   });
 
 });

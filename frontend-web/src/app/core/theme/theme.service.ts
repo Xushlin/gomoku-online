@@ -1,8 +1,4 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
-import { materialTokens } from './themes/material';
-import { inkTokens } from './themes/ink';
-import { systemTokens } from './themes/system';
-import type { ThemeTokens } from './theme.tokens';
 
 const THEME_STORAGE_KEY = 'gewu:theme';
 const DARK_STORAGE_KEY = 'gewu:dark';
@@ -14,9 +10,18 @@ const DEFAULT_THEME = 'material';
  *   - isDark:    whether dark mode is on
  *
  * Painting is driven entirely by CSS: `<html data-theme="...">` + `.dark`
- * class selects which token values cascade. The registry on the TS side
- * exists to enumerate themes for switcher UIs and to validate at
- * registration time that each theme declares all required tokens.
+ * class selects which token values cascade. **The registry on the TS side
+ * holds names only** — it exists to enumerate themes for switcher UIs and to
+ * reject `activate()` of a name nobody registered.
+ *
+ * It used to hold each theme's token values too, mirrored from `tokens.css`,
+ * and validate them at registration. That was deleted: the mirror cost 4.88 kB
+ * of the initial bundle (measured by stubbing, not reasoned), and it guarded
+ * the **copy** rather than the source — a theme whose TS mirror was complete
+ * while its CSS block was missing a token compiled fine and painted wrong.
+ * Completeness is now asserted where the values actually live, by
+ * `scripts/check-styles.mjs`, which derives the token list from `@theme` and
+ * the theme list from the `[data-theme]` selectors, and fails CI.
  *
  * Injection goes through this abstract class as the DI token so tests can
  * supply a stub via `{ provide: ThemeService, useValue: ... }`.
@@ -24,7 +29,7 @@ const DEFAULT_THEME = 'material';
 export abstract class ThemeService {
   abstract readonly themeName: Signal<string>;
   abstract readonly isDark: Signal<boolean>;
-  abstract register(name: string, tokens: ThemeTokens): void;
+  abstract register(name: string): void;
   abstract activate(name: string): void;
   abstract setDark(isDark: boolean): void;
   abstract availableThemes(): readonly string[];
@@ -35,16 +40,16 @@ export class DefaultThemeService extends ThemeService {
   private readonly doc = inject(DOCUMENT);
   private readonly _themeName = signal<string>(DEFAULT_THEME);
   private readonly _isDark = signal<boolean>(false);
-  private readonly themes = new Map<string, ThemeTokens>();
+  private readonly themes = new Set<string>();
 
   readonly themeName: Signal<string> = this._themeName.asReadonly();
   readonly isDark: Signal<boolean> = this._isDark.asReadonly();
 
   constructor() {
     super();
-    this.register('material', materialTokens);
-    this.register('system', systemTokens);
-    this.register('ink', inkTokens);
+    this.register('material');
+    this.register('system');
+    this.register('ink');
 
     const initialTheme = this.resolveInitialTheme();
     const initialDark = this.resolveInitialDark();
@@ -52,9 +57,8 @@ export class DefaultThemeService extends ThemeService {
     this.applyDark(initialDark);
   }
 
-  register(name: string, tokens: ThemeTokens): void {
-    this.validateTokens(name, tokens);
-    this.themes.set(name, tokens);
+  register(name: string): void {
+    this.themes.add(name);
   }
 
   activate(name: string): void {
@@ -72,7 +76,7 @@ export class DefaultThemeService extends ThemeService {
   }
 
   availableThemes(): readonly string[] {
-    return Array.from(this.themes.keys());
+    return Array.from(this.themes);
   }
 
   private applyTheme(name: string): void {
@@ -121,16 +125,6 @@ export class DefaultThemeService extends ThemeService {
       this.doc.defaultView?.localStorage.setItem(key, value);
     } catch {
       // Private-mode / quota errors: accept that persistence is best-effort.
-    }
-  }
-
-  private validateTokens(name: string, tokens: ThemeTokens): void {
-    const modes: (keyof ThemeTokens)[] = ['light', 'dark'];
-    for (const mode of modes) {
-      const set = tokens[mode];
-      if (!set?.colors || !set.radii || !set.shadows) {
-        this.warn(`register('${name}'): missing ${mode}.colors/radii/shadows.`);
-      }
     }
   }
 

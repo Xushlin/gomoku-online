@@ -239,7 +239,6 @@ if (!neutralBlock) {
   const stems = {
     surfaces: 'surface',
     controls: 'control',
-    accents: 'accent',
     shadows: 'shadow',
     grounds: 'ground',
   };
