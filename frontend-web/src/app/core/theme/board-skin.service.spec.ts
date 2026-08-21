@@ -72,34 +72,31 @@ describe('DefaultBoardSkinService', () => {
     expect(svc.skinName()).toBe('wood');
   });
 
-  it('register() allows new skins to be enumerated and activated', () => {
+  it('register() takes a name, and a name is all a skin needs on this side', () => {
     const { svc } = setup();
-    svc.register('bamboo', {
-      board: { bg: '#c8a66b', line: '#000', star: '#000', radius: '0', shadow: 'none' },
-      stones: {
-        blackFill: '#000',
-        blackShadow: 'none',
-        whiteFill: '#fff',
-        whiteRim: '#ccc',
-        whiteShadow: 'none',
-      },
-      pieces: { bg: '#f3e3c0', red: '#b3261e', black: '#241d16' },
-      // 这份 fixture 在 `cards` / `felt` 加进 BoardSkinTokens 的那一刻编译不过了 ——
-      // 那正是机制在工作:一个新皮肤**不可能**漏掉扑克牌与桌面的 token。
-      // add-web-xiangqi 加 `pieces` 时是同一处红的。
-      cards: {
-        face: '#fff',
-        faceEdge: '#ccc',
-        red: '#c00',
-        black: '#111',
-        back: '#369',
-        backEdge: '#eee',
-      },
-      felt: { bg: '#1d5333', edge: '#6b4423', radius: '0', shadow: 'none', text: '#fff', textMuted: '#ccc' },
-      lastMove: { ring: '#f00' },
-    });
+
+    svc.register('bamboo');
+
     expect(svc.availableSkins()).toContain('bamboo');
     svc.activate('bamboo');
     expect(svc.skinName()).toBe('bamboo');
   });
+
+  /*
+   * 这条测试原来传一整份 token fixture,而它的注释记着一件真事:那份 fixture 在
+   * `pieces`(add-web-xiangqi)与 `cards` / `felt` 加进 `BoardSkinTokens` 的那两刻
+   * **编译不过**,于是「一个新皮肤不可能漏掉这些 token」是被编译器兜住的。
+   *
+   * `drop-board-skin-mirrors` 删掉了那个保证,所以这里要写清它换到哪去了 ——
+   * 而这不是等价替换:
+   *
+   *   - 那个编译错误响在**一份测试假皮肤 + 三份 TS 副本**上。真正画画的是
+   *     `board-skins.css`,而一份 TS 副本齐全、CSS 块缺一项的皮肤照样编译通过。
+   *   - 现在守它的是 `scripts/check-styles.mjs`:以默认皮肤的变量集作基准,要求
+   *     每个皮肤块声明**完全相同**的集合,皮肤名单从 `register('…')` 调用推导。
+   *     漏一个会红并点名,多一个拼错的也会红,而它跑在 CI 里。
+   *
+   * 换句话说:保证从「TS 副本必须完整」变成「**画画的那份**必须完整」。位置更对,
+   * 而时机更晚(lint 而非编译)。**这是一次有取舍的交换,不是纯粹的清理。**
+   */
 });

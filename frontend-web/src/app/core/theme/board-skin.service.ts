@@ -1,8 +1,4 @@
 import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core';
-import type { BoardSkinTokens } from './board-skin.tokens';
-import { classicSkin } from './skins/classic';
-import { midnightSkin } from './skins/midnight';
-import { woodSkin } from './skins/wood';
 
 const SKIN_STORAGE_KEY = 'gewu:board-skin';
 const DEFAULT_SKIN = 'wood';
@@ -12,16 +8,24 @@ const DEFAULT_SKIN = 'wood';
  *
  * Painting is driven entirely by CSS: `<html data-board-skin="...">` selects
  * which `--board-*` / `--stones-*` variables cascade into `.board-grid` and
- * `.board-stone`. The TypeScript registry mirrors those values so new skins
- * can be `register`ed without touching any component, matching the same
- * pattern used by ThemeService.
+ * `.board-stone`. **The registry holds names only.**
+ *
+ * It used to mirror each skin's token values in TypeScript and validate them at
+ * registration — and the values were never read, only `has()` and `keys()`.
+ * `drop-theme-token-mirrors` made the same argument one directory over; this is
+ * the sibling that change failed to grep for, and the bundle measurement found
+ * it rather than the reasoning did. Completeness is asserted where the values
+ * live: `scripts/check-styles.mjs` takes the default skin's variable set from
+ * `board-skins.css` as the baseline and requires every other skin block to
+ * declare exactly the same set, with the skin list derived from the
+ * `register('…')` calls below.
  *
  * Injection goes through this abstract class as the DI token so tests can
  * supply a stub via `{ provide: BoardSkinService, useValue: ... }`.
  */
 export abstract class BoardSkinService {
   abstract readonly skinName: Signal<string>;
-  abstract register(name: string, tokens: BoardSkinTokens): void;
+  abstract register(name: string): void;
   abstract activate(name: string): void;
   abstract availableSkins(): readonly string[];
 }
@@ -30,21 +34,20 @@ export abstract class BoardSkinService {
 export class DefaultBoardSkinService extends BoardSkinService {
   private readonly doc = inject(DOCUMENT);
   private readonly _skinName = signal<string>(DEFAULT_SKIN);
-  private readonly skins = new Map<string, BoardSkinTokens>();
+  private readonly skins = new Set<string>();
 
   readonly skinName: Signal<string> = this._skinName.asReadonly();
 
   constructor() {
     super();
-    this.register('wood', woodSkin);
-    this.register('classic', classicSkin);
-    this.register('midnight', midnightSkin);
+    this.register('wood');
+    this.register('classic');
+    this.register('midnight');
     this.apply(this.resolveInitial());
   }
 
-  register(name: string, tokens: BoardSkinTokens): void {
-    this.validate(name, tokens);
-    this.skins.set(name, tokens);
+  register(name: string): void {
+    this.skins.add(name);
   }
 
   activate(name: string): void {
@@ -57,7 +60,7 @@ export class DefaultBoardSkinService extends BoardSkinService {
   }
 
   availableSkins(): readonly string[] {
-    return Array.from(this.skins.keys());
+    return Array.from(this.skins);
   }
 
   private apply(name: string): void {
@@ -85,12 +88,6 @@ export class DefaultBoardSkinService extends BoardSkinService {
       this.doc.defaultView?.localStorage.setItem(SKIN_STORAGE_KEY, name);
     } catch {
       // best-effort — private mode / quota errors ignored
-    }
-  }
-
-  private validate(name: string, tokens: BoardSkinTokens): void {
-    if (!tokens?.board || !tokens.stones || !tokens.pieces || !tokens.lastMove) {
-      this.warn(`register('${name}'): missing board/stones/pieces/lastMove section.`);
     }
   }
 
