@@ -25,7 +25,7 @@ Everything else about how each game landed — including which client judges its
 
 ## Current phase
 
-**Nine games ship** — 五子棋, 成语纵横, 一字棋, 中国象棋, 华容道, 成语接龙, 俄罗斯方块, 斗地主, 挖坑. 99 archived changes. The three kernels are built and each has been proven by a second game that was not a variant of the first.
+**Nine games ship** — 五子棋, 成语纵横, 一字棋, 中国象棋, 华容道, 成语接龙, 俄罗斯方块, 斗地主, 挖坑. 100 archived changes. The three kernels are built and each has been proven by a second game that was not a variant of the first.
 
 ### Where the history lives
 
@@ -47,7 +47,9 @@ Each of these was decided, written down, and left. **A deferral that names its o
 | The per-seat broadcast fan-out has no end-to-end test — projection is unit-tested and the group function is exhaustive by construction, but "three real SignalR connections each receive only their own" is unasserted, so a typo in `ViewGroupName` turns nothing red. | A `Gewu.Api.Tests` project exists. |
 | `AddGameSetup`'s `Down` drops the column, and 斗地主 + 挖坑 now write it. A merged migration is not edited, so the bill is **one new guarded migration** — the cost is per *column*, not per game. `GameSetupMigrationTests` is the list of keys whose data it must carry back. | Anyone needs to roll back past it. |
 | `squash-migration-baseline` — **measured and declined**, so do not re-litigate: the 14 migrations are 400 lines applying in 259 ms, and squashing deletes the 16 tests that stop at a *named intermediate* migration, which is the only point where "did the data move correctly" is observable. | A provider change, ~100 migrations, or an actual deployment. |
-| The bundle budget is **480 kB** with ~6.7 kB free. It has fired five times and was never raised — once it was *lowered*. | When it fires: ask **what is eager that need not be**, and measure by stubbing, not by reasoning. |
+| `--radius-pill` was proposed and **not added** — the class-attribute walk found zero call sites, and a token with no call site is a dead entry every theme pays for. | The first control that genuinely needs a fully rounded shape. |
+| `--color-on-primary` is the literal `#ffffff` in **both** modes, which preserves a real contrast bug: material dark's `--color-primary` is a pale blue and white on it measures about **1.9:1**. Kept on purpose — `extend-theme-tokens` was not allowed to change appearance. | Any change that is allowed to alter the primary button's colours. |
+| The bundle budget is **480 kB** with **~2.8 kB free** (`extend-theme-tokens` spent 3.6 kB of CSS). It has fired five times and was never raised — once it was *lowered*. | **Effectively now:** one more theme's `[data-theme]` block is ~2–3 kB. When it fires, ask **what is eager that need not be** — the non-default themes' token blocks are the obvious candidate — and measure by stubbing, not by reasoning. |
 
 Open questions waiting on the user: 红桃四 and 三带 rules (links promised). Not yet done: 斗地主's play-assist has never been driven in a browser — the client code is shared with 挖坑, whose two paths were measured.
 

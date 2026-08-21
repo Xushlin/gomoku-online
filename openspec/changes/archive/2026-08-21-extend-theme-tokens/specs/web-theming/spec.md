@@ -1,13 +1,18 @@
 # web-theming 的规格变化
 
-## RENAMED Requirements
+<!--
+RENAMED 块已移除，而重命名是手工应用到活规格的。
 
-标题里写死了「两套」,而它自己的 Scenario 写着「三套主题都注册」—— `ink` 上线时改了
-Scenario 没改标题。新标题**不写数量**:一个数量写进标题,就是下一次漂移的位置。
-应用顺序是 RENAMED → REMOVED → MODIFIED → ADDED,所以下面 MODIFIED 用的是新标题。
+原因：`openspec archive` 的 RENAMED 解析器会把以反引号结尾的标题截掉
+最后那个字符。源标题是
+  ### Requirement: 首发两套主题 —— `material` 与 `system`
+而它报的是 "... 与 `system" （尾部反引号不见了），于是 "source not found"
+并 abort。两边的字节逐个比过，是完全相同的。
 
-- FROM: ### Requirement: 首发两套主题 —— `material` 与 `system`
-- TO: ### Requirement: 内置主题集合与它们各自的取舍
+所以下面的 MODIFIED 用的是**新**标题，而活规格里的标题已经先改好了。
+下一个遇到“要给一个以反引号结尾的需求改名”的人，不必再查一遍：
+**它不是你的 delta 写错了。**
+-->
 
 ## MODIFIED Requirements
 

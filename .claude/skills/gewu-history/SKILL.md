@@ -77,3 +77,11 @@ What is shared is a **fact** (the one-char encoding, the four suit paths, the th
 Read **`add-per-game-rating`** before touching schema. EF's generated `Down` has been wrong **four** times, always the same way: `AddColumn(defaultValue: 0)` or `""` restores plausible garbage instead of carrying the data back. Two migrations do it by hand now, one refuses via a `CHECK`-constrained scratch table whose *name is the error message*. Also: `DROP COLUMN` on SQLite is a non-atomic table rebuild; `--idempotent` is unsupported on SQLite and writes no file; explicit `.IsRequired()` outranks CLR nullability, so a type change can generate a clean migration that rejects the first row at runtime.
 
 Expand → contract, with a **named intermediate** migration, is the shape — it is the only point at which "did the data move correctly" is observable, and 16 tests stop there.
+
+## Theming, and the token layer
+
+Two layers, and they were built five months apart. `board-skins.css` came first with a rich vocabulary — **26 tokens** including image-valued ones (`--board-bg-image`, `--felt-edge`, `--card-face-edge`); the shell around it shipped with **11** flat ones. `extend-theme-tokens` pushed the board's vocabulary outward and moved components from spelling out visual values (`bg-surface rounded-card shadow-elevated`) to naming a **role** (`panel`), because a colour token cannot hold a gradient.
+
+Before touching this, read **`extend-theme-tokens`** for three things that will otherwise cost a day: `--shadow-elevated` was a **dead token** for the theme system's whole life (Tailwind v4 inlines `@theme` values into `--tw-shadow` at build time, so `[data-theme]` never reached it); the neutral value of a decoration token is **not** guessable from its name (`transparent` and `none` were both wrong, both invisibly); and the role list must come from a **co-occurrence walk of real class attributes**, not from design-time imagination — the first guess invented two roles that did not exist and missed the most common one.
+
+Adding a theme is still a one-file change, and that promise is checked rather than asserted: `add-qq-game-theme`'s acceptance criterion is that its diff contains **no component file at all**.
