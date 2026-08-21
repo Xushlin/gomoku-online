@@ -21,6 +21,8 @@ export interface DoudizhuSeatView {
   readonly tableSeat: number | null;
   readonly tableCards: readonly PlayingCard[] | null;
   readonly winner: number | null;
+  /** 「假如此刻轮到我,我出得起吗」—— 服务端算的,见 `DoudizhuSeatView`。 */
+  readonly canFollow: boolean;
 }
 
 /**
@@ -58,6 +60,7 @@ export function parseSeatView(raw: string | null | undefined): DoudizhuSeatView 
     tableCards:
       stringOrNull(parsed['tableCards']) === null ? null : decodeHand(stringOrNull(parsed['tableCards'])),
     winner: numberOrNull(parsed['winner']),
+    canFollow: parsed['canFollow'] === true,
   };
 }
 
@@ -91,8 +94,7 @@ export function toTableView(raw: string | null | undefined): CardTableView | nul
     tableCards: v.tableCards,
     winner: v.winner,
     firstBidder: null,
-    // 斗地主还没有「要不起自动过牌」—— `false` 在这里是「没有这个信号」。
-    canFollow: false,
+    canFollow: v.canFollow,
   };
 }
 

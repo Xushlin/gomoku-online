@@ -31,6 +31,14 @@ namespace Gewu.Domain.Games.Doudizhu;
 /// <param name="TableSeat">桌上那一手是谁打的;自由首出时 <c>null</c>。</param>
 /// <param name="TableCards">桌上那一手的牌;自由首出时 <c>null</c>。</param>
 /// <param name="Winner">赢家座位号;还没结束或流局时 <c>null</c>。</param>
+/// <param name="CanFollow">
+/// **假如此刻轮到你,你出得起吗** —— 与挖坑那份定义逐字相同,**与轮次无关**
+/// (<c>ViewFor</c> 收的 <c>MatchState</c> 里根本没有当前回合)。
+/// <para>
+/// 它恒等于 <see cref="DoudizhuFollows.For"/> 非空,而一条断言逐座位把两者钉在一起。
+/// **手里有炸弹就永远出得起** —— 所以一个「要不起」的测试必须先断言这手牌里没有炸弹。
+/// </para>
+/// </param>
 public sealed record DoudizhuSeatView(
     string Phase,
     int? Landlord,
@@ -41,4 +49,5 @@ public sealed record DoudizhuSeatView(
     string? Kitty,
     int? TableSeat,
     string? TableCards,
-    int? Winner);
+    int? Winner,
+    bool CanFollow);

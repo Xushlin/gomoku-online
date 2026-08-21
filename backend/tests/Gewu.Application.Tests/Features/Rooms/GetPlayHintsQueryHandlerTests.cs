@@ -47,7 +47,9 @@ public class GetPlayHintsQueryHandlerTests
         var rooms = new Mock<IRoomRepository>();
         rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(room);
-        return new GetPlayHintsQueryHandler(rooms.Object);
+        // **注册表来自生产的那一份**,而不是一个只登记了牌类棋种的假注册表 ——
+        // handler 现在按注册表解析 `IPlayHintRules`,而那正是要测的东西。
+        return new GetPlayHintsQueryHandler(rooms.Object, GomokuRules.Registry);
     }
 
     private static async Task<PlayHintsDto> Hints(Room room, UserId user)
@@ -129,6 +131,68 @@ public class GetPlayHintsQueryHandlerTests
         (await Hints(room, host)).Plays.Should().BeEmpty();
     }
 
+    /// <summary>坐满三人、已经进入出牌阶段的斗地主房间。</summary>
+    private static (Room Room, UserId[] Players) DoudizhuPlayingRoom()
+    {
+        var rules = new Gewu.Domain.Games.Doudizhu.DoudizhuRules();
+        var host = UserId.NewId();
+        var room = Room.Create(
+            RoomId.NewId(), "doudizhu room", host, RoomsFixtures.Now, GameKeys.Doudizhu);
+        var second = UserId.NewId();
+        var third = UserId.NewId();
+        room.JoinAsPlayer(second, RoomsFixtures.Now.AddSeconds(1), rules, setup: null);
+        room.JoinAsPlayer(third, RoomsFixtures.Now.AddSeconds(2), rules, setup: rules.CreateSetup(Seed));
+        room.PlayMove(host, MoveIntent.Say("bid:3"), RoomsFixtures.Now.AddSeconds(10), rules);
+        return (room, [host, second, third]);
+    }
+
+    [Fact]
+    public async Task Doudizhu_gets_hints_too_and_the_handler_names_no_game_key()
+    {
+        // **这是本变更的核心。** handler 此前写死了 `GameKeys.Wakeng`;加第二个牌类棋种
+        // 而不加接缝,Application 层就会长出一个 `switch (gameKey)`。
+        var (room, players) = DoudizhuPlayingRoom();
+
+        var hints = await Hints(room, players[0]);
+
+        hints.Plays.Should().NotBeEmpty("地主自由首出,手里总有牌可出");
+    }
+
+    [Fact]
+    public async Task Both_card_games_agree_with_their_own_canFollow()
+    {
+        // **两个出口读同一个事实,两个棋种各一份** —— 一条断言同时走过两边。
+        var wakeng = PlayingRoom();
+        var doudizhu = DoudizhuPlayingRoom();
+        var ddzRules = new Gewu.Domain.Games.Doudizhu.DoudizhuRules();
+
+        foreach (var seat in Enumerable.Range(0, 3))
+        {
+            var wkView = JsonDocument.Parse(Rules.ViewFor(wakeng.Room.Game!.State(), seat))
+                .RootElement.GetProperty("canFollow").GetBoolean();
+            wkView.Should().Be((await Hints(wakeng.Room, wakeng.Players[seat])).Plays.Count > 0,
+                $"wakeng seat {seat}");
+
+            var ddzView = JsonDocument.Parse(ddzRules.ViewFor(doudizhu.Room.Game!.State(), seat))
+                .RootElement.GetProperty("canFollow").GetBoolean();
+            ddzView.Should().Be((await Hints(doudizhu.Room, doudizhu.Players[seat])).Plays.Count > 0,
+                $"doudizhu seat {seat}");
+        }
+    }
+
+    [Fact]
+    public void Exactly_the_two_card_games_implement_the_seam()
+    {
+        // 棋盘类棋种与成语接龙**一行不动** —— 它们的合法走子空间不是一份可以列举给玩家
+        // 点选的清单(五子棋开局有 225 个合法点)。
+        var lexicon = GomokuRules.Lexicon;
+
+        Gewu.Domain.Games.NInARow.BuiltInGameRules.All(lexicon)
+            .Where(r => r is IPlayHintRules)
+            .Select(r => r.GameKey)
+            .Should().BeEquivalentTo([GameKeys.Doudizhu, GameKeys.Wakeng]);
+    }
+
     [Fact]
     public async Task A_room_that_does_not_exist_yields_no_hints()
     {
@@ -137,7 +201,7 @@ public class GetPlayHintsQueryHandlerTests
         rooms.Setup(r => r.FindByIdAsync(It.IsAny<RoomId>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Room?)null);
 
-        var hints = await new GetPlayHintsQueryHandler(rooms.Object)
+        var hints = await new GetPlayHintsQueryHandler(rooms.Object, GomokuRules.Registry)
             .Handle(new GetPlayHintsQuery(UserId.NewId(), RoomId.NewId()), default);
 
         hints.Plays.Should().BeEmpty();

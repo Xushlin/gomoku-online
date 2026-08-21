@@ -318,6 +318,52 @@ public interface IFirstSeatRules : IGameRules
 }
 
 /// <summary>
+/// 能列出「我现在能出哪些」的棋种 —— 两个牌类棋种。
+/// <para>
+/// 它服务两件事,而它们是**同一个事实的两个出口**:「要不起」(列表为空)与「提示」
+/// (在列表里轮换)。写成两套逻辑会造出一个能自相矛盾的组合 —— 提示说「你可以出这手」,
+/// 而自动过牌已经替你过了。
+/// </para>
+/// <para>
+/// <b>分出一个接口而不是给 <see cref="IGameRules"/> 加成员</b>,理由与
+/// <see cref="IDealtGameRules"/> / <see cref="IPerSeatViewRules"/> /
+/// <see cref="IFirstSeatRules"/> 当初分出来时逐字相同:留在基接口上,另外五个棋种就得各写
+/// 一个骗人的实现,而**骗人的实现是下一个人删不掉的东西**。这是这个模式的第五次。
+/// </para>
+/// <para>
+/// 棋盘类棋种与成语接龙不实现它:它们的合法走子空间不是一份可以列举给玩家点选的清单
+/// (五子棋开局有 225 个合法点)。
+/// </para>
+/// <para>
+/// <b>两个牌类棋种各自实现,而 MUST NOT 合并那两份枚举。</b> 挖坑**没有炸弹**,所以它的
+/// 候选只在一种牌型之内;斗地主的炸弹压任何非炸弹,所以它的候选**跨牌型**。而斗地主还有
+/// 六种**带填充牌**的牌型,挖坑一种都没有。共享的是这个接缝,不是枚举 ——
+/// **形状相同不等于事实相同。**
+/// </para>
+/// </summary>
+public interface IPlayHintRules : IGameRules
+{
+    /// <summary>
+    /// 座位 <paramref name="seat"/> 此刻能出的**全部**牌,按先弱后强排。
+    /// <para>
+    /// 每一项是**牌的编码串**(<c>play:</c> 后面那一段),对内核**不透明** —— 与
+    /// <see cref="IPerSeatViewRules.ViewFor"/> 同一个做法:内核不该知道什么是牌。
+    /// </para>
+    /// <para>
+    /// MUST 是纯函数,并 MUST 只回答这一个座位的那一份 —— 一个能列别人候选的实现等于
+    /// 把别人的手牌算出来给你。
+    /// </para>
+    /// <para>
+    /// 空列表的含义是「这个座位此刻要不起」,而它 MUST 与该棋种 <c>seatView</c> 上那个
+    /// <c>canFollow</c> 恒等 —— 一条断言逐座位把两者钉在一起。
+    /// </para>
+    /// </summary>
+    /// <param name="state">走子历史 + 服务端侧的对局设置。</param>
+    /// <param name="seat">要问的座位号。</param>
+    IReadOnlyList<string> LegalPlays(MatchState state, int seat);
+}
+
+/// <summary>
 /// 按棋种键解析 <see cref="IGameRules"/>。未注册的键返回 <c>null</c>,
 /// 由 handler 映射成 404 —— 与 <c>IPuzzleRulesRegistry</c> 同一形状,
 /// 平台上"按游戏键解析实现"只该有一种写法。
