@@ -123,7 +123,9 @@ openspec archive <name>     # promote change → live specs
 ```
 
 See [`CLAUDE.md`](CLAUDE.md) for the contributor playbook (architecture
-constraints, commit/PR style, code review expectations).
+constraints, commit/PR style, code review expectations), and
+[`JOURNAL.md`](JOURNAL.md) for the engineering journal — one entry per shipped
+change, recording what it cost and which assumptions turned out to be false.
 
 ## Backend architecture
 
