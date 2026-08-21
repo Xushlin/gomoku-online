@@ -2,7 +2,15 @@ import { DOCUMENT, inject, Injectable, signal, type Signal } from '@angular/core
 
 const THEME_STORAGE_KEY = 'gewu:theme';
 const DARK_STORAGE_KEY = 'gewu:dark';
-const DEFAULT_THEME = 'material';
+/*
+ * 没有存过偏好的用户看到的那一套。
+ *
+ * 从 'material' 改成 'qq-game':这是一个游戏厅,而 material 的调色板是一套后台
+ * 管理系统的。**改默认值 MUST NOT 动到已经选过的人** —— 解析顺序里 localStorage
+ * 优先,所以两个方向都要有断言:没存过 → 拿到新默认;存过 'material' → 仍然是
+ * material。少了后一条,一个把所有人都改掉的实现在前一条下也是绿的。
+ */
+const DEFAULT_THEME = 'qq-game';
 
 /**
  * Cross-cutting theme API. Two orthogonal signals:
@@ -50,6 +58,7 @@ export class DefaultThemeService extends ThemeService {
     this.register('material');
     this.register('system');
     this.register('ink');
+    this.register('qq-game');
 
     const initialTheme = this.resolveInitialTheme();
     const initialDark = this.resolveInitialDark();

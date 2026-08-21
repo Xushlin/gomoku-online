@@ -26,6 +26,9 @@
   --color-surface: #ffffff;
   --color-primary: #1565c0;
   --color-on-primary: #ffffff;
+  --color-on-surface: #1a1a1a;
+  --color-well: #fafafa;
+  --color-on-well: #1a1a1a;
   --color-text: #1a1a1a;
   --color-muted: #616161;
   --color-border: #e0e0e0;
@@ -70,6 +73,7 @@
 
 /* 抬起的面 —— 有填充、有边、有投影。对话框、卡片、大厅的棋种块。 */
 @utility panel {
+  color: var(--color-on-surface);
   background-color: var(--color-surface);
   background-image: var(--surface-image);
   border: 1px solid var(--color-border);
@@ -80,6 +84,7 @@
 
 /* 贴平的面 —— 和 `panel` 只差投影。列表项、内嵌区块。 */
 @utility panel-flat {
+  color: var(--color-on-surface);
   background-color: var(--color-surface);
   background-image: var(--surface-image);
   border: 1px solid var(--color-border);
@@ -89,7 +94,8 @@
 
 /* 凹槽 —— 底色比周围**深一层**(页面底放在面里就是凹)。输入框、空座位、日志区。 */
 @utility well {
-  background-color: var(--color-bg);
+  color: var(--color-on-well);
+  background-color: var(--color-well);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   box-shadow: var(--shadow-inset);
@@ -110,6 +116,7 @@
  * **一个漏掉的角色不会让这个变更变红,它会让下一个变更做不到。**
  */
 @utility bar {
+  color: var(--color-on-surface);
   background-color: var(--color-surface);
   background-image: var(--surface-image);
   /*
