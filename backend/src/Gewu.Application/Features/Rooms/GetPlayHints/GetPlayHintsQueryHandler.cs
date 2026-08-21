@@ -1,24 +1,21 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Gewu.Application.Abstractions;
-using Gewu.Domain.Enums;
-using Gewu.Domain.Games.Cards;
-using Gewu.Domain.Games.Wakeng;
+using Gewu.Domain.Games.Abstractions;
 using MediatR;
 
 namespace Gewu.Application.Features.Rooms.GetPlayHints;
 
 /// <summary>
-/// 算出调用者自己那一份候选出法。
+/// 取出调用者自己那一份候选出法。
 /// <para>
-/// <b>枚举在 Domain 里(<see cref="WakengFollows"/>),这里只做取数与授权。</b>
-/// 「哪几手牌出得起」是规则,而规则是这一局唯一的判据 —— 在这一层再判一遍就是第二个真源。
+/// <b>它按注册表解析 <see cref="IPlayHintRules"/>,而不认识任何具体棋种键。</b>
+/// 第一版写死了 <c>GameKeys.Wakeng</c>,而那在只有一个牌类棋种时看不出问题 ——
+/// 加第二个的那天它就会长成一个 <c>switch (gameKey)</c>,而
+/// <c>game-rules-registry</c> 明写着「实现 MUST NOT 内联任何『哪些棋种存在』的硬编码列表」。
 /// </para>
 /// <para>
-/// <b>今天只有挖坑。</b> 斗地主的「压得住」要算炸弹、四带二、飞机带翅膀,而且炸弹跨型压,
-/// 候选空间大一个量级。别的棋种返回空列表 —— 而那不是「你要不起」,是「这个棋种没有这个功能」。
-/// 两者在客户端不会混:只有挖坑的牌桌会去按那个按钮。
+/// 枚举整个在 Domain 里(两个棋种各一份),这里只做取数与授权:「哪几手牌出得起」是规则,
+/// 而规则是这一局唯一的判据 —— 在这一层再判一遍就是第二个真源。
 /// </para>
 /// </summary>
 public sealed class GetPlayHintsQueryHandler : IRequestHandler<GetPlayHintsQuery, PlayHintsDto>
@@ -26,18 +23,27 @@ public sealed class GetPlayHintsQueryHandler : IRequestHandler<GetPlayHintsQuery
     private static readonly PlayHintsDto None = new([]);
 
     private readonly IRoomRepository _rooms;
+    private readonly IGameRulesRegistry _rules;
 
     /// <inheritdoc />
-    public GetPlayHintsQueryHandler(IRoomRepository rooms)
+    public GetPlayHintsQueryHandler(IRoomRepository rooms, IGameRulesRegistry rules)
     {
         _rooms = rooms;
+        _rules = rules;
     }
 
     /// <inheritdoc />
     public async Task<PlayHintsDto> Handle(GetPlayHintsQuery request, CancellationToken cancellationToken)
     {
         var room = await _rooms.FindByIdAsync(request.RoomId, cancellationToken);
-        if (room is null || room.GameKey != Gewu.Domain.Games.Abstractions.GameKeys.Wakeng)
+        if (room is null)
+        {
+            return None;
+        }
+
+        // 解析不出这个接口的棋种返回空 —— 而那不是「你要不起」,是**这个棋种没有这个功能**。
+        // 两者在客户端不会混:只有牌类棋种的牌桌会去按那个按钮。
+        if (_rules.For(room.GameKey) is not IPlayHintRules hints)
         {
             return None;
         }
@@ -50,22 +56,11 @@ public sealed class GetPlayHintsQueryHandler : IRequestHandler<GetPlayHintsQuery
         }
 
         var game = room.Game;
-        if (game is null || game.Result is not null || game.Setup is null)
+        if (game is null || game.Result is not null)
         {
             return None;
         }
 
-        var table = WakengTable.Reconstruct(game.State());
-        if (table.Phase != WakengPhase.Playing)
-        {
-            // 叫分阶段没有「出哪一手牌」这件事。
-            return None;
-        }
-
-        var plays = WakengFollows.For(table.HandOf(seat), table.Current)
-            .Select(Card.Encode)
-            .ToList();
-
-        return new PlayHintsDto(plays);
+        return new PlayHintsDto(hints.LegalPlays(game.State(), seat));
     }
 }

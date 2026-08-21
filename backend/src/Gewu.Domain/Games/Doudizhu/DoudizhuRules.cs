@@ -21,7 +21,7 @@ namespace Gewu.Domain.Games.Doudizhu;
 /// <see cref="MatchState"/> 重建局面(见 <see cref="DoudizhuTable"/>)。
 /// </para>
 /// </summary>
-public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbackRules, IPerSeatViewRules
+public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbackRules, IPerSeatViewRules, IPlayHintRules
 {
     /// <inheritdoc />
     public string GameKey => GameKeys.Doudizhu;
@@ -189,6 +189,29 @@ public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbac
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
+    /// <summary>
+    /// 这个座位此刻能出的全部牌 —— 枚举在 <see cref="DoudizhuFollows"/> 里。
+    /// <para>
+    /// 它与挖坑那一份是两份实现,而理由是结构性的:斗地主的炸弹**跨型**压,而它还有六种
+    /// 带填充牌的牌型。共享的是接缝,不是枚举。
+    /// </para>
+    /// </summary>
+    /// <param name="state">走子历史 + 服务端侧的发牌。</param>
+    /// <param name="seat">要问的座位号。</param>
+    public IReadOnlyList<string> LegalPlays(MatchState state, int seat)
+    {
+        if (seat < 0 || seat >= SeatCount)
+        {
+            return [];
+        }
+        var table = DoudizhuTable.Reconstruct(state);
+        if (table.Phase != DoudizhuPhase.Playing)
+        {
+            return [];
+        }
+        return [.. DoudizhuFollows.For(table.HandOf(seat), table.Current).Select(Card.Encode)];
+    }
+
     /// <inheritdoc />
     public string ViewFor(MatchState state, int? seat)
     {
@@ -218,7 +241,11 @@ public sealed class DoudizhuRules : IGameRules, IDealtGameRules, ITimeoutFallbac
             Kitty: kitty,
             TableSeat: table.CurrentSeat,
             TableCards: table.Current is null ? null : Card.Encode(table.CurrentCards),
-            Winner: table.Winner);
+            Winner: table.Winner,
+            // 「假如此刻轮到你,你出得起吗」—— 与挖坑那份定义逐字相同,与轮次无关。
+            // 不占座位的人恒 false:他没有手牌,也不该拿到一个关于别人手牌的答案。
+            CanFollow: seat is int s2 && s2 >= 0 && s2 < SeatCount
+                && DoudizhuFollows.CanFollow(table.HandOf(s2), table.Current));
 
         return JsonSerializer.Serialize(view, ViewJson);
     }

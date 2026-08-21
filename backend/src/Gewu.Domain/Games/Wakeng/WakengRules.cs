@@ -25,7 +25,8 @@ namespace Gewu.Domain.Games.Wakeng;
 /// </para>
 /// </summary>
 public sealed class WakengRules
-    : IGameRules, IDealtGameRules, IFirstSeatRules, ITimeoutFallbackRules, IPerSeatViewRules
+    : IGameRules, IDealtGameRules, IFirstSeatRules, ITimeoutFallbackRules, IPerSeatViewRules,
+        IPlayHintRules
 {
     /// <inheritdoc />
     public string GameKey => GameKeys.Wakeng;
@@ -227,6 +228,28 @@ public sealed class WakengRules
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
+
+    /// <summary>
+    /// 这个座位此刻能出的全部牌 —— 枚举在 <see cref="WakengFollows"/> 里。
+    /// <para>
+    /// 出牌阶段之外返回空:叫分阶段没有「出哪一手牌」这件事。
+    /// </para>
+    /// </summary>
+    /// <param name="state">走子历史 + 服务端侧的发牌。</param>
+    /// <param name="seat">要问的座位号。</param>
+    public IReadOnlyList<string> LegalPlays(MatchState state, int seat)
+    {
+        if (seat < 0 || seat >= SeatCount)
+        {
+            return [];
+        }
+        var table = WakengTable.Reconstruct(state);
+        if (table.Phase != WakengPhase.Playing)
+        {
+            return [];
+        }
+        return [.. WakengFollows.For(table.HandOf(seat), table.Current).Select(Card.Encode)];
+    }
 
     /// <inheritdoc />
     public string ViewFor(MatchState state, int? seat)
