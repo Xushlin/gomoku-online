@@ -72,6 +72,27 @@ describe('DefaultThemeService', () => {
 
     const svc = createService();
 
+    expect(svc.themeName()).toBe('qq-game');
+    expect(localStorage.getItem('gewu:theme')).toBe('qq-game');
+  });
+
+  it('a user with no stored preference gets the game-hall theme', () => {
+    // 这个平台的默认长相:一个游戏厅,而不是一套后台管理系统的调色板。
+    expect(localStorage.getItem('gewu:theme')).toBeNull();
+
+    const svc = createService();
+
+    expect(svc.themeName()).toBe('qq-game');
+    expect(document.documentElement.dataset['theme']).toBe('qq-game');
+  });
+
+  it('a user who already chose material keeps material', () => {
+    // **这条是改默认值时唯一要紧的断言。** 少了它,一个把所有人都改成新默认的
+    // 实现在上一条下同样是绿的 —— 而那会抹掉每一个选过主题的人的选择。
+    localStorage.setItem('gewu:theme', 'material');
+
+    const svc = createService();
+
     expect(svc.themeName()).toBe('material');
     expect(localStorage.getItem('gewu:theme')).toBe('material');
   });
@@ -82,7 +103,7 @@ describe('DefaultThemeService', () => {
     // 断言用**包含**,不是长度:加一套主题是规格明文承诺的单文件改动,所以一条
     // 会因为「多了一套」而变红的测试只是在要求别人来更新它。
     expect(svc.availableThemes()).toEqual(
-      expect.arrayContaining(['material', 'system', 'ink']),
+      expect.arrayContaining(['material', 'system', 'ink', 'qq-game']),
     );
   });
 
