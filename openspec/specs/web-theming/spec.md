@@ -148,38 +148,31 @@ API 契约:
 
 ### Requirement: 扩展点 —— 加主题是单文件改动
 
-新增一个主题 MUST 只需要:
+新增一个主题 MUST 只需要两处编辑:
 
-1. 在 `src/app/core/theme/themes/<name>.(light|dark).ts` 新增两份 token 对象;
-2. 在 `src/styles/tokens.css` 追加两段 `[data-theme="<name>"]` 与 `[data-theme="<name>"].dark` 规则;
-3. 在 `DefaultThemeService` 启动注册序列中新增一行 `this.register('<name>', ...)`。
+1. 在 `src/styles/tokens.css` 追加两段 `[data-theme="<name>"]` 与 `[data-theme="<name>"].dark` 规则;
+2. 在 `DefaultThemeService` 启动注册序列中新增一行 `this.register('<name>')`。
 
-MUST NOT 需要:修改任何组件源码、修改任何现有主题的 token、修改 Tailwind config(因为 utility 已经绑定到 CSS 变量)。
+MUST NOT 需要:任何 TypeScript 的 token 对象、修改任何组件源码、修改任何现有主题的 token、修改 Tailwind config(因为 utility 已经绑定到 CSS 变量)。
 
-**这条约束管的是「加一套主题」这个动作,不管「扩 token 词汇」。** 两者必须分开,否则它会禁止自己的前提:token 契约只有 9 色 + 1 圆角 + 1 阴影时,任何需要渐变、斜角或纹理的主题都**表达不出来**,而颜色不能是渐变。扩词汇是一次性的、要动组件的(组件得从「拼视觉值」改成「说出角色名」),而扩完之后本条约束原封不动 —— 并且下一个主题就是它的检验。
+**曾经还需要第三处:每套主题在 TypeScript 里的一份 token 镜像。** 它被删掉了,理由有两条,而第二条才是主要的:
 
-**每一次扩词汇 SHALL 以「现有主题画出来一模一样」为验收标准,而例外必须逐条列出并给出量到的证据。** 判据是 6 种(主题 × 明暗)组合下关键面的**计算样式逐条比对**,而不是目测。没有这条基线,「只是加了个可选层」和「悄悄改了三套主题的长相」在屏幕上分辨不出来。
+1. 它要每个用户在**首屏**付 4.88 kB(打桩量的:把 `register()` 的实参换成空对象再构建)。
+2. **它守的是副本,不是真源。** 镜像不画画,CSS 画画 —— 一套主题的 TS 镜像齐全而它的 `tokens.css` 块缺一项,**照样编译通过、照样画错**。而一份被校验过完整性的副本,比一份没人校验的副本更容易让人相信。
 
-中性值 SHALL 定义在一处(`NEUTRAL_DECORATION`),而 **MUST NOT 靠名字去猜** —— 头两个「显然」的猜法都是错的,而两个都会以「零变化」的名义把东西改坏:
-
-- `--surface-edge` 的中性值是 `var(--color-border)`,**不是** `transparent`:角色 utility 用它设**上边框**,所以中性必须是「和另外三条边同色」;写 `transparent` 会让每一块面板的**上边消失**。
-- `--shadow-raised` / `--shadow-inset` 的中性值是 `0 0 #0000`,**不是** `none`:`panel` 把它拼进 `box-shadow: var(--shadow-elevated), var(--shadow-raised)`,而 `none` **不是合法的阴影列表成员** —— 整条声明失效,连原有的阴影一起没了。
-
-#### Scenario: 扩词汇不改现有主题的长相
-- **WHEN** 一次扩 token 契约的改动落地后,依次切到 (material|system|ink) × (light|dark)
-- **THEN** 关键面的 `background-color` / `background-image` / 四边宽与色 / `border-radius` / `color` / `padding` 与扩之前**逐条相同**;唯一允许的差异是本 spec 另一条要求点名的 `box-shadow`
-
-#### Scenario: 那条基线自己是可以变红的
-- **WHEN** 故意把某一套主题的某个新 token 的中性值写成非中性
-- **THEN** 校验变红,并点名**哪套主题、哪个 token、期望值与实际值** —— 一条测不出错的基线证明不了零变化
-
-#### Scenario: 比对时的归一化只许去掉真正的空操作
-- **WHEN** 比对 `box-shadow` 字符串
-- **THEN** 只有**恰好** `rgba(0, 0, 0, 0) 0px 0px 0px 0px` 的成员可以被忽略(中性 token 的产物,画出来什么也没有);任何其它差异 MUST 计入
+`ThemeService.register` 因此 SHALL 只收名字;注册表 SHALL 只存名字。`activate()` 对未注册的名字的拒绝 SHALL 保留 —— 编译期不再拦「注册一个 CSS 里没有对应块的名字」,那道运行时拒绝是仅剩的一道。
 
 #### Scenario: 扩展仪式
 - **WHEN** 假想新增一个 `playful` 主题
-- **THEN** 从 diff 角度:纯新增一个 ts 文件 + 一段 css 规则 + 一行注册调用,`grep -r` 不显示任何既有组件或既有主题文件被修改
+- **THEN** 从 diff 角度:一段 CSS 规则 + 一行注册调用。`git diff --name-only` 里 MUST NOT 出现任何组件文件,也 MUST NOT 出现任何 `themes/*.ts`
+
+#### Scenario: 删掉镜像不改任何一处长相
+- **WHEN** 依次切到每套主题 × 明暗
+- **THEN** 关键面的计算样式与删之前**逐条相同,零差异** —— 镜像从不参与绘制,所以这里允许的差异是 0,不是「可解释的若干处」
+
+#### Scenario: activate 仍然拒绝没注册过的名字
+- **WHEN** `activate('never-registered')`
+- **THEN** `themeName()` 与 `data-theme` 都不变
 
 ### Requirement: token 契约带一层游戏化视觉词汇,而它对每套主题都是必需的
 
@@ -242,19 +235,22 @@ MUST NOT 需要:修改任何组件源码、修改任何现有主题的 token、�
 
 ### Requirement: 主题 token 的对齐校验从注册表推导
 
-`check-styles.mjs` SHALL 断言**每个已注册主题在明暗两份里都声明了每一个 token**,而清单 SHALL 从生产源推导 —— `tokens.css` 的 `[data-theme=…]` 选择器与 `theme.tokens.ts` 的类型,MUST NOT 手写成一份主题名清单。
+`check-styles.mjs` SHALL 断言**每个已注册主题都声明了每一个 token**,而清单 SHALL 从生产源推导 —— token 名单从 `tailwind.css` 的 `@theme` 块,主题名单从 `tokens.css` 的 `[data-theme=…]` 选择器。MUST NOT 手写成一份主题名清单。
 
-它 SHALL 跑在 `npm run lint` 下而不是 vitest,与已有的 board skin 对齐校验同一处;那条今天打印「3 skins x 26 variables」,新增这条打印同形状的一行。
+它 SHALL 跑在 `npm run lint` 下而不是 vitest,与已有的 board skin 对齐校验同一处。
 
-**这一条是「每套主题都完整」从散文变成机制的地方。** 上面那条要求写着必需契约,而没有这条校验,它就只是一句话:`ThemeService.validateTokens` 只在**运行时** warn,而一个 warn 在 CI 里不会让任何东西变红。
+**镜像删掉之后,这条校验是完整性的唯一保证,所以它的地位从「第二道」变成「仅有的一道」。** 这不是降级:它检查的是**真正画画的那份**,而被删掉的编译期检查看的是副本。两个后果:
+
+- 任何放宽这条校验才能通过的改动 MUST 被当作错误的改动看待;
+- 一次删除编译期保证的变更 SHALL 在删除**之后**重跑同一个变异,证明剩下的保证仍然会红。只在删除之前跑过,证明的是被删掉的那一道。
 
 #### Scenario: 清单不是手写的
 - **WHEN** 新增一套主题而**不**改 `check-styles.mjs`
 - **THEN** 新主题自动进入校验范围;它缺 token 就失败
 
-#### Scenario: 校验自己会红
-- **WHEN** 删掉某套主题某个模式下的一个 token 值
-- **THEN** `npm run lint` 失败并点名该主题、该模式、该 token
+#### Scenario: 删掉编译期保证之后校验仍然会红
+- **WHEN** 给某套主题的 `[data-theme]` 块删掉一个 token,在镜像已经不存在的代码上跑 `npm run lint`
+- **THEN** 失败,并点名该主题与该 token
 
 ### Requirement: `shadow-elevated` 这个 class 不许再用,因为它忽略主题
 
@@ -275,4 +271,62 @@ MUST NOT 需要:修改任何组件源码、修改任何现有主题的 token、�
 #### Scenario: 阴影 token 真的活了
 - **WHEN** 依次切到 6 种(主题 × 明暗)组合,读取某个 `panel` 的 `box-shadow`
 - **THEN** 它等于该组合声明的 `--shadow-elevated`(允许附带一个全透明零尺寸成员);6 种组合 MUST NOT 得到同一个值 —— 那正是修复前的症状
+
+### Requirement: `qq-game` 主题 —— 一个游戏厅,而不是一个设置页
+
+平台 SHALL 交付并注册 `qq-game`,明暗两份齐全,并 SHALL 把它作为**没有存过偏好**的用户的默认主题。
+
+它的取舍是**材质**而不是色相:一个**厅**(地面)、铺在上面的**牌面**、牌面周围的**黄铜**边、以及唯一一个用来确认的**朱红**。暗色一套保留材质、只翻明度(胡桃木代替牙白),**MUST NOT 用反相** —— 反相的牙白是一块脏灰,而黄铜落在灰上读起来像锈。
+
+**浅色一套的地面 MUST NOT 是深色。** 这不是审美偏好,是结构约束:shell 根把 `--color-text` 铺给整页,所以同一个前景色必须同时在地面和牌面上可读。深色地面因此只属于暗色一套;浅色一套取一张浅色的桌面。**一张每块样张各有自己作用域的设计稿验不出这条约束**,它只在整页渲染时出现。
+
+#### Scenario: 没存过偏好的人看到游戏厅
+- **WHEN** `localStorage` 里没有主题偏好,服务初始化
+- **THEN** `themeName()` 是 `'qq-game'`,`<html data-theme>` 也是
+
+#### Scenario: 选过的人不被改掉
+- **WHEN** `localStorage` 里存着 `'material'`,服务初始化
+- **THEN** 仍然是 `'material'` —— 少了这条断言,一个把所有人都改成新默认的实现同样是绿的
+
+#### Scenario: 两种模式都真的画出装饰
+- **WHEN** 在 `qq-game` 的明暗两种模式下取一块 `panel`
+- **THEN** 它有 `background-image`(渐变)、上边框颜色与另外三条边**不同**(斜角高光)、`box-shadow` 的第一段是零模糊的硬边(牌的厚度)
+
+### Requirement: 前景色按「落在哪个面上」分,而不是整页一个
+
+token 契约 SHALL 区分**页面地面的前景**与**填充面上的前景**,并 SHALL 区分**页面底色**与**凹陷面的底色**:`--color-on-surface` / `--color-well` / `--color-on-well`。
+
+角色 utility SHALL 各自说出自己的前景:`panel` / `panel-flat` / `bar` 取 `--color-on-surface`,`well` 取 `--color-well` 作填充、`--color-on-well` 作前景。
+
+三者对既有主题的中性值是**关系而非字面量** —— `var(--color-text)` / `var(--color-bg)` / `var(--color-text)`,即「它们在这个 token 存在之前用的那一个」。
+
+**为什么这三个不是在扩词汇那次就发现的,值得写下来:** 那次按「现有 class 属性的共现」推导角色与 token。共现走查治好了「凭想象发明不存在的角色」,但它**只能告诉你当前设计需要什么** —— 而当前设计把「页面底色」和「凹陷面」、「整页前景」和「牌面前景」各自**合成了一个**。扁平设计里这两对确实是同一个东西;实体材质的设计里不是。**一份从现状推导出来的清单,对「另一种设计需要什么」是盲的。**
+
+#### Scenario: 一个前景色不够
+- **WHEN** 一套主题的地面明度与牌面明度差得足够远(深色厅 + 亮色牌面)
+- **THEN** 单一 `--color-text` 无法同时在两者上通过 WCAG AA;`--color-on-surface` MUST 存在
+
+#### Scenario: 凹槽不是页面底色
+- **WHEN** 一套主题的牌面不是页面底色
+- **THEN** 牌面上的凹槽取 `--color-well`,而它 MUST NOT 被迫等于 `--color-bg`
+
+#### Scenario: 现有主题一处不变
+- **WHEN** 这三个 token 加入后,在每套既有主题 × 明暗下比对关键面的计算样式
+- **THEN** 与加入之前**逐条相同**
+
+### Requirement: 对比度按渐变的每一档量,而方向取决于文字的明暗
+
+主题的对比度校验 SHALL 对**每一个渐变色标**取值,而 MUST NOT 只对平色回退值取值 —— 一个按回退值合格的按钮,可能在它自己渐变的某一档上不合格(量到过 4.85 对 3.21)。
+
+**最差的那一档取哪一头,取决于文字是深还是浅:** 深色文字落在浅色渐变上,最差是**最暗**那一档;浅色文字落在深色渐变上,最差是**最亮**那一档。取反会得到一个偏乐观约 1.3 倍的数字,而那个数字看起来完全正常。
+
+`qq-game` 的明暗两套 × 全部前景色 MUST ≥ 4.5:1。
+
+#### Scenario: 按最差档判定
+- **WHEN** 一个前景色落在一个多档渐变上
+- **THEN** 判据是它与全部色标之间的**最小**对比度
+
+#### Scenario: 探针自己可以变红
+- **WHEN** 把前景色设成与背景同色
+- **THEN** 测得的比值 < 4.5 —— 一条测不出错的对比度检查证明不了合格
 
