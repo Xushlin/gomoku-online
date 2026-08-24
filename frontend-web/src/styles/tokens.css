@@ -56,7 +56,7 @@
   --color-bg: #121212;
   --color-surface: #1e1e1e;
   --color-primary: #90caf9;
-  --color-on-primary: #ffffff;
+  --color-on-primary: #0d253f;
   --color-on-surface: var(--color-text);
   --color-well: var(--color-bg);
   --color-on-well: var(--color-text);
@@ -110,7 +110,7 @@
   --color-bg: #0b0b0d;
   --color-surface: #151518;
   --color-primary: #4ea3ff;
-  --color-on-primary: #ffffff;
+  --color-on-primary: #062033;
   --color-on-surface: var(--color-text);
   --color-well: var(--color-bg);
   --color-on-well: var(--color-text);
@@ -165,7 +165,7 @@
   --color-bg: #171c26;
   --color-surface: #1f2531;
   --color-primary: #e4785f;
-  --color-on-primary: #ffffff;
+  --color-on-primary: #2a0f08;
   --color-on-surface: var(--color-text);
   --color-well: var(--color-bg);
   --color-on-well: var(--color-text);

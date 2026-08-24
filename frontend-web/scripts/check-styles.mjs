@@ -338,6 +338,143 @@ for (const file of templateFiles) {
   }
 }
 
+/*
+ * 前景色对比度:量**组件真正写出来的那一对**,而不是量 token 的名字。
+ *
+ * 上一版校验取的是「每个前景 token 落在它自己的面上」,而 31 个 `control-primary`
+ * 按钮里有 25 个把 `--color-bg`(一个**背景** token)当字色用。那个配对从来不在校验
+ * 的定义域里,所以校验一直是绿的 —— 而浏览器里量到 qq-game 浅色 3.57、暗色 **1.58**
+ * (近黑的青落在深红上)。**检查量的是对的东西,应用做的是另一件事。**
+ *
+ * 所以配对 SHALL 从 `class` 属性推导,两条规则:
+ *
+ *   1. 同一个状态里,任一候选前景 x 任一候选填充 >= 4.5:1,渐变取**最差那一档**;
+ *   2. 一个状态里 MUST NOT 出现两个不同的前景色 utility —— 它们同特异性,谁画取决于
+ *      样式表顺序。**量过:回放页选中的速度胶囊上 `text-text` 赢了,作者写的
+ *      `text-bg` 一次都没生效过**(2.07:1 的标签,而模板上那个 class 看起来是对的)。
+ *      一个被静默覆盖的 class 和一个生效的长得一模一样,所以这条规则比「量那一对」
+ *      更早:先让状态里只有一个前景,再谈它够不够亮。
+ */
+const MIN_RATIO = 4.5;
+
+/** `@theme` 里的颜色 token 名(去掉 `--color-` 前缀)—— 用它把 `text-danger` 和 `text-sm` 分开。 */
+const colourTokens = new Set([...declared].map((n) => /^--color-(.+)$/.exec(n)?.[1]).filter(Boolean));
+if (colourTokens.size === 0) {
+  errors.push(`${TAILWIND_CSS}: @theme declares 0 --color-* tokens — the pairing check would pass vacuously`);
+}
+
+/*
+ * 每个角色的填充从**它自己的定义**里读:`background-color: var(--x)` 加可选的
+ * `background-image: var(--y)`。没有自己填充的角色(`cell` 只有边)读不出背景,
+ * 所以不参与 —— 它身后是什么由父级决定,静态推不出来。
+ */
+const fillOf = new Map();
+for (const [, name, body] of roles) {
+  const colour = body.match(/background-color:\s*var\((--[a-z-]+)\)/);
+  if (!colour) continue;
+  const image = body.match(/background-image:\s*var\((--[a-z-]+)\)/);
+  fillOf.set(name, { colour: colour[1], image: image ? image[1] : null });
+}
+/* `bg-<token>` 是同一件事的另一种写法(胶囊选中态用的是它,不是角色)。 */
+for (const t of colourTokens) fillOf.set(`bg-${t}`, { colour: `--color-${t}`, image: null });
+
+const srgb = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+function luminance(hex) {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = [...h].map((c) => c + c).join('');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  return 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+}
+function contrast(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+/** 主题里 token 的最终值,跟着 `var(--other)` 走(`--color-well: var(--color-bg)` 就是这样写的)。 */
+function resolveVar(vars, name, depth = 0) {
+  const raw = vars.get(name);
+  if (!raw || depth > 4) return null;
+  const ref = raw.match(/^var\((--[a-z-]+)\)$/);
+  return ref ? resolveVar(vars, ref[1], depth + 1) : raw;
+}
+/** 一套主题 x 一种模式下生效的全部变量:暗色块只覆盖会变的那些。 */
+function varsFor(theme, mode) {
+  const merged = new Map(themeBlocks.get(`${theme}|light`) ?? []);
+  if (mode === 'dark') for (const [k, v] of themeBlocks.get(`${theme}|dark`) ?? []) merged.set(k, v);
+  return merged;
+}
+
+/*
+ * 元素级解析:静态 `class="…"` 加上同一个标签里的 `[class.X]="expr"`。
+ * 状态 = 静态 ∪ (某一个 guard 的那些 class);两个**不同** guard 同时为真的组合
+ * 不建模 —— 已知的空档,写在这里而不是假装它不存在。
+ */
+const tagRe = /<[a-zA-Z][\w-]*((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+let pairsMeasured = 0;
+let opaqueClassBindings = 0;
+const seenPairs = new Set();
+
+for (const file of templateFiles) {
+  const text = readFileSync(file, 'utf8');
+  opaqueClassBindings += [...text.matchAll(/\[class\]=/g)].length;
+
+  for (const tag of text.matchAll(tagRe)) {
+    const attrs = tag[1];
+    const staticClasses = (attrs.match(/(?:^|\s)class="([^"]*)"/)?.[1] ?? '').split(/\s+/).filter(Boolean);
+    const guards = new Map();
+    for (const g of attrs.matchAll(/\[class\.([A-Za-z0-9_-]+)\]="([^"]*)"/g)) {
+      if (!guards.has(g[2])) guards.set(g[2], []);
+      guards.get(g[2]).push(g[1]);
+    }
+
+    const states = [staticClasses, ...[...guards.values()].map((extra) => [...staticClasses, ...extra])];
+    for (const state of states) {
+      const fgs = [...new Set(state.filter((c) => /^text-/.test(c) && colourTokens.has(c.slice(5))))];
+      if (fgs.length === 0) continue;
+      if (fgs.length > 1) {
+        errors.push(
+          `${file}: one element can carry ${fgs.join(' + ')} at the same time — same specificity, so ` +
+            `which one paints depends on stylesheet order (measured: text-text beat text-bg, and the ` +
+            `text-bg was dead). Make the states mutually exclusive.`,
+        );
+        continue;
+      }
+      const fg = fgs[0].slice(5);
+      const fills = [...new Set(state.filter((c) => fillOf.has(c)))];
+      for (const fillClass of fills) {
+        const { colour, image } = fillOf.get(fillClass);
+        for (const theme of themeNames) {
+          for (const mode of ['light', 'dark']) {
+            const vars = varsFor(theme, mode);
+            const label = resolveVar(vars, `--color-${fg}`);
+            const flat = resolveVar(vars, colour);
+            if (!label || !flat || !label.startsWith('#')) continue;
+            const img = image ? resolveVar(vars, image) : null;
+            const stops =
+              img && img !== 'none' ? [...img.matchAll(/#[0-9a-fA-F]{3,8}/g)].map((m) => m[0]) : [];
+            const candidates = (stops.length ? stops : [flat]).filter((c) => c.startsWith('#'));
+            for (const stop of candidates) {
+              pairsMeasured += 1;
+              const ratio = contrast(label, stop);
+              if (ratio < MIN_RATIO) {
+                const key = `${fillClass}|${fgs[0]}|${theme}.${mode}`;
+                if (seenPairs.has(key)) continue;
+                seenPairs.add(key);
+                errors.push(
+                  `${theme}.${mode}: ${fgs[0]} on ${fillClass} measures ${ratio.toFixed(2)}:1 at stop ` +
+                    `${stop} (needs ${MIN_RATIO}) — first seen in ${file}`,
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+if (pairsMeasured === 0) {
+  errors.push('src/app: measured 0 foreground/fill pairs — the contrast check would pass vacuously');
+}
+
 if (errors.length) {
   console.error(`style check failed (${errors.length}):`);
   for (const e of errors) console.error(`  - ${e}`);
@@ -346,5 +483,7 @@ if (errors.length) {
 console.log(
   `style check: ${skins.length} skins x ${baseline.size} skin variables, ` +
     `${themeNames.length} themes x ${declared.size} tokens, ${roles.length} roles, ` +
-    `card table asset-free`,
+    `${pairsMeasured} fg/fill contrast readings` +
+    `${opaqueClassBindings ? ` (${opaqueClassBindings} opaque [class] bindings not modelled)` : ''}` +
+    `, card table asset-free`,
 );
