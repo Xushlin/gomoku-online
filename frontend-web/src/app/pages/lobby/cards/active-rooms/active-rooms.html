@@ -7,7 +7,7 @@
     </h2>
     <button
       type="button"
-      class="control-primary text-bg px-3 py-1.5 text-sm font-semibold"
+      class="control-primary text-on-primary px-3 py-1.5 text-sm font-semibold"
       (click)="openCreateDialog()"
     >
       {{ 'lobby.rooms.create-button' | transloco }}
@@ -37,7 +37,7 @@
         <p>{{ 'lobby.rooms.empty' | transloco }}</p>
         <button
           type="button"
-          class="control-primary text-bg px-3 py-1.5 text-sm font-semibold"
+          class="control-primary text-on-primary px-3 py-1.5 text-sm font-semibold"
           (click)="openCreateDialog()"
         >
           {{ 'lobby.rooms.create-button' | transloco }}
@@ -81,7 +81,7 @@
               <div class="flex items-center gap-1.5" data-testid="seat-row">
                 @for (seat of room.seats; track seat.index) {
                   <a
-                    class="control-primary text-bg grid size-6 place-items-center text-[11px] font-bold"
+                    class="control-primary text-on-primary grid size-6 place-items-center text-[11px] font-bold"
                     data-testid="seat-taken"
                     [routerLink]="['/users', seat.player.id]"
                     [attr.aria-label]="seat.player.username"
@@ -142,7 +142,7 @@
               @if (room.status === 'Waiting') {
                 <button
                   type="button"
-                  class="control-primary text-bg px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+                  class="control-primary text-on-primary px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
                   [disabled]="navigating() === room.id"
                   (click)="join(room)"
                 >

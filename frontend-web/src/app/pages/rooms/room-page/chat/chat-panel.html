@@ -12,7 +12,7 @@
         [attr.aria-selected]="activeChannel() === 'Room'"
         class="cell border px-2 py-1 text-xs"
         [class.bg-primary]="activeChannel() === 'Room'"
-        [class.text-bg]="activeChannel() === 'Room'"
+        [class.text-on-primary]="activeChannel() === 'Room'"
         (click)="setTab('Room')"
       >
         {{ 'game.chat.tab-room' | transloco }}
@@ -24,7 +24,7 @@
           [attr.aria-selected]="activeChannel() === 'Spectator'"
           class="cell border px-2 py-1 text-xs"
           [class.bg-primary]="activeChannel() === 'Spectator'"
-          [class.text-bg]="activeChannel() === 'Spectator'"
+          [class.text-on-primary]="activeChannel() === 'Spectator'"
           (click)="setTab('Spectator')"
         >
           {{ 'game.chat.tab-spectator' | transloco }}
@@ -67,7 +67,7 @@
       />
       <button
         type="submit"
-        class="control-primary text-bg px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+        class="control-primary text-on-primary px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
         [disabled]="!canSend() || form.invalid || trimmedLength() === 0"
       >
         {{ 'game.chat.send' | transloco }}

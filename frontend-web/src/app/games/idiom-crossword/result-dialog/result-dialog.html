@@ -57,7 +57,7 @@
     @if (data.isLastLevel) {
       <button
         type="button"
-        class="control-primary text-bg px-4 py-2 text-sm font-semibold"
+        class="control-primary text-on-primary px-4 py-2 text-sm font-semibold"
         (click)="close('levels')"
       >
         {{ 'idiom-crossword.result.back-to-levels' | transloco }}
@@ -65,7 +65,7 @@
     } @else {
       <button
         type="button"
-        class="control-primary text-bg px-4 py-2 text-sm font-semibold"
+        class="control-primary text-on-primary px-4 py-2 text-sm font-semibold"
         (click)="close('next')"
       >
         {{ 'idiom-crossword.result.next-level' | transloco }}
