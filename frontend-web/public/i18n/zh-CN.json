@@ -117,7 +117,8 @@
       "status-finished": "已结束",
       "host": "房主",
       "spectators": "观众",
-      "players": "玩家"
+      "players": "玩家",
+      "seat-vacant": "空位"
     },
     "my-rooms": {
       "title": "我的对局",

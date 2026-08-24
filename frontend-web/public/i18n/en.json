@@ -117,7 +117,8 @@
       "status-finished": "Finished",
       "host": "Host",
       "spectators": "Spectators",
-      "players": "Players"
+      "players": "Players",
+      "seat-vacant": "Empty seat"
     },
     "my-rooms": {
       "title": "My active rooms",

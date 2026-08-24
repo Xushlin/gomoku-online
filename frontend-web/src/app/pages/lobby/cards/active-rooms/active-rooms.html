@@ -49,7 +49,15 @@
           <li
             class="well flex flex-col gap-2 border p-3 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div class="flex min-w-0 flex-col gap-1">
+            <div class="flex min-w-0 items-center gap-3">
+              <!--
+                棋种纹章。房间行今天看不出是哪个棋种,而这块图形是既有组件,
+                所以这一处不新增任何资源。
+              -->
+              <span class="text-muted shrink-0" aria-hidden="true">
+                <app-game-emblem [shapes]="emblemOf(room.gameKey)" [size]="22" />
+              </span>
+              <div class="flex min-w-0 flex-col gap-1">
               <div class="flex items-center gap-2">
                 <span class="truncate text-sm font-semibold">{{ room.name }}</span>
                 @if (room.status === 'Waiting') {
@@ -64,7 +72,48 @@
                   >
                 }
               </div>
-              <p class="text-muted flex flex-wrap items-center gap-x-1 text-xs">
+              <!--
+                座位。**它叠加在下面那行名字之上,不是替换它** —— 名字作为文本存在
+                是既有行为,而 `every player name is a link to their profile` 那条
+                测试钉着它。圆片给的是「还差一个人」的余光可读性,名字给的是「是谁」。
+                375 px 下名字那行收起来,圆片留着。
+              -->
+              <div class="flex items-center gap-1.5" data-testid="seat-row">
+                @for (seat of room.seats; track seat.index) {
+                  <a
+                    class="control-primary text-bg grid size-6 place-items-center text-[11px] font-bold"
+                    data-testid="seat-taken"
+                    [routerLink]="['/users', seat.player.id]"
+                    [attr.aria-label]="seat.player.username"
+                    [title]="seat.player.username"
+                    (click)="$event.stopPropagation()"
+                    >{{ initial(seat.player.username) }}</a
+                  >
+                }
+                @if (seatCountOf(room.gameKey) === null) {
+                  <!--
+                    座位总数还没到达。**不能先画在座的、等一下再补空位** —— 那是布局
+                    跳动,而大厅列表没有整页 loading 门(房间页侧栏有,所以它不用管)。
+                    所以这里占住一个位,并且它是 aria-hidden:一个还不知道数量的
+                    占位不该被朗读成座位。
+                  -->
+                  <span
+                    class="well size-6 animate-pulse border motion-reduce:animate-none"
+                    data-testid="seat-unknown"
+                    aria-hidden="true"
+                  ></span>
+                } @else {
+                  @for (i of emptySeats(room); track i) {
+                    <span
+                      class="well size-6 border"
+                      data-testid="seat-vacant"
+                      [attr.aria-label]="'lobby.rooms.seat-vacant' | transloco"
+                      [title]="'lobby.rooms.seat-vacant' | transloco"
+                    ></span>
+                  }
+                }
+              </div>
+              <p class="text-muted hidden flex-wrap items-center gap-x-1 text-xs sm:flex">
                 <span>{{ 'lobby.rooms.host' | transloco }}:</span>
                 <a
                   class="username-link"
@@ -87,6 +136,7 @@
                 <span>·</span>
                 <span>{{ 'lobby.rooms.spectators' | transloco }}: {{ room.spectatorCount }}</span>
               </p>
+              </div>
             </div>
             <div class="flex shrink-0 gap-2">
               @if (room.status === 'Waiting') {
