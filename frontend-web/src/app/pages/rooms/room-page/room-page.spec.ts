@@ -422,6 +422,43 @@ describe('RoomPage board selection', () => {
     expect(el.querySelector('.animate-pulse')).toBeTruthy();
   });
 
+  it('puts the countdown and the actions in the bar under the board, not in the sidebar', async () => {
+    /*
+     * **两半都要断言。** 只断言侧栏里没有,那么一个把这三样整个删掉的实现同样是绿的 ——
+     * 而那正是 room-list-seats 里连栽两次的形状(负向断言在「什么都没发生」时恒真)。
+     */
+    const { fixture } = await mountWithGame('gomoku');
+    const el = fixture.nativeElement as HTMLElement;
+
+    const bar = el.querySelector('[data-testid="action-bar"]');
+    const sidebar = el.querySelector('aside');
+    expect(bar).toBeTruthy();
+    expect(sidebar).toBeTruthy();
+
+    for (const id of ['urge', 'resign', 'leave']) {
+      expect(bar!.querySelector(`[data-testid="${id}"]`)).toBeTruthy();
+      expect(sidebar!.querySelector(`[data-testid="${id}"]`)).toBeNull();
+    }
+    expect(bar!.querySelector('span.font-mono')).toBeTruthy();
+    expect(sidebar!.querySelector('span.font-mono')).toBeNull();
+
+    /* 而侧栏还在答它那个问题 —— 座位名单没跟着搬走。 */
+    expect(sidebar!.textContent).toContain('alice');
+  });
+
+  it('draws the action bar after the board, so it is the next thing under it', async () => {
+    /*
+     * 位置的判据是**顺序**,不是 `position` 属性:操作条是棋盘那一列的最后一个孩子,
+     * 于是 375 px 下它紧跟棋盘。y 坐标是在浏览器里量的(tasks.md §6),jsdom 没有布局。
+     */
+    const { fixture } = await mountWithGame('gomoku');
+    const board = (fixture.nativeElement as HTMLElement).querySelector('app-board')!;
+    const column = board.parentElement!;
+
+    expect(column.lastElementChild!.tagName.toLowerCase()).toBe('app-room-action-bar');
+    expect(column.querySelector('app-room-sidebar')).toBeNull();
+  });
+
   it('leaves gomoku on the 15x15 board', async () => {
     const { fixture } = await mountWithGame('gomoku');
     const el = fixture.nativeElement as HTMLElement;

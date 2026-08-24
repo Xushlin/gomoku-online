@@ -14,19 +14,11 @@ import { RoomSidebar } from './sidebar';
   standalone: true,
   imports: [RoomSidebar],
   template: `
-    <app-room-sidebar
-      [state]="state()"
-      [mySeat]="mySeat()"
-      [turnRemainingMs]="remaining()"
-      [canUrge]="canUrge()"
-    />
+    <app-room-sidebar [state]="state()" />
   `,
 })
 class Host {
   readonly state = signal<RoomState | null>(null);
-  readonly mySeat = signal<number | null>(0);
-  readonly remaining = signal<number>(60_000);
-  readonly canUrge = signal(false);
 }
 
 function baseState(): RoomState {
@@ -124,54 +116,6 @@ function mount(seatCount = 2) {
 
 describe('RoomSidebar', () => {
   beforeEach(() => TestBed.resetTestingModule());
-
-  it('formats remaining time as M:SS', () => {
-    const fixture = mount();
-    fixture.componentInstance.state.set(baseState());
-    fixture.componentInstance.remaining.set(65_000);
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('1:05');
-  });
-
-  it('adds text-danger when <=10s', () => {
-    const fixture = mount();
-    fixture.componentInstance.state.set(baseState());
-    fixture.componentInstance.remaining.set(5_000);
-    fixture.detectChanges();
-    const countdownNode = fixture.nativeElement.querySelector('span.font-mono') as HTMLElement;
-    expect(countdownNode.classList.contains('text-danger')).toBe(true);
-  });
-
-  it('spectator sees no player-only buttons', () => {
-    const fixture = mount();
-    fixture.componentInstance.state.set(baseState());
-    fixture.componentInstance.mySeat.set(null);
-    fixture.detectChanges();
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).not.toContain('Resign');
-    expect(text).not.toContain('Leave');
-    expect(text).not.toContain('Urge');
-  });
-  it('says which seat is to play when there are more than two', () => {
-    // **在浏览器里发现的。** 一局斗地主轮到 2 号座位时,侧栏写的是「白方走棋」——
-    // 而那一桌上没有白方。判据是描述符给的 `seatCount` —— 它此前是 `seats.length`,
-    // 而那是「坐了几个人」,在房间坐满之前是另一个数。
-    const fixture = mount(3);
-    fixture.componentInstance.state.set({
-      ...baseState(),
-      seats: [
-        { index: 0, player: { id: 'u-1', username: 'a' } },
-        { index: 1, player: { id: 'u-2', username: 'b' } },
-        { index: 2, player: { id: 'u-3', username: 'c' } },
-      ],
-      game: { ...baseState().game!, currentSeat: 2 },
-    });
-    fixture.detectChanges();
-
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('game.turn.seat-turn');
-    expect(text).not.toContain('game.turn.white-turn');
-  });
 
   it('lists all three players when the room has three seats', () => {
     // **也是在浏览器里发现的,而且是同一个缺陷的第二处。** `add-web-doudizhu` 把「轮到谁」

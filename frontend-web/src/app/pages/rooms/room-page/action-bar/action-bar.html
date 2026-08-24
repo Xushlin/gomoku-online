@@ -1,0 +1,75 @@
+@if (state(); as room) {
+  @if (isPlayer() || playing()) {
+    <div
+      data-testid="action-bar"
+      class="panel flex w-full flex-wrap items-center justify-between gap-3 border p-3"
+    >
+      @if (room.game && playing()) {
+        <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+          <span class="truncate">
+            <!-- 三个座位没有「黑白」。判据是 seatCount,不是 seats.length —— 见 action-bar.ts。 -->
+            @if (moreThanTwoSeats()) {
+              {{ 'game.turn.seat-turn' | transloco: { seat: room.game.currentSeat + 1 } }}
+            } @else if (room.game.currentSeat === FIRST_SEAT) {
+              {{ 'game.turn.black-turn' | transloco }}
+            } @else {
+              {{ 'game.turn.white-turn' | transloco }}
+            }
+          </span>
+          @if (myTurn()) {
+            <span class="text-primary font-semibold whitespace-nowrap">
+              {{ 'game.turn.your-turn' | transloco }}
+            </span>
+          }
+          <span class="text-muted text-xs whitespace-nowrap">
+            {{ 'game.turn.countdown-label' | transloco }}
+          </span>
+          <!--
+            凹槽里的倒计时。`well` 自己给前景色(--color-on-well),所以这里**没有**静态
+            的 text-* class —— 于是「低于阈值变红」这个状态里只有一个候选前景色。
+            两个同特异性的 color 谁画取决于样式表顺序,而那条坑量到过一次
+            (fix-primary-label-contrast:回放胶囊上 text-text 赢掉了 text-bg)。
+          -->
+          <span
+            class="well flex min-h-9 items-center px-3 font-mono text-base tabular-nums"
+            [class.text-danger]="countdownDanger()"
+          >
+            {{ countdownText() }}
+          </span>
+        </div>
+      }
+
+      @if (isPlayer()) {
+        <div class="flex flex-wrap items-center gap-2">
+          @if (playing()) {
+            <button
+              type="button"
+              data-testid="urge"
+              class="cell hover:bg-bg flex min-h-11 items-center justify-center border px-4 text-sm font-semibold disabled:opacity-50"
+              [disabled]="!canUrge()"
+              (click)="emitUrge()"
+            >
+              {{ 'game.actions.urge' | transloco }}
+            </button>
+            <button
+              type="button"
+              data-testid="resign"
+              class="cell hover:bg-bg text-danger flex min-h-11 items-center justify-center border px-4 text-sm font-semibold"
+              (click)="openResignConfirm()"
+            >
+              {{ 'game.actions.resign' | transloco }}
+            </button>
+          }
+          <button
+            type="button"
+            data-testid="leave"
+            class="cell hover:bg-bg flex min-h-11 items-center justify-center border px-4 text-sm font-semibold"
+            (click)="emitLeave()"
+          >
+            {{ 'game.actions.leave' | transloco }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+}
