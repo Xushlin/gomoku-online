@@ -46,7 +46,12 @@ export interface RoomSummary {
    * 在它之前,三座位房间里 2 号座位上的人在大厅的房间行里根本不出现。
    *
    * 注意它是「坐上了几个」而不是「一共有几个」:一个等待中的三座位房间这里只有一项。
-   * 需要后者的地方要读棋种描述符,而 `GET /api/games` 今天不发那个数。
+   * 需要后者的地方读棋种描述符的 `seatCount`(`GET /api/games`,非空)。
+   *
+   * **这一句此前写的是「那个端点今天不发那个数」,而它在 `publish-seat-count`
+   * 之后就是假的。** 第一个消费者是大厅的房间行(`room-list-seats`):它按
+   * `seatCount` 画满座位,在座的之外画空位 —— 而退化成 `seats.length` 会把每个
+   * 等待中的房间画成满座,也就是一个看起来不能加入、其实能加入的房间。
    */
   readonly seats: readonly RoomSeat[];
   readonly spectatorCount: number;
