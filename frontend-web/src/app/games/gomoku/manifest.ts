@@ -11,7 +11,18 @@ export const gomokuManifest: GameManifest = {
   status: 'available',
   titleKey: 'games.gomoku.title',
   descriptionKey: 'games.gomoku.description',
-  icon: '⬤',
+  // 棋盘 + 一排三子，一黑一白一黑 —— 两方在同一条线上。
+  emblem: [
+    { k: 'l', a: 6, b: 8, c: 18, d: 8 },
+    { k: 'l', a: 6, b: 12, c: 18, d: 12 },
+    { k: 'l', a: 6, b: 16, c: 18, d: 16 },
+    { k: 'l', a: 8, b: 6, c: 8, d: 18 },
+    { k: 'l', a: 12, b: 6, c: 12, d: 18 },
+    { k: 'l', a: 16, b: 6, c: 16, d: 18 },
+    { k: 'c', a: 8, b: 12, c: 2.6, f: 1 },
+    { k: 'c', a: 12, b: 12, c: 2.6 },
+    { k: 'c', a: 16, b: 12, c: 2.6, f: 1 },
+  ],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/gomoku/lobby',
 };

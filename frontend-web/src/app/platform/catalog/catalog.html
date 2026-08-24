@@ -30,9 +30,9 @@
               [routerLink]="game.launchRoute"
               class="focus-visible:outline-primary flex items-center gap-3 after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              <span class="text-primary text-2xl leading-none" aria-hidden="true">{{
-                game.icon
-              }}</span>
+              <span class="text-primary" aria-hidden="true">
+                <app-game-emblem [shapes]="game.emblem" [size]="34" />
+              </span>
               <span class="text-base font-semibold tracking-tight">{{
                 game.titleKey | transloco
               }}</span>
@@ -69,9 +69,9 @@
             class="panel-flat text-text flex w-full flex-col gap-3 border border-dashed p-4 opacity-70"
           >
             <span class="flex items-center gap-3">
-              <span class="text-muted text-2xl leading-none" aria-hidden="true">{{
-                game.icon
-              }}</span>
+              <span class="text-muted" aria-hidden="true">
+                <app-game-emblem [shapes]="game.emblem" [size]="34" />
+              </span>
               <span class="text-base font-semibold tracking-tight">{{
                 game.titleKey | transloco
               }}</span>

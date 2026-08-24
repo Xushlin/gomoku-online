@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { GameEmblem } from '../../games/emblem/game-emblem';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { GameCapabilitiesService } from '../../games/game-capabilities.service';
@@ -19,7 +20,7 @@ import { LanguageService } from '../../core/i18n/language.service';
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [RouterLink, TranslocoPipe],
+  imports: [RouterLink, TranslocoPipe, GameEmblem],
   templateUrl: './catalog.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

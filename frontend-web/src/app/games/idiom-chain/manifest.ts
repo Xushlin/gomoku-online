@@ -7,7 +7,11 @@ export const idiomChainManifest: GameManifest = {
   status: 'available',
   titleKey: 'games.idiom-chain.title',
   descriptionKey: 'games.idiom-chain.description',
-  icon: '链',
+  // 两个环扣在一起 —— 上一句的尾字是下一句的头字。
+  emblem: [
+    { k: 'r', a: 3, b: 8, c: 11, d: 8, r: 4 },
+    { k: 'r', a: 10, b: 8, c: 11, d: 8, r: 4 },
+  ],
   contentLocales: ['zh-CN'],
   launchRoute: '/g/idiom-chain/lobby',
 };

@@ -27,7 +27,12 @@ export const xiangqiManifest: GameManifest = {
   status: 'available',
   titleKey: 'games.xiangqi.title',
   descriptionKey: 'games.xiangqi.description',
-  icon: '帥',
+  // 一枚圆棋子，刻着「帅」。
+  emblem: [
+    { k: 'c', a: 12, b: 12, c: 9 },
+    { k: 'c', a: 12, b: 12, c: 7 },
+    { k: 't', a: 12, b: 12, c: 7.5, s: '帥' },
+  ],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/xiangqi/lobby',
 };
