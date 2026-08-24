@@ -19,7 +19,13 @@ export const tetrisManifest: GameManifest = {
   status: 'available',
   titleKey: 'games.tetris.title',
   descriptionKey: 'games.tetris.description',
-  icon: '块',
+  // S 形四联块，两格实两格空。
+  emblem: [
+    { k: 'r', a: 6, b: 6, c: 6, d: 6, r: 1 },
+    { k: 'r', a: 12, b: 6, c: 6, d: 6, r: 1, f: 1 },
+    { k: 'r', a: 12, b: 12, c: 6, d: 6, r: 1 },
+    { k: 'r', a: 18, b: 12, c: 6, d: 6, r: 1, f: 1 },
+  ],
   launchRoute: '/g/tetris',
   contentLocales: ['zh-CN', 'en'],
 };

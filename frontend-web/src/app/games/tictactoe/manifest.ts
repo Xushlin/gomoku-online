@@ -19,7 +19,16 @@ export const ticTacToeManifest: GameManifest = {
   status: 'available',
   titleKey: 'games.tictactoe.title',
   descriptionKey: 'games.tictactoe.description',
-  icon: '井',
+  // 井字格 + 一个 O 一个 X，对角相望。
+  emblem: [
+    { k: 'l', a: 10, b: 4, c: 10, d: 20 },
+    { k: 'l', a: 14, b: 4, c: 14, d: 20 },
+    { k: 'l', a: 4, b: 10, c: 20, d: 10 },
+    { k: 'l', a: 4, b: 14, c: 20, d: 14 },
+    { k: 'c', a: 7, b: 7, c: 2 },
+    { k: 'l', a: 15.4, b: 15.4, c: 18.6, d: 18.6 },
+    { k: 'l', a: 18.6, b: 15.4, c: 15.4, d: 18.6 },
+  ],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/tictactoe',
 };

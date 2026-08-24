@@ -7,7 +7,17 @@ export const idiomCrosswordManifest: GameManifest = {
   status: 'available',
   titleKey: 'games.idiom-crossword.title',
   descriptionKey: 'games.idiom-crossword.description',
-  icon: '田',
+  // 一横一纵在中间那格相交 —— 「纵横」就是字面意思。
+  emblem: [
+    { k: 'r', a: 4, b: 10, c: 4, d: 4 },
+    { k: 'r', a: 8, b: 10, c: 4, d: 4 },
+    { k: 'r', a: 12, b: 10, c: 4, d: 4, f: 1 },
+    { k: 'r', a: 16, b: 10, c: 4, d: 4 },
+    { k: 'r', a: 12, b: 2, c: 4, d: 4 },
+    { k: 'r', a: 12, b: 6, c: 4, d: 4 },
+    { k: 'r', a: 12, b: 14, c: 4, d: 4 },
+    { k: 'r', a: 12, b: 18, c: 4, d: 4 },
+  ],
   contentLocales: ['zh-CN'],
   launchRoute: '/g/idiom-crossword',
 };

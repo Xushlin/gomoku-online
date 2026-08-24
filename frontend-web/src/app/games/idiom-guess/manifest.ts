@@ -7,6 +7,12 @@ export const idiomGuessManifest: GameManifest = {
   status: 'planned',
   titleKey: 'games.idiom-guess.title',
   descriptionKey: 'games.idiom-guess.description',
-  icon: '谜',
+  // 三个格子一个空 —— 猜的就是那一个。
+  emblem: [
+    { k: 'r', a: 3, b: 9, c: 6, d: 6, r: 1 },
+    { k: 'r', a: 9, b: 9, c: 6, d: 6, r: 1 },
+    { k: 'r', a: 15, b: 9, c: 6, d: 6, r: 1 },
+    { k: 't', a: 12, b: 12, c: 4.5, s: '?' },
+  ],
   contentLocales: ['zh-CN'],
 };

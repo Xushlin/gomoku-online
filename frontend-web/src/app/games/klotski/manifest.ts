@@ -17,7 +17,14 @@ export const klotskiManifest: GameManifest = {
   status: 'available',
   titleKey: 'games.klotski.title',
   descriptionKey: 'games.klotski.description',
-  icon: '华',
+  // 框里一个 2×2 大块、几个小块，右下留空 —— 空格是唯一能动的地方。
+  emblem: [
+    { k: 'r', a: 4, b: 4, c: 16, d: 16, r: 1.4 },
+    { k: 'r', a: 6, b: 6, c: 8, d: 8, r: 1, f: 1 },
+    { k: 'r', a: 14, b: 6, c: 4, d: 8, r: 1 },
+    { k: 'r', a: 6, b: 14, c: 4, d: 4, r: 1 },
+    { k: 'r', a: 10, b: 14, c: 4, d: 4, r: 1 },
+  ],
   launchRoute: '/g/klotski',
   contentLocales: ['zh-CN'],
 };

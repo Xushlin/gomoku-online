@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { GameEmblem } from '../../../../games/emblem/game-emblem';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { GAME_REGISTRY } from '../../../../games';
@@ -17,7 +18,7 @@ import { GAME_REGISTRY } from '../../../../games';
 @Component({
   selector: 'app-games-strip',
   standalone: true,
-  imports: [RouterLink, TranslocoPipe],
+  imports: [RouterLink, TranslocoPipe, GameEmblem],
   templateUrl: './games-strip.html',
   styles: [':host { display: block; width: 100%; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -15,7 +15,7 @@ const AVAILABLE: GameManifest = {
   status: 'available',
   titleKey: 'games.gomoku.title',
   descriptionKey: 'games.gomoku.description',
-  icon: '⬤',
+  emblem: [{ k: 'r', a: 6, b: 6, c: 12, d: 12 }],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/home',
 };
@@ -26,7 +26,7 @@ const PLANNED_ZH_ONLY: GameManifest = {
   status: 'planned',
   titleKey: 'games.idiom-crossword.title',
   descriptionKey: 'games.idiom-crossword.description',
-  icon: '田',
+  emblem: [{ k: 'r', a: 6, b: 6, c: 12, d: 12 }],
   contentLocales: ['zh-CN'],
 };
 
@@ -36,7 +36,7 @@ const AVAILABLE_PUZZLE: GameManifest = {
   status: 'available',
   titleKey: 'games.idiom-crossword.title',
   descriptionKey: 'games.idiom-crossword.description',
-  icon: '田',
+  emblem: [{ k: 'r', a: 6, b: 6, c: 12, d: 12 }],
   contentLocales: ['zh-CN'],
   launchRoute: '/g/idiom-crossword',
 };
@@ -47,7 +47,7 @@ const AVAILABLE_UNRATED: GameManifest = {
   status: 'available',
   titleKey: 'games.tictactoe.title',
   descriptionKey: 'games.tictactoe.description',
-  icon: '井',
+  emblem: [{ k: 'r', a: 6, b: 6, c: 12, d: 12 }],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/tictactoe',
 };
@@ -58,7 +58,7 @@ const AVAILABLE_SCORE: GameManifest = {
   status: 'available',
   titleKey: 'games.tetris.title',
   descriptionKey: 'games.tetris.description',
-  icon: '块',
+  emblem: [{ k: 'r', a: 6, b: 6, c: 12, d: 12 }],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/tetris',
 };
@@ -257,6 +257,33 @@ describe('Catalog', () => {
     const launch = cards(fixture)[0].querySelector('a[href="/home"]');
     expect(launch).not.toBeNull();
     expect(launch!.className).toContain('after:inset-0');
+  });
+
+  it('draws an emblem on both an available and a planned card', () => {
+    // 规格里那两条 Scenario 的可执行形式。**两种状态都要**:`planned` 的清单同样
+    // MUST 有非空形状表,否则那张卡片的图标位置是空的 —— 而空的地方不会让任何
+    // 断言变红,只会看起来「还没做完」。
+    const fixture = renderCatalog([AVAILABLE, PLANNED_ZH_ONLY], 'en');
+    const [available, planned] = cards(fixture);
+
+    for (const [name, card] of [['available', available], ['planned', planned]] as const) {
+      const svg = card.querySelector('app-game-emblem svg');
+      expect(svg, `${name} card has no emblem`).not.toBeNull();
+      expect(svg!.querySelectorAll('line, circle, rect, text, path').length).toBeGreaterThan(0);
+    }
+  });
+
+  it('the icon slot is the component, not a character or an inline svg', () => {
+    // 少了这一条,一个把纹章画在别处、图标位置仍留着那个字符的实现也是绿的。
+    const fixture = renderCatalog([AVAILABLE], 'en');
+    const [card] = cards(fixture);
+
+    const emblem = card.querySelector('app-game-emblem');
+    expect(emblem).not.toBeNull();
+    // 卡片里唯一的 <svg> 必须是纹章渲染出来的那一个
+    expect(card.querySelectorAll('svg').length).toBe(
+      card.querySelectorAll('app-game-emblem svg').length,
+    );
   });
 
   it('shows the category badge', () => {

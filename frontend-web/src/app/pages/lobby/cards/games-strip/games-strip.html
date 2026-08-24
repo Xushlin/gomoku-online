@@ -20,7 +20,7 @@
           [routerLink]="game.launchRoute"
           [attr.data-game-key]="game.key"
         >
-          <span aria-hidden="true" class="text-base leading-none">{{ game.icon }}</span>
+          <app-game-emblem [shapes]="game.emblem" [size]="26" />
           <span>{{ game.titleKey | transloco }}</span>
         </a>
       </li>
