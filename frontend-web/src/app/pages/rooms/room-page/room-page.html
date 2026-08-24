@@ -107,9 +107,7 @@
             (cellClick)="handleCellClick($event)"
           />
         }
-      </div>
-      <div class="flex flex-col gap-4">
-        <app-room-sidebar
+        <app-room-action-bar
           [state]="room"
           [mySeat]="mySeat()"
           [turnRemainingMs]="turnRemainingMs()"
@@ -118,6 +116,9 @@
           (leave)="handleLeave()"
           (urge)="handleUrge()"
         />
+      </div>
+      <div class="flex flex-col gap-4">
+        <app-room-sidebar [state]="room" />
         <app-chat-panel
           [state]="room"
           [mySide]="mySide()"

@@ -33,6 +33,7 @@ import { ChatPanel, type SendChatPayload } from './chat/chat-panel';
 import { GameEndedDialog, type GameEndedDialogData, type GameEndedDialogResult } from './dialogs/game-ended-dialog';
 import { hubErrorToKey, type HubErrorKey } from './hub-error.mapper';
 import { myOutcome } from './outcome';
+import { RoomActionBar } from './action-bar/action-bar';
 import { RoomSidebar } from './sidebar/sidebar';
 import { FIRST_SEAT, SECOND_SEAT } from '../../../games/board-seats';
 
@@ -44,7 +45,8 @@ const TICK_MS = 1_000;
 @Component({
   selector: 'app-room-page',
   standalone: true,
-  imports: [Board, XiangqiBoard, ChainBoard, CardTable, ChatPanel, RoomSidebar, RouterLink, TranslocoPipe],
+  imports: [Board, XiangqiBoard, ChainBoard, CardTable, ChatPanel, RoomSidebar,
+    RoomActionBar, RouterLink, TranslocoPipe],
   templateUrl: './room-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
