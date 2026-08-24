@@ -25,7 +25,7 @@ Everything else about how each game landed — including which client judges its
 
 ## Current phase
 
-**Nine games ship** — 五子棋, 成语纵横, 一字棋, 中国象棋, 华容道, 成语接龙, 俄罗斯方块, 斗地主, 挖坑. 105 archived changes. The three kernels are built and each has been proven by a second game that was not a variant of the first.
+**Nine games ship** — 五子棋, 成语纵横, 一字棋, 中国象棋, 华容道, 成语接龙, 俄罗斯方块, 斗地主, 挖坑. The archived changes are the directories in `openspec/changes/archive/` — **count them there, do not trust a number written here**: the one that used to sit in this sentence was off by one on the day it was written and had drifted +2 ten commits later. The three kernels are built and each has been proven by a second game that was not a variant of the first.
 
 ### Where the history lives
 
@@ -50,9 +50,9 @@ Each of these was decided, written down, and left. **A deferral that names its o
 | `--radius-pill` was proposed and **not added** — the class-attribute walk found zero call sites, and a token with no call site is a dead entry every theme pays for. | The first control that genuinely needs a fully rounded shape. |
 | `--color-on-primary` is the literal `#ffffff` in **both** modes, which preserves a real contrast bug: material dark's `--color-primary` is a pale blue and white on it measures about **1.9:1**. Kept on purpose — `extend-theme-tokens` was not allowed to change appearance, and `add-qq-game-theme` gave *its own* theme a measured `4.51:1` without touching material's. **So the bug is still there, in the default theme nobody new will see.** | Any change that is allowed to alter the primary button's colours. |
 | **`@angular/cdk` is 77.13 kB of the initial bundle, and its only eager importer is one dropdown** — `header.ts` imports `@angular/cdk/menu`, which drags in overlay (34.17 kB), portal, focus-monitor and list-key-manager. Our own code is 55 kB of the whole thing; a menu is 16% of first paint. Lazy-loading it makes the first click wait on a chunk, and hand-rolling a dropdown is forbidden here (focus trap / ESC / ARIA). | The **seventh** time the bundle budget fires — this is the answer, and it is 15× larger than any token-mirror cleanup that remains. |
-| The bundle budget is **480 kB** with **~3.5 kB free**. Fired **six** times, never raised — once *lowered*. The sixth firing was answered twice over by deleting TypeScript token mirrors that only validated a copy of the CSS: `drop-theme-token-mirrors` (**7.75 kB**, stubbing predicted 4.88) and its sibling `drop-board-skin-mirrors` (**3.45 kB**). | When it fires: ask **what is eager that need not be**, and **measure by stubbing** — the answers so far were concrete things, not across-the-board shaving. Treat the stub number as a *lower bound*. **The biggest remaining eager item under our control is measured and named in the row above.** |
+| The bundle budget is **480 kB** with **~3.3 kB free**. Fired **six** times, never raised — once *lowered*. The sixth firing was answered twice over by deleting TypeScript token mirrors that only validated a copy of the CSS: `drop-theme-token-mirrors` (**7.75 kB**, stubbing predicted 4.88) and its sibling `drop-board-skin-mirrors` (**3.45 kB**). | When it fires: ask **what is eager that need not be**, and **measure by stubbing** — the answers so far were concrete things, not across-the-board shaving. Treat the stub number as a *lower bound*. **The biggest remaining eager item under our control is measured and named in the row above.** |
 
-Open questions waiting on the user: 红桃四 and 三带 rules (links promised). Not yet done: 斗地主's play-assist has never been driven in a browser — the client code is shared with 挖坑, whose two paths were measured.
+Open questions waiting on the user: 红桃四 and 三带 rules (links promised). Not yet done in a browser: 斗地主's play-assist (the client code is shared with 挖坑, whose two paths were measured) and the lobby's seat row — the latter is covered by a test using the **real** `DefaultGameCapabilitiesService` with only the HTTP boundary stubbed, which catches a missing `ensureLoaded()` that seven stub-based tests do not. **An approximation, not a substitute.**
 
 ### Traps this project keeps re-learning
 
