@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { DeferBlockBehavior, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of } from 'rxjs';
@@ -24,11 +24,17 @@ const langs = {
 
 const soundStub = stubSoundService;
 
-function mount(opts: { muted?: boolean; lang?: SupportedLocale } = {}) {
+async function mount(opts: { muted?: boolean; lang?: SupportedLocale } = {}) {
   const lang = opts.lang ?? 'en';
   const sound = soundStub(opts);
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
+    /*
+     * 外观控件那一组现在在 `@defer` 里(为了把 `@angular/cdk` 的 77.13 kB 挪出首屏),
+     * 而 TestBed 默认对 defer 块是 Manual —— 延迟内容不渲染。设成 Playthrough,
+     * 于是**下面每一条断言都一个字没改**:那是「搬家没有改行为」的可执行形式。
+     */
+    deferBlockBehavior: DeferBlockBehavior.Playthrough,
     imports: [
       Header,
       TranslocoTestingModule.forRoot({
@@ -81,17 +87,30 @@ function mount(opts: { muted?: boolean; lang?: SupportedLocale } = {}) {
       },
     ],
   });
+  // `@defer` 的依赖是动态 import,所以组件必须先异步编译。
+  await TestBed.compileComponents();
   const fixture = TestBed.createComponent(Header);
   fixture.detectChanges();
   return { fixture, sound };
 }
 
-/** Open the sound-pack CDK menu. Items render into an overlay attached to the body. */
-function openSoundPackMenu(fixture: ReturnType<typeof TestBed.createComponent>): void {
+/**
+ * Open the sound-pack CDK menu. Items render into an overlay attached to the body.
+ *
+ * 要 `await`:那一组控件在 `@defer` 里,占位上的第一次点击只是请求加载,加载完成之后
+ * 真身才把它打开 —— 「首次点击等一个 chunk」在测试里就是这一行 `whenStable()`。
+ */
+async function openSoundPackMenu(
+  fixture: ReturnType<typeof TestBed.createComponent>,
+): Promise<void> {
   const trigger = fixture.nativeElement.querySelector(
     'button[aria-label="header.sound-pack.label"]',
   ) as HTMLButtonElement;
   trigger.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  // 真身把 open() 推到下一个宏任务(见 appearance-menus.ts:那是量出来的),所以这里也要等一个。
+  await new Promise((resolve) => setTimeout(resolve));
   fixture.detectChanges();
 }
 
@@ -103,15 +122,15 @@ function soundPackMenuItems(): string[] {
 }
 
 /** Open the sound-pack CDK menu and return the volume slider inside it. */
-function openVolumeSlider(fixture: ReturnType<typeof TestBed.createComponent>) {
-  openSoundPackMenu(fixture);
+async function openVolumeSlider(fixture: ReturnType<typeof TestBed.createComponent>) {
+  await openSoundPackMenu(fixture);
   // CDK menus render into an overlay container attached to the body.
   return document.querySelector(
     'input[type="range"][aria-label="header.sound.volume"]',
   ) as HTMLInputElement | null;
 }
 
-function brandLink(fixture: ReturnType<typeof mount>['fixture']): HTMLAnchorElement {
+function brandLink(fixture: Awaited<Awaited<ReturnType<typeof mount>>>['fixture']): HTMLAnchorElement {
   const el = (fixture.nativeElement as HTMLElement).querySelector('a');
   expect(el).not.toBeNull();
   return el as HTMLAnchorElement;
@@ -125,28 +144,28 @@ describe('Header volume slider', () => {
     document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove());
   });
 
-  it('lists one menu item per registered pack, in that order', () => {
+  it('lists one menu item per registered pack, in that order', async () => {
     // Derived from `availablePacks()`, never a literal count. The spec used to say
     // "lists `wood` and `chiptune`, two items", which was wrong from the day the
     // third pack shipped — and nothing here had ever counted them.
-    const { fixture, sound } = mount();
-    openSoundPackMenu(fixture);
+    const { fixture, sound } = await mount();
+    await openSoundPackMenu(fixture);
 
     const expected = sound.availablePacks().map((name) => `header.sound-pack.${name}`);
     expect(expected.length).toBeGreaterThan(1);
     expect(soundPackMenuItems()).toEqual(expected);
   });
 
-  it('renders inside the sound-pack menu with an aria-label', () => {
-    const { fixture } = mount();
-    const slider = openVolumeSlider(fixture);
+  it('renders inside the sound-pack menu with an aria-label', async () => {
+    const { fixture } = await mount();
+    const slider = await openVolumeSlider(fixture);
     expect(slider).not.toBeNull();
     expect(slider!.value).toBe('100');
   });
 
-  it('release calls setVolume once and keeps the menu open', () => {
-    const { fixture, sound } = mount();
-    const slider = openVolumeSlider(fixture)!;
+  it('release calls setVolume once and keeps the menu open', async () => {
+    const { fixture, sound } = await mount();
+    const slider = (await openVolumeSlider(fixture))!;
     slider.value = '40';
     slider.dispatchEvent(new Event('change'));
     fixture.detectChanges();
@@ -158,17 +177,17 @@ describe('Header volume slider', () => {
     ).not.toBeNull();
   });
 
-  it('auditions move-place on release when not muted', () => {
-    const { fixture, sound } = mount({ muted: false });
-    const slider = openVolumeSlider(fixture)!;
+  it('auditions move-place on release when not muted', async () => {
+    const { fixture, sound } = await mount({ muted: false });
+    const slider = (await openVolumeSlider(fixture))!;
     slider.value = '40';
     slider.dispatchEvent(new Event('change'));
     expect(sound.play).toHaveBeenCalledWith('move-place');
   });
 
-  it('stays silent on release when muted', () => {
-    const { fixture, sound } = mount({ muted: true });
-    const slider = openVolumeSlider(fixture)!;
+  it('stays silent on release when muted', async () => {
+    const { fixture, sound } = await mount({ muted: true });
+    const slider = (await openVolumeSlider(fixture))!;
     slider.value = '40';
     slider.dispatchEvent(new Event('change'));
     expect(sound.setVolume).toHaveBeenCalledWith(40);
@@ -181,34 +200,34 @@ describe('Header brand', () => {
     document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove());
   });
 
-  it('renders the Chinese brand name under zh-CN', () => {
-    const { fixture } = mount({ lang: 'zh-CN' });
+  it('renders the Chinese brand name under zh-CN', async () => {
+    const { fixture } = await mount({ lang: 'zh-CN' });
     expect(brandLink(fixture).textContent?.trim()).toBe('格物');
   });
 
-  it('renders the English brand name under en', () => {
-    const { fixture } = mount({ lang: 'en' });
+  it('renders the English brand name under en', async () => {
+    const { fixture } = await mount({ lang: 'en' });
     expect(brandLink(fixture).textContent?.trim()).toBe('Gewu');
   });
 
-  it('keeps the brand link pointing at /home', () => {
-    const { fixture } = mount({ lang: 'en' });
+  it('keeps the brand link pointing at /home', async () => {
+    const { fixture } = await mount({ lang: 'en' });
     expect(brandLink(fixture).getAttribute('href')).toBe('/home');
   });
 
-  it('exposes the game catalogue entry point', () => {
-    const { fixture } = mount({ lang: 'en' });
+  it('exposes the game catalogue entry point', async () => {
+    const { fixture } = await mount({ lang: 'en' });
     const links = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('a'),
     ) as HTMLAnchorElement[];
     expect(links.some((a) => a.getAttribute('href') === '/games')).toBe(true);
   });
 
-  it('resolves the brand from i18n rather than a hardcoded literal', () => {
+  it('resolves the brand from i18n rather than a hardcoded literal', async () => {
     // The same element yielding two different strings is the behavioural proof
     // that no display literal survives in the template.
-    const en = brandLink(mount({ lang: 'en' }).fixture).textContent?.trim();
-    const zh = brandLink(mount({ lang: 'zh-CN' }).fixture).textContent?.trim();
+    const en = brandLink((await mount({ lang: 'en' })).fixture).textContent?.trim();
+    const zh = brandLink((await mount({ lang: 'zh-CN' })).fixture).textContent?.trim();
     expect(en).not.toBe(zh);
   });
 });

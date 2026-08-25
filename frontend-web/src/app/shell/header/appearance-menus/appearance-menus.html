@@ -1,0 +1,124 @@
+  <!--
+    One option list, shared by both placements: the trigger passes its control
+    in via `cdkMenuTriggerData`, so language / theme / board / sound pack all
+    open the same template whether they were opened from the inline row or
+    from inside the Settings menu.
+  -->
+  <ng-template #optionPanel let-picker>
+    <ul
+      cdkMenu
+      class="panel text-text min-w-40 overflow-hidden border py-1"
+    >
+      @for (option of picker.options; track option) {
+        <li>
+          <button
+            type="button"
+            cdkMenuItem
+            class="hover:bg-bg flex w-full items-center px-3 py-2 text-left text-sm"
+            (cdkMenuItemTriggered)="picker.apply(option)"
+          >
+            {{ picker.prefix + '.' + option | transloco }}
+          </button>
+        </li>
+      }
+      @if (picker.hasVolume) {
+        <!-- Deliberately NOT a cdkMenuItem: interacting with the slider must not close the menu. -->
+        <li class="border-border mt-1 border-t px-3 pt-2 pb-1.5">
+          <label class="text-muted flex items-center gap-2 text-sm">
+            <span>{{ 'header.sound.volume' | transloco }}</span>
+            <input
+              #volumeSlider
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              class="accent-primary w-full"
+              [value]="sound.volume()"
+              (change)="onVolumeChange(volumeSlider.value)"
+              [attr.aria-label]="'header.sound.volume' | transloco"
+            />
+          </label>
+        </li>
+      }
+    </ul>
+  </ng-template>
+
+  <!--
+    The header is one non-wrapping sticky row, and the six appearance controls
+    need ~500px of it — more than a 375px viewport has. From `lg` up they sit
+    inline; below that they collapse into the single Settings menu right after
+    this block. Wrapping instead would make the sticky header three rows tall,
+    which costs more on a phone than one extra tap.
+  -->
+  <div class="hidden shrink-0 items-center gap-2 lg:flex lg:gap-4">
+    @for (picker of pickers(); track picker.prefix) {
+      <button
+        type="button"
+        class="cell text-text hover:bg-bg inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+        [cdkMenuTriggerFor]="optionPanel"
+        [cdkMenuTriggerData]="{ $implicit: picker }"
+        [attr.aria-label]="picker.prefix + '.label' | transloco"
+      >
+        <span class="text-muted hidden xl:inline">{{ picker.prefix + '.label' | transloco }}:</span>
+        <span>{{ picker.prefix + '.' + picker.value | transloco }}</span>
+      </button>
+    }
+
+    @for (toggle of toggles(); track toggle.labelKey) {
+      <button
+        type="button"
+        role="switch"
+        class="cell text-text hover:bg-bg inline-flex items-center gap-2 border px-3 py-1.5 text-sm"
+        [attr.aria-checked]="toggle.checked"
+        [attr.aria-label]="toggle.labelKey | transloco"
+        (click)="toggle.toggle()"
+      >
+        <span class="text-muted hidden xl:inline">{{ toggle.labelKey | transloco }}:</span>
+        <span>{{ toggle.stateKey | transloco }}</span>
+      </button>
+    }
+  </div>
+
+  <button
+    type="button"
+    class="cell text-text hover:bg-bg inline-flex shrink-0 items-center gap-2 border px-3 py-1.5 text-sm lg:hidden"
+    [cdkMenuTriggerFor]="settingsMenu"
+    [attr.aria-label]="'header.settings.label' | transloco"
+  >
+    {{ 'header.settings.label' | transloco }}
+  </button>
+
+  <ng-template #settingsMenu>
+    <div
+      cdkMenu
+      class="panel text-text min-w-56 overflow-hidden border py-1"
+    >
+      @for (picker of pickers(); track picker.prefix) {
+        <button
+          type="button"
+          cdkMenuItem
+          class="hover:bg-bg flex w-full items-center justify-between gap-6 px-3 py-2 text-left text-sm"
+          [cdkMenuTriggerFor]="optionPanel"
+          [cdkMenuTriggerData]="{ $implicit: picker }"
+        >
+          <span>{{ picker.prefix + '.label' | transloco }}</span>
+          <span class="text-muted">{{ picker.prefix + '.' + picker.value | transloco }}</span>
+        </button>
+      }
+
+      @for (toggle of toggles(); track toggle.labelKey) {
+        <!-- `role="switch"` is not a legal child of `role="menu"`; CDK's
+             checkbox item gives `menuitemcheckbox` + aria-checked instead. -->
+        <button
+          type="button"
+          cdkMenuItemCheckbox
+          class="hover:bg-bg flex w-full items-center justify-between gap-6 px-3 py-2 text-left text-sm"
+          [cdkMenuItemChecked]="toggle.checked"
+          (cdkMenuItemTriggered)="toggle.toggle()"
+        >
+          <span>{{ toggle.labelKey | transloco }}</span>
+          <span class="text-muted">{{ toggle.stateKey | transloco }}</span>
+        </button>
+      }
+    </div>
+  </ng-template>
