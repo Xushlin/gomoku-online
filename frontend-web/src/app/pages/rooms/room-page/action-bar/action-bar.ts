@@ -79,6 +79,24 @@ export class RoomActionBar {
     () => (this.capabilities.of(this.state()?.gameKey ?? '')?.seatCount ?? 0) > 2,
   );
 
+  /**
+   * 认输只在**恰好两个座位**的棋种里给 —— 而这不是产品口味,是领域层的硬拒绝。
+   *
+   * `Room.Resign` 要指出唯一的赢家,三个座位时「对手」不唯一,于是它抛
+   * `SeatCountNotSupportedException`。`room-and-gameplay` 那条要求自己写着拆除条件是
+   * 「第一个 `SeatCount != 2` 的棋种落地」—— 斗地主与挖坑已经落地,而**那个问题还没
+   * 有答案**(三家局里「认输」该算什么,是那个棋种要回答的)。
+   *
+   * 在答出来之前,把按钮画出来是最坏的中间态:**在浏览器里点它,拿到的是 500。**
+   * 那正是这一条的来历。
+   *
+   * 判据是 `=== 2` 而不是 `!moreThanTwoSeats()`:后者对「描述符还没到」和假想的单座位
+   * 棋种都会说「可以认输」。
+   */
+  protected readonly canResign = computed(
+    () => this.capabilities.of(this.state()?.gameKey ?? '')?.seatCount === 2,
+  );
+
   protected readonly myTurn = computed(() => {
     const seat = this.mySeat();
     return seat !== null && this.state()?.game?.currentSeat === seat;
