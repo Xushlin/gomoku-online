@@ -97,7 +97,6 @@ export const WAKENG_TABLE: CardTableConfig = {
   // 底牌 4 张,比斗地主多一张。只用于显示(叫分阶段桌心画几张牌背)。
   kittySize: 4,
   i18nPrefix: 'cards.wakeng',
-  roleLabelKey: 'cards.wakeng.role',
   showsFirstBidder: true,
   // **不是配置项凑数,是一处真缺陷的预防** —— 见 `CardTableConfig.compareForDisplay`。
   compareForDisplay: compareWakengForDisplay,

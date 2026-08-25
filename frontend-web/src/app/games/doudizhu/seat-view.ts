@@ -101,8 +101,7 @@ export function toTableView(raw: string | null | undefined): CardTableView | nul
 /** 斗地主的牌桌配置。 */
 export const DOUDIZHU_TABLE: CardTableConfig = {
   kittySize: 3,
-  i18nPrefix: 'game.doudizhu',
-  roleLabelKey: 'game.doudizhu.landlord',
+  i18nPrefix: 'cards.doudizhu',
   showsFirstBidder: false,
   // 斗地主的大小**恰好**就是编码顺序,所以按 `rank` 排是对的 —— 而那是巧合,
   // 不是通则:挖坑是 `3 > 2 > A > … > 4`。见 `cards.ts` 上 `rank` 的说明。

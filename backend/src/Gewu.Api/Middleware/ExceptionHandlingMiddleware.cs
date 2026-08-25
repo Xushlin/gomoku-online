@@ -137,7 +137,8 @@ public sealed class ExceptionHandlingMiddleware
         AttemptAlreadyFinishedException or
         ScoreRunAlreadyFinishedException or
         InvalidStarRatingException or
-        GameNotFinishedException => (
+        GameNotFinishedException or
+        SeatCountNotSupportedException => (
             (int)HttpStatusCode.Conflict,
             "Conflict.",
             ex.Message),

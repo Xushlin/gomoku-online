@@ -51,14 +51,17 @@
             >
               {{ 'game.actions.urge' | transloco }}
             </button>
-            <button
-              type="button"
-              data-testid="resign"
-              class="cell hover:bg-bg text-danger flex min-h-11 items-center justify-center border px-4 text-sm font-semibold"
-              (click)="openResignConfirm()"
-            >
-              {{ 'game.actions.resign' | transloco }}
-            </button>
+            <!-- 认输要恰好两个座位 —— 见 action-bar.ts 上 `canResign` 的说明。 -->
+            @if (canResign()) {
+              <button
+                type="button"
+                data-testid="resign"
+                class="cell hover:bg-bg text-danger flex min-h-11 items-center justify-center border px-4 text-sm font-semibold"
+                (click)="openResignConfirm()"
+              >
+                {{ 'game.actions.resign' | transloco }}
+              </button>
+            }
           }
           <button
             type="button"

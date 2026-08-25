@@ -62,11 +62,16 @@ export interface CardTableConfig {
   /** 底牌几张 —— 斗地主 3,挖坑 4。**只用于显示**(叫分阶段画几张牌背)。 */
   readonly kittySize: number;
 
-  /** 叫分的翻译键前缀:`game.doudizhu` / `game.wakeng`。 */
+  /**
+   * 叫分等标签的翻译键前缀 —— **`cards.doudizhu` / `cards.wakeng`**,而模板用
+   * `i18nPrefix + '.bid'` 这样拼出实际的键。
+   *
+   * **它写错一个词的后果是牌桌上直接显示原始键**,而斗地主曾经写成 `game.doudizhu`:
+   * 叫分那一排三个按钮全都是 `game.doudizhu.bid`,分不出哪个是叫几分。组件测试用的是
+   * 空翻译树(`langs: { en: {} }`),所以在那里「显示原始键」是常态、没人会红 ——
+   * 钉住它的是那条**用真 `en.json` 挂一遍牌桌、断言渲染结果里不出现前缀**的测试。
+   */
   readonly i18nPrefix: string;
-
-  /** 拿底牌那一家怎么称呼 —— 「地主」/「挖坑者」。 */
-  readonly roleLabelKey: string;
 
   /** 要不要标出首叫者(仅挖坑)。 */
   readonly showsFirstBidder: boolean;

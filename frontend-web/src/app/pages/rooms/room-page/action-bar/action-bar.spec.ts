@@ -199,6 +199,45 @@ describe('RoomActionBar', () => {
     expect(text).not.toContain('Seat 1 to play');
   });
 
+  it('offers resign at two seats and never at three', () => {
+    /*
+     * 领域层**故意**拒绝三座位的认输(`Room.Resign` 要指出唯一的赢家),而在浏览器里
+     * 点那个按钮拿到的是 **500**。所以按钮本身不该出现。
+     *
+     * 两头都在这一条里:少了「两座位下它确实在」,一个把按钮整个删掉的实现同样是绿的。
+     */
+    const twoSeats = mount(2);
+    twoSeats.componentInstance.state.set(baseState());
+    twoSeats.detectChanges();
+    expect(bar(twoSeats)?.querySelector('[data-testid="resign"]')).toBeTruthy();
+
+    const threeSeats = mount(3);
+    threeSeats.componentInstance.state.set(baseState());
+    threeSeats.detectChanges();
+    expect(bar(threeSeats)?.querySelector('[data-testid="resign"]')).toBeNull();
+    // 而离开与催促照旧 —— 拒绝的是认输,不是整组按钮。
+    expect(bar(threeSeats)?.querySelector('[data-testid="leave"]')).toBeTruthy();
+    expect(bar(threeSeats)?.querySelector('[data-testid="urge"]')).toBeTruthy();
+  });
+
+  it('offers no resign while the descriptor has not arrived', () => {
+    /*
+     * 判据是 `seatCount === 2`,不是 `!moreThanTwoSeats()` —— 后者在描述符缺席时会说
+     * 「可以认输」(`!(0 > 2)`)。**这条断言就是那句注释的执行版**:变异证明了少了它,
+     * 两种写法在既有样本下完全等价。
+     */
+    const fixture = mount(2);
+    const state = baseState();
+    // 这个棋种不在描述符表里 —— `capabilities.of()` 返回 undefined。
+    fixture.componentInstance.state.set({ ...state, gameKey: 'a-game-nobody-registered' });
+    fixture.detectChanges();
+
+    // 前置条件:操作条本身画出来了,不是整块没渲染。
+    expect(bar(fixture)).toBeTruthy();
+    expect(bar(fixture)?.querySelector('[data-testid="leave"]')).toBeTruthy();
+    expect(bar(fixture)?.querySelector('[data-testid="resign"]')).toBeNull();
+  });
+
   it('resign opens a CDK dialog first, and only emits after confirmation', () => {
     const fixture = mount();
     fixture.componentInstance.state.set(baseState());
