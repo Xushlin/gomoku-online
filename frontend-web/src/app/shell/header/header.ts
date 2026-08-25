@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CdkMenu, CdkMenuItem, CdkMenuItemCheckbox, CdkMenuTrigger } from '@angular/cdk/menu';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
@@ -8,34 +7,23 @@ import { isSupportedLocale, SUPPORTED_LOCALES } from '../../core/i18n/supported-
 import { SoundService } from '../../core/sound/sound.service';
 import { BoardSkinService } from '../../core/theme/board-skin.service';
 import { ThemeService } from '../../core/theme/theme.service';
+import {
+  AppearanceMenus,
+  type PickerControl,
+  type ToggleControl,
+} from './appearance-menus/appearance-menus';
 
-/**
- * One dropdown appearance control. Every string derives from `prefix`: the
- * control's name is `<prefix>.label` and the current value plus each option
- * is `<prefix>.<option>`. Language, theme, board skin and sound pack are all
- * this shape, so the template renders them from one loop.
+/*
+ * `PickerControl` / `ToggleControl` 的定义在 `appearance-menus` 里 —— 画它们的是那边。
+ * 这里只 `import type`,所以不会把那个组件(以及它带的 `@angular/cdk`)拉进首屏:
+ * 唯一的值引用在下面的 `imports` 里,而它只在 `@defer` 块里被用到,于是编译器会把它
+ * 拆成一个动态 import。**而这句话是量出来的,不是推出来的**(见 tasks 的第一步)。
  */
-interface PickerControl {
-  readonly prefix: string;
-  readonly options: readonly string[];
-  readonly value: string;
-  /** The sound-pack menu carries the volume slider under its options. */
-  readonly hasVolume: boolean;
-  readonly apply: (option: string) => void;
-}
-
-/** One two-state appearance control — sound on/off, dark mode on/off. */
-interface ToggleControl {
-  readonly labelKey: string;
-  readonly stateKey: string;
-  readonly checked: boolean;
-  readonly toggle: () => void;
-}
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CdkMenu, CdkMenuItem, CdkMenuItemCheckbox, CdkMenuTrigger, RouterLink, TranslocoPipe],
+  imports: [AppearanceMenus, RouterLink, TranslocoPipe],
   templateUrl: './header.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -46,6 +34,14 @@ export class Header {
   protected readonly sound = inject(SoundService);
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+
+  /**
+   * 那一组控件要不要加载了 —— 占位里任何一个 picker / Settings 被点过就置真,
+   * 而 `@prefetch (on idle)` 通常已经把 chunk 拉下来了,所以这一步不等。
+   */
+  protected readonly menuRequested = signal(false);
+  /** 点的是第几个:`0…n-1` 是内联 picker,`n` 是 Settings。加载完就开它。 */
+  protected readonly pendingTrigger = signal<number | null>(null);
 
   /**
    * The four dropdown controls, in the order the header shows them. Both
@@ -120,11 +116,10 @@ export class Header {
     if (!this.sound.muted()) this.sound.play('move-place');
   }
 
-  protected onVolumeChange(value: string): void {
-    this.sound.setVolume(Number(value));
-    // Audition the new level on release so the user hears what they chose
-    // (mirrors the pack-switch audition; silent when muted or at 0).
-    if (!this.sound.muted()) this.sound.play('move-place');
+  /** 占位里的按钮:先请求加载,并记下要开哪一个。 */
+  protected requestMenu(index: number): void {
+    this.pendingTrigger.set(index);
+    this.menuRequested.set(true);
   }
 
   protected logout(): void {

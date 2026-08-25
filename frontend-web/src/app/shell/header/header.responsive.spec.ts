@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { DeferBlockBehavior, DeferBlockState, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of } from 'rxjs';
@@ -80,10 +80,18 @@ const THEMES = ['material', 'system'] as const;
 const SKINS = ['wood', 'classic', 'midnight'] as const;
 const PACKS = ['wood', 'chiptune', 'minimal'] as const;
 
-function mount(opts: { authenticated?: boolean } = {}) {
+async function mount(
+  opts: { authenticated?: boolean; defer?: DeferBlockBehavior } = {},
+) {
   const authenticated = opts.authenticated ?? true;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
+    /*
+     * 外观控件那一组现在在 `@defer` 里(为了把 `@angular/cdk` 的 77.13 kB 挪出首屏),
+     * 而 TestBed 默认对 defer 块是 Manual —— 延迟内容不渲染。设成 Playthrough,
+     * 于是**下面每一条断言都一个字没改**:那是「搬家没有改行为」的可执行形式。
+     */
+    deferBlockBehavior: opts.defer ?? DeferBlockBehavior.Playthrough,
     imports: [
       Header,
       TranslocoTestingModule.forRoot({
@@ -133,18 +141,32 @@ function mount(opts: { authenticated?: boolean } = {}) {
       },
     ],
   });
+  // `@defer` 的依赖是动态 import,所以组件必须先异步编译。
+  await TestBed.compileComponents();
   const fixture = TestBed.createComponent(Header);
   fixture.detectChanges();
   return fixture;
 }
 
-/** Open the mobile Settings menu and return its `role="menu"` element. */
-function openSettings(host: HTMLElement): HTMLElement {
+/**
+ * Open the mobile Settings menu and return its `role="menu"` element.
+ *
+ * 现在要 `await`:那一组控件在 `@defer` 里,占位上的第一次点击只是**请求加载**,
+ * 而加载完成之后真身会把刚才点的那个菜单打开。所以点完要过一次变更检测并等稳定 ——
+ * 这正是「首次点击等一个 chunk」在测试里的样子。
+ */
+async function openSettings(fixture: Awaited<ReturnType<typeof mount>>): Promise<HTMLElement> {
+  const host = fixture.nativeElement as HTMLElement;
   const trigger = host.querySelector<HTMLButtonElement>(
     'button[aria-label="header.settings.label"]',
   );
   expect(trigger, 'Settings trigger must exist').not.toBeNull();
   trigger!.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  // 真身把 open() 推到下一个宏任务(见 appearance-menus.ts:那是量出来的),所以这里也要等一个。
+  await new Promise((resolve) => setTimeout(resolve));
+  fixture.detectChanges();
   const menu = document.querySelector<HTMLElement>('.cdk-overlay-container [role="menu"]');
   expect(menu, 'Settings menu must open').not.toBeNull();
   return menu!;
@@ -177,8 +199,8 @@ describe('Header at 375px', () => {
     document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove());
   });
 
-  it('exposes only navigation and identity inline — four controls, no appearance row', () => {
-    const host = mount().nativeElement as HTMLElement;
+  it('exposes only navigation and identity inline — four controls, no appearance row', async () => {
+    const host = (await mount()).nativeElement as HTMLElement;
     // The budget is the whole point: ten controls is what overflowed 375px.
     expect(visibleControls(host, 375).map(label)).toEqual([
       '/home',
@@ -188,22 +210,22 @@ describe('Header at 375px', () => {
     ]);
   });
 
-  it('hides every appearance control from the header row', () => {
-    const host = mount().nativeElement as HTMLElement;
+  it('hides every appearance control from the header row', async () => {
+    const host = (await mount()).nativeElement as HTMLElement;
     const visible = visibleControls(host, 375).map(label);
     for (const control of APPEARANCE) expect(visible).not.toContain(control);
   });
 
-  it('does not escape the overflow by wrapping the sticky header', () => {
-    const host = mount().nativeElement as HTMLElement;
+  it('does not escape the overflow by wrapping the sticky header', async () => {
+    const host = (await mount()).nativeElement as HTMLElement;
     const header = host.querySelector('header')!;
     // Wrapping would make the sticky header ~3 rows / ~150px tall at 375px.
     expect(header.className).toContain('sticky');
     expect(header.className).not.toMatch(/\bflex-wrap\b/);
   });
 
-  it('keeps the budget when logged out', () => {
-    const host = mount({ authenticated: false }).nativeElement as HTMLElement;
+  it('keeps the budget when logged out', async () => {
+    const host = (await mount({ authenticated: false })).nativeElement as HTMLElement;
     expect(visibleControls(host, 375).map(label)).toEqual([
       '/home',
       '/games',
@@ -219,16 +241,16 @@ describe('Header Settings menu', () => {
     document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove());
   });
 
-  it('holds all six appearance controls, in the header row order', () => {
-    const host = mount().nativeElement as HTMLElement;
-    expect(rows(openSettings(host)).map((r) => r.name)).toEqual(APPEARANCE);
+  it('holds all six appearance controls, in the header row order', async () => {
+    const fixture = await mount();
+    expect(rows(await openSettings(fixture)).map((r) => r.name)).toEqual(APPEARANCE);
   });
 
-  it('uses menu-legal roles — submenus for pickers, checkboxes for toggles', () => {
-    const host = mount().nativeElement as HTMLElement;
+  it('uses menu-legal roles — submenus for pickers, checkboxes for toggles', async () => {
+    const fixture = await mount();
     // `role="switch"` is not a legal child of `role="menu"`; the toggles swap
     // to `menuitemcheckbox` in this placement.
-    expect(rows(openSettings(host)).map((r) => r.role)).toEqual([
+    expect(rows(await openSettings(fixture)).map((r) => r.role)).toEqual([
       'menuitem',
       'menuitem',
       'menuitem',
@@ -238,9 +260,9 @@ describe('Header Settings menu', () => {
     ]);
   });
 
-  it('shows each control current value and reflects toggle state in aria-checked', () => {
-    const host = mount().nativeElement as HTMLElement;
-    const menu = openSettings(host);
+  it('shows each control current value and reflects toggle state in aria-checked', async () => {
+    const fixture = await mount();
+    const menu = await openSettings(fixture);
     expect(rows(menu).map((r) => r.value)).toEqual([
       'header.language.en',
       'header.theme.material',
@@ -254,9 +276,9 @@ describe('Header Settings menu', () => {
     expect(checkboxes[1].getAttribute('aria-checked')).toBe('false'); // dark off
   });
 
-  it('opens a submenu listing everything the service registry offers', () => {
-    const host = mount().nativeElement as HTMLElement;
-    const menu = openSettings(host);
+  it('opens a submenu listing everything the service registry offers', async () => {
+    const fixture = await mount();
+    const menu = await openSettings(fixture);
     const boardRow = menu.querySelectorAll<HTMLElement>(':scope > [role="menuitem"]')[2];
     expect(boardRow.getAttribute('aria-haspopup')).toBe('menu');
     boardRow.click();
@@ -276,15 +298,15 @@ describe('Header above lg', () => {
     document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove());
   });
 
-  it('restores the inline controls and drops the Settings trigger at 1024px', () => {
-    const host = mount().nativeElement as HTMLElement;
+  it('restores the inline controls and drops the Settings trigger at 1024px', async () => {
+    const host = (await mount()).nativeElement as HTMLElement;
     const visible = visibleControls(host, 1024).map(label);
     for (const control of APPEARANCE) expect(visible).toContain(control);
     expect(visible).not.toContain('header.settings.label');
   });
 
-  it('shows control labels only from xl up', () => {
-    const host = mount().nativeElement as HTMLElement;
+  it('shows control labels only from xl up', async () => {
+    const host = (await mount()).nativeElement as HTMLElement;
     const header = host.querySelector('header') as HTMLElement;
     const themeTrigger = header.querySelector<HTMLElement>(
       'button[aria-label="header.theme.label"]',
@@ -293,5 +315,52 @@ describe('Header above lg', () => {
     // Values only between lg and xl; the `Theme:` prefix arrives at 1280.
     expect(isVisibleAt(labelSpan, 1024, header)).toBe(false);
     expect(isVisibleAt(labelSpan, 1280, header)).toBe(true);
+  });
+});
+
+/**
+ * 占位与真身必须画出**同一组按钮**。
+ *
+ * 那一组外观控件连同菜单在 `@defer` 里(为了把 `@angular/cdk` 的 77.13 kB 挪出首屏),
+ * 代价是**两份按钮标记**:占位那一份不带任何 cdk 指令。本仓库对「一份副本看起来是对的」
+ * 栽过多次,而少一个按钮的表现是「首屏一闪而过少一个控件」,人眼几乎看不见。
+ */
+describe('appearance controls: placeholder vs loaded', () => {
+  /** 外观控件按钮的「身份」:无障碍名字 + 可见文案。 */
+  const buttons = (host: HTMLElement) =>
+    [...host.querySelectorAll('button')]
+      .map((b) => ({
+        label: b.getAttribute('aria-label') ?? '',
+        text: (b.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      }))
+      .filter((b) => b.label.startsWith('header.'));
+
+  it('renders the same buttons before and after the chunk arrives', async () => {
+    const fixture = await mount({ defer: DeferBlockBehavior.Manual });
+    const [block] = await fixture.getDeferBlocks();
+
+    await block.render(DeferBlockState.Placeholder);
+    const placeholder = buttons(fixture.nativeElement as HTMLElement);
+
+    await block.render(DeferBlockState.Complete);
+    const loaded = buttons(fixture.nativeElement as HTMLElement);
+
+    // 前置条件:占位真的画了六个控件 + Settings。少了它,两个空数组也「相等」。
+    expect(placeholder.length).toBeGreaterThanOrEqual(7);
+    expect(loaded).toEqual(placeholder);
+  });
+
+  it('only the loaded state carries cdk menu triggers', async () => {
+    const fixture = await mount({ defer: DeferBlockBehavior.Manual });
+    const [block] = await fixture.getDeferBlocks();
+    const triggers = () =>
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[aria-haspopup]').length;
+
+    await block.render(DeferBlockState.Placeholder);
+    expect(triggers(), 'placeholder must not carry cdk triggers').toBe(0);
+
+    await block.render(DeferBlockState.Complete);
+    // 两头都要:只断言占位没有的话,一个把菜单整个删掉的实现同样是绿的。
+    expect(triggers(), 'the loaded state must carry them').toBeGreaterThan(0);
   });
 });

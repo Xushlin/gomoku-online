@@ -41,9 +41,49 @@ const errors = [];
   }
 }
 
+/*
+ * header 不许静态依赖 `@angular/cdk`,而那一组控件只许出现在 `@defer` 块里。
+ *
+ * 量出来的账:cdk 在首屏曾经是 **77.13 kB**,而我们自己全部的代码 52.12 kB —— header 是
+ * shell 的一部分,所以从来不点那个菜单的人也在付。挪进 `@defer` 之后首屏 477.83 → 402.62 kB,
+ * 归因里 cdk 是 **0**。
+ *
+ * 而「它在 @defer 里所以是懒的」这句话**不能当判据** —— 判据是构建产物的归因。这两条
+ * 规则不是判据,是**围栏**:有人把 `<app-appearance-menus>` 从 defer 块里挪出来、或者直接
+ * 在 header 里 import cdk,都会在这里变红,而不必等下一次有人去跑归因脚本。
+ */
+{
+  const ts = readFileSync('src/app/shell/header/header.ts', 'utf8');
+  if (/from '@angular\/cdk/.test(ts)) {
+    errors.push(
+      "src/app/shell/header/header.ts: imports @angular/cdk — that puts 77 kB back into the " +
+        'initial bundle. The menus live in appearance-menus, behind @defer.',
+    );
+  }
+
+  const html = readFileSync('src/app/shell/header/header.html', 'utf8');
+  const uses = [...html.matchAll(/<app-appearance-menus/g)];
+  const deferAt = html.indexOf('@defer (');
+  if (uses.length === 0) {
+    errors.push('src/app/shell/header/header.html: no <app-appearance-menus> — this check would pass vacuously');
+  } else if (deferAt < 0) {
+    errors.push('src/app/shell/header/header.html: <app-appearance-menus> is not inside a @defer block');
+  } else {
+    for (const use of uses) {
+      if (use.index < deferAt) {
+        const line = html.slice(0, use.index).split('\n').length;
+        errors.push(
+          `src/app/shell/header/header.html:${line}: <app-appearance-menus> outside the @defer block — ` +
+            '@angular/cdk goes back into the initial bundle',
+        );
+      }
+    }
+  }
+}
+
 if (errors.length) {
   console.error(`source rule check failed (${errors.length}):`);
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
-console.log('source rules: room page routes only through leaveTo');
+console.log('source rules: room page routes only through leaveTo; header keeps @angular/cdk behind @defer');
