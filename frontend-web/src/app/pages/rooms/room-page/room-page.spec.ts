@@ -1,4 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
+import { LeaveConfirmDialog } from '../../../core/routing/leave-confirm-dialog';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal, type WritableSignal } from '@angular/core';
@@ -150,7 +151,20 @@ const SERVER_BOARDS = () =>
     xiangqi: { rows: 10, cols: 9 },
   });
 
+/** The members these tests reach into: `handleLeave` is protected, `leaveWarningKey` is public. */
+interface RoomPageInternals {
+  handleLeave(): void;
+  leaveWarningKey(): string | null;
+}
+
+/** 每次 `Dialog.open` 记一笔 —— 「问过一次」和「问过两次」要分得开。 */
+const dialogsOpened: { component: unknown; data: unknown }[] = [];
+/** 离开确认框的回答,默认确认。 */
+let leaveAnswer = true;
+
 function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS()) {
+  dialogsOpened.length = 0;
+  leaveAnswer = true;
   const hub = new StubHub();
   const rooms = new StubRoomsApi();
   const router = routerStub();
@@ -175,7 +189,16 @@ function mount(id = 'r-1', capabilities: GameCapabilitiesService = SERVER_BOARDS
       { provide: RoomsApiService, useValue: rooms },
       { provide: Router, useValue: router },
       { provide: ActivatedRoute, useValue: activatedRoute(id) },
-      { provide: Dialog, useValue: { open: () => ({ closed: of() }) } },
+      {
+        provide: Dialog,
+        useValue: {
+          open: (component: unknown, config?: { data?: unknown }) => {
+            dialogsOpened.push({ component, data: config?.data });
+            // 离开确认框回「确认」;其它弹框(结束弹框)保持原样,不回值。
+            return { closed: component === LeaveConfirmDialog ? of(leaveAnswer) : of() };
+          },
+        },
+      },
       {
         provide: AuthService,
         useValue: {
@@ -329,6 +352,75 @@ describe('RoomPage', () => {
 
     expect(rooms.leave).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/g/gomoku/lobby');
+  });
+
+  it('asks before leaving a live game, and asks exactly once', async () => {
+    const { fixture, hub, rooms, router } = mount();
+    await Promise.resolve();
+    hub.state.set(makeRoomState());
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as unknown as RoomPageInternals;
+
+    cmp.handleLeave();
+
+    const asked = dialogsOpened.filter((d) => d.component === LeaveConfirmDialog);
+    expect(asked).toHaveLength(1);
+    expect(asked[0].data).toEqual({ messageKey: 'game.leave-confirm.match' });
+    expect(rooms.leave).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalled();
+    // 而守卫不会再问第二遍 —— 座位已经让出去了,再问是在问一件已经发生的事。
+    expect(cmp.leaveWarningKey()).toBeNull();
+  });
+
+  it('does not leave when the answer is stay', async () => {
+    const { fixture, hub, rooms, router } = mount();
+    leaveAnswer = false; // mount() 会把它复位成 true,所以只能在 mount 之后设
+    await Promise.resolve();
+    hub.state.set(makeRoomState());
+    fixture.detectChanges();
+
+    (fixture.componentInstance as unknown as RoomPageInternals).handleLeave();
+
+    expect(dialogsOpened.filter((d) => d.component === LeaveConfirmDialog)).toHaveLength(1);
+    expect(rooms.leave).not.toHaveBeenCalled();
+    expect(rooms.dissolve).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('asks a player, and never a spectator', async () => {
+    const { fixture, hub } = mount();
+    await Promise.resolve();
+    const cmp = fixture.componentInstance as unknown as RoomPageInternals;
+
+    // 前置条件:同一个房间,坐着的时候确实要问。
+    hub.state.set(makeRoomState());
+    fixture.detectChanges();
+    expect(cmp.leaveWarningKey()).toBe('game.leave-confirm.match');
+
+    // 同一局,但当前用户(u-1)不占座位 —— 观众离开不欠任何人。
+    const watched = makeRoomState();
+    hub.state.set({
+      ...watched,
+      seats: [
+        { index: 0, player: { id: 'u-9', username: 'zoe' } },
+        { index: 1, player: { id: 'u-2', username: 'bob' } },
+      ],
+      black: { id: 'u-9', username: 'zoe' },
+    });
+    fixture.detectChanges();
+    expect(cmp.leaveWarningKey()).toBeNull();
+  });
+
+  it('dissolving a waiting room asks nothing — there is no game to lose', async () => {
+    const { fixture, hub, rooms } = mount();
+    await Promise.resolve();
+    hub.state.set({ ...makeRoomState(), status: 'Waiting', game: null });
+    fixture.detectChanges();
+
+    (fixture.componentInstance as unknown as RoomPageInternals).handleLeave();
+
+    expect(dialogsOpened.filter((d) => d.component === LeaveConfirmDialog)).toHaveLength(0);
+    expect(rooms.dissolve).toHaveBeenCalled();
   });
 
   it('leaving an AI room of a game with no lobby returns to that game', async () => {

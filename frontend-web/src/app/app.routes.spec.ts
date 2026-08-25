@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { routes } from './app.routes';
 import { authGuard } from './core/auth/auth.guards';
+import { leaveGameGuard } from './core/routing/leave-game.guard';
 import { GAME_REGISTRY } from './games/index';
 
 /**
@@ -64,6 +65,26 @@ describe('app routes', () => {
     for (const route of gameRoutes) {
       expect(route.canMatch, `${route.path} is unguarded`).toContain(authGuard);
     }
+  });
+
+  it('puts the leave guard on every route, not just the game ones', () => {
+    /*
+     * 判据是**走一遍整张表**,不是「游戏路由都挂了」。挑几条挂的做法会在第十款游戏
+     * 落地那天漏掉一条,而漏掉的表现是**没有弹框** —— 一个看不出来的缺陷。
+     *
+     * 今天这条不可能失败:`withLeaveGuard` 对整个数组 map。它防的是有人把某一条
+     * 从那层 map 里拆出来单写。
+     */
+    expect(routes.length).toBeGreaterThan(10);
+
+    /*
+     * 数出来,而不是逐条 `toContain`。第一版写的是
+     *   `expect(route.canDeactivate).toContain(leaveGameGuard)`
+     * 而 `canDeactivate` 是 `undefined` 时**它不失败** —— 于是这条走查在它唯一
+     * 存在的理由(某一条路由没挂上)下面是绿的。变异证明的。
+     */
+    const unguarded = routes.filter((r) => !r.canDeactivate?.includes(leaveGameGuard));
+    expect(unguarded.map((r) => r.path ?? '(no path)')).toEqual([]);
   });
 
   it('routes 中国象棋 at /g/xiangqi', () => {

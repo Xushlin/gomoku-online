@@ -16,6 +16,7 @@ import { COLUMNS, ROWS } from '../engine/field';
 import { gravityIntervalMs, TetrisGame } from '../engine/game';
 import { TETRIS_KEY } from '../game-key';
 import { soundForStep, type TetrisProgress } from './announce';
+import type { ConfirmsLeaving } from '../../../core/routing/leave-game.guard';
 
 /**
  * `idle` is before the first run; `over` means the field topped out and we are
@@ -54,7 +55,7 @@ const IDLE_PROGRESS: TetrisProgress = { locks: 0, lines: 0, level: 1, over: fals
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TetrisPlay {
+export class TetrisPlay implements ConfirmsLeaving {
   private readonly api = inject(ScoreRunsApiService);
   private readonly sound = inject(SoundService);
 
@@ -274,4 +275,16 @@ export class TetrisPlay {
       this.timer = null;
     }
   }
+
+  /**
+   * 一局进行中(含暂停、含正在提交)才拦 —— **成绩在结束时才提交**,中途走人这一局
+   * 不计入排行。`submitting` 也算:提交还没回来就走,那一局同样落不了地。
+   */
+  leaveWarningKey(): string | null {
+    const phase = this.phase();
+    return phase === 'playing' || phase === 'paused' || phase === 'submitting'
+      ? 'game.leave-confirm.tetris'
+      : null;
+  }
+
 }

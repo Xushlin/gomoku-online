@@ -154,6 +154,15 @@ describe('TetrisPlay', () => {
     expect(filledCells()).toBe(0);
   });
 
+  it('warns about leaving only while a run is under way', () => {
+    // 没开始的时候不问。
+    expect(fixture.componentInstance.leaveWarningKey()).toBeNull();
+
+    click('Start a run');
+
+    expect(fixture.componentInstance.leaveWarningKey()).toBe('game.leave-confirm.tetris');
+  });
+
   it('asks the server for a run, with no seed of its own', () => {
     click('Start a run');
 

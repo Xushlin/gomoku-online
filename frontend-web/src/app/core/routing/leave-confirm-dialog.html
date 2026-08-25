@@ -1,0 +1,27 @@
+<section class="panel w-full max-w-xs border p-6" data-testid="leave-confirm">
+  <h2 class="mb-2 text-lg font-semibold tracking-tight">
+    {{ 'game.leave-confirm.title' | transloco }}
+  </h2>
+  <p class="text-muted mb-4 text-sm">
+    {{ data.messageKey | transloco }}
+  </p>
+  <div class="flex justify-end gap-2">
+    <!-- 「留下」是默认的那一个,所以它排在后面、也是主按钮:走掉的代价不可逆。 -->
+    <button
+      type="button"
+      data-testid="leave-confirm-leave"
+      class="cell hover:bg-bg text-danger flex min-h-11 items-center justify-center border px-4 text-sm font-semibold"
+      (click)="leave()"
+    >
+      {{ 'game.leave-confirm.leave' | transloco }}
+    </button>
+    <button
+      type="button"
+      data-testid="leave-confirm-stay"
+      class="control-primary text-on-primary flex min-h-11 items-center justify-center px-4 text-sm font-semibold"
+      (click)="stay()"
+    >
+      {{ 'game.leave-confirm.stay' | transloco }}
+    </button>
+  </div>
+</section>
