@@ -758,7 +758,10 @@ utility 或 token —— 「厚重」在这套 token 里已经有说法了。
   - 显示剩余时间 `M:SS`,驱动源是 RoomPage 的 1 Hz `now` signal
   - 剩余 ≤ 10s 时用 `text-danger` 强调
   - 剩余 ≤ 0s 时显示 `0:00`,后端轮询最多 5s 内会发 `GameEnded`
-- 玩家按钮组(`mySide() !== 'spectator'` 时渲染),横排一行,375 px 下换行:
+- 玩家按钮组(`mySide() !== 'spectator'` 时渲染),横排一行,375 px 下换行。
+  **认输只在 `seatCount == 2` 时渲染** —— 领域层对三座位的认输是硬拒绝(见
+  `room-and-gameplay` 的 `Room.Resign`),而一个点了必定 409 的按钮比没有按钮更糟。
+  判据 MUST 是 `=== 2`,MUST NOT 是「不大于 2」:后者在描述符还没到达时会说「可以认输」。
   - **辞局**:需二次确认(CDK Dialog, `ResignConfirmDialog`);确认后 `rooms.resign(id)` REST;无论成功失败,后续 `GameEnded` 事件负责打开结束弹窗(见 `Game-ended CDK Dialog 由 gameEnded signal 驱动` 那一条)
   - **离开房间** —— `RoomPage.handleLeave()` SHALL 分两条路径:
     - **当前用户是 host 且 `state.status === 'Waiting'`**(自己开的空房间)→ 调 `rooms.dissolve(id)` REST(`DELETE /api/rooms/:id`)。后端的 `Room.Leave` invariant 拒绝这种情况(`HostCannotLeaveWaitingRoomException`),所以前端必须走 dissolve 端点。Dissolve 成功后,后端发出 `RoomDissolved` SignalR 事件 —— 同房间所有连接(包括发起者本人)由既有的 `roomDissolved$` 订阅触发 navigate `/home`,所以即便不显式 navigate 也会到大厅。
@@ -799,4 +802,9 @@ utility 或 token —— 「厚重」在这套 token 里已经有说法了。
 #### Scenario: 每个按钮都够大
 - **WHEN** 走查操作条里的全部 `button`
 - **THEN** 至少有三个(**前置条件:样本非空**),且每一个都带 44 px 的最小高度
+
+#### Scenario: 三座位不给认输,两座位给
+- **WHEN** 分别在 `seatCount == 2` 与 `seatCount == 3` 的进行中对局里渲染操作条
+- **THEN** 前者有认输按钮,后者没有;**两头都要断言** —— 只断言后者没有的话,一个把按钮
+  整个删掉的实现同样是绿的。而离开与催促在两种情况下都在
 
