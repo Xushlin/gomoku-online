@@ -250,6 +250,15 @@
       "leave": "Leave room",
       "urge": "Urge opponent"
     },
+    "leave-confirm": {
+      "title": "Leave this game?",
+      "stay": "Stay",
+      "leave": "Leave",
+      "match": "Leaving does not end the game and does not free your seat — the turn clock keeps running, and losing on time counts as a loss.",
+      "klotski": "The moves you have made in this level live only in this browser; leaving loses all of them.",
+      "crossword": "Re-entering this level starts a fresh attempt — time and hints count from zero again.",
+      "tetris": "This run has not finished; if you leave, the score is not recorded."
+    },
     "chat": {
       "title": "Chat",
       "tab-room": "Room",

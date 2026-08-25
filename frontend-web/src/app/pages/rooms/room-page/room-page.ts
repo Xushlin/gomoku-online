@@ -1,6 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, OnDestroy, OnInit, signal, type WritableSignal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  Injector,
+  OnDestroy,
+  OnInit,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -33,6 +45,8 @@ import { ChatPanel, type SendChatPayload } from './chat/chat-panel';
 import { GameEndedDialog, type GameEndedDialogData, type GameEndedDialogResult } from './dialogs/game-ended-dialog';
 import { hubErrorToKey, type HubErrorKey } from './hub-error.mapper';
 import { myOutcome } from './outcome';
+import { openLeaveConfirm } from '../../../core/routing/leave-confirm-dialog';
+import type { ConfirmsLeaving } from '../../../core/routing/leave-game.guard';
 import { RoomActionBar } from './action-bar/action-bar';
 import { RoomSidebar } from './sidebar/sidebar';
 import { FIRST_SEAT, SECOND_SEAT } from '../../../games/board-seats';
@@ -50,7 +64,7 @@ const TICK_MS = 1_000;
   templateUrl: './room-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RoomPage implements OnInit, OnDestroy {
+export class RoomPage implements OnInit, OnDestroy, ConfirmsLeaving {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly rooms = inject(RoomsApiService);
@@ -58,6 +72,7 @@ export class RoomPage implements OnInit, OnDestroy {
   private readonly hub = inject(GameHubService);
   private readonly sound = inject(SoundService);
   private readonly dialog = inject(Dialog);
+  private readonly injector = inject(Injector);
   private readonly capabilities = inject(GameCapabilitiesService);
   private readonly catalog = inject(GameCatalogService);
   private readonly destroyRef = inject(DestroyRef);
@@ -69,6 +84,8 @@ export class RoomPage implements OnInit, OnDestroy {
   protected readonly loadError = signal(false);
   protected readonly submittingMove = signal(false);
   protected readonly urgeToast = signal(false);
+  /** 一次刻意的离开正在进行中 —— 守卫据此不再问第二遍。 */
+  private readonly exiting = signal(false);
   protected readonly errorToastKey = signal<HubErrorKey | null>(null);
   protected readonly chatBannerKey = signal<string | null>(null);
   private readonly now = signal<number>(Date.now());
@@ -370,7 +387,7 @@ export class RoomPage implements OnInit, OnDestroy {
     this.roomId = id;
     this.capabilities.ensureLoaded();
     if (!this.auth.isAuthenticated()) {
-      void this.router.navigateByUrl('/login');
+      this.leaveTo('/login');
       return;
     }
     this.hub.urged$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
@@ -380,7 +397,7 @@ export class RoomPage implements OnInit, OnDestroy {
     });
     this.hub.roomDissolved$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => void this.router.navigateByUrl(this.exitRoute()));
+      .subscribe(() => this.leaveTo(this.exitRoute()));
     this.tickHandle = setInterval(() => this.now.set(Date.now()), TICK_MS);
     void this.initialLoad(id);
   }
@@ -419,7 +436,7 @@ export class RoomPage implements OnInit, OnDestroy {
       if (err instanceof HttpErrorResponse && err.status === 404) {
         // Not `exitRoute()`: the room never loaded, so there is no game
         // key to read. `/home` is the only honest answer here.
-        void this.router.navigateByUrl(PLATFORM_HOME);
+        this.leaveTo(PLATFORM_HOME);
       }
     }
   }
@@ -521,11 +538,56 @@ export class RoomPage implements OnInit, OnDestroy {
     const myId = this.auth.user()?.id;
     const isHostOfWaiting =
       state?.status === 'Waiting' && myId && state.host.id === myId;
-    const op = isHostOfWaiting ? this.rooms.dissolve(id) : this.rooms.leave(id);
-    op.subscribe({
-      next: () => void this.router.navigateByUrl(this.exitRoute()),
-      error: () => this.flashError('game.errors.generic'),
+    const run = (): void => {
+      const op = isHostOfWaiting ? this.rooms.dissolve(id) : this.rooms.leave(id);
+      op.subscribe({
+        next: () => this.leaveTo(this.exitRoute()),
+        error: () => this.flashError('game.errors.generic'),
+      });
+    };
+
+    /*
+     * **判据与守卫共用 `leaveWarningKey()`,不另写一条。** 两条规则会分叉,而分叉的
+     * 表现是某一条路径悄悄不问了 —— 那是看不出来的。等待中的房间返回 null,所以
+     * 解散一个空房间不会被问。
+     */
+    const warning = this.leaveWarningKey();
+    if (!warning) {
+      run();
+      return;
+    }
+    openLeaveConfirm(this.injector, warning).subscribe((confirmed) => {
+      if (confirmed) run();
     });
+  }
+
+  /**
+   * 现在离开贵不贵 —— 守卫与「离开房间」按钮共用的那一个判据。
+   *
+   * 离开**不会**结束对局,也**不会**让出座位:`ngOnDestroy` 只调 `hub.leaveRoom`,
+   * 那只是退出 SignalR 组。于是回合计时继续走,而你看不见棋盘了 —— **超时判负。**
+   * 一个静默的超时负和一次主动认输,在战绩里长得一模一样。
+   *
+   * 判据是**座位号**不是颜色:三座位棋种里 2 号座位上的人既不是黑也不是白,按颜色
+   * 判会把他当成观众放走(那是 `add-web-doudizhu` 修过的同一个形状)。
+   */
+  // 公开:守卫从组件外面调它。
+  leaveWarningKey(): string | null {
+    if (this.exiting()) return null;
+    if (this.state()?.status !== 'Playing') return null;
+    return this.mySeat() === null ? null : 'game.leave-confirm.match';
+  }
+
+  /**
+   * 刻意的离开:先置「正在退出」,再导航。
+   *
+   * **本组件里所有 `router.navigateByUrl` 都只许出现在这里** —— 而那不是靠记性,
+   * 有一条源码走查测试钉着。少写一处的表现是**弹两次框**:一次问「要走吗」,而
+   * 那时 `rooms.leave()` 已经发出去了,座位已经让出去了。
+   */
+  private leaveTo(url: string): void {
+    this.exiting.set(true);
+    void this.router.navigateByUrl(url);
   }
 
   protected handleUrge(): void {
@@ -553,9 +615,8 @@ export class RoomPage implements OnInit, OnDestroy {
     const ref = this.dialog.open<GameEndedDialogResult>(GameEndedDialog, { data });
     ref.closed.subscribe((outcome) => {
       this.gameEndedDialogOpen = false;
-      if (outcome === 'home') void this.router.navigateByUrl(this.exitRoute());
-      else if (outcome === 'replay' && this.roomId)
-        void this.router.navigateByUrl(`/replay/${this.roomId}`);
+      if (outcome === 'home') this.leaveTo(this.exitRoute());
+      else if (outcome === 'replay' && this.roomId) this.leaveTo(`/replay/${this.roomId}`);
     });
   }
 

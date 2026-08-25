@@ -111,6 +111,8 @@ function setup(layout: CrosswordLayout, check: (n: number) => PuzzleCheckResult)
 
 /** The bits of `Play` these tests drive — protected members, reached deliberately. */
 interface PlayInternals {
+  /** 公开的:守卫从组件外面调它。 */
+  leaveWarningKey(): string | null;
   hint(): void;
   onTileTap(index: number): void;
   onCellTap(key: string): void;
@@ -164,6 +166,46 @@ describe('Play — check call sequence', () => {
     expect(api.check).toHaveBeenCalledTimes(2);
     expect(calls.map((c) => c.slotIndex).sort()).toEqual([0, 1]);
     expect(calls.map((c) => c.word).sort()).toEqual(['合情合理', '合而为一'].sort());
+  });
+
+  it('warns about leaving only after a word has been solved', () => {
+    // 需要一个「解出一个词、而关卡还没完」的局面,所以两行各一条成语:第一行只差
+    // 一个字,第二行整行空着。CROSSING_LAYOUT 做不到这件事 —— 它那唯一一颗托盘
+    // 棋子落在交叉点上,一下把两条都解了,于是网格立刻就满了。
+    const TWO_ROW_LAYOUT: CrosswordLayout = {
+      rows: 2,
+      cols: 4,
+      cells: [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 0, col: 2 },
+        { row: 0, col: 3 },
+        { row: 1, col: 0 },
+        { row: 1, col: 1 },
+        { row: 1, col: 2 },
+        { row: 1, col: 3 },
+      ],
+      given: [
+        { row: 0, col: 1, char: '而' },
+        { row: 0, col: 2, char: '为' },
+        { row: 0, col: 3, char: '一' },
+      ],
+      tray: ['合', '一', '心', '意'],
+      slots: [
+        { index: 0, row: 0, col: 0, direction: 'Horizontal', length: 4 },
+        { index: 1, row: 1, col: 0, direction: 'Horizontal', length: 4 },
+      ],
+    };
+    const { cmp } = setup(TWO_ROW_LAYOUT, () => CORRECT);
+    // 一个词都没解出来的时候不问。
+    expect(cmp.leaveWarningKey()).toBeNull();
+
+    cmp.board.select('0,0');
+    cmp.onTileTap(0);
+
+    // 前置条件:确实解出了一个词,而关卡确实还没完 —— 否则下面那条断言测的是别的局面。
+    expect(cmp.board.locked().has('0,0')).toBe(true);
+    expect(cmp.leaveWarningKey()).toBe('game.leave-confirm.crossword');
   });
 
   it('does not re-check a slot that is already solved', () => {

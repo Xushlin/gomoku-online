@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guards';
+import { leaveGameGuard } from './core/routing/leave-game.guard';
 import { Lobby } from './pages/lobby/lobby';
 
 /**
@@ -7,8 +8,20 @@ import { Lobby } from './pages/lobby/lobby';
  *   - `home` is eager (part of the shell bundle) and now renders the real Lobby.
  *   - Every other route MUST be lazy via `loadComponent` / `loadChildren`.
  *   - CanMatch guards prevent downloading guarded chunks for ineligible users.
+ *   - **Every** route carries `leaveGameGuard` — see `withLeaveGuard` below.
  */
-export const routes: Routes = [
+
+/**
+ * 给每一条路由挂上离开守卫。
+ *
+ * 挑「游戏路由」挂的做法会在第十款游戏落地那天漏掉一条,而**漏掉的表现是没有弹框**
+ * —— 一个看不出来的缺陷。整条数组 map 一遍之后,就没有「记得挂上」这件事了:决定
+ * 「现在离开贵不贵」的是组件上那个可选方法,不是这张表。
+ */
+const withLeaveGuard = (routes: Routes): Routes =>
+  routes.map((route) => ({ ...route, canDeactivate: [leaveGameGuard] }));
+
+export const routes: Routes = withLeaveGuard([
   { path: 'home', component: Lobby, canMatch: [authGuard] },
   {
     path: 'games',
@@ -115,4 +128,4 @@ export const routes: Routes = [
   },
   { path: '', pathMatch: 'full', redirectTo: 'home' },
   { path: '**', redirectTo: 'home' },
-];
+]);

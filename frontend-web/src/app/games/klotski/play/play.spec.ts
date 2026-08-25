@@ -196,6 +196,18 @@ describe('KlotskiPlay', () => {
     expect(piece(fixture, '关羽').getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('warns about leaving only after a move has been made', () => {
+    const { fixture } = setup();
+    // 一步没走的关卡不问 —— 点进去看一眼就走是正常操作,而每次都问会把这个确认框
+    // 训练成「闭着眼睛点掉」的东西。
+    expect(fixture.componentInstance.leaveWarningKey()).toBeNull();
+
+    click(fixture, piece(fixture, '关羽'));
+    click(fixture, targets(fixture)[0]);
+
+    expect(fixture.componentInstance.leaveWarningKey()).toBe('game.leave-confirm.klotski');
+  });
+
   it('never calls check — the client owns the rule', () => {
     // 华容道 has nothing hidden, so a per-move round trip would tell the server
     // nothing it does not learn from replaying the whole path at the end.

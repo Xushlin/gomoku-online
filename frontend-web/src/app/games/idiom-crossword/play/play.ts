@@ -26,6 +26,7 @@ import {
   type CrosswordResultAction,
   type CrosswordResultData,
 } from '../result-dialog/result-dialog';
+import type { ConfirmsLeaving } from '../../../core/routing/leave-game.guard';
 
 /** How long a wrong slot shakes before its tiles go back. */
 const SHAKE_MS = 450;
@@ -46,7 +47,7 @@ const SLIP_MS = 3200;
   templateUrl: './play.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Play {
+export class Play implements ConfirmsLeaving {
   private readonly api = inject(PuzzleApiService);
   private readonly dialog = inject(Dialog);
   private readonly router = inject(Router);
@@ -243,4 +244,18 @@ export class Play {
         }
       });
   }
+
+  /**
+   * 解出过至少一个词、而网格还没填满时才拦。
+   *
+   * 每个词确实已经提交给服务端了,**但重进这一关是新的一次尝试** ——
+   * `StartPuzzleAttempt` 永远 `PuzzleAttempt.Start(Guid.NewGuid(), …)`,没有续接,
+   * 所以用时与提示数从头算。
+   */
+  leaveWarningKey(): string | null {
+    return this.solvedSlots().size > 0 && !this.board.complete()
+      ? 'game.leave-confirm.crossword'
+      : null;
+  }
+
 }

@@ -21,6 +21,7 @@ import {
   type KlotskiMove,
   type KlotskiPositions,
 } from '../model';
+import type { ConfirmsLeaving } from '../../../core/routing/leave-game.guard';
 
 type Phase = 'loading' | 'playing' | 'solved' | 'not-found' | 'error';
 
@@ -43,7 +44,7 @@ type Phase = 'loading' | 'playing' | 'solved' | 'not-found' | 'error';
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class KlotskiPlay {
+export class KlotskiPlay implements ConfirmsLeaving {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(PuzzleApiService);
 
@@ -210,4 +211,18 @@ export class KlotskiPlay {
   protected restart(): void {
     this.load();
   }
+
+  /**
+   * 走过一步的关卡才拦。**每一步只在客户端**,通关时才 `submit(attemptId, { moves })`
+   * —— 所以中途走人,走过的步数全部丢失。
+   *
+   * 一步没走的关卡 MUST NOT 弹框:点进去看一眼就走是正常操作,而每次都问会把这个
+   * 确认框训练成「闭着眼睛点掉」的东西。
+   */
+  leaveWarningKey(): string | null {
+    return this.phase() === 'playing' && this.moves().length > 0
+      ? 'game.leave-confirm.klotski'
+      : null;
+  }
+
 }
