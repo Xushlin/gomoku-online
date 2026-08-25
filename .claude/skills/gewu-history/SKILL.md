@@ -74,6 +74,21 @@ What is shared is a **fact** (the one-char encoding, the four suit paths, the th
 
 **`room-list-seats`** is the first *consumer* of the published `seatCount`. It found one more instance of the confusion — **not a sixth hardcoded two**, but the DTO's own doc comment, which still said the endpoint did not publish the number at all. **A conclusion can stay readable long after the premise under it became false.** Degrading to `seats.length` there draws every waiting room as full: a room that looks unjoinable and is not.
 
+## Driving the app in a browser
+
+The blocker was always login. It is solved: put the refresh token in
+`localStorage['gewu:refresh']` and reload — the app refreshes into a session. Raise
+`Game__TurnTimeoutSeconds` too, or the game ends while you take a few round trips (that
+cost two failed attempts in **`add-leave-game-guard`**, and both failures looked exactly
+like "the feature does not work").
+
+**`fix-three-seat-resign`** is why it is worth doing: one session of clicking found a
+**500 on 认输 in a three-seat game** and **raw i18n keys on 斗地主's bid row**, neither of
+which any test could see — the card-table specs mount an *empty* translation tree, so
+"renders a raw key" is the normal state there. Read that entry before writing a test that
+asserts a label; and remember the pane does not composite, so a DOM read after a click is
+stale until `window.ng.applyChanges(...)`.
+
 ## Migrations
 
 Read **`add-per-game-rating`** before touching schema. EF's generated `Down` has been wrong **four** times, always the same way: `AddColumn(defaultValue: 0)` or `""` restores plausible garbage instead of carrying the data back. Two migrations do it by hand now, one refuses via a `CHECK`-constrained scratch table whose *name is the error message*. Also: `DROP COLUMN` on SQLite is a non-atomic table rebuild; `--idempotent` is unsupported on SQLite and writes no file; explicit `.IsRequired()` outranks CLR nullability, so a type change can generate a clean migration that rejects the first row at runtime.
