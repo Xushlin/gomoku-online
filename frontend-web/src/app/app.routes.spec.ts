@@ -61,10 +61,29 @@ describe('app routes', () => {
     }
   });
 
-  it('guards every game entry route', () => {
-    for (const route of gameRoutes) {
-      expect(route.canMatch, `${route.path} is unguarded`).toContain(authGuard);
-    }
+  /*
+   * **这条原来是恒真的,而修法与隔壁那条一模一样。**
+   *
+   * 原文是逐条 `expect(route.canMatch).toContain(authGuard)` —— 而 `canMatch` 是
+   * `undefined` 时它**不失败**。同一个坑这个文件下面那条走查已经记过一次(那次是
+   * `canDeactivate`),这次是加古谱那两条无守卫路由时撞出来的:两条 `canMatch=undefined`
+   * 就摆在 `gameRoutes` 里,而这条测试是绿的。
+   *
+   * 所以改成**数出来再比空列表**;而「故意匿名」由路由上的 `data.publicContent` 显式标记 ——
+   * 一处写下来的决定,而不是一个洞。豁免名单断言的是**恰好**这些,所以下一条匿名路由
+   * 必须有人来改这里,那正是该有人看一眼的时刻。
+   */
+  it('guards every game entry route except the ones marked public', () => {
+    const isPublic = (r: (typeof gameRoutes)[number]) => r.data?.['publicContent'] === true;
+    const unguarded = gameRoutes.filter((r) => !r.canMatch?.includes(authGuard) && !isPublic(r));
+    expect(unguarded.map((r) => r.path ?? '(no path)')).toEqual([]);
+
+    // 两边都要有样本,否则上面那行会在「全都匿名」或「全都有守卫」时空转。
+    expect(gameRoutes.filter(isPublic).map((r) => r.path)).toEqual([
+      'g/xiangqi/manual',
+      'g/xiangqi/manual/:lineId',
+    ]);
+    expect(gameRoutes.filter((r) => r.canMatch?.includes(authGuard)).length).toBeGreaterThan(5);
   });
 
   it('puts the leave guard on every route, not just the game ones', () => {

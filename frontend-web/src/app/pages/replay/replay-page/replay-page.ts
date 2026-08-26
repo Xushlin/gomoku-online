@@ -4,15 +4,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
-  OnDestroy,
   OnInit,
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Board } from '../../rooms/room-page/board/board';
+import { MoveScrubber } from '../../../platform/move-scrubber/move-scrubber';
 import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XiangqiBoard } from '../../../games/xiangqi/board/xiangqi-board';
@@ -24,18 +23,15 @@ import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { FIRST_SEAT, SECOND_SEAT } from '../../../games/board-seats';
 
-const STEP_INTERVAL_MS = 700;
-type Speed = 0.5 | 1 | 2;
-
 @Component({
   selector: 'app-replay-page',
   standalone: true,
-  imports: [Board, XiangqiBoard, ChainBoard, CommonModule, RouterLink, TranslocoPipe],
+  imports: [Board, XiangqiBoard, ChainBoard, CommonModule, MoveScrubber, RouterLink, TranslocoPipe],
   templateUrl: './replay-page.html',
   styles: [':host { display: block; width: 100%; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReplayPage implements OnInit, OnDestroy {
+export class ReplayPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly rooms = inject(RoomsApiService);
@@ -44,8 +40,6 @@ export class ReplayPage implements OnInit, OnDestroy {
 
   protected readonly replay = signal<GameReplayDto | null>(null);
   protected readonly currentPly = signal<number>(0);
-  protected readonly playing = signal<boolean>(false);
-  protected readonly speed = signal<Speed>(1);
   protected readonly loading = signal<boolean>(true);
   protected readonly notFound = signal<boolean>(false);
   protected readonly notFinished = signal<boolean>(false);
@@ -56,11 +50,6 @@ export class ReplayPage implements OnInit, OnDestroy {
   protected readonly totalMoves = computed(() => this.replay()?.moves.length ?? 0);
   protected readonly atStart = computed(() => this.currentPly() === 0);
   protected readonly atEnd = computed(() => this.currentPly() >= this.totalMoves());
-  protected readonly speeds: readonly Speed[] = [0.5, 1, 2];
-  protected readonly playButtonKey = computed(() => {
-    if (this.atEnd()) return 'replay.scrubber.replay';
-    return this.playing() ? 'replay.scrubber.pause' : 'replay.scrubber.play';
-  });
 
   /**
    * Board dimensions for the replayed game. Same resolution as the live room
@@ -140,15 +129,6 @@ export class ReplayPage implements OnInit, OnDestroy {
     };
   });
 
-  constructor() {
-    effect((onCleanup) => {
-      if (!this.playing()) return;
-      const speed = this.speed();
-      const id = setInterval(() => this.step(+1), STEP_INTERVAL_MS / speed);
-      onCleanup(() => clearInterval(id));
-    });
-  }
-
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -159,10 +139,6 @@ export class ReplayPage implements OnInit, OnDestroy {
     this.roomId = id;
     this.capabilities.ensureLoaded();
     this.fetch(id);
-  }
-
-  ngOnDestroy(): void {
-    this.playing.set(false);
   }
 
   private fetch(id: string): void {
@@ -197,54 +173,12 @@ export class ReplayPage implements OnInit, OnDestroy {
     if (this.roomId) this.fetch(this.roomId);
   }
 
-  protected first(): void {
-    this.playing.set(false);
-    this.currentPly.set(0);
-  }
-
-  protected last(): void {
-    this.playing.set(false);
-    this.currentPly.set(this.totalMoves());
-  }
-
-  protected step(delta: number): void {
-    const next = this.currentPly() + delta;
-    const clamped = Math.max(0, Math.min(this.totalMoves(), next));
-    this.currentPly.set(clamped);
-    if (clamped >= this.totalMoves()) {
-      this.playing.set(false);
-    }
-  }
-
-  protected onPrev(): void {
-    this.playing.set(false);
-    this.step(-1);
-  }
-
-  protected onNext(): void {
-    this.playing.set(false);
-    this.step(+1);
-  }
-
-  protected togglePlay(): void {
-    if (this.atEnd()) {
-      this.currentPly.set(0);
-      this.playing.set(true);
-      return;
-    }
-    this.playing.set(!this.playing());
-  }
-
-  protected setSpeed(s: Speed): void {
-    this.speed.set(s);
-  }
-
-  protected onSeek(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const value = Number.parseInt(target.value, 10);
-    if (Number.isNaN(value)) return;
-    this.playing.set(false);
-    this.currentPly.set(Math.max(0, Math.min(this.totalMoves(), value)));
+  /**
+   * scrubber 请求跳到第 N 手。**当前半手的真源在这里**,因为页面还要用它切招法喂棋盘;
+   * 钳制也在这里,所以一个越界的请求不会变成一帧越界的棋盘。
+   */
+  protected onScrub(ply: number): void {
+    this.currentPly.set(Math.max(0, Math.min(this.totalMoves(), ply)));
   }
 
   protected goLive(): void {

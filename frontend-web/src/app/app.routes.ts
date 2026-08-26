@@ -51,6 +51,26 @@ export const routes: Routes = withLeaveGuard([
       import('./games/tictactoe/ai-game/ai-game').then((m) => m.TicTacToeAiGame),
   },
   {
+    /*
+     * 《梅花谱》—— **没有 authGuard**,而这不是漏了:它是一部三百年前的公开著作。
+     * 回放页要求身份,是因为它暴露的是具体用户的对局,那是另一件事。
+     */
+    path: 'g/xiangqi/manual',
+    // 显式标记「这是公开资料」。走查认这个标记,所以少一个 authGuard 不再是一个洞,
+    // 而是一处**写下来的**决定 —— 而走查同时断言豁免名单**恰好**是这两条。
+    data: { publicContent: true },
+    loadComponent: () =>
+      import('./games/xiangqi/manual/manual-catalogue/manual-catalogue').then(
+        (m) => m.ManualCatalogue,
+      ),
+  },
+  {
+    path: 'g/xiangqi/manual/:lineId',
+    data: { publicContent: true },
+    loadComponent: () =>
+      import('./games/xiangqi/manual/manual-study/manual-study').then((m) => m.ManualStudy),
+  },
+  {
     path: 'g/xiangqi',
     canMatch: [authGuard],
     loadComponent: () => import('./games/xiangqi/ai-game/ai-game').then((m) => m.XiangqiAiGame),

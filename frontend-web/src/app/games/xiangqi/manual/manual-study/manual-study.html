@@ -1,0 +1,67 @@
+<section class="mx-auto flex w-full max-w-md flex-col gap-4">
+  <header class="flex items-baseline justify-between gap-3">
+    <h1 class="text-text text-xl font-semibold tracking-tight break-words">
+      {{ line()?.title ?? ('manual.meihuapu.title' | transloco) }}
+    </h1>
+    <a
+      routerLink="/g/xiangqi/manual"
+      class="text-muted hover:text-text focus-visible:outline-primary shrink-0 rounded text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      {{ 'manual.back-to-catalogue' | transloco }}
+    </a>
+  </header>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <div class="panel-flat h-80 animate-pulse border" aria-hidden="true"></div>
+      <p class="text-muted text-sm">{{ 'manual.loading' | transloco }}</p>
+    }
+    @case ('not-found') {
+      <p class="text-muted text-sm">{{ 'manual.line-not-found' | transloco }}</p>
+      <a
+        routerLink="/g/xiangqi/manual"
+        class="cell text-text focus-visible:outline-primary self-start border px-4 py-2 text-sm"
+        >{{ 'manual.back-to-catalogue' | transloco }}</a
+      >
+    }
+    @case ('error') {
+      <p class="text-danger text-sm" role="alert">{{ 'manual.error-load-failed' | transloco }}</p>
+      <button
+        type="button"
+        class="cell text-text focus-visible:outline-primary self-start border px-4 py-2 text-sm"
+        (click)="load()"
+      >
+        {{ 'manual.retry' | transloco }}
+      </button>
+    }
+    @default {
+      <app-xiangqi-board
+        [state]="boardState()"
+        [mySide]="'spectator'"
+        [submitting]="false"
+        [readonly]="true"
+      />
+
+      <app-move-scrubber
+        [totalMoves]="totalMoves()"
+        [currentPly]="currentPly()"
+        (seek)="onScrub($event)"
+      />
+
+      <!--
+        注解区。**高度固定**,而这不是排版洁癖:古谱的注解按手挂载,而 v1 一条都不带,
+        所以这块要么一直空、要么以后一半的手上有字。高度随内容变的话,每走一步棋盘都会
+        上下弹一次。
+      -->
+      <div class="panel text-text flex min-h-20 flex-col gap-1 border p-3 text-sm">
+        <p class="text-muted text-xs">
+          {{ 'manual.verdict-label' | transloco }}:
+          <span class="text-text">{{ verdictKey() | transloco }}</span>
+          ·
+          {{ 'manual.ply-of' | transloco: { current: currentPly(), total: totalMoves() } }}
+        </p>
+        <p class="text-muted text-xs">{{ 'manual.no-commentary' | transloco }}</p>
+      </div>
+    }
+  }
+</section>

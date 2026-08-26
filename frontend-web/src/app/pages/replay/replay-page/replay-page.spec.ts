@@ -118,65 +118,65 @@ describe('ReplayPage', () => {
     expect(comp.notFinished()).toBe(true);
   });
 
-  it('step(+1) advances currentPly and clamps at end', () => {
+  /*
+   * scrubber 的**行为**断言搬到了 `platform/move-scrubber/move-scrubber.spec.ts` ——
+   * 它们原来摸的是本页的私有 `step` / `togglePlay` / `playing`,而那些正是搬走的东西。
+   * 留在这里就只能测一个不再存在的实现。
+   *
+   * 这里留下的是**接线**:点真实的按钮,看棋盘那一帧真的变了。抽取真正可能弄坏的
+   * 就是这一段 —— 组件自己全绿而页面没接上,两者长得一模一样。
+   */
+  const scrubberButton = (
+    fixture: ReturnType<typeof mount>['fixture'],
+    label: string,
+  ): HTMLButtonElement => {
+    const el = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      `app-move-scrubber button[aria-label="replay.scrubber.${label}"]`,
+    );
+    expect(el).not.toBeNull();
+    return el as HTMLButtonElement;
+  };
+
+  const stonesOnBoard = (fixture: ReturnType<typeof mount>['fixture']): number =>
+    (fixture.nativeElement as HTMLElement).querySelectorAll('.board-stone').length;
+
+  it('renders the shared scrubber rather than its own controls', () => {
     const { fixture } = mount();
-    const comp = fixture.componentInstance as unknown as {
-      step: (d: number) => void;
-      currentPly: () => number;
-      atEnd: () => boolean;
-    };
-    expect(comp.currentPly()).toBe(0);
-    comp.step(+1);
-    expect(comp.currentPly()).toBe(1);
-    comp.step(+1);
-    comp.step(+1);
-    comp.step(+1); // beyond end
-    expect(comp.currentPly()).toBe(3);
-    expect(comp.atEnd()).toBe(true);
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelectorAll('app-move-scrubber').length).toBe(1);
+    // 页面自己 MUST NOT 再画进度条 —— 那会是第二份 scrubber。
+    expect(host.querySelectorAll(':scope > section > input[type="range"]').length).toBe(0);
   });
 
-  it('step(-1) cannot go below 0', () => {
+  it('a click on the scrubber moves the board forward, and back again', () => {
     const { fixture } = mount();
-    const comp = fixture.componentInstance as unknown as {
-      step: (d: number) => void;
-      currentPly: () => number;
-    };
-    comp.step(-1);
-    expect(comp.currentPly()).toBe(0);
+    expect(stonesOnBoard(fixture)).toBe(0);
+
+    scrubberButton(fixture, 'next').click();
+    fixture.detectChanges();
+    expect(stonesOnBoard(fixture)).toBe(1);
+
+    scrubberButton(fixture, 'last').click();
+    fixture.detectChanges();
+    const atEnd = stonesOnBoard(fixture);
+    expect(atEnd).toBeGreaterThan(1);
+
+    scrubberButton(fixture, 'first').click();
+    fixture.detectChanges();
+    expect(stonesOnBoard(fixture)).toBe(0);
   });
 
-  it('togglePlay at end resets to 0 and plays', () => {
+  it('clamps a seek the scrubber asks for beyond the end', () => {
     const { fixture } = mount();
     const comp = fixture.componentInstance as unknown as {
-      step: (d: number) => void;
-      togglePlay: () => void;
+      onScrub: (n: number) => void;
       currentPly: () => number;
-      playing: () => boolean;
+      totalMoves: () => number;
     };
-    comp.step(+1);
-    comp.step(+1);
-    comp.step(+1); // at end
-    comp.togglePlay();
+    comp.onScrub(999);
+    expect(comp.currentPly()).toBe(comp.totalMoves());
+    comp.onScrub(-5);
     expect(comp.currentPly()).toBe(0);
-    expect(comp.playing()).toBe(true);
-  });
-
-  it('auto-play advances currentPly on interval', async () => {
-    vi.useFakeTimers();
-    try {
-      const { fixture } = mount();
-      const comp = fixture.componentInstance as unknown as {
-        togglePlay: () => void;
-        currentPly: () => number;
-      };
-      comp.togglePlay();
-      vi.advanceTimersByTime(700);
-      expect(comp.currentPly()).toBe(1);
-      vi.advanceTimersByTime(700);
-      expect(comp.currentPly()).toBe(2);
-    } finally {
-      vi.useRealTimers();
-    }
   });
 
   afterEach(() => {
@@ -228,16 +228,14 @@ describe('ReplayPage board selection', () => {
     // put it there again, which only works because the position is derived from
     // the opening setup each frame rather than mutated in place.
     const { fixture } = mountXiangqi();
-    const comp = fixture.componentInstance as unknown as { step: (d: number) => void };
+    const comp = fixture.componentInstance as unknown as { onScrub: (n: number) => void };
     const pieces = () => (fixture.nativeElement as HTMLElement).querySelectorAll('.xq-piece');
 
-    comp.step(+1);
-    comp.step(+1);
-    comp.step(+1);
+    comp.onScrub(3);
     fixture.detectChanges();
     expect(pieces()).toHaveLength(31);
 
-    comp.step(-1);
+    comp.onScrub(2);
     fixture.detectChanges();
     expect(pieces()).toHaveLength(32);
   });

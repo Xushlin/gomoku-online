@@ -96,6 +96,17 @@ export class GameLobby implements OnInit {
    */
   protected readonly showAiCard = computed(() => !!this.descriptor()?.supportsAi);
 
+  /**
+   * 古谱入口 —— 来自 **manifest**,不是一句 `gameKey === 'xiangqi'`。
+   *
+   * 旁边两张卡片按服务端能力开关,而古谱不是服务端能力:它是这个棋种有没有配套资料。
+   * 所以判据是 manifest 里填没填,《橘中秘》落地时大厅一行都不用改。
+   */
+  protected readonly manualRoute = computed(() => this.manifest()?.manualRoute ?? null);
+
+  /** 入口文案。`manualRoute` 有值时它 MUST 也有值 —— 两个一起填是 manifest 的约定。 */
+  protected readonly manualLabelKey = computed(() => this.manifest()?.manualLabelKey ?? null);
+
   ngOnInit(): void {
     this.capabilities.ensureLoaded();
   }

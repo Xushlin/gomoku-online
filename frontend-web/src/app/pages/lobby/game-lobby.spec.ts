@@ -131,4 +131,18 @@ describe('GameLobby', () => {
     expect(router).toBeDefined();
     expect(fixture.nativeElement.innerHTML).toContain('game-lobby-unknown');
   });
+
+  /*
+   * 古谱入口由 **manifest** 决定,不是由 `gameKey === 'xiangqi'`。
+   *
+   * **两个方向都要在样本里**:象棋有 `manualRoute`,五子棋没有 —— 只断言一边,
+   * 一个「永远显示」或「永远不显示」的实现同样是绿的。
+   */
+  it('links to the manual only for games whose manifest declares one', () => {
+    const xiangqi = mount('xiangqi', StubGameCapabilities.rated('xiangqi')).html();
+    const gomoku = mount('gomoku', StubGameCapabilities.rated('gomoku')).html();
+
+    expect(xiangqi).toContain('/g/xiangqi/manual');
+    expect(gomoku).not.toContain('manual');
+  });
 });
