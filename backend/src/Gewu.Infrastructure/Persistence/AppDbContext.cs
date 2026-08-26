@@ -62,6 +62,9 @@ public sealed class AppDbContext : DbContext
 
     /// <summary>计分类单局 —— score-attack 的权威单位。</summary>
     /// <summary>古谱线路 —— 只读资料,不是对局。见 <see cref="Gewu.Domain.Manuals.XiangqiManualLine"/>。</summary>
+    /// <summary>古谱的身份(键、书名、有没有分组层)。</summary>
+    public DbSet<XiangqiManual> XiangqiManuals => Set<XiangqiManual>();
+
     public DbSet<XiangqiManualLine> XiangqiManualLines => Set<XiangqiManualLine>();
 
     public DbSet<ScoreRun> ScoreRuns => Set<ScoreRun>();

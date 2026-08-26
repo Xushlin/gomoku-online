@@ -1,6 +1,7 @@
 using Gewu.Application.Common.DTOs;
 using Gewu.Application.Features.Manuals.GetXiangqiManual;
 using Gewu.Application.Features.Manuals.GetXiangqiManualLine;
+using Gewu.Application.Features.Manuals.ListXiangqiManuals;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,14 @@ public sealed class ManualsController : ControllerBase
     /// <summary>构造控制器。</summary>
     /// <param name="mediator">MediatR。</param>
     public ManualsController(IMediator mediator) => _mediator = mediator;
+
+    /// <summary>列出全部象棋古谱。</summary>
+    /// <param name="ct">取消标记。</param>
+    /// <returns>每部谱及其条数。</returns>
+    [HttpGet("xiangqi")]
+    [ProducesResponseType(typeof(IReadOnlyList<ManualSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ManualSummaryDto>>> ListManuals(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListXiangqiManualsQuery(), ct));
 
     /// <summary>取一部象棋古谱的目录。</summary>
     /// <param name="manualKey">古谱键,例如 meihuapu。</param>

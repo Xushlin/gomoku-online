@@ -7,6 +7,18 @@ namespace Gewu.Application.Abstractions;
 /// </summary>
 public interface IXiangqiManualRepository
 {
+    /// <summary>列出全部古谱(按书名的自然顺序由实现决定)。</summary>
+    /// <param name="ct">取消标记。</param>
+    /// <returns>每部谱及其条数。</returns>
+    Task<IReadOnlyList<(XiangqiManual Manual, int LineCount)>> ListManualsAsync(
+        CancellationToken ct = default);
+
+    /// <summary>取一部谱的身份。</summary>
+    /// <param name="manualKey">古谱键。</param>
+    /// <param name="ct">取消标记。</param>
+    /// <returns>不存在时为 <c>null</c>。</returns>
+    Task<XiangqiManual?> GetManualAsync(string manualKey, CancellationToken ct = default);
+
     /// <summary>按目录顺序列出一部古谱的全部线路。</summary>
     /// <param name="manualKey">古谱键。</param>
     /// <param name="ct">取消标记。</param>

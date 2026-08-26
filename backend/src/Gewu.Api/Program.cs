@@ -269,9 +269,12 @@ if (app.Environment.IsDevelopment())
         .SeedAsync();
     // 古谱是只读资料。播种器会逐手过象棋规则,所以一份坏数据在这里**启动就炸**,
     // 而不是等到有人打开学习页才看见一盘走不通的棋。
-    await scope.ServiceProvider
-        .GetRequiredKeyedService<XiangqiManualSeeder>(Gewu.Infrastructure.DependencyInjection.MeihuapuKey)
-        .SeedAsync();
+    foreach (var manualKey in Gewu.Infrastructure.DependencyInjection.XiangqiManualKeys)
+    {
+        await scope.ServiceProvider
+            .GetRequiredKeyedService<XiangqiManualSeeder>(manualKey)
+            .SeedAsync();
+    }
 }
 
 await app.RunAsync();

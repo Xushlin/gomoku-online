@@ -44,7 +44,8 @@ public sealed class GetXiangqiManualQueryHandler
                         l.Id,
                         l.Title,
                         CountMoves(l.MovesJson),
-                        l.WinnerSeat))
+                        l.Verdict,
+                        CountPieces(l.StartPosition)))
                     .ToList()))
             .ToList();
 
@@ -56,5 +57,23 @@ public sealed class GetXiangqiManualQueryHandler
     {
         using var doc = JsonDocument.Parse(movesJson);
         return doc.RootElement.GetArrayLength();
+    }
+
+    /// <summary>
+    /// 起始局面上的子数 —— 由盘面串算出。
+    /// <para>
+    /// 界面用它区分残局与满盘,而它 **MUST NOT** 被当成「是不是标准开局」的判据:实测
+    /// 满盘 163 局、标准开局 157 局,**有 6 局是 32 子却不是标准摆法**。两个判据混用会在
+    /// 那 6 局上静静说错。
+    /// </para>
+    /// </summary>
+    private static int CountPieces(string board)
+    {
+        var n = 0;
+        foreach (var c in board)
+        {
+            if (c != '.') n++;
+        }
+        return n;
     }
 }

@@ -39,7 +39,8 @@ public sealed class GetXiangqiManualLineQueryHandler
         var ply = 0;
         foreach (var item in doc.RootElement.EnumerateArray())
         {
-            var seat = ply % 2 == 0 ? BoardSeats.FirstSeat : BoardSeats.SecondSeat;
+            // 从**存下来的先走方**起交替,而不是「红先」—— 1634 局残局里 7 局是黑先走。
+            var seat = (line.FirstSeat + ply) % 2 == 0 ? BoardSeats.FirstSeat : BoardSeats.SecondSeat;
             moves.Add(new ManualMoveDto(
                 ply + 1,
                 item[0].GetInt32(),
@@ -56,7 +57,9 @@ public sealed class GetXiangqiManualLineQueryHandler
             GameKeys.Xiangqi,
             line.Chapter,
             line.Title,
-            line.WinnerSeat,
+            line.Verdict,
+            line.StartPosition,
+            line.FirstSeat,
             moves);
     }
 }

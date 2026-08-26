@@ -37,6 +37,16 @@ public static class DependencyInjection
     public const string MeihuapuKey = "meihuapu";
 
     /// <summary>
+    /// 内置古谱的清单 —— **加一辑就是这里加一行加一份数据文件**,别处不改。
+    /// <para>清单在一处,所以启动时播种、以及未来任何「走一遍每部谱」的检查都从它推导。</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> XiangqiManualKeys =
+    [
+        MeihuapuKey,
+        "juzhongmi", "shiqingyaqu", "lankeshenji", "mengrushenji", "taolueyuanji", "xinwucanbian",
+    ];
+
+    /// <summary>
     /// 注册 <c>AppDbContext</c>(SQLite)、仓储、UnitOfWork、密码哈希、JWT 服务、时钟。
     /// 绑定 <see cref="JwtOptions"/> 到配置节 <c>"Jwt"</c>。
     /// </summary>
@@ -104,11 +114,14 @@ public static class DependencyInjection
 
         // 古谱是**只读资料**,不是关卡也不是对局:没有 IPuzzleRules,也没有聚合根。
         // 它唯一的"规则"发生在播种那一次 —— 逐手过 XiangqiRules,不合法就拒绝整条线路。
-        services.AddKeyedScoped(MeihuapuKey, (sp, _) => new XiangqiManualSeeder(
-            MeihuapuKey,
-            XiangqiManualSeeder.MeihuapuPath,
-            sp.GetRequiredService<AppDbContext>(),
-            sp.GetRequiredService<ILogger<XiangqiManualSeeder>>()));
+        foreach (var key in XiangqiManualKeys)
+        {
+            var manualKey = key;
+            services.AddKeyedScoped(manualKey, (sp, _) => new XiangqiManualSeeder(
+                XiangqiManualSeeder.PathFor(manualKey),
+                sp.GetRequiredService<AppDbContext>(),
+                sp.GetRequiredService<ILogger<XiangqiManualSeeder>>()));
+        }
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
