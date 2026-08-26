@@ -28,4 +28,16 @@
     <Using Include="Gewu.Infrastructure.Persistence" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      真实的《梅花谱》产物跟着测试构建走 —— 因为这个功能的全部依据是「31 条线路、
+      1391 个半手全部能过 XiangqiRules」,而那件事只在应用启动时才会被验证一次。
+      CI 不启动应用,所以少了这条复制规则,唯一还在守它的就只有一句启动日志。
+    -->
+    <None Include="..\..\data\manuals\xiangqi-meihuapu.json"
+          Link="data\manuals\xiangqi-meihuapu.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\data\manuals\xiangqi-meihuapu.json')" />
+  </ItemGroup>
+
 </Project>

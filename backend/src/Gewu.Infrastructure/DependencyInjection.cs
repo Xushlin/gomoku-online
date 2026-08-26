@@ -33,6 +33,9 @@ public static class DependencyInjection
     /// <summary>华容道的 seeder 键。</summary>
     public const string KlotskiKey = "klotski";
 
+    /// <summary>《梅花谱》古谱键。</summary>
+    public const string MeihuapuKey = "meihuapu";
+
     /// <summary>
     /// 注册 <c>AppDbContext</c>(SQLite)、仓储、UnitOfWork、密码哈希、JWT 服务、时钟。
     /// 绑定 <see cref="JwtOptions"/> 到配置节 <c>"Jwt"</c>。
@@ -52,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IIdiomRepository, IdiomRepository>();
         services.AddScoped<IdiomSeeder>();
         services.AddScoped<IPuzzleRepository, PuzzleRepository>();
+        services.AddScoped<IXiangqiManualRepository, XiangqiManualRepository>();
         services.AddScoped<IScoreRunRepository, ScoreRunRepository>();
 
         // puzzle-core 刻意不注册任何 IPuzzleRules —— 关卡类游戏各自注册自己的规则。
@@ -97,6 +101,14 @@ public static class DependencyInjection
             PuzzleLevelSeeder.KlotskiPath,
             sp.GetRequiredService<AppDbContext>(),
             sp.GetRequiredService<ILogger<PuzzleLevelSeeder>>()));
+
+        // 古谱是**只读资料**,不是关卡也不是对局:没有 IPuzzleRules,也没有聚合根。
+        // 它唯一的"规则"发生在播种那一次 —— 逐手过 XiangqiRules,不合法就拒绝整条线路。
+        services.AddKeyedScoped(MeihuapuKey, (sp, _) => new XiangqiManualSeeder(
+            MeihuapuKey,
+            XiangqiManualSeeder.MeihuapuPath,
+            sp.GetRequiredService<AppDbContext>(),
+            sp.GetRequiredService<ILogger<XiangqiManualSeeder>>()));
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();

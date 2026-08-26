@@ -1,4 +1,5 @@
 using Gewu.Domain.Idioms;
+using Gewu.Domain.Manuals;
 using Gewu.Domain.Puzzles;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.ScoreRuns;
@@ -60,6 +61,9 @@ public sealed class AppDbContext : DbContext
     public DbSet<PuzzleLevelProgress> PuzzleLevelProgress => Set<PuzzleLevelProgress>();
 
     /// <summary>计分类单局 —— score-attack 的权威单位。</summary>
+    /// <summary>古谱线路 —— 只读资料,不是对局。见 <see cref="Gewu.Domain.Manuals.XiangqiManualLine"/>。</summary>
+    public DbSet<XiangqiManualLine> XiangqiManualLines => Set<XiangqiManualLine>();
+
     public DbSet<ScoreRun> ScoreRuns => Set<ScoreRun>();
 
     /// <inheritdoc />
