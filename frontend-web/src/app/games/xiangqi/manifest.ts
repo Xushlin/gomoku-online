@@ -35,4 +35,7 @@ export const xiangqiManifest: GameManifest = {
   ],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/xiangqi/lobby',
+  // 《梅花谱》—— 只读资料,匿名可读。见 games/xiangqi/manual/。
+  manualRoute: '/g/xiangqi/manual',
+  manualLabelKey: 'manual.entry',
 };

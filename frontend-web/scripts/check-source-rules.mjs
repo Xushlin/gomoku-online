@@ -124,6 +124,69 @@ const errors = [];
   }
 }
 
+/*
+ * scrubber 只许有一份。
+ *
+ * 回放页与古谱学习页共用 `app-move-scrubber`;任何一边自己再画一个进度条,就是第二份
+ * scrubber,而两份会各自漂 —— 边界禁用、到末尾自动停、切倍速不重建计时器这几条在
+ * 组件的 spec 里有断言钉着,而复制品的那几条不会跟着红。
+ */
+{
+  const consumers = [
+    'src/app/pages/replay/replay-page/replay-page.html',
+    'src/app/games/xiangqi/manual/manual-study/manual-study.html',
+  ];
+  for (const file of consumers) {
+    const html = readFileSync(file, 'utf8');
+    if (!html.includes('<app-move-scrubber')) {
+      errors.push(`${file}: does not use <app-move-scrubber> — the shared control is the point`);
+    }
+    if (html.includes('type="range"')) {
+      errors.push(
+        `${file}: writes its own type="range" — that is a second scrubber, and the two will drift`,
+      );
+    }
+  }
+}
+
+/*
+ * 象棋棋盘从 `state()` 里读的字段 —— **恰好两个**。
+ *
+ * 古谱学习页据此敢把 `host` / `seats` / 时间戳留空:古谱没有对手,也没有下棋的时间,
+ * 而给它们编一份**看起来和真的一模一样**的假数据是这个仓库反复付账的形状。
+ *
+ * 所以这条钉的是那个前提。哪天棋盘开始读第三个字段,这里红,并且指向学习页 ——
+ * 而不是让页面上出现一个空白的用户名。
+ */
+{
+  const files = [
+    'src/app/games/xiangqi/board/xiangqi-board.ts',
+    'src/app/games/xiangqi/board/xiangqi-board.html',
+  ];
+  const allowed = new Set(['game', 'status']);
+  const seen = new Set();
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8');
+    for (const m of text.matchAll(/state\(\)\s*\??\.\s*([a-zA-Z]+)/g)) {
+      seen.add(m[1]);
+      if (!allowed.has(m[1])) {
+        const line = text.slice(0, m.index).split('\n').length;
+        errors.push(
+          `${file}:${line}: the xiangqi board now reads state().${m[1]}. ` +
+            'manual-study synthesises a RoomState with that field left empty on purpose — ' +
+            'either give it a real value there or stop reading it here.',
+        );
+      }
+    }
+  }
+  // 正面对照:一个都没匹配到说明模式坏了,而那会让上面的循环空过。
+  if (seen.size === 0) {
+    errors.push(
+      'src/app/games/xiangqi/board: matched no state() reads — the allow-list check would pass vacuously',
+    );
+  }
+}
+
 if (errors.length) {
   console.error(`source rule check failed (${errors.length}):`);
   for (const e of errors) console.error(`  - ${e}`);
@@ -131,5 +194,6 @@ if (errors.length) {
 }
 console.log(
   'source rules: room page routes only through leaveTo; header keeps @angular/cdk behind @defer; ' +
-    'no template writes @prefetch as a block',
+    'no template writes @prefetch as a block; one scrubber, two consumers; ' +
+    'the xiangqi board reads exactly {game, status}',
 );

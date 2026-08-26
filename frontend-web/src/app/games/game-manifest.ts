@@ -68,4 +68,18 @@ export interface GameManifest {
    */
   readonly launchRoute?: string;
 
+  /**
+   * 这个棋种的**古谱**路由,可选。
+   *
+   * 它是一个 manifest 字段而不是大厅里的一句 `gameKey === 'xiangqi'`:大厅现有的两张卡片
+   * 都由服务端能力开关(`isRated` / `supportsAi`),而古谱不是服务端能力 —— 它是这个棋种
+   * 有没有配套资料。写成字段,《橘中秘》或者五子棋的定式谱落地时就是加一行,不动大厅。
+   *
+   * 不填 = 这个棋种没有古谱,大厅不画那个入口。
+   */
+  readonly manualRoute?: string;
+
+  /** 古谱入口的显示文案键。填了 `manualRoute` 就 MUST 一起填。 */
+  readonly manualLabelKey?: string;
+
 }

@@ -1,0 +1,72 @@
+<div
+  class="panel text-text flex flex-col gap-3 border p-3 text-sm"
+>
+  <div class="flex flex-wrap items-center justify-center gap-2">
+    <button
+      type="button"
+      class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
+      [disabled]="atStart()"
+      [attr.aria-label]="'replay.scrubber.first' | transloco"
+      (click)="first()"
+    >⏮</button>
+    <button
+      type="button"
+      class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
+      [disabled]="atStart()"
+      [attr.aria-label]="'replay.scrubber.prev' | transloco"
+      (click)="onPrev()"
+    >⏪</button>
+    <button
+      type="button"
+      class="control-primary text-on-primary px-3 py-1.5 text-xs font-semibold"
+      (click)="togglePlay()"
+    >
+      {{ playButtonKey() | transloco }}
+    </button>
+    <button
+      type="button"
+      class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
+      [disabled]="atEnd()"
+      [attr.aria-label]="'replay.scrubber.next' | transloco"
+      (click)="onNext()"
+    >⏩</button>
+    <button
+      type="button"
+      class="cell text-text hover:bg-bg border px-3 py-1.5 text-xs disabled:opacity-50"
+      [disabled]="atEnd()"
+      [attr.aria-label]="'replay.scrubber.last' | transloco"
+      (click)="last()"
+    >⏭</button>
+  </div>
+
+  <label class="flex items-center gap-3 text-xs">
+    <span class="text-muted">{{ 'replay.scrubber.ply-label' | transloco }}:</span>
+    <input
+      type="range"
+      min="0"
+      [attr.max]="totalMoves()"
+      step="1"
+      [value]="currentPly()"
+      (input)="onSeek($event)"
+      class="flex-1"
+    />
+    <span class="font-mono">{{ currentPly() }} / {{ totalMoves() }}</span>
+  </label>
+
+  <div class="flex items-center justify-center gap-2 text-xs">
+    <span class="text-muted">{{ 'replay.scrubber.speed-label' | transloco }}:</span>
+    @for (s of speeds; track s) {
+      <button
+        type="button"
+        class="cell hover:bg-bg border px-2 py-0.5"
+        [class.text-text]="speed() !== s"
+        [class.bg-primary]="speed() === s"
+        [class.text-on-primary]="speed() === s"
+        (click)="setSpeed(s)"
+      >{{ s }}×</button>
+    }
+    @if (atEnd()) {
+      <span class="text-muted ml-2">· {{ 'replay.scrubber.end-of-game' | transloco }}</span>
+    }
+  </div>
+</div>
