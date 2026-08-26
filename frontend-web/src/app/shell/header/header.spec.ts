@@ -231,3 +231,41 @@ describe('Header brand', () => {
     expect(en).not.toBe(zh);
   });
 });
+
+/*
+ * `@prefetch (on idle)` 曾经**作为一个块**写在 `@defer` 的收尾花括号后面,而 Angular 没有
+ * 这个块 —— prefetch 是 `@defer (...)` 括号里的触发器。于是它两件事一起做错:
+ * 每一页的 header 里多出一行字面文本 " @prefetch (on idle) ",而预取从来没配上。
+ *
+ * 它躲过了所有既有断言,因为那些断言按 `aria-label` / `role` 取元素,**没有一条看整段文本**。
+ * 这条看。列表是 Angular 的块名(它的文法,不是我们的注册表),所以手写是对的;
+ * 而它不匹配裸 `@`,否则用户名里的 `@` 会误伤。
+ */
+describe('Header template blocks', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('renders no Angular block name as literal text', async () => {
+    const { fixture } = await mount();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const blocks = [
+      'defer',
+      'placeholder',
+      'prefetch',
+      'loading',
+      'error',
+      'if',
+      'else',
+      'for',
+      'empty',
+      'switch',
+      'case',
+      'default',
+      'let',
+    ];
+    // 模式里**不写反斜杠**:`\\b` 经过一层 JSON 一层字符串字面量之后落地成 `\b`,
+    // 那是退格符,于是这条断言在本次改动里第一版是恒假的 —— 变异照样绿。
+    const leaked = blocks.filter((b) => new RegExp('@' + b + '(?![a-zA-Z-])').test(text));
+    expect(leaked).toEqual([]);
+  });
+});
