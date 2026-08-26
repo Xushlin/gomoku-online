@@ -16,9 +16,23 @@ namespace Gewu.Application.Tests.Features.Manuals;
 /// </summary>
 public class XiangqiManualQueryHandlerTests
 {
+    /// <summary>标准开局的盘面串 —— 与播种器里那个常量同源(测试里手写 90 个点不可读)。</summary>
+    private const string Standard =
+        "rnbakabnr..........c.....c.p.p.p.p.p..................P.P.P.P.P.C.....C..........RNBAKABNR";
+
+    private static string Endgame(params (string Piece, int Row, int Col)[] pieces)
+    {
+        var b = new char[XiangqiManualLine.BoardStringLength];
+        Array.Fill(b, '.');
+        foreach (var (piece, row, col) in pieces) b[row * 9 + col] = piece[0];
+        return new string(b);
+    }
+
     private static XiangqiManualLine Line(
-        int chapter, int order, string title, int winnerSeat, string movesJson)
-        => XiangqiManualLine.Create("meihuapu", chapter, order, title, winnerSeat, movesJson);
+        int chapter, int order, string title, ManualVerdict verdict, string movesJson,
+        string? start = null, int firstSeat = 0)
+        => XiangqiManualLine.Create(
+            "meihuapu", chapter, order, title, verdict, start ?? Standard, firstSeat, movesJson);
 
     private static Mock<IXiangqiManualRepository> Repo(params XiangqiManualLine[] lines)
     {
@@ -34,9 +48,9 @@ public class XiangqiManualQueryHandlerTests
     public async Task Groups_chapters_from_the_data_not_from_a_hardcoded_count()
     {
         var repo = Repo(
-            Line(1, 0, "第1局甲", 0, "[[9,6,7,4]]"),
-            Line(1, 1, "第1局乙", 1, "[[9,6,7,4],[2,7,2,4]]"),
-            Line(4, 0, "第4局丙", 0, "[[9,6,7,4]]"));
+            Line(1, 0, "第1局甲", ManualVerdict.RedBetter, "[[9,6,7,4]]"),
+            Line(1, 1, "第1局乙", ManualVerdict.BlackBetter, "[[9,6,7,4],[2,7,2,4]]"),
+            Line(4, 0, "第4局丙", ManualVerdict.Draw, "[[9,6,7,4]]"));
 
         var result = await new GetXiangqiManualQueryHandler(repo.Object)
             .Handle(new GetXiangqiManualQuery("meihuapu"), default);
@@ -52,12 +66,49 @@ public class XiangqiManualQueryHandlerTests
     [Fact]
     public async Task Derives_the_move_count_from_the_moves()
     {
-        var repo = Repo(Line(1, 0, "第1局甲", 0, "[[9,6,7,4],[2,7,2,4],[9,1,7,2]]"));
+        var repo = Repo(Line(1, 0, "第1局甲", ManualVerdict.RedBetter, "[[9,6,7,4],[2,7,2,4],[9,1,7,2]]"));
 
         var result = await new GetXiangqiManualQueryHandler(repo.Object)
             .Handle(new GetXiangqiManualQuery("meihuapu"), default);
 
         result!.Chapters[0].Lines[0].MoveCount.Should().Be(3);
+    }
+
+    /// <summary>
+    /// 子数由**盘面串**算出。它是界面区分残局与满盘的依据,而 MUST NOT 被当成
+    /// 「是不是标准开局」—— 实测有 6 局是 32 子却不是标准摆法。
+    /// </summary>
+    [Fact]
+    public async Task Derives_the_piece_count_from_the_start_position()
+    {
+        var endgame = Endgame(("k", 0, 4), ("K", 9, 4), ("R", 9, 0));
+        var repo = Repo(
+            Line(0, 0, "残局甲", ManualVerdict.Draw, "[[9,0,8,0]]", endgame),
+            Line(0, 1, "满盘乙", ManualVerdict.RedBetter, "[[9,6,7,4]]"));
+
+        var result = await new GetXiangqiManualQueryHandler(repo.Object)
+            .Handle(new GetXiangqiManualQuery("meihuapu"), default);
+
+        var counts = result!.Chapters[0].Lines.Select(l => l.PieceCount).ToList();
+        counts.Should().Equal([3, 32]);
+    }
+
+    /// <summary>先走方是数据 —— 座位从它起交替,而不是从「红先」这条约定起。</summary>
+    [Fact]
+    public async Task Alternates_seats_from_the_stored_first_seat()
+    {
+        var endgame = Endgame(("k", 0, 4), ("p", 3, 4), ("K", 9, 4), ("R", 9, 0));
+        var line = Line(0, 0, "黑先甲", ManualVerdict.Draw,
+            "[[3,4,4,4],[9,0,8,0],[4,4,5,4]]", endgame, firstSeat: 1);
+        var repo = new Mock<IXiangqiManualRepository>();
+        repo.Setup(r => r.GetLineAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(line);
+
+        var result = await new GetXiangqiManualLineQueryHandler(repo.Object)
+            .Handle(new GetXiangqiManualLineQuery(1), default);
+
+        result!.FirstSeat.Should().Be(1);
+        result.Moves.Select(m => m.Seat).Should().Equal([1, 0, 1], "黑先,然后交替");
     }
 
     /// <summary>
@@ -82,7 +133,8 @@ public class XiangqiManualQueryHandlerTests
     [Fact]
     public async Task Numbers_plies_from_one_and_alternates_seats_starting_with_red()
     {
-        var line = Line(2, 1, "第2局甲", 1, "[[9,6,7,4],[2,7,2,4],[9,1,7,2],[0,0,1,0]]");
+        var line = Line(2, 1, "第2局甲", ManualVerdict.BlackBetter,
+            "[[9,6,7,4],[2,7,2,4],[9,1,7,2],[0,0,1,0]]");
         var repo = new Mock<IXiangqiManualRepository>();
         repo.Setup(r => r.GetLineAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(line);
@@ -98,7 +150,9 @@ public class XiangqiManualQueryHandlerTests
         result.Moves[0].Row.Should().Be(7);
         result.Moves[0].Col.Should().Be(4);
         result.Chapter.Should().Be(2);
-        result.WinnerSeat.Should().Be(1);
+        result.Verdict.Should().Be(ManualVerdict.BlackBetter);
+        result.StartPosition.Should().Be(Standard);
+        result.FirstSeat.Should().Be(0);
         result.GameKey.Should().Be("xiangqi");
     }
 

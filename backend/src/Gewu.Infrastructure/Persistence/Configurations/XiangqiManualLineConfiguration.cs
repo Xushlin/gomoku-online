@@ -23,7 +23,14 @@ public sealed class XiangqiManualLineConfiguration : IEntityTypeConfiguration<Xi
         builder.Property(l => l.Chapter).IsRequired();
         builder.Property(l => l.OrderInChapter).IsRequired();
         builder.Property(l => l.Title).IsRequired().HasMaxLength(200);
-        builder.Property(l => l.WinnerSeat).IsRequired();
+        builder.Property(l => l.Verdict).IsRequired().HasConversion<int>();
+        // 盘面串定长 —— 长度由领域挡住,这里把长度也写进列,好让「89 个字符」在库这一层
+        // 也是一个错误而不是一段能存下去的数据。
+        builder.Property(l => l.StartPosition)
+            .IsRequired()
+            .HasMaxLength(XiangqiManualLine.BoardStringLength)
+            .IsFixedLength();
+        builder.Property(l => l.FirstSeat).IsRequired();
         builder.Property(l => l.MovesJson).IsRequired();
 
         builder

@@ -59,10 +59,9 @@
       象棋规则;它从 `data/manuals/xiangqi-meihuapu.json` 读,路径相对 AppContext.BaseDirectory。
       **少了这条复制规则的表现是一个 200 的空目录** —— 所以播种器在文件缺失时抛,不是 warn。
     -->
-    <None Include="..\..\data\manuals\xiangqi-meihuapu.json"
-          Link="data\manuals\xiangqi-meihuapu.json"
-          CopyToOutputDirectory="PreserveNewest"
-          Condition="Exists('..\..\data\manuals\xiangqi-meihuapu.json')" />
+    <None Include="..\..\data\manuals\*.json"
+          Link="data\manuals\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
