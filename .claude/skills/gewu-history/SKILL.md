@@ -89,6 +89,32 @@ which any test could see — the card-table specs mount an *empty* translation t
 asserts a label; and remember the pane does not composite, so a DOM read after a click is
 stale until `window.ng.applyChanges(...)`.
 
+**`lazy-header-menu`** found a third defect there, and it is the one that generalises:
+restoring a pending menu by calling `CdkMenuTrigger.open()` **synchronously** was green in
+Vitest and dead in a browser — the click that started it was still bubbling, and CDK's
+close-on-outside-click caught the tail of that same event. jsdom has no event loop the way
+a browser has one, so **anything whose correctness depends on *when* it runs relative to a
+real event's propagation is invisible to the unit tests**, however many of them are green.
+
+## First paint, and what is eager that need not be
+
+Read **`lazy-header-menu`** before answering the bundle budget again. The method that
+worked: build with `--stats-json`, start at the script `index.html` actually loads, and
+walk **transitively along `kind === 'import-statement'` only**. A first version that walked
+just the entry's own inputs reported `@angular/cdk` at 54.88 kB instead of **77.13** — an
+attribution that is one level short reads exactly like a correct one.
+
+Two numbers are worth carrying: our own code is about **52 kB** of the initial bundle, and
+`@angular/core` + `@angular/router` are about **198 kB** of it. So "shave our code" was
+never the answer; the answers have all been *one concrete eager thing* — sound packs, the
+token mirrors, and now a dropdown that cost more than the whole application.
+
+**Stubbing gives a lower bound, not a target.** Stubbing predicted 396.42 kB; the real
+split landed at **402.62** (the `@defer` machinery plus the placeholder markup). That gap
+is also how this change shipped a `MUST < 400 kB` in its spec that was false from the day
+it was written and that **no test could fail on** — caught at archive time, by re-running
+the build rather than inheriting the number.
+
 ## Migrations
 
 Read **`add-per-game-rating`** before touching schema. EF's generated `Down` has been wrong **four** times, always the same way: `AddColumn(defaultValue: 0)` or `""` restores plausible garbage instead of carrying the data back. Two migrations do it by hand now, one refuses via a `CHECK`-constrained scratch table whose *name is the error message*. Also: `DROP COLUMN` on SQLite is a non-atomic table rebuild; `--idempotent` is unsupported on SQLite and writes no file; explicit `.IsRequired()` outranks CLR nullability, so a type change can generate a clean migration that rejects the first row at runtime.

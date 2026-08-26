@@ -31,8 +31,9 @@
 
 ## 6. 量出来的东西
 
-- [x] 初始包 477.83 → **402.62 kB(−75.21)**;**归因里 `@angular/cdk` 是 0.00 kB**。菜单落在 `chunk-3KKU5H6A.js`,而 `index.html` 只加载 `main-*.js`。预算余量 **2.2 → 77.4 kB**。
+- [x] 初始包 477.83 → **402.62 kB(−75.21)**;**归因里 `@angular/cdk` 是 0.00 kB**。菜单落在一个 `entryPoint` 标着 `appearance-menus` 的 chunk(31.39 kB),而 `index.html` 只加载 `main-*.js`。预算余量 **2.2 → 77.4 kB**。
 - [x] 没到打桩量的 396.42 —— 差的 6.2 kB 是 defer 机制加占位那份标记。**打桩是下限,不是预期值**(这条本仓库写过,这次又对了一遍)。
+- [x] **而这条教训第一次没吃到底,是归档时才发现的:** proposal 把打桩数写成了目标「初始包 < 400 kB」,spec 的 Scenario 又把这个目标写成了 `MUST` —— 实际落地 402.62,**这条 MUST 从写下那天起就没成立过,而没有任何测试会因此变红**。归档前已改掉:管尺寸的是 `angular.json` 那条 480 kB 预算,判据仍然只有归因。chunk 名也从会随构建变的哈希改成了 `entryPoint` 名。
 - [x] `npm run lint` 0 / `test:ci` **920 绿** / 两个 tsconfig 0 / `build` 0。
 - [x] 浏览器:冷启动后 header 七个按钮**都没有** `aria-haspopup`(占位在);点一次「主题」→ 菜单打开,项目是 Material / System / Ink / Game hall。
 

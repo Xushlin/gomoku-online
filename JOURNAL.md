@@ -1031,3 +1031,19 @@ Other platforms, unchanged from before:
   918 前端测试绿、1482 后端测试绿,初始包 **477.83 kB 一个字节没变**。**409 与 200 都在真请求上打过** —— 仓库里没有 `Gewu.Api.Tests`,中间件那条映射只能这样量;而**正面对照是必须的**:只验 409 的话,一个把认输整个弄坏的实现同样「通过」。
 
   归档时还栽了一次**顺序**:`add-leave-game-guard`(#138)一直没归档,而我先归了 #139。**查过才敢说没事**:前者只改 `web-shell`,后者改 `room-and-gameplay` + `web-game-board`,交集为空,live spec 的 diff 里没有任何要求被删掉再加回来。
+
+- [x] **`lazy-header-menu`** — header 那组下拉菜单懒加载，`@angular/cdk` 离开首屏。初始包 **477.83 → 402.62 kB**，预算余量 2.2 → **77.4 kB**。
+
+  它是延期表里写着「预算第七次响时做」的那一条，提前做了 —— **2.2 kB 的余量不是余量**。账是重新量的：`@angular/cdk` 在首屏 **77.13 kB**（overlay 34.17 / menu 18.69 / focus-monitor 6.07 / portal 5.02 / list-key-manager 4.27 …），而**我们自己全部的代码只有 52.12 kB** —— 一组下拉菜单比整个应用大 1.5 倍，而 header 是 shell 的一部分，从来不点它的人也在付。
+
+  **「唯一的 eager 导入者」是查过的，不是拄延期项的说法：** 全仓 13 处 `@angular/cdk`，只有 `header.ts` 那一处是 eager；另外 12 处 `@angular/cdk/dialog` 全在懒加载路径上，**包括看起来就在大厅里的 `active-rooms` 与 `lobby/cards/ai-game`** —— 因为 eager 的 `Lobby` 组件 `imports` 里没有它们（那两张属于懒加载的 `g/:gameKey/lobby`）。归因脚本第一版只走入口自己的 inputs，报出 54.88 kB；**沿 `import-statement` 传递地走才是 77.13** —— 一个只差一层的归因读起来完全像真的。
+
+  **必须整组搬，不是只搬菜单：**`CdkMenu` 用 content query 收集菜单项，而 content query 既不进子组件的 view，也不进 `ngTemplateOutlet` 的 embedded view。这条早就写在既有要求里（踩过 `NG0201` 换来的），这次直接照办。占位是同一组按钮但**不带任何 cdk 指令**；两个 toggle 在占位里就能用，四个 picker 与 Settings 点下去先请求加载，加载完把**刚才点的那一个**打开 —— 代价是「等一个 chunk」，不是「白点一次」。
+
+  **而第一版在浏览器里是坏的，单元测试全绿。** 同步调 `open()`：探针确认回调**跑了**（`ran: true`、索引 1 就是「主题」、触发器 5 个全对），而 `cdk-overlay-pane` 数量是 **0**。原因是**发起这一切的那次点击还在冒泡**，而 CDK 打开菜单时订阅了 document 上的「点到外面就关」—— 它接住了同一次事件的尾巴，刚开就关。挪到**下一个宏任务**之后：pane 1 个，菜单项是 Material / System / Ink / Game hall。**jsdom 里同步版本是绿的** —— 所以修复的**理由**写进了代码注释与规格，而不是只把代码改对。**浏览器里点那一下不是锦上添花，它是这件事唯一能被发现的方式。**
+
+  **而归档时才发现的一条，比上面那条更隐。** proposal 把打桩量到的 **396.42** 写成了目标「初始包 < 400 kB」，spec 的 Scenario 又把这个目标写成了 `MUST` —— 而实际落地 **402.62**。**这条 MUST 从写下那天起就没成立过，而没有任何测试会因此变红** —— 因为根本没有测试看它，而 `openspec validate --strict` 验的是**形状**，41/41 绿。讽刺的是 tasks.md 里就写着「打桩是下限，不是预期值」—— **教训记下了，却没回头改那条继承了错误前提的要求**。归档前改成：管尺寸的是 `angular.json` 里那条会报警的 480 kB 预算，判据仍然只有归因；chunk 名也从会随构建变的哈希改成了 `entryPoint` 名。
+
+  **判据是构建产物的归因，不是「它在 `@defer` 里所以是懒的」** —— 既有要求自己写着这句。三处变异全红：把组件挪出 `@defer` → lint 红；去掉加载后的 `open()` → 既有四条「打开菜单」的测试红；占位少画一个 picker → 逐项比对那条红。新增的两条源码规则（header 不许 import cdk、那个组件只许出现在 defer 块里）**不是判据，是围栏** —— 有人拆掉 `@defer` 不必等下一次有人去跑归因脚本才发现。
+
+  **既有 header 测试的断言一条没改。** 挂载与点击的 helper 变成 `async`：`@defer` 让组件需要 `await TestBed.compileComponents()`，而 TestBed 对 defer 块默认是 Manual（比对占位/真身那两条反过来正是要 Manual）。我原来在 spec 里写的「既有测试一条都不许改」**说过头了**，已改成「断言不动，挂载变 async」。**920 测试绿**，lint 0，两个 tsconfig 0，build 0；375 px 那四条原样通过。
