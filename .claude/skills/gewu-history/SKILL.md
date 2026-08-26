@@ -135,6 +135,37 @@ Three traps here cost real time and all three are now in `CLAUDE.md`: a colour a
 `transform`, so a JS resize reads as a false overflow; and a coverage control that counts *readings*
 rather than *combinations* stays green while a quarter of them silently vanish.
 
+## Old manuals and endgame collections (古谱)
+
+Read **`add-xiangqi-manual`** before importing any 棋谱, and before assuming a replay needs a room.
+
+**A manual is reference material, not a game.** It gets its own table, no aggregate, and validation
+happens **at import** — there is no player claim to judge, which is precisely why 华容道 replays every
+claimed move and this does not. Reusing `Room` would work with zero code (the replay page synthesises
+a `RoomState` anyway) and must be refused: it injects games nobody played into ratings, ladders and
+`/api/users/{id}/games`, and **a wrong marker there looks exactly like a game nobody has played**.
+
+The wire data (`m.xqdao.com`, marked `ver=www_dpxq_com`) is a `DhtmlXQ` block: `binit` is 32 pieces as
+two digits of **(col,row)** with `99` meaning off-board, `movelist` is four digits per half-move, and
+comments are keyed by ply. **Transpose to `Position(row, col)` once, at import** — the source's
+convention must not reach the database. Replaying every half-move through `XiangqiRules` is what
+*proves* the transpose: drop it and the first move of the real manual is rejected.
+
+**The one assumption to check before writing a validator:** only 11 of 梅花谱's 31 lines end in mate;
+20 stop at an assessed position. So the recorded result is the **compiler's verdict**, not a terminal
+state — a "last move must be terminal" check rejects two thirds of the book, and its output is
+indistinguishable from "the data is broken". The mirror of that: a terminal result *before* the last
+move is bad data, and it is also the positive control on the decoding.
+
+For the endgame collections (`/gupu/`, ~1634 lines across six Ming/Qing books) the same format holds
+sparsely, but three things differ and are written up in **`add-xiangqi-endgames`**: a third of the
+records carry **no result field**, some entries are full 32-piece opening lines rather than endgames,
+and the whole strong criterion is unavailable — `XiangqiRules` replays from the standard opening, so
+a set-up position cannot be validated move-by-move until it can start from a position. `Game.Setup`
+(`MatchState(string? Setup, History)`) is already the slot for that, proven by the two card games;
+`XiangqiRules` simply does not read it yet. And no repetition / perpetual-check rules exist at all,
+which is why **正和 problems cannot be judged** and why the platform must not claim "you solved it".
+
 ## Migrations
 
 Read **`add-per-game-rating`** before touching schema. EF's generated `Down` has been wrong **four** times, always the same way: `AddColumn(defaultValue: 0)` or `""` restores plausible garbage instead of carrying the data back. Two migrations do it by hand now, one refuses via a `CHECK`-constrained scratch table whose *name is the error message*. Also: `DROP COLUMN` on SQLite is a non-atomic table rebuild; `--idempotent` is unsupported on SQLite and writes no file; explicit `.IsRequired()` outranks CLR nullability, so a type change can generate a clean migration that rejects the first row at runtime.

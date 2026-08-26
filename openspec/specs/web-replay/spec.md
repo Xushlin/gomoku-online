@@ -55,7 +55,7 @@ TBD - created by archiving change add-web-replay-and-profile. Update Purpose aft
 
 ### Requirement: 移动 scrubber —— 上一/下一步、首/末、播放/暂停、速度选择
 
-ReplayPage SHALL 渲染一个 scrubber 控件,包含以下 UI 元素(全部 `| transloco` 文本,token-themed):
+scrubber SHALL 是一个**独立的展示组件**,由 ReplayPage 与棋谱学习页共用;它渲染以下 UI 元素(全部 `| transloco` 文本,token-themed):
 
 - **▶ 播放 / ⏸ 暂停** 按钮:点击切换 `playing` signal
 - **⏮ 首步**:`currentPly.set(0)`;若正在播放则继续从 0 播
@@ -68,6 +68,13 @@ ReplayPage SHALL 渲染一个 scrubber 控件,包含以下 UI 元素(全部 `| t
 播放间隔 = `700 / speed` 毫秒,通过 `effect` 驱动的 `setInterval`(随 `playing` / `speed` 变化重建)。
 
 到达 `currentPly === moves.length` 时,自动 `playing.set(false)`,主按钮文案变为"重播"(再次点击重置 `currentPly` 到 0 并恢复播放)。
+
+**它抽成组件而不是留在页面里,理由是第二个消费者已经到了**(`web-xiangqi-manual` 的学习页),而复制一份的代价是可测的:上面那些边界行为 —— 边界禁用、到末尾自动停、切速度不 jitter —— 在这里有 Scenario 钉着,而**复制品的那几条不会跟着红**。所以:
+
+- 组件 SHALL 是纯展示的:输入是 `totalMoves` 与 `currentPly`,输出是「请求跳到第 N 手」;它 MUST NOT 注入任何服务,也 MUST NOT 知道招法从哪来;
+- 播放的计时 SHALL 留在组件内(它是这个控件自己的行为),而**当前半手的真源 SHALL 在页面上** —— 页面还要用它选招法切片喂棋盘;
+- 下面每一条 Scenario 对**两个**消费者都成立,而 MUST 有一条断言证明两边用的是同一个组件,否则「共用」只是一句注释;
+- **既有断言里有五条会改,而这条要写清楚**:它们摸的是 `ReplayPage` 的私有成员(`step` / `togglePlay` / `playing`),而那些正是搬走的东西 —— 一条「既有断言一条不许改」的要求在这里是**做不到的**,写下它只会让人后来去改要求而不是改代码。搬法 SHALL 是:**行为的断言跟着行为走**(去 scrubber 自己的 spec),而回放页 SHALL 留一条**走 DOM**的断言 —— 点真实的按钮、看棋盘那一帧变了,它证明的是接线,而那是抽取真正可能弄坏的东西。
 
 #### Scenario: 下一步前进
 - **WHEN** `currentPly === 3`,用户点 ⏩
@@ -89,7 +96,9 @@ ReplayPage SHALL 渲染一个 scrubber 控件,包含以下 UI 元素(全部 `| t
 - **WHEN** 用户拖动滑块到值 9
 - **THEN** `currentPly === 9`;`playing` 强制为 false;Board 立即渲染前 9 步
 
----
+#### Scenario: 两个页面共用同一个 scrubber
+- **WHEN** 检索回放页与棋谱学习页的模板
+- **THEN** 两者 MUST 都引用同一个 scrubber 组件;两个模板里 MUST NOT 各自出现 `type="range"`
 
 ### Requirement: 标题区元信息使用用户名链接组件
 
