@@ -289,90 +289,165 @@ body {
 }
 
 /*
- * 华容道 — sliding blocks on a rows × cols grid.
+ * 华容道 —— 托盘 + 在上面滑的木块。
  *
- * Pieces are grid items spanning several cells, not absolutely positioned boxes:
- * the grid already knows where row 3 column 1 is, and a piece that declares its
- * own `grid-area` cannot drift out of alignment with the exit marker underneath.
- * The CSS transition is on `grid-area`'s resolved position, which browsers animate
- * as a layout change — cheap here because the grid is 20 cells.
+ * **定位不是 `grid-area`,而这是量出来的。** 上一版把棋子当 grid item 放,注释里写着
+ * 「The CSS transition is on `grid-area`'s resolved position, which browsers animate as a
+ * layout change」—— 那句话是假的:grid 的行列线**不可动画**,`transition-property` 里也
+ * 从来没有它(计算值是 `box-shadow, transform`)。于是一个滑块游戏**瞬移**。
  *
- * Every colour is a token, so the board follows the active theme.
+ * 现在位置由 `transform: translate()` 表达,格子尺寸由一个变量 `--kt-cell` 给。
+ *
+ * **单位是 `cqw`,不是 `%`** —— `transform: translate()` 里的百分比按**元素自己**解析,
+ * 不按容器;牌桌的扇形公式在这条上栽过四次,`check-styles.mjs` 至今钉着它。`cqw` 按容器
+ * 查询容器的内容盒解析,所以一个 2x2 的块和一个 1x1 的块用同一个公式得到同一个格距。
+ *
+ * 容器是 `.kt-board`,而 `--kt-cell` 定义在**子元素** `.kt-grid` 上:一个元素不能用自己的
+ * 容器查询单位(那会解析到更外层的容器),所以这一层包装是必须的,不是装饰。
+ *
+ * 颜色、材质、圆角、阴影全部来自 board-skin 层(`--kt-*` / `--board-*`)。改这条之前它用的
+ * 是 shell 的 `--color-surface`,于是**三个皮肤下计算背景逐字节相同** —— 它是唯一没接进
+ * 皮肤层的棋盘。
  */
 .kt-board {
-  display: grid;
-  grid-template-columns: repeat(var(--kt-cols, 4), minmax(0, 1fr));
-  grid-template-rows: repeat(var(--kt-rows, 5), minmax(0, 1fr));
-  gap: 2px;
   width: 100%;
-  max-width: 360px;
+  /*
+   * 上限只是防它在超宽屏上失控 —— 实际宽度由**页面容器**给,而页面容器在 lg 以上会变宽。
+   * 这里原来写死 360px,于是 1280 的视口上它是一张 360x450 的小卡片。
+   *
+   * 这里**不能**用 `@container` 来放宽自己:容器查询单位与查询都解析到**最近的祖先容器**,
+   * 而 `.kt-board` 自己就是那个容器 —— 一条查询自己的 `@container` 永远不匹配,是死代码。
+   */
+  max-width: 34rem;
   margin-inline: auto;
-  padding: 6px;
+  padding: clamp(6px, 2.2cqw, 14px);
   container-type: inline-size;
-  border-radius: var(--radius-card, 10px);
-  background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
-  box-shadow: var(--shadow-elevated);
+  border: 1px solid var(--kt-tray-edge);
+  border-radius: var(--board-radius, 10px);
+  background: var(--kt-tray-bg);
+  box-shadow: var(--kt-tray-shadow);
 }
 
-/* Where 曹操 has to end up. Painted, not implied — the player should not have to
-   be told the goal in prose. */
+/*
+ * 坐标系。`--kt-cell` 是一个格子的边长,行列都用它 —— 所以格子恒为正方形,
+ * 而 `.kt-grid` 的高度由行数**算出来**,不靠 `aspect-ratio` 去凑(带 padding 的
+ * `aspect-ratio` 算在边框盒上,内容盒会差出 padding 的两倍,格子就不方了)。
+ */
+.kt-grid {
+  --kt-gap: clamp(2px, 0.9cqw, 5px);
+  --kt-cell: calc(100cqw / var(--kt-cols, 4));
+  position: relative;
+  width: 100cqw;
+  height: calc(var(--kt-rows, 5) * var(--kt-cell));
+}
+
+/** 一个块占的矩形,含格间留白。`--kt-r` / `--kt-c` 是它的左上角格坐标。 */
+.kt-cellbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--kt-w, 1) * var(--kt-cell) - var(--kt-gap));
+  height: calc(var(--kt-h, 1) * var(--kt-cell) - var(--kt-gap));
+  transform: translate(
+    calc(var(--kt-c, 0) * var(--kt-cell) + var(--kt-gap) / 2),
+    calc(var(--kt-r, 0) * var(--kt-cell) + var(--kt-gap) / 2)
+  );
+}
+
+/* 出口:曹操要送出去的那两格。画在最底下。 */
 .kt-exit {
-  border: 2px dashed var(--color-primary);
+  border: 2px dashed var(--kt-exit);
   border-top: none;
-  border-radius: 0 0 8px 8px;
-  opacity: 0.55;
+  border-radius: 0 0 var(--kt-piece-radius, 6px) var(--kt-piece-radius, 6px);
+  opacity: 0.85;
   pointer-events: none;
+}
+
+/* 合法落点。压在出口之上、棋子之下。 */
+.kt-target {
+  border: 2px dashed var(--kt-exit);
+  border-radius: var(--kt-piece-radius, 6px);
+  background: var(--kt-target);
+  cursor: pointer;
 }
 
 .kt-piece {
   display: grid;
   place-items: center;
-  border: none;
-  border-radius: 8px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  border-bottom: 3px solid color-mix(in srgb, var(--color-text) 25%, transparent);
-  box-shadow: var(--shadow-elevated);
+  border: 1px solid var(--kt-piece-edge);
+  border-radius: var(--kt-piece-radius, 6px);
+  box-shadow: var(--kt-piece-shadow);
   cursor: pointer;
-  font-size: 4.4cqw;
+  font-size: calc(var(--kt-cell) * 0.3);
   font-weight: 600;
   line-height: 1.15;
+  /*
+   * `transform` 在这里既是位置又是动效 —— 位置变了它就滑。`translate` 之外不叠别的
+   * 变换,按下的反馈走 `filter`,否则一次 `:active` 会把棋子挪回原点。
+   */
   transition:
+    transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
     box-shadow 0.15s,
-    transform 0.1s;
+    filter 0.1s;
 }
 .kt-piece:active:not(:disabled) {
-  transform: translateY(1px);
+  filter: brightness(0.94);
 }
 
-/* 曹操 reads as the thing you are moving, in every theme. */
-.kt-piece--target {
-  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
-  border-bottom-color: var(--color-primary);
-  font-size: 6cqw;
+/* 四类角色,四种面 —— 分类从 width x height 推出来,见 klotski-board.ts。 */
+/*
+ * `background` 简写,**不是 `background-image`** —— 而这是在浏览器里量出来的。
+ *
+ * 皮肤给的面可能是渐变(wood / midnight),也可能是一个颜色(classic 用
+ * `color-mix()` 跟着主题走)。一个颜色不是合法的 `background-image` 值,于是它
+ * 计算成 `none`:**classic 皮肤下棋子完全没有底色**,而 CSS 不报错、jsdom 量不到
+ * (它不算 background-image)、样式检查也看不到(它读的是 token 的值,不是接收它的
+ * 那个属性认不认)。简写两种都收。
+ */
+.kt-piece--boss {
+  background: var(--kt-boss-face);
+  color: var(--kt-boss-text);
+}
+.kt-piece--general {
+  background: var(--kt-general-face);
+  color: var(--kt-general-text);
+}
+.kt-piece--guard {
+  background: var(--kt-guard-face);
+  color: var(--kt-guard-text);
+}
+.kt-piece--soldier {
+  background: var(--kt-soldier-face);
+  color: var(--kt-soldier-text);
+}
+
+.kt-piece--boss {
+  font-size: calc(var(--kt-cell) * 0.4);
 }
 
 .kt-piece--selected {
   box-shadow:
-    0 0 0 2px var(--color-primary),
-    var(--shadow-elevated);
-}
-
-/* A legal destination. Sits under the pieces in z-order but over the exit. */
-.kt-target {
-  border: 2px dashed var(--color-primary);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  cursor: pointer;
+    0 0 0 2px var(--kt-select-ring),
+    var(--kt-piece-shadow);
 }
 
 .kt-piece__name {
   writing-mode: vertical-rl;
   letter-spacing: 0.05em;
 }
-/* Wider-than-tall pieces (关羽, 曹操) read better across than stacked. */
+/* 横着比竖着好读的那些(关羽、曹操)。 */
 .kt-piece--wide .kt-piece__name {
   writing-mode: horizontal-tb;
+}
+
+/*
+ * 平台基线已有全局的 reduce 规则;这里再钉一次,因为滑动是这块棋盘的**主要**动效,
+ * 而一条被遗忘的 `transition` 在这里的表现是「它照样滑」,没有任何断言会红。
+ */
+@media (prefers-reduced-motion: reduce) {
+  .kt-piece {
+    transition-duration: 0s;
+  }
 }
 
 /*

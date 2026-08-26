@@ -146,12 +146,14 @@ function click(fixture: Fixture, el: HTMLElement): void {
  *
  * The piece is picked up **once**: a slide keeps it in hand, because a player
  * pushing a block usually wants to push it again. Re-clicking it would put it down.
- * Destinations are found by grid row so the test does not depend on their order.
+ * Destinations are found by their row so the test does not depend on their order —
+ * `--kt-r` is the 0-based grid row the marker sits on. It used to read `style.gridArea`;
+ * 定位换了(棋子改由 `transform` 落位,`grid-area` 没有了),**断言一条没改**。
  */
 function solve(fixture: Fixture): void {
   click(fixture, piece(fixture, '曹操'));
   for (let i = 0; i < 3; i++) {
-    const down = targets(fixture).find((b) => (b.style.gridArea ?? '').startsWith(`${i + 2} /`));
+    const down = targets(fixture).find((b) => b.style.getPropertyValue('--kt-r') === String(i + 1));
     expect(down, `no downward move for 曹操 at step ${i}`).toBeTruthy();
     click(fixture, down!);
   }
