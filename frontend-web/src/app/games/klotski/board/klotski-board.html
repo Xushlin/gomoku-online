@@ -1,52 +1,59 @@
-<div
-  class="kt-board"
-  [style.--kt-rows]="layout().rows"
-  [style.--kt-cols]="layout().cols"
-  [style.aspect-ratio]="layout().cols + ' / ' + layout().rows"
->
-  <!-- The exit, painted under everything: the one cell pair 曹操 has to reach. -->
-  <div
-    class="kt-exit"
-    aria-hidden="true"
-    [style.grid-area]="
-      layout().exit.row + 1 + ' / ' + (layout().exit.col + 1) + ' / -1 / ' + (layout().exit.col + 3)
-    "
-  ></div>
+<div class="kt-board" [style.--kt-rows]="layout().rows" [style.--kt-cols]="layout().cols">
+  <div class="kt-grid" [style.--kt-rows]="layout().rows" [style.--kt-cols]="layout().cols">
+    <!-- The exit, painted under everything: the one cell pair 曹操 has to reach. -->
+    <div
+      class="kt-cellbox kt-exit"
+      aria-hidden="true"
+      [style.--kt-r]="layout().exit.row"
+      [style.--kt-c]="layout().exit.col"
+      [style.--kt-w]="2"
+      [style.--kt-h]="layout().rows - layout().exit.row"
+    ></div>
 
-  @for (t of targets(); track t.row * 100 + t.col) {
-    <button
-      type="button"
-      class="kt-target focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[color:var(--color-primary)]"
-      [style.grid-area]="targetArea(t)"
-      [attr.aria-label]="'klotski.board.slide-here' | transloco: { row: t.row + 1, col: t.col + 1 }"
-      (click)="handleSlide(t)"
-    ></button>
-  }
+    @for (t of targets(); track t.row * 100 + t.col) {
+      <button
+        type="button"
+        class="kt-cellbox kt-target focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[color:var(--color-primary)]"
+        [style.--kt-r]="t.row"
+        [style.--kt-c]="t.col"
+        [style.--kt-w]="selectedWidth()"
+        [style.--kt-h]="selectedHeight()"
+        [attr.aria-label]="'klotski.board.slide-here' | transloco: { row: t.row + 1, col: t.col + 1 }"
+        (click)="handleSlide(t)"
+      ></button>
+    }
 
-  @for (p of placed(); track p.piece.id) {
-    <button
-      type="button"
-      class="kt-piece focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default"
-      [class.kt-piece--target]="p.piece.target"
-      [class.kt-piece--wide]="p.piece.width >= p.piece.height"
-      [class.kt-piece--selected]="isSelected(p.piece.id)"
-      [style.grid-area]="area(p)"
-      [attr.aria-pressed]="isSelected(p.piece.id)"
-      [attr.aria-label]="
-        'klotski.board.piece'
-          | transloco
-            : {
-                name: p.piece.name ?? p.piece.id,
-                row: p.row + 1,
-                col: p.col + 1,
-                height: p.piece.height,
-                width: p.piece.width,
-              }
-      "
-      [disabled]="readonly()"
-      (click)="handlePick(p.piece.id)"
-    >
-      <span class="kt-piece__name" aria-hidden="true">{{ p.piece.name ?? p.piece.id }}</span>
-    </button>
-  }
+    @for (p of placed(); track p.piece.id) {
+      <button
+        type="button"
+        class="kt-cellbox kt-piece focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[color:var(--color-primary)] disabled:cursor-default"
+        [class.kt-piece--boss]="roleOf(p.piece) === 'boss'"
+        [class.kt-piece--general]="roleOf(p.piece) === 'general'"
+        [class.kt-piece--guard]="roleOf(p.piece) === 'guard'"
+        [class.kt-piece--soldier]="roleOf(p.piece) === 'soldier'"
+        [class.kt-piece--wide]="p.piece.width >= p.piece.height"
+        [class.kt-piece--selected]="isSelected(p.piece.id)"
+        [style.--kt-r]="p.row"
+        [style.--kt-c]="p.col"
+        [style.--kt-w]="p.piece.width"
+        [style.--kt-h]="p.piece.height"
+        [attr.aria-pressed]="isSelected(p.piece.id)"
+        [attr.aria-label]="
+          'klotski.board.piece'
+            | transloco
+              : {
+                  name: p.piece.name ?? p.piece.id,
+                  row: p.row + 1,
+                  col: p.col + 1,
+                  height: p.piece.height,
+                  width: p.piece.width,
+                }
+        "
+        [disabled]="readonly()"
+        (click)="handlePick(p.piece.id)"
+      >
+        <span class="kt-piece__name" aria-hidden="true">{{ p.piece.name ?? p.piece.id }}</span>
+      </button>
+    }
+  </div>
 </div>

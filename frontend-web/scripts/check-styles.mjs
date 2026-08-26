@@ -26,6 +26,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 const CSS = 'src/styles/board-skins.css';
 const SERVICE = 'src/app/core/theme/board-skin.service.ts';
 const CARD_CSS = 'src/app/games/cards/card-table/card-table.css';
+const GLOBAL_CSS = 'src/styles/global.css';
+const KLOTSKI_MODEL = 'src/app/games/klotski/model.ts';
 const DEFAULT_SKIN = 'wood';
 
 /**
@@ -48,6 +50,19 @@ if (skins.length < 2) {
 }
 if (!skins.includes(DEFAULT_SKIN)) {
   errors.push(`${SERVICE}: default skin '${DEFAULT_SKIN}' is not registered`);
+}
+
+/** 一个选择器块的花括号内容;找不到返回 null。 */
+function blockBody(selector) {
+  const start = css.indexOf(selector + ' {');
+  if (start < 0) return null;
+  const open = css.indexOf('{', start);
+  let depth = 0;
+  for (let i = open; i < css.length; i++) {
+    if (css[i] === '{') depth++;
+    else if (css[i] === '}' && --depth === 0) return css.slice(open, i);
+  }
+  return null;
 }
 
 /** 一个选择器块里定义的全部自定义属性名。 */
@@ -339,6 +354,81 @@ for (const file of templateFiles) {
 }
 
 /*
+ * 华容道:三个皮肤 MUST 画出不同的盘面,而一个皮肤里四类棋子 MUST 互不相同。
+ *
+ * **判据特意不是「代码里引用了皮肤变量」。** 改这条之前 `.kt-*` 引用的是
+ * `--radius-card` 与 `--color-surface` —— 一个「引用了 var(--…)」的断言在那个版本上
+ * 同样是绿的,而在浏览器里量到的是:三个皮肤下 `.kt-board` 与 `.kt-piece` 的计算背景
+ * **逐字节相同**。所以这里比的是**值**。
+ *
+ * 空白归一之后再比:两个只差一个换行的值是同一个外观,不该算「不同」。
+ */
+{
+  const KT_FACES = ['--kt-boss-face', '--kt-general-face', '--kt-guard-face', '--kt-soldier-face'];
+  const KT_IDENTITY = ['--kt-tray-bg', ...KT_FACES];
+  const norm = (v) => v.replace(/\s+/g, ' ').trim();
+
+  const valuesFor = (skin) => {
+    const body = blockBody(`[data-board-skin='${skin}']`);
+    if (body === null) return null;
+    const out = new Map();
+    for (const m of body.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) out.set(m[1], norm(m[2]));
+    return out;
+  };
+
+  const perSkin = new Map();
+  for (const skin of skins) {
+    const values = valuesFor(skin);
+    if (!values) continue;
+    perSkin.set(skin, values);
+
+    // 一个皮肤内部:四类棋子两两不同。
+    const seen = new Map();
+    for (const name of KT_FACES) {
+      const v = values.get(name);
+      if (v === undefined) continue; // 缺变量由上面那条完整性检查报,不在这里重复
+      if (seen.has(v)) {
+        errors.push(
+          `${CSS}: skin '${skin}' paints ${name} exactly like ${seen.get(v)} — ` +
+            'the four klotski roles must be told apart without reading the glyph',
+        );
+      }
+      seen.set(v, name);
+    }
+  }
+
+  // 正面对照:皮肤集合或变量集合是空的话,下面的两两比较会空过。
+  if (perSkin.size < 2) {
+    errors.push(`${CSS}: fewer than two skins carry klotski variables — the compare would pass vacuously`);
+  }
+  for (const [skin, values] of perSkin) {
+    const missing = KT_IDENTITY.filter((n) => !values.has(n));
+    if (missing.length === KT_IDENTITY.length) {
+      errors.push(`${CSS}: skin '${skin}' defines none of the klotski identity variables`);
+    }
+  }
+
+  // 皮肤之间:同一个变量在任意两个皮肤下 MUST NOT 相同。
+  const names = [...perSkin.values()][0] ?? new Map();
+  for (const name of KT_IDENTITY) {
+    if (!names.has(name)) continue;
+    const byValue = new Map();
+    for (const [skin, values] of perSkin) {
+      const v = values.get(name);
+      if (v === undefined) continue;
+      if (byValue.has(v)) {
+        errors.push(
+          `${CSS}: skins '${byValue.get(v)}' and '${skin}' give ${name} the same value — ` +
+            'switching board skin would leave the klotski board unchanged, which is the ' +
+            'defect this check exists for (measured: three skins, byte-identical)',
+        );
+      }
+      byValue.set(v, skin);
+    }
+  }
+}
+
+/*
  * 前景色对比度:量**组件真正写出来的那一对**,而不是量 token 的名字。
  *
  * 上一版校验取的是「每个前景 token 落在它自己的面上」,而 31 个 `control-primary`
@@ -471,6 +561,205 @@ for (const file of templateFiles) {
     }
   }
 }
+let ktContrastReadings = 0;
+
+/*
+ * 华容道棋子的「字 / 面」对比度 —— 皮肤 x 主题 x 明暗。
+ *
+ * 这是检查里**新的一根轴**:上面那套量的是「主题 token x class 属性写出来的配对」,
+ * 而棋子的颜色住在 board-skins.css 里,那一层此前一条也没量过。
+ *
+ * 需要能解 `color-mix()`,否则 `classic` 皮肤的每一条读数都会被**静默跳过** ——
+ * 而跳过和通过打印的是同一行字。所以下面既解 var() 链也解 color-mix(),
+ * 并且在结尾断言读数不为 0。
+ */
+const HEX = /^#[0-9a-fA-F]{3,8}$/;
+const NAMED = { white: '#ffffff', black: '#000000' };
+
+/** 逗号分段,但不切进括号里。 */
+function splitTop(text) {
+  const out = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (c === ',' && depth === 0) {
+      out.push(text.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  out.push(text.slice(start).trim());
+  return out;
+}
+
+const toRgb = (hex) => {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = [...h].map((c) => c + c).join('');
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+};
+const toHex = (rgb) => '#' + rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+
+/** 一个颜色表达式的最终 hex;解不出来返回 null(调用方要把 null 计成"没量到")。 */
+function resolveColour(vars, expr, depth = 0) {
+  if (expr === undefined || expr === null || depth > 8) return null;
+  const value = expr.trim();
+  if (HEX.test(value)) return value;
+  if (NAMED[value]) return NAMED[value];
+
+  const ref = /^var\((--[a-z0-9-]+)\)$/.exec(value);
+  if (ref) return resolveColour(vars, vars.get(ref[1]), depth + 1);
+
+  const mix = /^color-mix\(\s*in\s+srgb\s*,([\s\S]*)\)$/.exec(value);
+  if (mix) {
+    const parts = splitTop(mix[1]);
+    if (parts.length !== 2) return null;
+    const read = (part) => {
+      const m = /^([\s\S]+?)\s+(\d+(?:\.\d+)?)%$/.exec(part.trim());
+      return m ? { colour: m[1], pct: Number(m[2]) } : { colour: part.trim(), pct: null };
+    };
+    const a = read(parts[0]);
+    const b = read(parts[1]);
+    // `transparent` 混出来的是半透明,静态算不出它落在什么上面 —— 不猜。
+    if (a.colour === 'transparent' || b.colour === 'transparent') return null;
+    const ca = resolveColour(vars, a.colour, depth + 1);
+    const cb = resolveColour(vars, b.colour, depth + 1);
+    if (!ca || !cb) return null;
+    const pa = a.pct ?? (b.pct === null ? 50 : 100 - b.pct);
+    const wa = pa / 100;
+    const [ra, ga, ba] = toRgb(ca);
+    const [rb, gb, bb] = toRgb(cb);
+    return toHex([ra * wa + rb * (1 - wa), ga * wa + gb * (1 - wa), ba * wa + bb * (1 - wa)]);
+  }
+  return null;
+}
+
+{
+  /*
+   * **角色名单从生产源推,不手写。** 这个仓库为「一份手写名单冒充注册表」修过六次,
+   * 而它第一次在这个文件里就是这样出现的:`['boss','general','guard','soldier']`。
+   * 权威是 `model.ts` 的 `KlotskiRole` 联合类型 —— 加第五类角色时,下面三条
+   * (CSS 规则、皮肤 token、对比度)会一起变红,不需要谁记得来改这里。
+   */
+  const model = readFileSync(KLOTSKI_MODEL, 'utf8');
+  const union = /export type KlotskiRole =([^;]+);/.exec(model);
+  const ROLES = union ? [...union[1].matchAll(/'([a-z-]+)'/g)].map((m) => m[1]) : [];
+  if (ROLES.length < 2) {
+    errors.push(`${KLOTSKI_MODEL}: could not read the KlotskiRole union — every klotski check below would pass vacuously`);
+  }
+
+  /*
+   * 每个角色都得有一条画它的 CSS 规则,和一份皮肤 token;而那条规则 MUST 用
+   * `background:` 简写。**这一条是在浏览器里量出来的**:皮肤给的面可能是渐变,也可能
+   * 是一个颜色(classic 用 `color-mix()` 跟主题走),而颜色赋给 `background-image`
+   * 会计算成 `none` —— 那个皮肤下棋子完全没有底色,CSS 不报错,jsdom 量不到。
+   */
+  const globalCss = readFileSync(GLOBAL_CSS, 'utf8');
+  const baselineSkin = varsIn(`[data-board-skin='${DEFAULT_SKIN}']`) ?? new Set();
+  for (const role of ROLES) {
+    /*
+     * 不用正则:模板字面量里 `\.` 会先被字符串吃成 `.`、`\s` 吃成 `s`,
+     * 于是 `new RegExp(`...`)` 拿到的是字面 `s*` —— 第一版就这样,四条规则明明都在
+     * 却全部报「不存在」。转义被吃两次这条,这个仓库今天栽了第三回。
+     */
+    const bodies = [];
+    for (let at = globalCss.indexOf(`.kt-piece--${role} {`); at >= 0; ) {
+      const close = globalCss.indexOf('}', at);
+      bodies.push(globalCss.slice(at, close < 0 ? undefined : close));
+      at = globalCss.indexOf(`.kt-piece--${role} {`, close < 0 ? globalCss.length : close);
+    }
+    const body = bodies.join(' ');
+    if (bodies.length === 0) {
+      errors.push(`${GLOBAL_CSS}: KlotskiRole '${role}' has no .kt-piece--${role} rule — it would render unpainted`);
+    } else if (body.includes('background-image: var(--kt-')) {
+      errors.push(
+        `${GLOBAL_CSS}: .kt-piece--${role} assigns a skin face to background-image; use the ` +
+          '`background` shorthand — a colour-valued face computes to none and paints nothing ' +
+          '(measured in a browser under the classic skin)',
+      );
+    } else if (!body.includes(`background: var(--kt-${role}-face)`)) {
+      errors.push(`${GLOBAL_CSS}: .kt-piece--${role} does not paint --kt-${role}-face`);
+    }
+    for (const suffix of ['face', 'text']) {
+      if (!baselineSkin.has(`--kt-${role}-${suffix}`)) {
+        errors.push(`${CSS}: KlotskiRole '${role}' has no --kt-${role}-${suffix} in the baseline skin`);
+      }
+    }
+  }
+
+  const skinVars = (selector) => {
+    const body = blockBody(selector);
+    const out = new Map();
+    if (body === null) return out;
+    for (const m of body.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) out.set(m[1], m[2].trim());
+    return out;
+  };
+
+  let ktReadings = 0;
+  const ktSeen = new Set();
+  /** 真正量到过的 (皮肤, 主题, 明暗, 角色) —— 正面对照按它算,不按读数总数。 */
+  const ktCovered = new Set();
+  const ktExpected = [];
+  for (const skin of skins) {
+    const base = skinVars(`[data-board-skin='${skin}']`);
+    const dark = skinVars(`[data-board-skin='${skin}'].dark`);
+    for (const theme of themeNames) {
+      for (const mode of ['light', 'dark']) {
+        const merged = new Map(varsFor(theme, mode));
+        for (const [k, v] of base) merged.set(k, v);
+        if (mode === 'dark') for (const [k, v] of dark) merged.set(k, v);
+
+        for (const role of ROLES) {
+          ktExpected.push(`${skin}|${theme}|${mode}|${role}`);
+          const text = resolveColour(merged, merged.get(`--kt-${role}-text`));
+          const faceRaw = merged.get(`--kt-${role}-face`);
+          if (!text || !faceRaw) continue;
+          // 渐变:每一档都量,取最差的那一档 —— 与上面那套同一条规矩。
+          const stops = [...faceRaw.matchAll(/#[0-9a-fA-F]{3,8}|color-mix\([^()]*(?:\([^()]*\)[^()]*)*\)|var\(--[a-z0-9-]+\)/g)]
+            .map((m) => resolveColour(merged, m[0]))
+            .filter(Boolean);
+          const candidates = stops.length ? stops : [resolveColour(merged, faceRaw)].filter(Boolean);
+          if (candidates.length > 0) ktCovered.add(`${skin}|${theme}|${mode}|${role}`);
+          for (const stop of candidates) {
+            ktReadings += 1;
+            const ratio = contrast(text, stop);
+            if (ratio < MIN_RATIO) {
+              const key = `${skin}|${role}|${theme}.${mode}`;
+              if (ktSeen.has(key)) continue;
+              ktSeen.add(key);
+              errors.push(
+                `board skin '${skin}' / ${theme}.${mode}: klotski ${role} label ${text} on ${stop} ` +
+                  `measures ${ratio.toFixed(2)}:1 (needs ${MIN_RATIO})`,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+  /*
+   * 正面对照。一个解不出颜色的实现会让上面每一条 `continue` 掉,而结果是
+   * 「0 条读数、0 个错误」—— 和全部通过长得一模一样。
+   */
+  const uncovered = ktExpected.filter((k) => !ktCovered.has(k));
+  if (ktExpected.length === 0) {
+    errors.push('klotski contrast: no (skin, theme, mode, role) combination was even attempted');
+  } else if (uncovered.length > 0) {
+    /*
+     * **按组合数,不按读数总数。** 第一版写的是「读数 >= 皮肤 x 主题 x 明暗 x 角色」,
+     * 而把 `color-mix` 解析打断之后读数从 224 掉到 200 —— 仍然远大于那个下限,于是
+     * 检查照样通过,classic 的 24 条读数**静默消失**。一个部分空转的检查和一个
+     * 正常的检查打印一样的东西。
+     */
+    errors.push(
+      `klotski contrast: ${uncovered.length} of ${ktExpected.length} (skin, theme, mode, role) ` +
+        `combinations resolved to nothing and were silently skipped — first: ${uncovered[0]}`,
+    );
+  }
+  ktContrastReadings = ktReadings;
+}
+
 if (pairsMeasured === 0) {
   errors.push('src/app: measured 0 foreground/fill pairs — the contrast check would pass vacuously');
 }
@@ -483,7 +772,7 @@ if (errors.length) {
 console.log(
   `style check: ${skins.length} skins x ${baseline.size} skin variables, ` +
     `${themeNames.length} themes x ${declared.size} tokens, ${roles.length} roles, ` +
-    `${pairsMeasured} fg/fill contrast readings` +
+    `${pairsMeasured} fg/fill contrast readings, ${ktContrastReadings} klotski skin readings` +
     `${opaqueClassBindings ? ` (${opaqueClassBindings} opaque [class] bindings not modelled)` : ''}` +
     `, card table asset-free`,
 );

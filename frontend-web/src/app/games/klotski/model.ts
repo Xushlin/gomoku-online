@@ -12,6 +12,26 @@ export interface KlotskiPiece {
   readonly target?: boolean;
 }
 
+/** 一个棋子在盘上扮演的角色 —— 决定它长什么样,不决定它怎么走。 */
+export type KlotskiRole = 'boss' | 'general' | 'guard' | 'soldier';
+
+/**
+ * 角色**从几何形状推出来**,不看名字、不看 id、不查名单。
+ *
+ * 理由是量出来的:改这条之前六个棋子里**五个是同一个颜色**,唯一的区分是那两个汉字。
+ * 而 `name` 是关卡数据里的自由文本 —— 任何按名字分类的写法都会在下一份 `layoutJson`
+ * 上悄悄退化成「全都是默认那一类」,而退化的样子和正常的样子一模一样。尺寸是规则本身。
+ *
+ * 分类是**全的**:每个 `width x height` 组合都落进四类之一,所以模板里不会有
+ * `undefined` 流出来,也不需要第五个只在假想关卡里出现的兜底皮肤 token
+ * (一个没有调用点的 token 是每个皮肤都要付的死条目 —— `--radius-pill` 那条记过)。
+ */
+export function roleOf(piece: Pick<KlotskiPiece, 'width' | 'height' | 'target'>): KlotskiRole {
+  if (piece.target === true) return 'boss';
+  if (piece.width === 1 && piece.height === 1) return 'soldier';
+  return piece.height > piece.width ? 'general' : 'guard';
+}
+
 export interface KlotskiExit {
   readonly row: number;
   readonly col: number;

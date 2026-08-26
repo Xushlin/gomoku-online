@@ -94,6 +94,42 @@
     inset 0 0 60px rgb(0 0 0 / 0.35),
     0 10px 28px rgb(0 0 0 / 0.28);
 
+
+  /*
+   * 华容道。四类棋子按**几何形状**分:2x2 的主帅、1x2 的竖将、2x1 的横将、1x1 的兵 ——
+   * 分类是从尺寸推的,不是按名字,所以任何一份 layoutJson 都套得上。
+   *
+   * 改这组变量之前,`.kt-*` 消费的是 shell 的 --color-surface / --color-text,于是
+   * **三个皮肤下计算出来的颜色逐字节相同** —— 它是唯一没接进这一层的棋盘。
+   *
+   * 字色写成字面 hex 而不是 color-mix,是为了让对比度检查真的读得到它:那个检查
+   * 只认 hex 与 var() 链,读不出来的配对会被**静默跳过**,而跳过和通过打印一样的东西。
+   */
+  --kt-tray-bg:
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgb(35 18 4 / 0.35) 100%),
+    linear-gradient(160deg, #7a5230 0%, #5c3c22 55%, #46301c 100%);
+  --kt-tray-edge: rgb(30 16 4 / 0.55);
+  --kt-tray-shadow:
+    inset 0 2px 6px rgb(0 0 0 / 0.45),
+    inset 0 -1px 0 rgb(255 220 170 / 0.12),
+    0 10px 28px rgb(0 0 0 / 0.28);
+  --kt-piece-radius: 6px;
+  --kt-piece-edge: rgb(60 34 12 / 0.5);
+  --kt-piece-shadow:
+    inset 0 1px 0 rgb(255 240 210 / 0.55),
+    inset 0 -2px 0 rgb(70 40 14 / 0.35),
+    0 2px 3px rgb(0 0 0 / 0.3);
+  --kt-boss-face: linear-gradient(160deg, #a03a2c 0%, #8c2f24 55%, #74241b 100%);
+  --kt-boss-text: #f7e8c8;
+  --kt-general-face: linear-gradient(160deg, #f0d59b 0%, #e8c88a 55%, #d9b673 100%);
+  --kt-general-text: #3a2410;
+  --kt-guard-face: linear-gradient(160deg, #dcb271 0%, #cfa25e 55%, #bc8f4c 100%);
+  --kt-guard-text: #2e1c0b;
+  --kt-soldier-face: linear-gradient(160deg, #f8ebcd 0%, #f2e0bd 55%, #e5d0a6 100%);
+  --kt-soldier-text: #4a3418;
+  --kt-exit: #e0a53f;
+  --kt-target: rgb(224 165 63 / 0.28);
+  --kt-select-ring: #ffb020;
   --last-move-ring: #ff9f1a;
 }
 
@@ -158,6 +194,32 @@
     inset 0 0 60px rgb(0 0 0 / 0.5),
     0 10px 28px rgb(0 0 0 / 0.5);
 
+
+  /* 华容道:同一副木头,环境暗下来 —— 面压深,字翻亮。 */
+  --kt-tray-bg:
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgb(0 0 0 / 0.45) 100%),
+    linear-gradient(160deg, #4a3220 0%, #382517 55%, #2a1c11 100%);
+  --kt-tray-edge: rgb(0 0 0 / 0.6);
+  --kt-tray-shadow:
+    inset 0 2px 8px rgb(0 0 0 / 0.6),
+    inset 0 -1px 0 rgb(255 220 170 / 0.06),
+    0 10px 28px rgb(0 0 0 / 0.5);
+  --kt-piece-edge: rgb(0 0 0 / 0.55);
+  --kt-piece-shadow:
+    inset 0 1px 0 rgb(255 230 190 / 0.18),
+    inset 0 -2px 0 rgb(0 0 0 / 0.35),
+    0 2px 3px rgb(0 0 0 / 0.45);
+  --kt-boss-face: linear-gradient(160deg, #7f2a20 0%, #6f241b 55%, #5c1d16 100%);
+  --kt-boss-text: #f2dcb4;
+  --kt-general-face: linear-gradient(160deg, #8d6130 0%, #7d5427 55%, #6a4620 100%);
+  --kt-general-text: #fbf1dc;
+  --kt-guard-face: linear-gradient(160deg, #7a5027 0%, #6b4520 55%, #593919 100%);
+  --kt-guard-text: #f7ead0;
+  --kt-soldier-face: linear-gradient(160deg, #8a622f 0%, #7a5629 55%, #674922 100%);
+  --kt-soldier-text: #fdf6e6;
+  --kt-exit: #f0b955;
+  --kt-target: rgb(240 185 85 / 0.22);
+  --kt-select-ring: #ffc04a;
   --last-move-ring: #ffb000;
 }
 
@@ -245,6 +307,33 @@
     inset 0 0 60px rgb(0 0 0 / 0.45),
     0 10px 28px rgb(0 0 0 / 0.5);
 
+
+  /* 华容道:石板。四类棋子靠**明度层级**分开,而不是靠色相 —— 这一皮肤本来就是冷灰的。 */
+  --kt-tray-bg:
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgb(0 0 0 / 0.5) 100%),
+    linear-gradient(160deg, #151a22 0%, #10141a 55%, #0b0e13 100%);
+  --kt-tray-edge: rgb(148 163 184 / 0.18);
+  --kt-tray-shadow:
+    inset 0 2px 8px rgb(0 0 0 / 0.65),
+    inset 0 -1px 0 rgb(255 255 255 / 0.05),
+    0 10px 28px rgb(0 0 0 / 0.5);
+  --kt-piece-radius: 4px;
+  --kt-piece-edge: rgb(148 163 184 / 0.28);
+  --kt-piece-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    inset 0 -2px 0 rgb(0 0 0 / 0.4),
+    0 2px 4px rgb(0 0 0 / 0.5);
+  --kt-boss-face: linear-gradient(160deg, #45597a 0%, #3b4c66 55%, #314054 100%);
+  --kt-boss-text: #e8f0fb;
+  --kt-general-face: linear-gradient(160deg, #313c4c 0%, #2a3340 55%, #232a35 100%);
+  --kt-general-text: #dbe4f0;
+  --kt-guard-face: linear-gradient(160deg, #2a3950 0%, #233043 55%, #1d2837 100%);
+  --kt-guard-text: #cfe0f2;
+  --kt-soldier-face: linear-gradient(160deg, #242d3a 0%, #1d2531 55%, #171d27 100%);
+  --kt-soldier-text: #c3d2e2;
+  --kt-exit: #22d3ee;
+  --kt-target: rgb(34 211 238 / 0.22);
+  --kt-select-ring: #38bdf8;
   --last-move-ring: #22d3ee;
 }
 
@@ -302,5 +391,36 @@
   --felt-radius: var(--radius-card);
   --felt-shadow: inset 0 0 40px rgb(0 0 0 / 0.12), 0 2px 8px rgb(0 0 0 / 0.08);
 
+
+  /*
+   * 华容道:跟着主题走。四类棋子只靠**同一支笔的不同浓度**分开 ——
+   * color-mix 的百分比是 8 / 16 / 24,不是三个凭感觉挑的颜色,这样任何主题下层级都在。
+   * 主帅例外:它用 --color-primary,因为它是这局要送出去的那一个。
+   */
+  --kt-tray-bg: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--color-text) 30%, var(--color-surface)),
+    color-mix(in srgb, var(--color-text) 22%, var(--color-surface))
+  );
+  --kt-tray-edge: var(--color-border);
+  --kt-tray-shadow:
+    inset 0 2px 6px rgb(0 0 0 / 0.2),
+    0 2px 8px rgb(0 0 0 / 0.08);
+  --kt-piece-radius: var(--radius-control);
+  --kt-piece-edge: var(--color-border);
+  --kt-piece-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    0 1px 2px rgb(0 0 0 / 0.25);
+  --kt-boss-face: color-mix(in srgb, var(--color-primary) 22%, var(--color-bg));
+  --kt-boss-text: var(--color-text);
+  --kt-general-face: var(--color-bg);
+  --kt-general-text: var(--color-text);
+  --kt-guard-face: color-mix(in srgb, var(--color-text) 8%, var(--color-bg));
+  --kt-guard-text: var(--color-text);
+  --kt-soldier-face: color-mix(in srgb, var(--color-text) 16%, var(--color-bg));
+  --kt-soldier-text: var(--color-text);
+  --kt-exit: var(--color-primary);
+  --kt-target: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  --kt-select-ring: var(--color-primary);
   --last-move-ring: var(--color-primary);
 }

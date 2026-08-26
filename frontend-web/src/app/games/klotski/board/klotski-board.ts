@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   legalTargets,
+  roleOf,
   type KlotskiLayout,
   type KlotskiPiece,
   type KlotskiPositions,
+  type KlotskiRole,
 } from '../model';
 
 export interface SlideTarget {
@@ -21,7 +23,11 @@ interface PlacedPiece {
 }
 
 /**
- * 华容道 board — absolutely positioned rectangles over a `rows × cols` grid.
+ * 华容道 board — 每个棋子是一个 `transform: translate()` 到格坐标上的矩形。
+ *
+ * 位置**不由 `grid-area` 表达**:grid 的行列线不可动画,上一版因此瞬移(而样式表里那句
+ * 「browsers animate as a layout change」是假的)。现在坐标经 `--kt-r` / `--kt-c` 交给 CSS,
+ * 由 `transform` 落位,于是它真的滑。格距的单位是 `cqw` 而不是 `%`——见 `global.css`。
  *
  * Purely presentational: no services, no router, no HTTP. It is handed the layout,
  * the current positions and the selection; it emits intent.
@@ -67,16 +73,28 @@ export class KlotskiBoard {
     return this.selected() === id;
   }
 
-  /** A CSS grid area — 1-based, end-exclusive. */
-  protected area(p: PlacedPiece): string {
-    return `${p.row + 1} / ${p.col + 1} / ${p.row + 1 + p.piece.height} / ${p.col + 1 + p.piece.width}`;
+  /**
+   * 一个落点标记的大小 —— 它画的是**选中那个棋子**将要占的矩形,不是一个格子。
+   *
+   * 选中项缺席时退回 1x1:那是「没有选中」的形状,而落点列表在没有选中时是空的,
+   * 所以这个默认值只在渲染顺序的缝隙里出现。
+   */
+  private readonly selectedPiece = computed<KlotskiPiece | null>(() => {
+    const id = this.selected();
+    return id === null ? null : (this.layout().pieces.find((p) => p.id === id) ?? null);
+  });
+
+  protected selectedWidth(): number {
+    return this.selectedPiece()?.width ?? 1;
   }
 
-  protected targetArea(t: SlideTarget): string {
-    const piece = this.layout().pieces.find((p) => p.id === this.selected());
-    const height = piece?.height ?? 1;
-    const width = piece?.width ?? 1;
-    return `${t.row + 1} / ${t.col + 1} / ${t.row + 1 + height} / ${t.col + 1 + width}`;
+  protected selectedHeight(): number {
+    return this.selectedPiece()?.height ?? 1;
+  }
+
+  /** 角色从几何形状推,见 `model.ts` —— 模板按它挑面。 */
+  protected roleOf(piece: KlotskiPiece): KlotskiRole {
+    return roleOf(piece);
   }
 
   protected handlePick(id: string): void {

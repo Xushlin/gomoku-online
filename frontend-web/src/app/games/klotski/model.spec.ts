@@ -6,6 +6,7 @@ import {
   isSolved,
   legalTargets,
   pieceAt,
+  roleOf,
   type KlotskiLayout,
 } from './model';
 
@@ -116,5 +117,44 @@ describe('klotski model', () => {
     };
 
     expect(isSolved(targetless, initialPositions(targetless))).toBe(false);
+  });
+});
+
+/*
+ * 角色是**推出来**的,而这组用例是它的合同。四类都在样本里 —— 一个只覆盖两类的样本
+ * 会让「四类两两不同」那条渲染断言恒真。
+ */
+describe('roleOf', () => {
+  it('classifies the four shapes a real level uses', () => {
+    expect(roleOf({ width: 2, height: 2, target: true })).toBe('boss');
+    expect(roleOf({ width: 1, height: 2, target: undefined })).toBe('general');
+    expect(roleOf({ width: 2, height: 1, target: undefined })).toBe('guard');
+    expect(roleOf({ width: 1, height: 1, target: undefined })).toBe('soldier');
+  });
+
+  it('is total — every shape lands somewhere, so no undefined reaches the template', () => {
+    const shapes = [
+      { width: 1, height: 3 },
+      { width: 3, height: 1 },
+      { width: 2, height: 2 },
+      { width: 3, height: 3 },
+      { width: 3, height: 2 },
+    ];
+    for (const shape of shapes) {
+      expect(['boss', 'general', 'guard', 'soldier']).toContain(roleOf({ ...shape, target: undefined }));
+    }
+  });
+
+  it('does not look at the name — a level may call its pieces anything', () => {
+    const shape = { width: 1, height: 2, target: undefined };
+    expect(roleOf(shape)).toBe(roleOf({ ...shape }));
+    // 同一个形状换个「名字」不改变分类:分类的入参里根本没有名字这一项,
+    // 而这条断言存在的理由是那句话哪天不再成立时它会红。
+    const withName = { ...shape, name: '一个完全不同的名字' } as never;
+    expect(roleOf(withName)).toBe('general');
+  });
+
+  it('sends the target piece to boss whatever its size', () => {
+    expect(roleOf({ width: 1, height: 1, target: true })).toBe('boss');
   });
 });
