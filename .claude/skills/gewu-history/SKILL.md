@@ -115,6 +115,26 @@ is also how this change shipped a `MUST < 400 kB` in its spec that was false fro
 it was written and that **no test could fail on** — caught at archive time, by re-running
 the build rather than inheriting the number.
 
+## The klotski board, and what "it looks cheap" turned out to mean
+
+Read **`restyle-klotski-board`** before restyling any board. Four things were measured, not judged:
+the board was the **only one not wired into the skin layer** (three skins produced byte-identical
+computed backgrounds, because it consumed `--color-surface` instead of `--board-*`); a sliding
+puzzle **did not slide** (position came from `grid-area`, which is not animatable — and the
+stylesheet's own comment claimed browsers animate it); five of six pieces were the same colour; and
+the board was pinned at 360×450 on any desktop.
+
+The shape that worked: piece roles derive from `width × height` (a `name` is free text in level
+data, so any name-based mapping silently degrades to "everything is the default"), position comes
+from `transform: translate()` with **container-query units** — never percentages, which resolve
+against the element in `translate()` — and the coordinate system lives on a **child** of the
+container, because an element cannot use its own container query or `cq` units.
+
+Three traps here cost real time and all three are now in `CLAUDE.md`: a colour assigned to
+`background-image` computes to `none` and paints nothing; the Browser pane updates layout but not
+`transform`, so a JS resize reads as a false overflow; and a coverage control that counts *readings*
+rather than *combinations* stays green while a quarter of them silently vanish.
+
 ## Migrations
 
 Read **`add-per-game-rating`** before touching schema. EF's generated `Down` has been wrong **four** times, always the same way: `AddColumn(defaultValue: 0)` or `""` restores plausible garbage instead of carrying the data back. Two migrations do it by hand now, one refuses via a `CHECK`-constrained scratch table whose *name is the error message*. Also: `DROP COLUMN` on SQLite is a non-atomic table rebuild; `--idempotent` is unsupported on SQLite and writes no file; explicit `.IsRequired()` outranks CLR nullability, so a type change can generate a clean migration that rejects the first row at runtime.
