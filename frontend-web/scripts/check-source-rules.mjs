@@ -6,7 +6,7 @@
  * real browser. They live at lint time, next to `check-styles.mjs`, because
  * they read source text rather than run it.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const errors = [];
 
@@ -81,9 +81,55 @@ const errors = [];
   }
 }
 
+/*
+ * `@prefetch` 不是 Angular 的块 —— prefetch 是 `@defer (...)` 括号里的触发器。
+ *
+ * 写成 `} @prefetch (on idle)` 编译器不报错,它把这一段当**字面文本**渲染出来。代价是
+ * 两笔:每一页的 header 里多出一行 " @prefetch (on idle) ",而预取从来没有配上。它躲过了
+ * 整套单元测试,因为那些断言按 `aria-label` / `role` 取元素,没有一条看整段文本;也躲过了
+ * 浏览器验收,因为那一趟查的是「按钮有没有 aria-haspopup」。
+ *
+ * 所以这条规则扫**所有**模板,而不只是 header:同样的手滑在任何一个模板里都是同样的表现。
+ * 注释里出现不算 —— 先把 `<!-- -->` 去掉再找。
+ */
+{
+  const templates = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.html')) templates.push(full);
+    }
+  };
+  walk('src/app');
+
+  // 正面对照:一个空集合会让下面的循环恒真。
+  if (templates.length === 0) {
+    errors.push('src/app: no .html templates found — the @prefetch rule would pass vacuously');
+  }
+  if (!templates.some((f) => readFileSync(f, 'utf8').includes('@defer ('))) {
+    errors.push('src/app: no template uses @defer — the @prefetch rule has nothing to protect');
+  }
+
+  for (const file of templates) {
+    const body = readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    const at = body.indexOf('@prefetch');
+    if (at >= 0) {
+      const line = body.slice(0, at).split('\n').length;
+      errors.push(
+        `${file}:${line}: @prefetch is not a block — put \`prefetch on …\` inside the ` +
+          '@defer (…) trigger list. As written it renders as literal text and never prefetches',
+      );
+    }
+  }
+}
+
 if (errors.length) {
   console.error(`source rule check failed (${errors.length}):`);
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
-console.log('source rules: room page routes only through leaveTo; header keeps @angular/cdk behind @defer');
+console.log(
+  'source rules: room page routes only through leaveTo; header keeps @angular/cdk behind @defer; ' +
+    'no template writes @prefetch as a block',
+);

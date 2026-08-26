@@ -20,11 +20,11 @@
 
     占位是**同一组按钮但不带任何 cdk 指令**。两个 toggle 在占位里就能用(它们本来不需要
     cdk);四个 picker 与 Settings 点下去先请求加载,加载完由 `openTrigger` 把**刚才点的
-    那一个**打开 —— 那一次点击不白点。`@prefetch (on idle)` 让正常网络下的等待是 0。
+    那一个**打开 —— 那一次点击不白点。`prefetch on idle`(写在 `@defer(...)` 的触发器列表里,不是块)让正常网络下的等待是 0。
 
     占位与真身是两份按钮标记,而有一条从 `pickers` / `toggles` 推导的逐项比对钉着它们不漂。
   -->
-  @defer (when menuRequested()) {
+  @defer (when menuRequested(); prefetch on idle) {
     <app-appearance-menus
       [pickers]="pickers"
       [toggles]="toggles"
@@ -67,7 +67,7 @@
     >
       {{ 'header.settings.label' | transloco }}
     </button>
-  } @prefetch (on idle)
+  }
 
   @if (auth.isAuthenticated()) {
     @let currentUser = auth.user();
