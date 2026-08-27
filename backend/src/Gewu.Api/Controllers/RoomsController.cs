@@ -45,7 +45,7 @@ public sealed class RoomsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var summary = await _mediator.Send(
-            new CreateRoomCommand(GetUserId(), body.Name, body.GameKey),
+            new CreateRoomCommand(GetUserId(), body.Name, body.GameKey, body.ManualLineId),
             cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = summary.Id }, summary);
     }
@@ -203,8 +203,18 @@ public sealed class RoomsController : ControllerBase
 /// <para>
 /// 未登记、或不支持人人对战的棋种由 application validator 拒绝(HTTP 400)。
 /// </para>
+/// <para>
+/// <c>ManualLineId</c> 是「摆这一则古谱残局对弈」的入口 —— 可空,且只对从选定局面开局的
+/// 棋种有意义,两个方向都由 application validator 拒绝(HTTP 400)。
+/// </para>
+/// <para>
+/// **这个请求体里没有、将来也 MUST NOT 有一个盘面串。** 起始局面与先走方都从库里那条
+/// 线路上取。让客户端递盘面等于让客户端定义棋局,而这个口子不需要开 —— 一个 <c>int?</c>
+/// 递不出一盘棋,那正是这个形状被选中的理由。<c>CreateRoomRequestShapeTests</c> 把这句话
+/// 钉成了一条会红的断言。
+/// </para>
 /// </summary>
-public sealed record CreateRoomRequest(string Name, string GameKey);
+public sealed record CreateRoomRequest(string Name, string GameKey, int? ManualLineId = null);
 
 /// <summary>
 /// POST /api/rooms/ai 的请求体。<c>Difficulty</c> 以字符串形式(JsonStringEnumConverter)。

@@ -34,6 +34,22 @@ public sealed record XiangqiSetup(string Board, int FirstSeat)
             ['P'] = XiangqiPieceType.Soldier,
         };
 
+    /// <summary>
+    /// 红方**相位** —— 相走田字且不过河,所以它这一辈子只到得了这 7 个点。
+    /// <para>
+    /// 黑方的 7 个点是这一份沿河**镜像**,所以只写一份:两份会各自漂,而漂的表现是
+    /// 「同一个象位红边收、黑边拒」。
+    /// </para>
+    /// <para>
+    /// **这是象棋的规则,不是从样本里归纳的约定** —— 那个区别要紧,因为本仓库已经为
+    /// 「拿小样本归纳出一条 MUST」付过两次账(「最后半手必将死」、「红先走」),
+    /// 而两次的表现都是**合法的数据被拒,报出来的样子和「数据坏了」一模一样**。
+    /// 这一条另外量过全量:1665 条起始局面(1634 残局 + 31 梅花谱)里违例 0 条。
+    /// </para>
+    /// </summary>
+    private static readonly HashSet<(int Row, int Col)> RedElephantPoints =
+        [(9, 2), (9, 6), (7, 0), (7, 4), (7, 8), (5, 2), (5, 6)];
+
     /// <summary>编码成随本局存下的那个字符串。</summary>
     /// <returns>不透明的设置字符串。</returns>
     public string Encode() => $"{Board}:{FirstSeat}";
@@ -102,6 +118,10 @@ public sealed record XiangqiSetup(string Board, int FirstSeat)
             {
                 RequirePalace(red, row, col, "advisor");
             }
+            else if (type == XiangqiPieceType.Elephant)
+            {
+                RequireElephantPoint(red, row, col);
+            }
         }
 
         // 恰好一帅一将 —— 少一个的话「将死」判不出来,多一个的话判出来的是哪个都不对。
@@ -130,6 +150,19 @@ public sealed record XiangqiSetup(string Board, int FirstSeat)
                 new XiangqiPiece(Codes[upper], side));
         }
         return board;
+    }
+
+    /// <summary>相 / 象必须在自己那一侧的 7 个相位上。</summary>
+    private static void RequireElephantPoint(bool red, int row, int col)
+    {
+        // 黑方的点由红方那一份沿河镜像得到 —— 一份数据,两边都对。
+        var mirrored = red ? row : XiangqiBoard.RowCount - 1 - row;
+        if (!RedElephantPoints.Contains((mirrored, col)))
+        {
+            throw new InvalidGameSetupException(
+                $"The {(red ? "red" : "black")} elephant at (row {row}, col {col}) is not on "
+                + "one of its seven points.");
+        }
     }
 
     /// <summary>将 / 士必须在自己那一侧的九宫内。</summary>

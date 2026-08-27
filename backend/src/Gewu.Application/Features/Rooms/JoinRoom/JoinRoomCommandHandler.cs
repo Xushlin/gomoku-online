@@ -54,7 +54,7 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Ro
                 $"Room '{room.Id.Value}' declares unknown game '{room.GameKey}'.");
 
         room.JoinAsPlayer(
-            request.UserId, _clock.UtcNow, rules, MatchSetup.For(rules, _seeds));
+            request.UserId, _clock.UtcNow, rules, MatchSetup.For(room, rules, _seeds));
         await _uow.SaveChangesAsync(cancellationToken);
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
