@@ -187,6 +187,61 @@ const errors = [];
   }
 }
 
+/*
+ * **古谱只做研习:界面不许出现任何「你解对了」的判定,也不许有「接着自己走」的入口。**
+ *
+ * 理由不是工期,是两个硬缺口:领域里**没有任何重复局面 / 长将 / 长捉规则**,而**和棋的
+ * 定义就在那里**(六辑残局里和棋 391 局);而 `IBoardGameAi.SelectMove` 只收走子历史,
+ * 从残局出发 AI 会按标准开局重建棋盘。
+ *
+ * **一个判错的「解对了」比没有判定更糟** —— 它教错棋,而错的样子和对的样子在界面上
+ * 完全一样,没有任何断言会红。所以这条规则守的是「不要先上一个会骗人的功能」。
+ *
+ * 拆除条件:长将 / 重复局面规则落地 **且** AI 能从给定局面走棋。见 `CLAUDE.md` 的延期表。
+ */
+{
+  const dir = 'src/app/games/xiangqi/manual';
+  const files = [];
+  // 目录不在时**报错而不是抛**:一个未捕获的异常也算失败,但它给出的是一段栈,
+  // 而这里该说的是「这条规则没有东西可守了」。
+  const walk = (d) => {
+    let entries;
+    try {
+      entries = readdirSync(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = `${d}/${entry.name}`;
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.html') || entry.name.endsWith('.ts')) files.push(full);
+    }
+  };
+  walk(dir);
+
+  // 正面对照:目录空了的话下面的循环恒真。
+  if (files.length === 0) {
+    errors.push(`${dir}: no manual sources found — the study-only rule would pass vacuously`);
+  }
+
+  // 判定类的 i18n 键与文案。**匹配的是键**,不是中文散文 —— 模板里不许硬编码显示串,
+  // 所以判定只可能以键的形式出现。
+  const banned = /manual\.(solved|correct|wrong|success|failed|verdict-check)|\bplay-from-here\b/;
+  for (const file of files) {
+    if (file.endsWith('.spec.ts')) continue;
+    const source = readFileSync(file, 'utf8');
+    const hit = banned.exec(source);
+    if (hit) {
+      const line = source.slice(0, hit.index).split('\n').length;
+      errors.push(
+        `${file}:${line}: ${hit[0]} — the manual pages are study-only. There are no repetition / ` +
+          'perpetual-check rules yet, so a draw cannot be judged, and the AI cannot start from a ' +
+          'given position. A verdict that is wrong looks exactly like one that is right.',
+      );
+    }
+  }
+}
+
 if (errors.length) {
   console.error(`source rule check failed (${errors.length}):`);
   for (const e of errors) console.error(`  - ${e}`);
@@ -195,5 +250,5 @@ if (errors.length) {
 console.log(
   'source rules: room page routes only through leaveTo; header keeps @angular/cdk behind @defer; ' +
     'no template writes @prefetch as a block; one scrubber, two consumers; ' +
-    'the xiangqi board reads exactly {game, status}',
+    'the xiangqi board reads exactly {game, status}; the manual pages stay study-only',
 );

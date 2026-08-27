@@ -4,7 +4,7 @@
       {{ line()?.title ?? ('manual.meihuapu.title' | transloco) }}
     </h1>
     <a
-      routerLink="/g/xiangqi/manual"
+      [routerLink]="['/g/xiangqi/manual', line()?.manualKey ?? '']"
       class="text-muted hover:text-text focus-visible:outline-primary shrink-0 rounded text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       {{ 'manual.back-to-catalogue' | transloco }}
@@ -19,7 +19,7 @@
     @case ('not-found') {
       <p class="text-muted text-sm">{{ 'manual.line-not-found' | transloco }}</p>
       <a
-        routerLink="/g/xiangqi/manual"
+        [routerLink]="['/g/xiangqi/manual', line()?.manualKey ?? '']"
         class="cell text-text focus-visible:outline-primary self-start border px-4 py-2 text-sm"
         >{{ 'manual.back-to-catalogue' | transloco }}</a
       >
@@ -36,6 +36,7 @@
     }
     @default {
       <app-xiangqi-board
+        [startPosition]="startPosition()"
         [state]="boardState()"
         [mySide]="'spectator'"
         [submitting]="false"
@@ -56,8 +57,14 @@
       <div class="panel text-text flex min-h-20 flex-col gap-1 border p-3 text-sm">
         <p class="text-muted text-xs">
           {{ 'manual.verdict-label' | transloco }}:
-          <span class="text-text">{{ verdictKey() | transloco }}</span>
+          @if (verdictKey(); as key) {
+            <span class="text-text">{{ key | transloco }}</span>
+          }
           ·
+          @if (natureKey(); as nature) {
+            <span class="text-text">{{ nature | transloco }}</span>
+            ·
+          }
           {{ 'manual.ply-of' | transloco: { current: currentPly(), total: totalMoves() } }}
         </p>
         <p class="text-muted text-xs">{{ 'manual.no-commentary' | transloco }}</p>

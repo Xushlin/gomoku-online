@@ -1,21 +1,23 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ManualApiService } from '../../../../core/api/manual-api.service';
 import type { ManualCatalogue as Catalogue } from '../../../../core/api/models/manual.model';
-import { MEIHUAPU_KEY } from '../manual-key';
 
 type Phase = 'loading' | 'ready' | 'not-found' | 'error';
 
 /**
- * 《梅花谱》目录 —— 8 局,每局若干变化。
+ * 一部古谱的目录。**哪一部由路由说**,而不是这一页写死。
  *
- * **纯读**,不需要登录:它是一部三百年前的公开著作,而回放页要求身份是因为它暴露的是
+ * **纯读**,不需要登录:它们是明清的公开著作,而回放页要求身份是因为它暴露的是
  * 具体用户的对局。
  *
  * 分组不在这里算:服务端已经按局分好,而局号是线路自己的列。**这一页因此不知道
- * 「一共几局」** —— 硬编码 8 会在下一部谱落地那天静静对不上。
+ * 「一共几局」** —— 硬编码 8 在《梅花谱》上曾经是对的,而它在第二部谱上就错了。
+ *
+ * **没有分组层的谱不画分组标题**:六辑残局的局号一律 0,而给它们编一个「第0局」
+ * 是编数据。这一页据 `grouped` 决定画不画那一行,而 `grouped` 是服务端的字段。
  */
 @Component({
   selector: 'app-manual-catalogue',
@@ -27,6 +29,7 @@ type Phase = 'loading' | 'ready' | 'not-found' | 'error';
 })
 export class ManualCatalogue implements OnInit {
   private readonly api = inject(ManualApiService);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly catalogue = signal<Catalogue | null>(null);
   protected readonly phase = signal<Phase>('loading');
@@ -39,13 +42,21 @@ export class ManualCatalogue implements OnInit {
   /** 骨架屏的格子数。只为占位,不表达任何真实数量。 */
   protected readonly skeletons = [1, 2, 3, 4, 5, 6];
 
+  private manualKey = '';
+
   ngOnInit(): void {
+    this.manualKey = this.route.snapshot.paramMap.get('manualKey') ?? '';
+    if (this.manualKey === '') {
+      this.phase.set('not-found');
+      return;
+    }
     this.load();
   }
 
   protected load(): void {
+    if (this.manualKey === '') return;
     this.phase.set('loading');
-    this.api.getCatalogue(MEIHUAPU_KEY).subscribe({
+    this.api.getCatalogue(this.manualKey).subscribe({
       next: (c) => {
         this.catalogue.set(c);
         this.phase.set('ready');

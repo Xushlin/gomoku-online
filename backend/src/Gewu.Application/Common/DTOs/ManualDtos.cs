@@ -24,6 +24,8 @@ public sealed record ManualChapterDto(int Chapter, IReadOnlyList<ManualLineSumma
 
 /// <summary>一部古谱的目录。</summary>
 /// <param name="ManualKey">古谱键。</param>
+/// <param name="Name">书名(原书名,公有领域)—— 目录页的标题用它,而不是一份客户端的键到名字的映射。</param>
+/// <param name="Grouped">这部谱有没有「第N局」那一层。</param>
 /// <param name="GameKey">棋种键 —— 前端据此挑只读棋盘,与回放页同一条理由。</param>
 /// <param name="Chapters">
 /// 按局号升序。**可以只有一层** —— 六辑残局没有「第N局」这一层,而为了形状一致给它们
@@ -31,6 +33,8 @@ public sealed record ManualChapterDto(int Chapter, IReadOnlyList<ManualLineSumma
 /// </param>
 public sealed record ManualCatalogueDto(
     string ManualKey,
+    string Name,
+    bool Grouped,
     string GameKey,
     IReadOnlyList<ManualChapterDto> Chapters);
 

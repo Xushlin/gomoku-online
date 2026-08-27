@@ -1,0 +1,56 @@
+<div class="mx-auto flex w-full max-w-3xl flex-col gap-5">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-text text-2xl font-semibold tracking-tight">
+      {{ 'manual.manuals-title' | transloco }}
+    </h1>
+    <p class="text-muted text-sm">{{ 'manual.manuals-subtitle' | transloco }}</p>
+  </header>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-hidden="true">
+        @for (i of skeletons; track i) {
+          <li class="panel-flat h-20 animate-pulse border"></li>
+        }
+      </ul>
+      <p class="text-muted text-sm">{{ 'manual.loading' | transloco }}</p>
+    }
+    @case ('empty') {
+      <p class="text-muted text-sm">{{ 'manual.no-manuals' | transloco }}</p>
+    }
+    @case ('error') {
+      <p class="text-danger text-sm" role="alert">{{ 'manual.error-load-failed' | transloco }}</p>
+      <button
+        type="button"
+        class="cell text-text focus-visible:outline-primary self-start border px-4 py-2 text-sm"
+        (click)="load()"
+      >
+        {{ 'manual.retry' | transloco }}
+      </button>
+    }
+    @default {
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        @for (manual of manuals(); track manual.manualKey) {
+          <li class="panel-flat relative flex flex-col gap-1 border p-4">
+            <span class="text-text font-medium break-words">{{ manual.name }}</span>
+            <span class="text-muted text-xs">
+              {{ 'manual.line-count' | transloco: { count: manual.lineCount } }}
+              ·
+              @if (manual.grouped) {
+                {{ 'manual.grouped' | transloco }}
+              } @else {
+                {{ 'manual.flat' | transloco }}
+              }
+            </span>
+            <a
+              [routerLink]="['/g/xiangqi/manual', manual.manualKey]"
+              class="text-primary focus-visible:outline-primary text-sm after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              {{ 'manual.open' | transloco }}
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>

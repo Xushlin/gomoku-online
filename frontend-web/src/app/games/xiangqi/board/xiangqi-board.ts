@@ -14,6 +14,7 @@ import {
   BLACK,
   pieceAt,
   positionAfter,
+  positionFromBoardString,
   RED,
   XIANGQI_COLS,
   XIANGQI_ROWS,
@@ -124,7 +125,19 @@ export class XiangqiBoard {
   private previousMoveCount = -1;
 
   private readonly moves = computed<readonly MoveDto[]>(() => this.state()?.game?.moves ?? []);
-  protected readonly position = computed(() => positionAfter(this.moves()));
+  /**
+   * 这条记录从哪个局面开始 —— 90 字符的行优先盘面串,`null` 表示标准开局。
+   *
+   * **它存在是因为不是每份象棋记录都从开局起。** 残局给的是一个稀疏局面加一串招法,
+   * 而把它们从标准开局重放会画出一个 32 子的盘面加几步棋 —— **一个看起来完全正常的
+   * 错盘面**。默认值让每一个既有调用者(房间、回放、《梅花谱》)走的还是老路径。
+   */
+  readonly startPosition = input<string | null>(null);
+
+  protected readonly position = computed(() => {
+    const start = this.startPosition();
+    return positionAfter(this.moves(), start === null ? undefined : positionFromBoardString(start));
+  });
 
   protected readonly lastMove = computed<MoveDto | null>(() => {
     const moves = this.moves();
