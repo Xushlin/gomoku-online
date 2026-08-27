@@ -157,14 +157,27 @@ state — a "last move must be terminal" check rejects two thirds of the book, a
 indistinguishable from "the data is broken". The mirror of that: a terminal result *before* the last
 move is bad data, and it is also the positive control on the decoding.
 
-For the endgame collections (`/gupu/`, ~1634 lines across six Ming/Qing books) the same format holds
-sparsely, but three things differ and are written up in **`add-xiangqi-endgames`**: a third of the
-records carry **no result field**, some entries are full 32-piece opening lines rather than endgames,
-and the whole strong criterion is unavailable — `XiangqiRules` replays from the standard opening, so
-a set-up position cannot be validated move-by-move until it can start from a position. `Game.Setup`
-(`MatchState(string? Setup, History)`) is already the slot for that, proven by the two card games;
-`XiangqiRules` simply does not read it yet. And no repetition / perpetual-check rules exist at all,
-which is why **正和 problems cannot be judged** and why the platform must not claim "you solved it".
+The endgame collections (`/gupu/`, **1634 lines** across six Ming/Qing books) shipped in
+**`add-xiangqi-endgames`**, and that entry is the one to read before trusting any sample.
+
+**Three rules written from a 30-record sample were all false on the full 1634**: red does not always
+move first (7 open with Black), the verdict is not three-state (391 draws, and a *seat number* cannot
+express a draw — the column's **type** was wrong), and "32 pieces" is not "the standard opening"
+(6 records are full boards that are not the opening setup). Each of the three, as first written,
+would have **rejected valid records with a message indistinguishable from "the data is broken"** —
+and the first is the same shape as 梅花谱's "the last move must end the game". Run the whole set
+before a sample-derived rule becomes a MUST.
+
+**Validation is deliberately weaker for a set-up position, and that weakness is written down.**
+Replaying through `XiangqiRules` is impossible there — it replays from the standard opening, so an
+endgame's first move looks illegal — so 188 standard-start lines take the strong path and 1477 take a
+**structural** check (origin occupied on the walked-forward position, sides alternating from the
+stored first seat). The advancer moves pieces and judges nothing, and is named so.
+`Game.Setup` (`MatchState(string? Setup, History)`) is already the slot for starting from a position,
+proven by the two card games; `XiangqiRules` simply does not read it yet. And no repetition /
+perpetual-check rules exist at all, which is why **正和 problems cannot be judged**, why the AI
+(`SelectMove` takes history only) cannot play from an endgame, and why a source rule forbids the UI
+from ever claiming "you solved it".
 
 ## Migrations
 
