@@ -249,6 +249,51 @@ public class GameSetupTests
         room.Game!.Setup.Should().Be("ok");
     }
 
+    /// <summary>
+    /// **发牌的那份设置永远不会落到 <c>ChosenSetup</c> 上 —— 走完整个生命周期都不会。**
+    /// <para>
+    /// 这条守的是一句写进规格的话:「选定的设置下发,发牌的设置不下发,而担保来自它是哪个
+    /// 字段」。那句话成立的前提是 <c>ChosenSetup</c> **只有一个写入点**
+    /// (<c>Room.CreateFromPosition</c>),而这件事今天靠的是一个 private setter ——
+    /// 编译器保证只有 <c>Room</c> 能写它,**却不保证 <c>Room</c> 自己不多写一处**。
+    /// </para>
+    /// <para>
+    /// 会出的错很具体:哪天有人在 <c>JoinAsPlayer</c> 里顺手把发出来的设置也存到房间上,
+    /// 那副牌就会随房间状态发给三个座位**和围观者**。它不抛、不报,而 DTO 那条反射断言
+    /// 也不会红 —— 字段名一个都没变。所以这里走一遍完整生命周期。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void A_dealt_game_never_lands_its_setup_on_the_rooms_chosen_setup()
+    {
+        var host = NewUser();
+        var guest = NewUser();
+        var rules = new DealtRules();
+        var room = WaitingRoom(host, "dealt-probe");
+
+        room.ChosenSetup.Should().BeNull("建房时没有选定任何局面");
+
+        room.JoinAsPlayer(guest, Now.AddSeconds(1), rules, setup: "a-real-deal");
+        room.Game!.Setup.Should().Be("a-real-deal", "前提:这一局**确实有**一份发出来的设置");
+        room.ChosenSetup.Should().BeNull("开局那一刻也不该写它");
+
+        room.Resign(host, Now.AddSeconds(2));
+        room.ChosenSetup.Should().BeNull("结算之后也不该写它");
+    }
+
+    /// <summary>
+    /// 反面对照:选定式的房间**确实**带着它 —— 否则上一条在「这个字段永远是 null」上恒真,
+    /// 而那样客户端画不出残局。
+    /// </summary>
+    [Fact]
+    public void A_positional_room_does_carry_its_chosen_setup()
+    {
+        var room = Room.CreateFromPosition(
+            RoomId.NewId(), "chosen", NewUser(), Now, new PositionalProbeRules(), "ok");
+
+        room.ChosenSetup.Should().Be("ok");
+    }
+
     /// <summary>要一份由调用方选定的设置的探针。</summary>
     private sealed class PositionalProbeRules : IGameRules, IPositionalStartRules
     {
