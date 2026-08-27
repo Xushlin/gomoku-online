@@ -37,7 +37,8 @@ import { moveKind } from '../../../games/cards/trick';
 import { decodeHand, type PlayingCard } from '../../../games/cards/cards';
 
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
-import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
+import { isXiangqiFamily, XIANGQI_ENDGAME_KEY } from '../../../games/xiangqi/game-key';
+import { startPositionFromSetup } from '../../../games/xiangqi/setup';
 import { lastMoveCaptured } from '../../../games/xiangqi/position';
 import { XiangqiBoard, type PieceMoveEvent } from '../../../games/xiangqi/board/xiangqi-board';
 import { Board } from './board/board';
@@ -152,7 +153,32 @@ export class RoomPage implements OnInit, OnDestroy, ConfirmsLeaving {
     gameEntryRoute(this.catalog, this.state()?.gameKey),
   );
 
-  protected readonly isXiangqi = computed(() => this.state()?.gameKey === XIANGQI_KEY);
+  /**
+   * 画不画象棋棋盘 —— 判据是**象棋族**,不是那一个键。
+   *
+   * 残局是服务端上另一个棋种键,而棋盘、走子、坐标一模一样。按单一键判的话,残局房会
+   * 静静落到默认的方格棋盘 —— **而一个画错的棋盘不抛任何东西**。
+   */
+  protected readonly isXiangqi = computed(() => isXiangqiFamily(this.state()?.gameKey));
+
+  /**
+   * 这一局是从一则古谱残局摆起来的。
+   *
+   * 它只决定**多一句说明**:平台认不出和棋。见模板里那一段。
+   */
+  protected readonly isXiangqiEndgame = computed(
+    () => this.state()?.gameKey === XIANGQI_ENDGAME_KEY,
+  );
+
+  /**
+   * 这一局从哪块盘面开始;普通象棋是 `null`,棋盘那时从标准开局重放。
+   *
+   * **不给它的后果不是报错**:棋盘会把残局那几手棋叠在一副标准开局上,画出一个
+   * 看起来完全正常的错盘面 —— 与研习页首帧当初的那个缺陷一模一样。
+   */
+  protected readonly startPosition = computed(() =>
+    startPositionFromSetup(this.state()?.gameKey, this.state()?.chosenSetup),
+  );
 
   /**
    * Keyed off the game rather than off `boardSize() === null`, and that is the

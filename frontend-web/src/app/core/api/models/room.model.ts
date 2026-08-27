@@ -210,6 +210,18 @@ export interface RoomState {
   readonly game: GameSnapshot | null;
   readonly chatMessages: readonly ChatMessage[];
   readonly createdAt: string;
+
+  /**
+   * 建房时**选定**的开局设置;绝大多数房间没有,那时它不出现。
+   *
+   * 它对本模型不透明 —— 怎么解由 `gameKey` 决定(象棋残局见
+   * `games/xiangqi/setup.ts`)。**等待中的房间也带着它**,所以房主坐在自己刚摆的残局房里
+   * 看到的是那一局,而不是一副标准开局。
+   *
+   * 发牌那种设置**不在这里**,也不在任何一个 DTO 上:斗地主的底牌客户端算不出来,
+   * 而那个「算不出来」就是安全性质本身。服务端有一条反射断言钉着这条区别。
+   */
+  readonly chosenSetup?: string | null;
 }
 
 /**

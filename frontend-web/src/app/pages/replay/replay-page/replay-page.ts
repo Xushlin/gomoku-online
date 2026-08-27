@@ -15,7 +15,7 @@ import { MoveScrubber } from '../../../platform/move-scrubber/move-scrubber';
 import { ChainBoard } from '../../../games/idiom-chain/chain-board/chain-board';
 import { IDIOM_CHAIN_KEY } from '../../../games/idiom-chain/game-key';
 import { XiangqiBoard } from '../../../games/xiangqi/board/xiangqi-board';
-import { XIANGQI_KEY } from '../../../games/xiangqi/game-key';
+import { isXiangqiFamily } from '../../../games/xiangqi/game-key';
 import type { GameReplayDto, RoomState } from '../../../core/api/models/room.model';
 import { boardSizeFor } from '../../../games/board-size';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
@@ -72,7 +72,8 @@ export class ReplayPage implements OnInit {
    * rendering code of its own; it just picks between two shared components instead
    * of always reaching for one.
    */
-  protected readonly isXiangqi = computed(() => this.replay()?.gameKey === XIANGQI_KEY);
+  /** 象棋**族** —— 残局是另一个键、同一块棋盘。见 `games/xiangqi/game-key.ts`。 */
+  protected readonly isXiangqi = computed(() => isXiangqiFamily(this.replay()?.gameKey));
 
   /** Replaying a chain is the same list, read-only. */
   protected readonly isIdiomChain = computed(

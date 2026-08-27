@@ -188,16 +188,25 @@ const errors = [];
 }
 
 /*
- * **古谱只做研习:界面不许出现任何「你解对了」的判定,也不许有「接着自己走」的入口。**
+ * **古谱页不许出现任何「你解对了」的判定。**
  *
- * 理由不是工期,是两个硬缺口:领域里**没有任何重复局面 / 长将 / 长捉规则**,而**和棋的
- * 定义就在那里**(六辑残局里和棋 391 局);而 `IBoardGameAi.SelectMove` 只收走子历史,
- * 从残局出发 AI 会按标准开局重建棋盘。
+ * 理由不是工期,是一个硬缺口:领域里**没有任何重复局面 / 长将 / 长捉规则**,而**和棋的
+ * 定义就在那里**(六辑残局里和棋 391 局)。**一个判错的「解对了」比没有判定更糟** ——
+ * 它教错棋,而错的样子和对的样子在界面上完全一样,没有任何断言会红。
  *
- * **一个判错的「解对了」比没有判定更糟** —— 它教错棋,而错的样子和对的样子在界面上
- * 完全一样,没有任何断言会红。所以这条规则守的是「不要先上一个会骗人的功能」。
+ * **这条规则窄了一半,而窄的那一半是有理由的,不是让路。** 它此前还禁 `play-from-here`
+ * ——「接着自己走」的入口。那一半被 `play-from-position` 拆掉了,因为两件事不是同一件:
  *
- * 拆除条件:长将 / 重复局面规则落地 **且** AI 能从给定局面走棋。见 `CLAUDE.md` 的延期表。
+ *   - 禁「解对了」守的是**平台不做判断**。这一条还在,而且比以前更严:见下面那条
+ *     「残局房必须写明平台不判和棋」—— 平台连**和棋**都不宣布。
+ *   - 禁「接着自己走」守的曾是**AI 从残局出发会按标准开局重建棋盘**。而「摆此局对弈」
+ *     开的是一局**由两个人自己下的**棋,一步 AI 都不走。那个缺口在这条路上不存在。
+ *
+ * 「和机器对弈」仍然禁着,而钉它的是 `IBoardGameAi` 的签名本身:`SelectMove` 只收走子
+ * 历史,所以残局那个棋种根本注册不出一个 AI —— 建 AI 房会被服务端的 `MustHaveAnAi` 拒掉。
+ * **一条源码规则守不住的东西,让类型去守。**
+ *
+ * 拆除条件:长将 / 重复局面规则落地。见 `CLAUDE.md` 的延期表。
  */
 {
   const dir = 'src/app/games/xiangqi/manual';
@@ -226,7 +235,9 @@ const errors = [];
 
   // 判定类的 i18n 键与文案。**匹配的是键**,不是中文散文 —— 模板里不许硬编码显示串,
   // 所以判定只可能以键的形式出现。
-  const banned = /manual\.(solved|correct|wrong|success|failed|verdict-check)|\bplay-from-here\b/;
+  // `manual.play.failed` 是「开房失败」,不是一个判定 —— 所以那些词要连着 `manual.`
+  // 那一段一起匹配,而不是单独出现就算。
+  const banned = /manual\.(solved|correct|wrong|success|verdict-check)\b/;
   for (const file of files) {
     if (file.endsWith('.spec.ts')) continue;
     const source = readFileSync(file, 'utf8');
@@ -234,10 +245,54 @@ const errors = [];
     if (hit) {
       const line = source.slice(0, hit.index).split('\n').length;
       errors.push(
-        `${file}:${line}: ${hit[0]} — the manual pages are study-only. There are no repetition / ` +
-          'perpetual-check rules yet, so a draw cannot be judged, and the AI cannot start from a ' +
-          'given position. A verdict that is wrong looks exactly like one that is right.',
+        `${file}:${line}: ${hit[0]} — the manual pages judge nothing. There are no repetition / ` +
+          'perpetual-check rules in the domain, so a draw cannot be judged and neither can a ' +
+          'solution. A verdict that is wrong looks exactly like one that is right.',
       );
+    }
+  }
+}
+
+/*
+ * **残局房的界面必须写明「平台不判和棋」。**
+ *
+ * 它与上面那条是**同一条约束的两半**:平台不判对错,也不判和。而这一半必须是**正面的** ——
+ * 一条「不许出现某个词」的规则守不住「必须出现某句话」。
+ *
+ * 不写这句话的后果不是缺一段文案:一则「和棋」题的解**就是把局面走成和**,而平台看不出来。
+ * 玩家会以为是程序坏了,**而那种误解和真的坏了在界面上完全一样**。
+ */
+{
+  const file = 'src/app/pages/rooms/room-page/room-page.html';
+  const key = 'game.endgame.no-draw';
+  let source;
+  try {
+    source = readFileSync(file, 'utf8');
+  } catch {
+    source = null;
+  }
+  if (source === null) {
+    errors.push(`${file}: not found — the no-draw notice rule has nothing to check`);
+  } else if (!source.includes(key)) {
+    errors.push(
+      `${file}: missing '${key}' — a xiangqi endgame room MUST say the platform cannot ` +
+        'detect a draw. There are no repetition / perpetual-check rules in the domain, so a ' +
+        'game played out to a draw looks to the player exactly like a broken program.',
+    );
+  }
+
+  // 那句话要真的有文字,而不是只有一个键:缺了 locale 的话模板渲染出来的是键名本身。
+  for (const locale of ['zh-CN', 'en']) {
+    const path = `public/i18n/${locale}.json`;
+    let bag;
+    try {
+      bag = JSON.parse(readFileSync(path, 'utf8'));
+    } catch {
+      bag = null;
+    }
+    const text = bag?.game?.endgame?.['no-draw'];
+    if (typeof text !== 'string' || text.trim().length === 0) {
+      errors.push(`${path}: missing or empty game.endgame.no-draw`);
     }
   }
 }
@@ -250,5 +305,5 @@ if (errors.length) {
 console.log(
   'source rules: room page routes only through leaveTo; header keeps @angular/cdk behind @defer; ' +
     'no template writes @prefetch as a block; one scrubber, two consumers; ' +
-    'the xiangqi board reads exactly {game, status}; the manual pages stay study-only',
+    'the xiangqi board reads exactly {game, status}; the manual pages judge nothing, and an endgame room says so',
 );

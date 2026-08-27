@@ -11,6 +11,10 @@ import {
   PresenceApiService,
 } from '../api/presence-api.service';
 import { DefaultRoomsApiService, RoomsApiService } from '../api/rooms-api.service';
+import {
+  DefaultGameCatalogService,
+  GameCatalogService,
+} from '../../games/game-catalog.service';
 import { DefaultHomeDataService, HomeDataService } from './home-data.service';
 import { DefaultLobbyDataService, LobbyDataService } from './lobby-data.service';
 import { LOBBY_GAME_KEY } from './lobby-game-key';
@@ -28,6 +32,10 @@ function providers() {
     { provide: PresenceApiService, useClass: DefaultPresenceApiService },
     { provide: RoomsApiService, useClass: DefaultRoomsApiService },
     { provide: LeaderboardApiService, useClass: DefaultLeaderboardApiService },
+    // **真的注册表**,不是一个 stub:「大厅列哪些键」这条规则的数据源就是 manifest,
+    // 而一个 stub 会让这一组测试在一个「象棋没有伴生键」的世界里跑。这个坑本仓库
+    // 已经付过三次账(`GomokuRules.Registry` / `AiRegistry` / 音效包清单)。
+    { provide: GameCatalogService, useClass: DefaultGameCatalogService },
     {
       provide: LOBBY_POLLING_CONFIG,
       useValue: {
@@ -215,5 +223,84 @@ describe('DefaultLobbyDataService', () => {
     http.verify();
 
     expect(service.rooms.data()).toEqual([]);
+  });
+});
+
+describe('DefaultLobbyDataService — companion room keys', () => {
+  beforeEach(() => setVisibility('visible'));
+  afterEach(() => TestBed.resetTestingModule());
+
+  /** 一次请求里 `gameKey` 那个查询参数的值。 */
+  const roomKeysAsked = (http: HttpTestingController): string[] =>
+    http
+      .match((r) => r.url === '/api/rooms')
+      .map((req) => req.request.params.get('gameKey') ?? '')
+      .sort();
+
+  /**
+   * 八个游戏里没有伴生键,所以**只发一次**。
+   *
+   * 这不是优化:一个每 15 秒多打一次、结果永远是空数组的端点,只会在网络面板里露面,
+   * 而没有任何断言会红。
+   */
+  it('asks for one key when the game declares no companions', () => {
+    const { http } = setupGameLobby('gomoku');
+
+    expect(roomKeysAsked(http)).toEqual(['gomoku']);
+    flushLeaderboard(http);
+    http.verify();
+  });
+
+  /**
+   * 象棋大厅要列残局房 —— 否则「摆此局对弈」开出来的房间**谁都找不到**,而房主会一直等。
+   */
+  it('asks for the endgame key too in the xiangqi lobby', () => {
+    const { http } = setupGameLobby('xiangqi');
+
+    expect(roomKeysAsked(http)).toEqual(['xiangqi', 'xiangqi-endgame']);
+    flushLeaderboard(http);
+    http.verify();
+  });
+
+  /** 两份列表合成一份,而房间自己带着 `gameKey`,所以卡片分辨得出形态。 */
+  it('merges both lists into one slice', () => {
+    const { http, service } = setupGameLobby('xiangqi');
+
+    const requests = http.match((r) => r.url === '/api/rooms');
+    for (const req of requests) {
+      const key = req.request.params.get('gameKey');
+      req.flush([{ id: `${key}-1`, gameKey: key }]);
+    }
+    flushLeaderboard(http);
+
+    expect((service.rooms.data() ?? []).map((r) => r.id).sort()).toEqual([
+      'xiangqi-1',
+      'xiangqi-endgame-1',
+    ]);
+    http.verify();
+  });
+
+  /**
+   * 请求数**从真注册表推**,而不是写死 —— 而两支都要在样本里,否则这条在
+   * 「一个游戏都没有伴生键」或「全都有」上恒真。
+   */
+  it('asks for exactly one key per declared companion, across the whole registry', () => {
+    const catalog = new DefaultGameCatalogService();
+    let withCompanions = 0;
+    let without = 0;
+
+    for (const game of catalog.available()) {
+      const { http } = setupGameLobby(game.key);
+      const expected = [game.key, ...(game.companionRoomKeys ?? [])].sort();
+
+      expect(roomKeysAsked(http)).toEqual(expected);
+
+      if ((game.companionRoomKeys ?? []).length > 0) withCompanions++;
+      else without++;
+      TestBed.resetTestingModule();
+    }
+
+    expect(withCompanions).toBe(1);
+    expect(without).toBeGreaterThan(0);
   });
 });

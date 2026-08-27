@@ -1,12 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { ManualApiService } from '../../../../core/api/manual-api.service';
+import { RoomsApiService } from '../../../../core/api/rooms-api.service';
 import type { ManualLine } from '../../../../core/api/models/manual.model';
 import type { MoveDto, RoomState, UserSummary } from '../../../../core/api/models/room.model';
 import { MoveScrubber } from '../../../../platform/move-scrubber/move-scrubber';
 import { FIRST_SEAT } from '../../../board-seats';
+import { XIANGQI_ENDGAME_KEY } from '../../game-key';
 import { XiangqiBoard } from '../../board/xiangqi-board';
 
 type Phase = 'loading' | 'ready' | 'not-found' | 'error';
@@ -40,11 +43,28 @@ const NO_PLAYER: UserSummary = { id: '', username: '' };
 })
 export class ManualStudy implements OnInit {
   private readonly api = inject(ManualApiService);
+  private readonly rooms = inject(RoomsApiService);
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly line = signal<ManualLine | null>(null);
   protected readonly phase = signal<Phase>('loading');
   protected readonly currentPly = signal(0);
+
+  /** 正在开房。按钮上要有它 —— 否则连点两下会开出两间房。 */
+  protected readonly opening = signal(false);
+
+  /** 开房失败时的横幅键;`null` = 没有失败。 */
+  protected readonly openErrorKey = signal<string | null>(null);
+
+  /**
+   * 登录了才画「摆此局对弈」。
+   *
+   * 古谱页是**匿名可读**的(`data.publicContent`),而建房要认证。不 gate 的话,匿名
+   * 读者点下去拿到的是一次 401 —— 一个只在失败时才告诉你「你得先登录」的按钮。
+   */
+  protected readonly canPlay = this.auth.isAuthenticated;
 
   private lineId: number | null = null;
 
@@ -153,6 +173,36 @@ export class ManualStudy implements OnInit {
       },
       error: (err: unknown) => {
         this.phase.set(err instanceof HttpErrorResponse && err.status === 404 ? 'not-found' : 'error');
+      },
+    });
+  }
+
+  /**
+   * 摆这一局对弈 —— 开一间从**这条线路的起始局面**开始的房,然后进去等人。
+   *
+   * **它不违反「古谱只做研习」那条规则,而那条规则也因此收窄了。** 规则守的是
+   * *平台不判对错*:领域里没有重复局面 / 长将 / 长捉,所以「你解对了」和「和棋」都判不出来,
+   * 而一个判错的判定教错棋。这里开的是一局**由两个人自己下的、正常的**棋 —— 平台一句
+   * 判断都不宣布,连和棋都不宣布(残局房的界面写着这句话)。
+   *
+   * 递给服务端的是**线路 id**,不是盘面:起始局面与先走方从库里那条线路上取。
+   *
+   * 房名就用这条线路的标题 —— 量过全部 1665 条,长度 4–25,而房名的界是 [3, 50],
+   * 所以不需要截断,也不需要一个「截断了怎么办」的分支。
+   */
+  protected playFromHere(): void {
+    const line = this.line();
+    if (!line || this.opening() || !this.canPlay()) return;
+    this.opening.set(true);
+    this.openErrorKey.set(null);
+    this.rooms.create(line.title, XIANGQI_ENDGAME_KEY, line.id).subscribe({
+      next: (room) => {
+        this.opening.set(false);
+        void this.router.navigate(['/rooms', room.id]);
+      },
+      error: () => {
+        this.opening.set(false);
+        this.openErrorKey.set('manual.play.failed');
       },
     });
   }

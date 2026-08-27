@@ -75,11 +75,22 @@
       <div class="flex min-w-0 flex-col items-center gap-4">
         @if (isXiangqi()) {
           <app-xiangqi-board
+            [startPosition]="startPosition()"
             [state]="room"
             [mySide]="mySide()"
             [submitting]="submittingMove()"
             (pieceMove)="handlePieceMove($event)"
           />
+          <!--
+            **平台认不出和棋。** 不写这句话,一局走成和的残局在玩家看来就是程序坏了,
+            而那种误解和真的坏了在界面上完全一样。领域里没有重复局面 / 长将 / 长捉规则,
+            所以这一局只会以将死、认输或超时结束。
+          -->
+          @if (isXiangqiEndgame()) {
+            <p class="panel-flat text-muted w-full border p-3 text-xs leading-relaxed">
+              {{ 'game.endgame.no-draw' | transloco }}
+            </p>
+          }
         } @else if (cardTable(); as table) {
           <app-card-table
             [state]="room"

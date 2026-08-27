@@ -2,7 +2,10 @@ using System.Text.Json;
 using Gewu.Application.Common.Mapping;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.Cards;
+using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Games.Doudizhu;
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Xiangqi;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Application.Tests.Features.Rooms;
 
@@ -132,4 +135,54 @@ public class PerSeatRoomStateTests
         dto.Seats[0].Player.Id.Should().Be(host.Value);
         dto.Seats[1].Player.Id.Should().Be(white.Value);
     }
+
+    /// <summary>
+    /// **发牌的棋种,那副牌一个字都不许出现在 <c>ChosenSetup</c> 里。**
+    /// <para>
+    /// 这条守的是新加的那个字段。它下发是安全的,而担保来自「设置有两个落点」这件结构性事实:
+    /// 发牌走 <c>Game.Setup</c>(本 DTO 不下发),选定式走 <c>Room.ChosenSetup</c>(下发)。
+    /// 哪天有人把两者合并成一个字段,这条会红 —— 而那正是该问「这样一来牌会不会出去」的时刻。
+    /// </para>
+    /// <para>
+    /// 三个座位都查,而不是只查一个:一次「只裁剪了当前座位」的实现在单座位断言上是绿的。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void A_dealt_game_never_exposes_its_deal_as_a_chosen_setup()
+    {
+        var (room, _) = DoudizhuRoom();
+
+        // 前提:这一局**确实有**一副牌。否则下面那条在「什么都没有」上恒真。
+        room.Game!.Setup.Should().NotBeNullOrEmpty();
+
+        for (var seat = 0; seat < Rules.SeatCount; seat++)
+        {
+            room.ToState(NoNames, 60, RoomView.ForSeat(room, seat, Rules))
+                .ChosenSetup.Should().BeNull("座位 {0} 也不该从这个字段看到那副牌", seat);
+        }
+
+        room.ToState(NoNames, 60, RoomView.ForSpectators(room, Rules)).ChosenSetup.Should().BeNull();
+    }
+
+    /// <summary>
+    /// 反面对照:选定式的房间**确实**通过这个字段把局面下发出去 —— 否则上一条在
+    /// 「这个字段永远是 null」上恒真,而那样客户端画不出残局。
+    /// </summary>
+    [Fact]
+    public void A_positional_room_does_carry_its_chosen_position()
+    {
+        var rules = (IPositionalStartRules)BuiltInGameRules
+            .All(GomokuRules.Lexicon).Single(r => r is IPositionalStartRules);
+        var setup = new XiangqiSetup(StandardBoard, FirstSeat: 1).Encode();
+        var room = Room.CreateFromPosition(
+            RoomId.NewId(), "endgame", UserId.NewId(), RoomsFixtures.Now, rules, setup);
+
+        room.Status.Should().Be(RoomStatus.Waiting);
+        room.ToState(NoNames, 60, RoomView.ForSpectators(room, rules))
+            .ChosenSetup.Should().Be(setup, "等待中的房间也要给 —— 房主要看见自己刚摆的那一局");
+    }
+
+    /// <summary>标准开局的盘面串 —— 一个**合法**的局面就够,这条测的是字段有没有传下去。</summary>
+    private const string StandardBoard =
+        "rnbakabnr..........c.....c.p.p.p.p.p..................P.P.P.P.P.C.....C..........RNBAKABNR";
 }

@@ -82,4 +82,19 @@ export interface GameManifest {
   /** 古谱入口的显示文案键。填了 `manualRoute` 就 MUST 一起填。 */
   readonly manualLabelKey?: string;
 
+  /**
+   * 除自己的键之外,这个游戏的大厅还要列出哪些棋种的房间。
+   *
+   * 象棋残局在服务端是一个**独立的棋种键**(内核的设置不变量逼出来的,见
+   * `games/xiangqi/game-key.ts`),但它不是一个独立的游戏 —— 它没有自己的大厅、
+   * 没有自己的排行榜,而且**开一间残局房必须先选一则残局**,所以它也不该有
+   * 「创建房间」那个按钮。
+   *
+   * 写成 manifest 字段而不是大厅里的一句 `gameKey === 'xiangqi'`,与 `manualRoute`
+   * 同一个理由:那样《橘中秘》的定式对局或者五子棋的死活题落地时是加一行,不动大厅。
+   *
+   * 不填 = 这个大厅只列自己那个键。**不填是绝大多数**,所以它是可选的。
+   */
+  readonly companionRoomKeys?: readonly string[];
+
 }
