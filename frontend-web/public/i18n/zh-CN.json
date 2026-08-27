@@ -541,10 +541,10 @@
     "retry": "重试",
     "study": "研习",
     "verdict": {
-      "BlackBetter": "谱评:黑优",
-      "Draw": "谱评:和棋",
-      "RedBetter": "谱评:红优",
-      "Unrecorded": "谱未标注"
+      "BlackBetter": "黑优",
+      "Draw": "和棋",
+      "RedBetter": "红优",
+      "Unrecorded": "未标注"
     },
     "verdict-label": "谱评"
   },

@@ -34,12 +34,7 @@ const zh = {
     retry: '重试',
     'back-to-catalogue': '返回目录',
     'verdict-label': '谱评',
-    verdict: {
-      RedBetter: '谱评:红优',
-      BlackBetter: '谱评:黑优',
-      Draw: '谱评:和棋',
-      Unrecorded: '谱未标注',
-    },
+    verdict: { RedBetter: '红优', BlackBetter: '黑优', Draw: '和棋', Unrecorded: '未标注' },
     nature: { endgame: '残局', full: '满盘' },
     'manuals-title': '象棋古谱',
     'manuals-subtitle': '明清刊本',
@@ -228,8 +223,8 @@ describe('ManualCatalogue', () => {
     expect(body).toContain('第1局取中兵压马破上右士');
     expect(body).toContain('46 手');
     // 两种评断都在样本里 —— 否则「按评断显示」会在单一取值上恒真。
-    expect(body).toContain('谱评:黑优');
-    expect(body).toContain('谱评:红优');
+    expect(body).toContain('黑优');
+    expect(body).toContain('红优');
   });
 
   it('counts the lines from the data, not from a constant', () => {
@@ -288,10 +283,7 @@ describe('ManualCatalogue', () => {
     const flat = text(mount(stubApi({ getCatalogue: () => of(FLAT_CATALOGUE) }), 'shiqingyaqu'));
     const body = grouped + flat;
     const labels: Record<string, string> = {
-      RedBetter: '谱评:红优',
-      BlackBetter: '谱评:黑优',
-      Draw: '谱评:和棋',
-      Unrecorded: '谱未标注',
+      RedBetter: '红优', BlackBetter: '黑优', Draw: '和棋', Unrecorded: '未标注',
     };
     for (const verdict of MANUAL_VERDICTS) {
       expect(body, `verdict ${verdict} has no rendered label`).toContain(labels[verdict]);
@@ -438,7 +430,7 @@ describe('ManualStudy', () => {
   /** 和棋这一态在学习页上也要画得出来 —— 而它在旧类型里根本没有表示。 */
   it('renders a draw verdict', () => {
     const fixture = mount(stubApi({ getLine: () => of(ENDGAME_LINE) }), '213');
-    expect(host(fixture).textContent ?? '').toContain('谱评:和棋');
+    expect(host(fixture).textContent ?? '').toContain('和棋');
   });
 
   it('clamps a seek beyond either end', () => {
@@ -457,7 +449,10 @@ describe('ManualStudy', () => {
   it('presents the outcome as the manual verdict, never as a mate', () => {
     const fixture = mount();
     const body = host(fixture).textContent ?? '';
-    expect(body).toContain('谱评:黑优');
+    // 标签与取值是分开的两段:标签说「谱评」,取值只说结论 —— 第一版两边都带了前缀,
+    // 在浏览器里读出来是「谱评:谱评:黑优」。
+    expect(body).toContain('谱评');
+    expect(body).toContain('黑优');
     for (const word of ['将死', '绝杀', '杀棋', 'checkmate', 'Checkmate']) {
       expect(body).not.toContain(word);
     }
