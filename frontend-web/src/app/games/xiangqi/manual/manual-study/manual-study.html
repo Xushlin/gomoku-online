@@ -69,6 +69,31 @@
         </p>
         <p class="text-muted text-xs">{{ 'manual.no-commentary' | transloco }}</p>
       </div>
+
+      <!--
+        「摆此局对弈」—— 开一局由两个人自己下的棋,平台一句判断都不宣布。
+        登录了才画:古谱页匿名可读,而建房要认证,一个只在失败时才说「你得先登录」的
+        按钮是把一次 401 当成文案。
+      -->
+      @if (canPlay()) {
+        <div class="flex flex-col gap-2">
+          <button
+            type="button"
+            data-testid="play-from-position"
+            class="cell text-text focus-visible:outline-primary w-full border px-4 py-3 text-sm font-medium transition-colors disabled:opacity-60"
+            [disabled]="opening()"
+            (click)="playFromHere()"
+          >
+            {{ (opening() ? 'manual.play.opening' : 'manual.play.action') | transloco }}
+          </button>
+          <p class="text-muted text-xs">{{ 'manual.play.no-draw-notice' | transloco }}</p>
+          @if (openErrorKey(); as key) {
+            <p class="text-danger text-xs" role="alert">{{ key | transloco }}</p>
+          }
+        </div>
+      } @else {
+        <p class="text-muted text-xs">{{ 'manual.play.sign-in-first' | transloco }}</p>
+      }
     }
   }
 </section>

@@ -234,6 +234,33 @@ describe('ActiveRoomsCard', () => {
     expect(svg.querySelectorAll('line, circle, rect, text, path').length).toBeGreaterThan(0);
   });
 
+  /**
+   * **伴生键的行画的是它主人的纹章。**
+   *
+   * 象棋残局在服务端是另一个键,manifest 里没有它自己的条目 —— 表里不加的话
+   * `emblemOf` 返回空数组,画出来是一块什么都没有的空白。**它不抛、不报、不红,只是不见。**
+   *
+   * 判据是**两行画出同样多的图元**,而不是「残局那行有图元」:后者在两行都退化成
+   * 一个空 `<svg>` 时同样是绿的。
+   */
+  it('an endgame room borrows the xiangqi emblem', () => {
+    const { fixture } = mount(
+      [
+        room({ id: 'r-x', gameKey: 'xiangqi', seats: seats(1) }),
+        room({ id: 'r-e', gameKey: 'xiangqi-endgame', seats: seats(1) }),
+      ],
+      { xiangqi: 2, 'xiangqi-endgame': 2 },
+    );
+
+    const shapes = [...fixture.nativeElement.querySelectorAll('app-game-emblem svg')].map(
+      (svg: SVGElement) => svg.querySelectorAll('line, circle, rect, text, path').length,
+    );
+
+    expect(shapes).toHaveLength(2);
+    expect(shapes[0]).toBeGreaterThan(0);
+    expect(shapes[1]).toBe(shapes[0]);
+  });
+
   it('wires to the real capabilities service, not just the stub', () => {
     /*
      * 上面那些用的是 `GameCapabilitiesService` 的桩,所以它们证明的是**模板逻辑**,

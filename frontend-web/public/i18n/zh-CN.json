@@ -206,6 +206,9 @@
       "disconnected": "已断开连接。",
       "retry": "重试",
       "connected": "已连接"
+    },
+    "endgame": {
+      "no-draw": "这是一则古谱残局:平台不判和棋。领域里没有重复局面 / 长将 / 长捉规则,所以这一局只会以将死、认输或超时结束 —— 走成和局时,你们可以自己商量,但平台不会宣布。"
     }
   },
   "games": {
@@ -546,7 +549,14 @@
       "RedBetter": "红优",
       "Unrecorded": "未标注"
     },
-    "verdict-label": "谱评"
+    "verdict-label": "谱评",
+    "play": {
+      "action": "摆此局对弈",
+      "opening": "正在开房…",
+      "failed": "开房失败,请再试一次。",
+      "sign-in-first": "登录后可以摆这一局与人对弈。",
+      "no-draw-notice": "对弈时平台不判和棋 —— 走成和局要你们自己商量。"
+    }
   },
   "profile": {
     "online": "在线",

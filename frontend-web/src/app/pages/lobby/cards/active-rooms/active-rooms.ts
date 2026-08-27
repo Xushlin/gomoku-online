@@ -33,9 +33,19 @@ export class ActiveRoomsCard {
 
   private readonly capabilities = inject(GameCapabilitiesService);
 
-  /** 棋种键 → 纹章形状表。注册表是静态导入,所以这张表不必等任何请求。 */
+  /**
+   * 棋种键 → 纹章形状表。注册表是静态导入,所以这张表不必等任何请求。
+   *
+   * **伴生键也进这张表,指向它主人的纹章** —— 象棋残局在服务端是另一个键,但它就是象棋。
+   * 不加的话那一行的纹章是一个**空数组**,画出来是一块什么都没有的空白:不抛、不报、
+   * 不红,只是不见 —— 与「同色画在同色上」同一族的失败。
+   */
   private readonly emblems = new Map<string, readonly EmblemShape[]>(
-    GAME_REGISTRY.map((g) => [g.key, g.emblem]),
+    GAME_REGISTRY.flatMap((g) =>
+      [g.key, ...(g.companionRoomKeys ?? [])].map(
+        (key) => [key, g.emblem] as [string, readonly EmblemShape[]],
+      ),
+    ),
   );
 
   constructor() {

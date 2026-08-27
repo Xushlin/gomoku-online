@@ -101,7 +101,13 @@ public static class RoomMapping
             Spectators: specDtos,
             Game: gameDto,
             ChatMessages: chatDtos,
-            CreatedAt: room.CreatedAt);
+            CreatedAt: room.CreatedAt,
+            // 建房时选定的局面 —— **等待中的房间也要给**,否则房主坐在自己刚摆的残局房里
+            // 看到的是一副标准开局。所以它挂在房间上而不是 `gameDto` 上。
+            //
+            // 不需要问规则「这个设置能不能给」:能给的那种设置只存在这个字段里,
+            // 见 `RoomStateDto.ChosenSetup` 的说明。
+            ChosenSetup: room.ChosenSetup);
     }
 
     /// <summary>

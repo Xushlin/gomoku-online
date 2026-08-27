@@ -22,7 +22,18 @@ export abstract class RoomsApiService {
   abstract list(gameKey: string): Observable<readonly RoomSummary[]>;
   abstract myActiveRooms(): Observable<readonly RoomSummary[]>;
   abstract getById(roomId: string): Observable<RoomState>;
-  abstract create(name: string, gameKey: string): Observable<RoomSummary>;
+  /**
+   * 建房。`manualLineId` 只对「从选定局面开局」的棋种有意义,而且**两个方向都由服务端
+   * 校验**:给了它而棋种不是残局 → 400,是残局而没给 → 400。
+   *
+   * **参数是一个 id,不是一个盘面** —— 起始局面与先走方由服务端从那条线路上取。
+   * 让客户端递盘面等于让客户端定义棋局,而那个口子不需要开。
+   */
+  abstract create(
+    name: string,
+    gameKey: string,
+    manualLineId?: number,
+  ): Observable<RoomSummary>;
   abstract createAiRoom(
     name: string,
     difficulty: BotDifficulty,
@@ -66,8 +77,13 @@ export class DefaultRoomsApiService extends RoomsApiService {
     return this.http.get<RoomState>(`/api/rooms/${encodeURIComponent(roomId)}`);
   }
 
-  create(name: string, gameKey: string): Observable<RoomSummary> {
-    return this.http.post<RoomSummary>('/api/rooms', { name, gameKey });
+  create(name: string, gameKey: string, manualLineId?: number): Observable<RoomSummary> {
+    // 没有线路 id 时**不发这个字段**,而不是发一个 `null`:服务端两个方向都校验,
+    // 而一个显式的 null 与「没给」在 JSON 里长得一样但读起来不一样。
+    return this.http.post<RoomSummary>(
+      '/api/rooms',
+      manualLineId === undefined ? { name, gameKey } : { name, gameKey, manualLineId },
+    );
   }
 
   createAiRoom(

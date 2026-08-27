@@ -1,4 +1,5 @@
 import type { GameManifest } from '../game-manifest';
+import { XIANGQI_ENDGAME_KEY } from './game-key';
 
 /**
  * 中国象棋 — the platform's first *slide* game: a move is `from → to`, not a
@@ -38,4 +39,7 @@ export const xiangqiManifest: GameManifest = {
   // 《梅花谱》—— 只读资料,匿名可读。见 games/xiangqi/manual/。
   manualRoute: '/g/xiangqi/manual',
   manualLabelKey: 'manual.entry',
+  // 残局房在服务端是另一个键,但它属于这个大厅 —— 否则「摆此局对弈」开出来的房间
+  // 谁都找不到,而房主会一直等下去。
+  companionRoomKeys: [XIANGQI_ENDGAME_KEY],
 };

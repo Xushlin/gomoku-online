@@ -206,6 +206,9 @@
       "disconnected": "Disconnected from the game server.",
       "retry": "Retry",
       "connected": "Connected"
+    },
+    "endgame": {
+      "no-draw": "This is a classical endgame study, and the platform does not detect draws. There are no repetition or perpetual-check rules here, so this game can only end by mate, resignation or timeout — if you play it out to a draw, agree between yourselves; the platform will not announce one."
     }
   },
   "games": {
@@ -546,7 +549,14 @@
       "RedBetter": "Red better",
       "Unrecorded": "Not recorded"
     },
-    "verdict-label": "The manual judges"
+    "verdict-label": "The manual judges",
+    "play": {
+      "action": "Play from this position",
+      "opening": "Opening a room…",
+      "failed": "Could not open a room. Please try again.",
+      "sign-in-first": "Sign in to play this position against another person.",
+      "no-draw-notice": "The platform does not call draws — if you play one out to a draw, agree between yourselves."
+    }
   },
   "profile": {
     "online": "Online",

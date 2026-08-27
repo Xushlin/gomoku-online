@@ -162,6 +162,22 @@ public sealed record UrgeDto(Guid FromUserId, string FromUsername, DateTime Sent
 /// 见 <c>add-web-tictactoe-ai</c> design D1。<c>generalize-match-contract</c> 反正要重写
 /// 本 DTO(座位、JSON 载荷),届时改为服务端下发。
 /// </para>
+/// <para>
+/// <paramref name="ChosenSetup"/> 是建房时**选定**的开局设置 —— 客户端画不出残局的起始局面
+/// 就得靠它。它对本 DTO 不透明:哪个棋种、怎么解,由客户端按 <paramref name="GameKey"/> 决定。
+/// </para>
+/// <para>
+/// <b>把它下发是安全的,而担保来自它是哪个字段,不是来自一次判断。</b> 一局棋的设置有两个
+/// 落点:<c>Room.ChosenSetup</c> 与 <c>Game.Setup</c>。前者**只由** <c>Room.CreateFromPosition</c>
+/// 写,而那个方法只收 <c>IPositionalStartRules</c>,而那种设置按定义来自**公开的**资料
+/// (古谱目录) —— 客户端递的是一个线路 id,盘面是服务端去取的。斗地主那副牌走的是后者,
+/// 而后者本 DTO **一个字都不下发**。
+/// </para>
+/// <para>
+/// 所以这里不需要「这个棋种的设置能不能给」那样一句判断 —— <b>字段本身就是那个答案</b>,
+/// 而一句判断会过期且不报错。<c>PerSeatRoomStateTests</c> 里有一条断言钉着「发牌的棋种
+/// 这个字段是 null」。
+/// </para>
 /// </summary>
 public sealed record RoomStateDto(
     Guid Id,
@@ -175,4 +191,5 @@ public sealed record RoomStateDto(
     IReadOnlyList<UserSummaryDto> Spectators,
     GameSnapshotDto? Game,
     IReadOnlyList<ChatMessageDto> ChatMessages,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? ChosenSetup = null);

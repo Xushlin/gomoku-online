@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ManualApiService } from '../../../core/api/manual-api.service';
 import type {
@@ -12,6 +12,8 @@ import type {
   ManualSummary,
 } from '../../../core/api/models/manual.model';
 import { MANUAL_VERDICTS } from '../../../core/api/models/manual.model';
+import { AuthService } from '../../../core/auth/auth.service';
+import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { GameCapabilitiesService } from '../../game-capabilities.service';
 import { StubGameCapabilities } from '../../game-capabilities.stub';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -45,6 +47,13 @@ const zh = {
     'ply-of': '第 {{current}} / {{total}} 手',
     'no-commentary': '本条暂无注解。',
     entry: '梅花谱',
+    play: {
+      action: '摆此局对弈',
+      opening: '正在开房…',
+      failed: '开房失败,请再试一次。',
+      'sign-in-first': '登录后可以摆这一局与人对弈。',
+      'no-draw-notice': '对弈时平台不判和棋 —— 走成和局要你们自己商量。',
+    },
   },
 };
 
@@ -163,6 +172,22 @@ const ENDGAME_LINE: ManualLine = {
   ],
 };
 
+/** 记下 `create` 收到了什么 —— 判据是**线路 id 真的递出去了**,不是「按钮点得动」。 */
+function stubRooms(over: Partial<RoomsApiService> = {}): {
+  api: RoomsApiService;
+  calls: { name: string; gameKey: string; lineId?: number }[];
+} {
+  const calls: { name: string; gameKey: string; lineId?: number }[] = [];
+  const api = {
+    create: (name: string, gameKey: string, manualLineId?: number) => {
+      calls.push({ name, gameKey, lineId: manualLineId });
+      return of({ id: 'room-1' } as never);
+    },
+    ...over,
+  } as unknown as RoomsApiService;
+  return { api, calls };
+}
+
 function configure(api: ManualApiService, extraProviders: unknown[] = []): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -181,6 +206,9 @@ function configure(api: ManualApiService, extraProviders: unknown[] = []): void 
         provide: GameCapabilitiesService,
         useValue: StubGameCapabilities.sized({ xiangqi: { rows: 10, cols: 9 } }),
       },
+      // 缺省是**已登录**,因为绝大多数断言不关心这件事;「没登录」那一条自己覆盖它。
+      { provide: AuthService, useValue: { isAuthenticated: signal(true) } },
+      { provide: RoomsApiService, useValue: stubRooms().api },
       ...(extraProviders as never[]),
     ],
   });
@@ -501,6 +529,133 @@ describe('ManualStudy', () => {
     expect(called).toBe(false);
     expect(host(fixture).textContent).toContain('没有这条变化');
   });
+
+  // ---- 摆此局对弈 ----
+
+  /**
+   * 判据是**线路 id 真的递到了 API**,而不是「按钮点得动」。
+   *
+   * 递的是 id 不是盘面:起始局面与先走方由服务端从那条线路上取。房名用线路标题 ——
+   * 量过全部 1665 条,长度 4–25,房名的界是 [3, 50]。
+   */
+  it('opens a room from this line and goes to it', () => {
+    const rooms = stubRooms();
+    const navigated: unknown[][] = [];
+    const fixture = mountWith(rooms, { navigate: navigated });
+
+    playButton(fixture)!.click();
+
+    expect(rooms.calls).toEqual([
+      { name: '第1局取中兵压马破上右士', gameKey: 'xiangqi-endgame', lineId: 11 },
+    ]);
+    expect(navigated).toEqual([['/rooms', 'room-1']]);
+  });
+
+  /** 连点两下只开一间房 —— 第二下按钮已经 disabled。 */
+  it('does not open two rooms on two clicks', () => {
+    const rooms = stubRooms({
+      // 永不回应,所以 `opening` 停在 true —— 这正是双击要撞上的那一刻。
+      create: ((name: string, gameKey: string, lineId?: number) => {
+        rooms.calls.push({ name, gameKey, lineId });
+        // 永不 next / complete —— 订阅之后什么都不做,`opening` 就停在 true。
+        return new Observable<never>(() => undefined);
+      }) as never,
+    });
+    const fixture = mountWith(rooms);
+
+    const button = playButton(fixture)!;
+    button.click();
+    fixture.detectChanges();
+    button.click();
+
+    expect(rooms.calls).toHaveLength(1);
+    expect(playButton(fixture)!.disabled).toBe(true);
+  });
+
+  /**
+   * 匿名读者看不到按钮,看到的是一句「先登录」。
+   *
+   * 古谱页是 `data.publicContent` 的,而建房要认证 —— 不 gate 的话那个按钮唯一的作用
+   * 是把一次 401 变成一条错误横幅。
+   */
+  it('offers a sign-in hint instead of the button when signed out', () => {
+    const fixture = mountWith(stubRooms(), { authenticated: false });
+
+    expect(playButton(fixture)).toBeNull();
+    expect(host(fixture).textContent).toContain('登录后可以摆这一局与人对弈');
+  });
+
+  /** 开房失败时报出来,而不是静静什么都不发生。 */
+  it('says so when opening the room fails', () => {
+    const rooms = stubRooms({
+      create: (() => throwError(() => new HttpErrorResponse({ status: 500 }))) as never,
+    });
+    const fixture = mountWith(rooms);
+
+    playButton(fixture)!.click();
+    fixture.detectChanges();
+
+    expect(host(fixture).textContent).toContain('开房失败');
+  });
+
+  /**
+   * **按钮旁边就写着平台不判和棋。**
+   *
+   * 这一句在研习页上,是因为这里是那个决定发生的地方 —— 房间页上还有一句(那一句由
+   * `check-source-rules.mjs` 钉着)。不写的话,一局走成和的残局在玩家看来就是程序坏了。
+   */
+  it('warns next to the button that the platform never calls a draw', () => {
+    const fixture = mountWith(stubRooms());
+
+    expect(host(fixture).textContent).toContain('平台不判和棋');
+    // 而**这里不许**出现终局类词 —— 那是房间页那一句的事,而研习页有一条既有断言
+    // 钉着「谱评不是将死」。两句话文案不同,不是重复。
+    expect(host(fixture).textContent).not.toContain('将死');
+  });
+
+  /**
+   * 按 `data-testid` 找,**不是按文字找**。
+   *
+   * 第一版按文字找,而按下之后文案变成「正在开房…」—— 于是「连点两下」那条测试拿到的是
+   * `null`,报的是 `Cannot read properties of null`,读起来像是按钮不见了。
+   */
+  const playButton = (fixture: ReturnType<typeof mount>): HTMLButtonElement | null =>
+    host(fixture).querySelector('[data-testid="play-from-position"]');
+
+  function mountWith(
+    rooms: ReturnType<typeof stubRooms>,
+    opts: { authenticated?: boolean; navigate?: unknown[][] } = {},
+  ) {
+    configure(stubApi(), [
+      {
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: { paramMap: new Map([['lineId', '11'], ['manualKey', 'meihuapu']]) },
+        },
+      },
+      { provide: RoomsApiService, useValue: rooms.api },
+      {
+        provide: AuthService,
+        useValue: { isAuthenticated: signal(opts.authenticated ?? true) },
+      },
+      ...(opts.navigate
+        ? [
+            {
+              provide: Router,
+              useValue: {
+                navigate: (commands: unknown[]) => {
+                  opts.navigate!.push(commands);
+                  return Promise.resolve(true);
+                },
+              },
+            },
+          ]
+        : []),
+    ]);
+    const fixture = TestBed.createComponent(ManualStudy);
+    fixture.detectChanges();
+    return fixture;
+  }
 });
 
 describe('ManualList', () => {

@@ -144,11 +144,22 @@ function routerStub() {
   };
 }
 
+/** 一则 4 子残局:黑将 (0,4)、黑卒 (3,4)、红帅 (9,4)、红车 (9,0)。 */
+const ENDGAME_BOARD = (() => {
+  const cells = new Array(90).fill('.');
+  cells[0 * 9 + 4] = 'k';
+  cells[3 * 9 + 4] = 'p';
+  cells[9 * 9 + 4] = 'K';
+  cells[9 * 9 + 0] = 'R';
+  return cells.join('');
+})();
+
 const SERVER_BOARDS = () =>
   StubGameCapabilities.sized({
     gomoku: { rows: 15, cols: 15 },
     tictactoe: { rows: 3, cols: 3 },
     xiangqi: { rows: 10, cols: 9 },
+    'xiangqi-endgame': { rows: 10, cols: 9 },
   });
 
 /** The members these tests reach into: `handleLeave` is protected, `leaveWarningKey` is public. */
@@ -494,6 +505,66 @@ describe('RoomPage board selection', () => {
     expect(el.querySelector('app-xiangqi-board')).toBeTruthy();
     expect(el.querySelector('app-board')).toBeNull();
     expect(el.querySelectorAll('.xq-point')).toHaveLength(90);
+  });
+
+  /** 残局是**另一个键、同一块棋盘** —— 按单一键判的话它会落到默认方格棋盘。 */
+  it('draws the xiangqi board for an endgame room too', async () => {
+    const { fixture } = await mountWithGame('xiangqi-endgame');
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-xiangqi-board')).toBeTruthy();
+    expect(el.querySelector('app-board')).toBeNull();
+    expect(el.querySelectorAll('.xq-point')).toHaveLength(90);
+  });
+
+  /**
+   * **首帧用房间选定的那块盘面。**
+   *
+   * 判据是**子数**:那则残局只有 4 个子。不给起始局面的话棋盘从标准开局重放,画出 32 个
+   * 子 —— 而那是一个看起来完全正常的错盘面,与研习页首帧当初那个缺陷一模一样。
+   */
+  it('starts an endgame room from the chosen position, not from the opening', async () => {
+    const mounted = mount('r-1');
+    await Promise.resolve();
+    await Promise.resolve();
+    mounted.hub.state.set({
+      ...makeRoomState(),
+      gameKey: 'xiangqi-endgame',
+      chosenSetup: `${ENDGAME_BOARD}:1`,
+    });
+    mounted.fixture.detectChanges();
+
+    const el = mounted.fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.xq-piece')).toHaveLength(4);
+  });
+
+  /** 反面对照:普通象棋房仍然是 32 个子 —— 否则上一条在「永远 4 个子」上恒真。 */
+  it('still starts a plain xiangqi room from the opening', async () => {
+    const { fixture } = await mountWithGame('xiangqi');
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.xq-piece')).toHaveLength(32);
+  });
+
+  /**
+   * **残局房写明平台不判和棋,普通象棋房不写。**
+   *
+   * 不写的后果不是缺一段文案:一则「和棋」题的解就是把局面走成和,而平台看不出来 ——
+   * 玩家会以为是程序坏了,而那种误解和真的坏了在界面上完全一样。
+   *
+   * `check-source-rules.mjs` 里另有一条规则钉着那个键必须出现在模板里;这一条钉的是它
+   * **只**出现在残局房。两条不重复:那一条守「别删掉」,这一条守「别到处都是」。
+   */
+  it('says the platform never calls a draw — in an endgame room only', async () => {
+    const endgame = await mountWithGame('xiangqi-endgame');
+    expect((endgame.fixture.nativeElement as HTMLElement).textContent).toContain(
+      'game.endgame.no-draw',
+    );
+
+    TestBed.resetTestingModule();
+    const plain = await mountWithGame('xiangqi');
+    expect((plain.fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'game.endgame.no-draw',
+    );
   });
 
   it('sizes a tic-tac-toe room from the server descriptor', async () => {
