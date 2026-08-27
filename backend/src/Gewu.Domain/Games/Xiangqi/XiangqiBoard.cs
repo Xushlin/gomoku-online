@@ -29,6 +29,10 @@ internal sealed class XiangqiBoard
     }
 
     /// <summary>摆好开局的棋盘。</summary>
+    /// <summary>一块空盘 —— 残局从设置摆子时的起点。</summary>
+    /// <returns>没有任何棋子的局面。</returns>
+    internal static XiangqiBoard Empty() => new();
+
     internal static XiangqiBoard Initial()
     {
         var board = new XiangqiBoard();
@@ -77,7 +81,7 @@ internal sealed class XiangqiBoard
     /// <summary>取某格的棋子;空格返回 <c>null</c>。</summary>
     internal XiangqiPiece? At(int row, int col) => _cells[(row * ColCount) + col];
 
-    private void Set(int row, int col, XiangqiPiece? piece) => _cells[(row * ColCount) + col] = piece;
+    internal void Set(int row, int col, XiangqiPiece? piece) => _cells[(row * ColCount) + col] = piece;
 
     /// <summary>
     /// 走一步 —— **不做任何校验**,合法性由 <see cref="XiangqiRules"/> 判定。

@@ -59,6 +59,20 @@ public sealed class MissingGameSetupException : DomainException
 }
 
 /// <summary>
+/// 调用方给的对局设置**内容**不合法。
+/// <para>
+/// 与 <see cref="MissingGameSetupException"/> 分开,因为两者的修法不同:那一个说「该给的
+/// 没给、不该给的给了」——调用方的心智模型错了;这一个说「给了,但这份用不了」——那份
+/// 设置本身的内容错了,而消息里 MUST 说清是哪一条内容。
+/// </para>
+/// </summary>
+public sealed class InvalidGameSetupException : DomainException
+{
+    /// <inheritdoc />
+    public InvalidGameSetupException(string message) : base("invalid-game-setup", message) { }
+}
+
+/// <summary>
 /// 规则给出的首手座位不在 <c>[0, SeatCount)</c> 内。Api 层映射 409。
 /// <para>
 /// 存下来会造出一局**谁都动不了**的棋:每个人都不是当前回合,于是几十秒后由超时兜底

@@ -73,8 +73,31 @@ public sealed class XiangqiRules : IBoardGameRules
     public bool IsRated => true;
 
     /// <inheritdoc />
-    public MoveApplication Apply(
-        MatchState state, MoveIntent intent, int seat)
+    public MoveApplication Apply(MatchState state, MoveIntent intent, int seat)
+        => ApplyOn(GameKey, XiangqiBoard.Initial(), state, intent, seat);
+
+    /// <summary>
+    /// 走子判定的**唯一一份实现**,起始盘面是参数。
+    /// <para>
+    /// 它 <c>internal</c> 是为了让 <see cref="XiangqiEndgameRules"/> 从一则残局开局时**共用
+    /// 这一份**,而不是持有一份副本 —— 副本会和这里各自漂,而漂的表现是**同一步棋在两个
+    /// 房间里一个合法一个不合法**,那种不一致没有任何断言会红,除非有人正好同时在两种
+    /// 房间里试同一步。
+    /// </para>
+    /// <para>
+    /// 走子逻辑因此**没有搬家**:既有的一千多条象棋测试仍然打在同一段代码上,
+    /// 所以它们是这次「多一个入口没有改行为」的可执行形式。
+    /// </para>
+    /// </summary>
+    /// <param name="gameKey">调用方的棋种键 —— 错误消息要说出**是哪一局**拒绝了这一步,
+    /// 而把 <c>xiangqi</c> 写死会让残局房报出来的错说错自己是谁。</param>
+    /// <param name="start">这一局从哪块盘面开始。</param>
+    /// <param name="state">对局状态。</param>
+    /// <param name="intent">这一步。</param>
+    /// <param name="seat">走子的座位。</param>
+    /// <returns>走完之后的对局状态。</returns>
+    internal static MoveApplication ApplyOn(
+        string gameKey, XiangqiBoard start, MatchState state, MoveIntent intent, int seat)
     {
         // 座位 0 = 先手 = 红。「Stone.Black 就是红」那条读法在这里落成结构。
         var side = BoardSeats.ToStone(seat);
@@ -88,7 +111,7 @@ public sealed class XiangqiRules : IBoardGameRules
         if (intent.From is not { } from)
         {
             throw new InvalidMoveException(
-                $"'{GameKey}' moves pieces; a move must carry an origin square.");
+                $"'{gameKey}' moves pieces; a move must carry an origin square.");
         }
 
         // 文本载荷在这里被挡下,与连 N 子同理。
@@ -96,10 +119,11 @@ public sealed class XiangqiRules : IBoardGameRules
         if (!XiangqiBoard.InBounds(from) || !XiangqiBoard.InBounds(to))
         {
             throw new InvalidMoveException(
-                $"Position is outside the {Rows}x{Cols} board of '{GameKey}'.");
+                $"Position is outside the {XiangqiBoard.RowCount}x{XiangqiBoard.ColCount} "
+                + $"board of '{gameKey}'.");
         }
 
-        var board = Replay(state.History);
+        var board = Replay(start, state.History);
 
         var piece = board.At(from)
             ?? throw new InvalidMoveException(
@@ -154,10 +178,16 @@ public sealed class XiangqiRules : IBoardGameRules
 
     private static Stone Opponent(Stone side) => side == Stone.Black ? Stone.White : Stone.Black;
 
-    /// <summary>从走子历史重建局面。历史里的步不再校验 —— 它们当初就是这么被接受的。</summary>
-    private static XiangqiBoard Replay(IReadOnlyList<PlayedMove> history)
+    /// <summary>
+    /// 从走子历史重建局面。历史里的步不再校验 —— 它们当初就是这么被接受的。
+    /// <para>
+    /// 起始盘面是参数而不是常量:残局从一则古谱的局面开局,而此前这里写死
+    /// <c>XiangqiBoard.Initial()</c> —— 那正是「从指定局面开局」这件事唯一挡在路上的一行。
+    /// </para>
+    /// </summary>
+    private static XiangqiBoard Replay(XiangqiBoard start, IReadOnlyList<PlayedMove> history)
     {
-        var board = XiangqiBoard.Initial();
+        var board = start.Clone();
         foreach (var played in history)
         {
             if (played.From is { } origin)
@@ -296,7 +326,7 @@ public sealed class XiangqiRules : IBoardGameRules
     /// <param name="side">要枚举哪一方的着法。</param>
     public IReadOnlyList<MoveIntent> LegalMoves(
         IReadOnlyList<PlayedMove> history, Stone side)
-        => LegalMovesOn(Replay(history), side);
+        => LegalMovesOn(Replay(XiangqiBoard.Initial(), history), side);
 
     private static List<MoveIntent> LegalMovesOn(XiangqiBoard board, Stone side)
     {
@@ -345,7 +375,8 @@ public sealed class XiangqiRules : IBoardGameRules
 
     /// <summary>供 AI 查看局面的只读入口 —— 返回一份副本,调用方改不到规则的东西。</summary>
     /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
-    internal static XiangqiBoard BoardFrom(IReadOnlyList<PlayedMove> history) => Replay(history);
+    internal static XiangqiBoard BoardFrom(IReadOnlyList<PlayedMove> history)
+        => Replay(XiangqiBoard.Initial(), history);
 
     /// <summary>
     /// 直接在一块盘面上枚举合法着法 —— 供 AI 搜索使用。
@@ -359,4 +390,14 @@ public sealed class XiangqiRules : IBoardGameRules
     /// <param name="side">要枚举哪一方的着法。</param>
     internal static List<MoveIntent> LegalMovesOnBoard(XiangqiBoard board, Stone side)
         => LegalMovesOn(board, side);
+
+    /// <summary>
+    /// 从给定起始盘面重放历史 —— 供 <see cref="XiangqiEndgameRules"/> 用。
+    /// <para>与 <see cref="ApplyOn"/> 同一条理由:共用这一份,而不是各持一份副本。</para>
+    /// </summary>
+    /// <param name="start">起始盘面。</param>
+    /// <param name="history">走子历史。</param>
+    /// <returns>重放之后的局面。</returns>
+    internal static XiangqiBoard BoardFrom(XiangqiBoard start, IReadOnlyList<PlayedMove> history)
+        => Replay(start, history);
 }

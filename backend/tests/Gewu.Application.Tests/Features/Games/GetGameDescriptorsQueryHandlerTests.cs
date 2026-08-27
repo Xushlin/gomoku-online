@@ -106,7 +106,7 @@ public class GetGameDescriptorsQueryHandlerTests
     }
 
     [Fact]
-    public async Task The_unrated_games_are_tictactoe_doudizhu_and_wakeng()
+    public async Task The_unrated_games_are_tictactoe_doudizhu_wakeng_and_xiangqi_endgame()
     {
         // 此前这条是"一字棋是唯一不计分的对战棋种",再之前是"一字棋与斗地主"。名单在变,而
         // **每一次变的都是理由,不是数量** —— 三个棋种不计分,理由有两种:
@@ -119,13 +119,24 @@ public class GetGameDescriptorsQueryHandlerTests
         // 这条断言仍然在守同一件事:不计分那一侧非空,所以那几条"两类都要出现过"的遍历断言
         // 不会退化成单边空转。
         //
-        // **这一条是本变更里唯一没被预告的红灯。** 另外五条走查都在自己的注释里写了"挖坑落地
-        // 那天这条会红";这一条只是一份写死的名单,没有预告 —— 它被那句"全库搜一遍别的硬编码
-        // 棋种计数"的收尾任务翻出来,而不是被它自己的注释翻出来。
+        // **这一条曾经是本变更里唯一没被预告的红灯**(挖坑那次):另外五条走查都在自己的注释里
+        // 写了"挖坑落地那天这条会红",而这一条只是一份写死的名单。
+        //
+        // 而 `play-from-position` 里它是**被预告过**的 —— 那次提案专门写了一节说它会红,并且
+        // 说明红了之后要回答什么。答案是**第三种理由**:
+        //
+        // - 象棋残局:**开局就不公平**。一则残局有一方按构造是赢定的,那是谱主设计它的方式;
+        //   给这样的局面算 ELO 是在给一个已知结局的局面发分。这既不是"没有人人对战"(它有),
+        //   也不是"按分结算"(它按将死结算) —— 所以它是一条新的、需要自己写下来的理由,
+        //   而不是往名单里加一个名字。
+        //
+        // 这条理由同时由一条遍历注册表的断言守着(`A_game_that_starts_from_a_chosen_position_is_never_rated`),
+        // 所以它不靠这份名单被记得。
         var items = await Build().Handle(new GetGameDescriptorsQuery(), default);
 
         items.Where(i => !i.IsRated).Select(i => i.GameKey)
-            .Should().BeEquivalentTo([GameKeys.TicTacToe, GameKeys.Doudizhu, GameKeys.Wakeng]);
+            .Should().BeEquivalentTo(
+                [GameKeys.TicTacToe, GameKeys.Doudizhu, GameKeys.Wakeng, GameKeys.XiangqiEndgame]);
     }
 
     [Fact]
