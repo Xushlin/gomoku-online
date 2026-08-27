@@ -78,7 +78,7 @@ public sealed class CreateAiRoomCommandHandler : IRequestHandler<CreateAiRoomCom
             ?? throw new RoomNotFoundException(
                 $"Room '{room.Id.Value}' declares unknown game '{request.GameKey}'.");
 
-        room.JoinAsPlayer(bot.Id, now, rules, MatchSetup.For(rules, _seeds));
+        room.JoinAsPlayer(bot.Id, now, rules, MatchSetup.For(room, rules, _seeds));
         // Human picked White → seat the bot on Black so it plays first. Same
         // transaction as create + join, so the AI worker can't race with
         // the swap (room invisible until commit).

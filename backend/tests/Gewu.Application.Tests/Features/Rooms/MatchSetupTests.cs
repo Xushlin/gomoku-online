@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Gewu.Application.Features.Rooms.JoinRoom;
 using Gewu.Domain.Games.Abstractions;
+using Gewu.Domain.Games.NInARow;
+using Gewu.Domain.Games.Xiangqi;
 using Gewu.Domain.Rooms;
 using Gewu.Domain.ValueObjects;
 
@@ -88,5 +90,50 @@ public class MatchSetupTests
 
         room.Game!.Setup.Should().BeNull();
         seeds.Calls.Should().Be(0);
+    }
+
+    /// <summary>
+    /// 第三支:**选定式棋种的设置从房间上取,而且一个种子都不取**。
+    /// <para>
+    /// 两件事都要断言。只断言「设置对了」的话,一个「取一个种子然后扔掉」的实现照样全绿,
+    /// 而它会让「这个棋种有随机性吗」这个问题在读代码时得不到确定答案 —— 与上面那条
+    /// 一字不差的理由。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task A_positional_game_takes_its_setup_from_the_room_and_takes_no_seed()
+    {
+        var host = RoomsFixtures.NewUser("Alice", "alice@example.com");
+        var bob = RoomsFixtures.NewUser("Bob", "bob@example.com");
+        var rules = (IPositionalStartRules)GomokuRules.Registry.For(GameKeys.XiangqiEndgame)!;
+        var chosen = ChosenEndgame();
+        var room = Room.CreateFromPosition(
+            RoomId.NewId(), "setup", host.Id, RoomsFixtures.Now, rules, chosen);
+        var seeds = new FakeSeeds(4242);
+
+        RoomsFixtures.SetupClock(_clock);
+        RoomsFixtures.SetupUserLookup(_users, host, bob);
+        _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
+        _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var handler = new JoinRoomCommandHandler(
+            _rooms.Object, _users.Object, _clock.Object, _uow.Object, _notifier.Object,
+            RoomsFixtures.TestGameOptions(), GomokuRules.Registry, seeds);
+        await handler.Handle(new JoinRoomCommand(bob.Id, room.Id), default);
+
+        room.Game!.Setup.Should().Be(chosen);
+        seeds.Calls.Should().Be(0);
+    }
+
+    /// <summary>红帅 (9,4)、红车 (9,0);黑将 (0,4)、黑卒 (3,4),黑先走。</summary>
+    private static string ChosenEndgame()
+    {
+        var cells = new char[XiangqiSetup.BoardLength];
+        Array.Fill(cells, '.');
+        cells[(0 * 9) + 4] = 'k';
+        cells[(3 * 9) + 4] = 'p';
+        cells[(9 * 9) + 4] = 'K';
+        cells[(9 * 9) + 0] = 'R';
+        return new XiangqiSetup(new string(cells), FirstSeat: 1).Encode();
     }
 }

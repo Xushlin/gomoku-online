@@ -137,6 +137,20 @@ public sealed class Room
     /// <summary>对局子实体;Waiting 状态下为 <c>null</c>。</summary>
     public Game? Game { get; private set; }
 
+    /// <summary>
+    /// 建房时**选定**的开局设置;不是选定式棋种时为 <c>null</c>。
+    /// <para>
+    /// 它必须存在房间上而不是对局上,理由是**时间差**:房间建好时对局还不存在,而选定发生在
+    /// 建房那一刻(「摆这一则残局对弈」),开局要等第二个人进来。发牌没有这个问题 ——
+    /// 那份设置在开局那一刻现造。
+    /// </para>
+    /// <para>
+    /// 开局时它会成为 <see cref="Rooms.Game.Setup"/>,而那**不是一份会漂的副本**:两者在
+    /// 开局那一刻由同一次赋值写出,此后本字段再没有人读。
+    /// </para>
+    /// </summary>
+    public string? ChosenSetup { get; private set; }
+
     /// <summary>围观者的用户 Id 集合(只读投影,屏蔽内部 <see cref="RoomSpectator"/> 实体)。</summary>
     public IReadOnlyCollection<UserId> Spectators =>
         _spectators.Select(s => s.UserId).ToList().AsReadOnly();
@@ -181,6 +195,43 @@ public sealed class Room
             CreatedAt = createdAt,
         };
         room._seats.Add(new RoomSeat(id, FirstSeat, hostUserId));
+        return room;
+    }
+
+    /// <summary>
+    /// 从一个**选定的局面**建房 —— 目前唯一的用法是「摆这一则古谱残局对弈」。
+    /// <para>
+    /// <paramref name="rules"/> 的类型是 <see cref="IPositionalStartRules"/> 而不是一个棋种键:
+    /// **于是「拿这条路建一局五子棋」在编译期就不成立**,而棋种键从规则自己身上取,
+    /// 键与「要不要设置」因此不可能各说各话。这比在方法体里查注册表强的地方是,后者要等到
+    /// 运行时才知道,而那时房间已经建出来了。
+    /// </para>
+    /// <para>
+    /// 设置在**这里**就校验,而不是留到开局:一份坏设置留到坐满才抛,表现是「房间建出来了、
+    /// 谁进来都开不了局」,而调用方那时早已拿到 201。
+    /// </para>
+    /// </summary>
+    /// <param name="id">房间主键。</param>
+    /// <param name="name">房间名,trim 后 3–50 字符。</param>
+    /// <param name="hostUserId">创建者。</param>
+    /// <param name="createdAt">创建时间(UTC)。</param>
+    /// <param name="rules">本棋种的规则 —— 它同时给出棋种键与校验。</param>
+    /// <param name="chosenSetup">选定的设置,由 <paramref name="rules"/> 校验。</param>
+    /// <exception cref="InvalidRoomNameException">名称不合法。</exception>
+    /// <exception cref="InvalidGameSetupException">设置不合法,并说明是哪一条。</exception>
+    public static Room CreateFromPosition(
+        RoomId id,
+        string name,
+        UserId hostUserId,
+        DateTime createdAt,
+        IPositionalStartRules rules,
+        string chosenSetup)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        rules.ValidateSetup(chosenSetup);
+
+        var room = Create(id, name, hostUserId, createdAt, rules.GameKey);
+        room.ChosenSetup = chosenSetup;
         return room;
     }
 

@@ -1,5 +1,6 @@
 using Gewu.Application.Abstractions;
 using Gewu.Domain.Games.Abstractions;
+using Gewu.Domain.Rooms;
 
 namespace Gewu.Application.Common.Mapping;
 
@@ -19,14 +20,25 @@ namespace Gewu.Application.Common.Mapping;
 internal static class MatchSetup
 {
     /// <summary>
-    /// 这个棋种需要设置就造一份,否则返回 <c>null</c>。
+    /// 这个棋种需要设置就取一份,否则返回 <c>null</c>。
     /// <para>
     /// 不需要设置时 MUST NOT 调 <see cref="ISeedProvider.NextSeed"/> —— 一个每局都取一次
     /// 随机数却没人用的调用,会让"这个棋种有随机性吗"这个问题在读代码时得不到确定答案。
     /// </para>
+    /// <para>
+    /// **两种来源在这里恰好各占一支,而房间是必需的参数**:选定式棋种的设置在建房那一刻
+    /// 就定了,存在 <see cref="Room.ChosenSetup"/> 上。让调用方自己去取那个字段,等于让
+    /// 「忘了取」变成一个可能 —— 而忘了取的表现是房间坐满却开不了局,要等到几十秒后超时。
+    /// </para>
     /// </summary>
+    /// <param name="room">本房间 —— 选定式棋种的设置从它身上取。</param>
     /// <param name="rules">本房间棋种的规则。</param>
     /// <param name="seeds">开局种子的来源。</param>
-    public static string? For(IGameRules rules, ISeedProvider seeds)
-        => rules is IDealtGameRules dealt ? dealt.CreateSetup(seeds.NextSeed()) : null;
+    public static string? For(Room room, IGameRules rules, ISeedProvider seeds)
+        => rules switch
+        {
+            IDealtGameRules dealt => dealt.CreateSetup(seeds.NextSeed()),
+            IPositionalStartRules => room.ChosenSetup,
+            _ => null,
+        };
 }

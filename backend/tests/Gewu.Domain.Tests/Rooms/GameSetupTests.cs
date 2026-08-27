@@ -206,6 +206,69 @@ public class GameSetupTests
         }
     }
 
+    /// <summary>
+    /// 选定式棋种走**普通建房**那条路(没有选定的设置),开局时 MUST 抛,房间 MUST 留在
+    /// Waiting。
+    /// <para>
+    /// 这条守的是本变更留下的那个残余口子:<c>Room.CreateFromPosition</c> 的参数类型让
+    /// 「拿这条路建五子棋」在编译期就不成立,但反过来 —— 拿普通的 <c>Room.Create</c> 建一间
+    /// 残局房 —— 类型拦不住。application 的 validator 拦得住,而这一条钉的是**即使它没拦住,
+    /// 结果也不是一局标准开局的棋**,而是一间开不了局的房。
+    /// </para>
+    /// <para>
+    /// 一间开不了局的房是难看的,但它是**响的**;一局静静从标准开局摆起的残局是不响的,
+    /// 而后者才是这个变更从头到尾在防的东西。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void A_positional_game_built_through_the_plain_path_never_starts()
+    {
+        var host = NewUser();
+        var room = WaitingRoom(host, "positional-probe");
+
+        var act = () => room.JoinAsPlayer(
+            NewUser(), Now.AddSeconds(1), new PositionalProbeRules(), setup: null);
+
+        act.Should().Throw<MissingGameSetupException>()
+            .Which.Message.Should().Contain("chosen setup");
+
+        room.Status.Should().Be(RoomStatus.Waiting);
+        room.Game.Should().BeNull("MUST NOT 静静开出一局标准开局的棋");
+    }
+
+    /// <summary>反面对照:给了设置就能开局 —— 否则上一条在「这个棋种永远开不了局」上恒真。</summary>
+    [Fact]
+    public void The_same_positional_game_starts_once_a_setup_is_chosen()
+    {
+        var host = NewUser();
+        var room = WaitingRoom(host, "positional-probe");
+
+        room.JoinAsPlayer(NewUser(), Now.AddSeconds(1), new PositionalProbeRules(), setup: "ok");
+
+        room.Status.Should().Be(RoomStatus.Playing);
+        room.Game!.Setup.Should().Be("ok");
+    }
+
+    /// <summary>要一份由调用方选定的设置的探针。</summary>
+    private sealed class PositionalProbeRules : IGameRules, IPositionalStartRules
+    {
+        public string GameKey => "positional-probe";
+        public int SeatCount => 2;
+        public bool SupportsHumanVsHuman => true;
+        public bool IsRated => false;
+
+        public void ValidateSetup(string setup)
+        {
+            if (setup != "ok")
+            {
+                throw new InvalidGameSetupException($"'{setup}' is not the one setup this probe takes.");
+            }
+        }
+
+        public MoveApplication Apply(MatchState state, MoveIntent intent, int seat)
+            => MoveApplication.Ongoing();
+    }
+
     [Fact]
     public void CreateSetup_is_a_pure_function_of_its_seed()
     {

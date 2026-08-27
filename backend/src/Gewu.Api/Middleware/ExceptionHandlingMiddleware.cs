@@ -94,7 +94,8 @@ public sealed class ExceptionHandlingMiddleware
         InvalidMoveException or
         InvalidRoomNameException or
         InvalidRoomStatusTransitionException or
-        InvalidChatContentException => (
+        InvalidChatContentException or
+        UnknownManualLineException => (
             (int)HttpStatusCode.BadRequest,
             "Bad request.",
             ex.Message),

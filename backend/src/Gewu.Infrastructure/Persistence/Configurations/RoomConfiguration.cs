@@ -27,6 +27,10 @@ public sealed class RoomConfiguration : IEntityTypeConfiguration<Room>
 
         builder.Property(r => r.GameKey).IsRequired().HasMaxLength(64);
 
+        // 建房时选定的设置。可空(只有选定式棋种有),不限长 —— 与 Game.Setup 同一个决定,
+        // 因为它们装的是同一种东西:一段对内核不透明、由规则解读的字节。
+        builder.Property(r => r.ChosenSetup);
+
         builder.Property(r => r.HostUserId).HasConversion<UserIdConverter>().IsRequired();
 
         // BlackPlayerId / WhitePlayerId 不再是列 —— 它们是 Seats[0] / Seats[1] 的派生读法,

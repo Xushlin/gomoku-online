@@ -164,6 +164,45 @@ public class XiangqiEndgameRulesTests
             .Which.Message.Should().Contain("exactly one general");
     }
 
+    /// <summary>
+    /// 相 / 象只能在自己那一侧的 **7 个点**上 —— 这是象棋的规则(它走田字且不过河,
+    /// 所以离开这 7 个点是走不到的),**不是**从样本里归纳出来的约定。
+    /// <para>
+    /// 两条从样本里归纳出来的 MUST 已经在这个变更之前各错过一次(「最后半手必将死」、
+    /// 「红先走」),所以这一条是量过全量才写的:1665 条记录(1634 残局 + 31 梅花谱)里
+    /// 违例 **0** 条。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Rejects_an_elephant_off_its_own_seven_points()
+    {
+        // (8,2) 在红方半场、也不过河,但它不是相位 —— 只有 (9,2) (7,0) (7,4) (5,2) (9,6)
+        // (7,8) (5,6) 是。一个只查「不过河」的实现会放它过去。
+        var elephantOffPoint = Board(("k", 0, 4), ("K", 9, 4), ("B", 8, 2));
+
+        var act = () => Rules.ValidateSetup(new XiangqiSetup(elephantOffPoint, Red).Encode());
+
+        act.Should().Throw<InvalidGameSetupException>()
+            .Which.Message.Should().Contain("elephant");
+    }
+
+    /// <summary>反面对照:7 个点上的相 / 象 MUST 通过 —— 否则上一条恒真。</summary>
+    [Theory]
+    [InlineData("B", 9, 2)]
+    [InlineData("B", 7, 0)]
+    [InlineData("B", 5, 6)]
+    [InlineData("b", 0, 2)]
+    [InlineData("b", 2, 8)]
+    [InlineData("b", 4, 2)]
+    public void Accepts_an_elephant_on_one_of_its_own_seven_points(string code, int row, int col)
+    {
+        var board = Board(("k", 0, 4), ("K", 9, 4), (code, row, col));
+
+        var act = () => Rules.ValidateSetup(new XiangqiSetup(board, Red).Encode());
+
+        act.Should().NotThrow();
+    }
+
     [Fact]
     public void Rejects_a_general_outside_its_palace()
     {

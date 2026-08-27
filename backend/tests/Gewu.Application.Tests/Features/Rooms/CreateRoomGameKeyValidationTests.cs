@@ -29,8 +29,20 @@ public class CreateRoomGameKeyValidationTests
     /// <summary>本平台上不存在的棋种 —— 围棋不在七款规划之内。</summary>
     private const string NotOnThePlatform = "go";
 
+    /// <summary>
+    /// 一条**除棋种外处处合法**的建房命令。
+    /// <para>
+    /// 线路 id 按棋种的**类型**补上,而不是按键:从选定局面开局的棋种没有线路 id 就该被拒,
+    /// 那是本变更新增的规则。不补的话,下面那条遍历注册表的走查会把「不支持人人对战」与
+    /// 「少了线路 id」当成同一件事 —— **而它报出来的样子完全一样**。
+    /// </para>
+    /// </summary>
     private static CreateRoomCommand HumanRoom(string gameKey)
-        => new(UserId.NewId(), "a valid name", gameKey);
+        => new(UserId.NewId(), "a valid name", gameKey, ManualLineIdFor(gameKey));
+
+    /// <summary>这个棋种要线路 id 就给一个,否则 <c>null</c>。判据是类型,不是键。</summary>
+    private static int? ManualLineIdFor(string gameKey)
+        => GomokuRules.Registry.For(gameKey) is IPositionalStartRules ? 1 : null;
 
     private static CreateAiRoomCommand AiRoom(string gameKey)
         => new(UserId.NewId(), "a valid name", BotDifficulty.Easy, Stone.Black, gameKey);
@@ -267,10 +279,90 @@ public class CreateRoomGameKeyValidationTests
     public void A_bad_game_key_does_not_mask_other_errors()
     {
         // 名字和棋种同时不合法时,两条错误都要报出来 —— 否则客户端改完一个才发现还有一个。
-        var result = Human.Validate(new CreateRoomCommand(UserId.NewId(), "ab", NotOnThePlatform));
+        var result = Human.Validate(new CreateRoomCommand(UserId.NewId(), "ab", NotOnThePlatform, ManualLineId: null));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateRoomCommand.Name));
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateRoomCommand.GameKey));
+    }
+
+    // ---- 线路 id 与棋种:两个方向 ----
+
+    /// <summary>
+    /// 从选定局面开局的棋种,**没给线路 id 就拒**。
+    /// <para>
+    /// 放行的后果不是一条错误信息:房间会建出来、坐满、然后在开局那一刻抛,而调用方那时
+    /// 早已拿到 201。表现是「这个房间谁进来都开不了局」。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void A_game_that_starts_from_a_chosen_position_needs_a_manual_line_id()
+    {
+        var withoutId = new CreateRoomCommand(
+            UserId.NewId(), "a valid name", GameKeys.XiangqiEndgame, ManualLineId: null);
+
+        var result = Human.Validate(withoutId);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().ContainSingle(
+            e => e.PropertyName == nameof(CreateRoomCommand.ManualLineId));
+    }
+
+    /// <summary>反过来:**不是**选定式的棋种带了线路 id,也拒。</summary>
+    [Fact]
+    public void A_game_that_does_not_start_from_a_chosen_position_refuses_a_manual_line_id()
+    {
+        var withId = new CreateRoomCommand(
+            UserId.NewId(), "a valid name", GameKeys.Xiangqi, ManualLineId: 7);
+
+        var result = Human.Validate(withId);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().ContainSingle(
+            e => e.PropertyName == nameof(CreateRoomCommand.ManualLineId));
+    }
+
+    /// <summary>而两边都对的那一组 MUST 通过 —— 否则上面两条在「一律拒绝」上恒真。</summary>
+    [Fact]
+    public void The_endgame_game_with_a_manual_line_id_passes()
+    {
+        var ok = new CreateRoomCommand(
+            UserId.NewId(), "a valid name", GameKeys.XiangqiEndgame, ManualLineId: 7);
+
+        Human.Validate(ok).IsValid.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// 这条规则的判据是**类型**,不是 <c>xiangqi-endgame</c> 这个键 —— 走查整个注册表,
+    /// 「要不要线路 id」与「是不是 <see cref="IPositionalStartRules"/>」MUST 逐个一致。
+    /// <para>
+    /// 两个方向都要在样本里,否则这条在「一个都不是」或「一个都是」上恒真。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Needing_a_manual_line_id_tracks_the_type_across_the_whole_registry()
+    {
+        var needing = 0;
+        var notNeeding = 0;
+
+        foreach (var rules in GomokuRules.Registry.All.Where(r => r.SupportsHumanVsHuman))
+        {
+            var positional = rules is IPositionalStartRules;
+            var withoutId = new CreateRoomCommand(
+                UserId.NewId(), "a valid name", rules.GameKey, ManualLineId: null);
+            var withId = new CreateRoomCommand(
+                UserId.NewId(), "a valid name", rules.GameKey, ManualLineId: 1);
+
+            Human.Validate(withoutId).IsValid.Should().Be(
+                !positional, "'{0}' is positional == {1}", rules.GameKey, positional);
+            Human.Validate(withId).IsValid.Should().Be(
+                positional, "'{0}' is positional == {1}", rules.GameKey, positional);
+
+            if (positional) needing++; else notNeeding++;
+        }
+
+        needing.Should().Be(1, "只有象棋残局从选定局面开局 —— 第二个落地时这条会红,"
+            + "那时要问的是「这两个棋种的起始局面真是同一种东西吗」");
+        notNeeding.Should().BeGreaterThan(0, "否则这条走查从没走过「不要线路 id」那一支");
     }
 }
