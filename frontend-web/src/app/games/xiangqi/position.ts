@@ -112,7 +112,13 @@ function buildInitialPosition(): XiangqiPosition {
 export const INITIAL_POSITION: XiangqiPosition = buildInitialPosition();
 
 /**
- * The position after applying `moves` to the opening setup.
+ * The position after applying `moves` to `from` — the opening setup by default.
+ *
+ * `from` exists because **not every xiangqi record starts from the opening.** The
+ * endgame collections (残局) hand over a sparse position and a move list; replaying
+ * those from the standard setup draws a 32-piece board with a few moves played,
+ * which is **a board that looks entirely normal and is wrong**. The default keeps
+ * every existing caller — live rooms, replays, 梅花谱 — on exactly the old path.
  *
  * Pure — callers get a fresh array and `INITIAL_POSITION` is never mutated.
  *
@@ -125,8 +131,11 @@ export const INITIAL_POSITION: XiangqiPosition = buildInitialPosition();
  * origin, overwrite the destination — so a valid history reaches the same position
  * on both sides by the same steps.
  */
-export function positionAfter(moves: readonly MoveDto[]): XiangqiPosition {
-  const cells: (XiangqiPiece | null)[] = [...INITIAL_POSITION];
+export function positionAfter(
+  moves: readonly MoveDto[],
+  from: XiangqiPosition = INITIAL_POSITION,
+): XiangqiPosition {
+  const cells: (XiangqiPiece | null)[] = [...from];
 
   for (const move of moves) {
     const { fromRow, fromCol, row, col } = move;
@@ -168,3 +177,52 @@ export function lastMoveCaptured(moves: readonly MoveDto[]): boolean {
 
   return pieceAt(positionAfter(moves.slice(0, -1)), row, col) !== null;
 }
+
+/**
+ * Parse a 90-character row-major board string into a position.
+ *
+ * The wire format is one character per intersection, `.` for empty, red uppercase
+ * and black lowercase (`R N B A K C P` / `r n b a k c p`), index `row * 9 + col`.
+ * It is what the manual endpoints send as a line's starting position.
+ *
+ * **The length is checked, not assumed.** An 89-character string would shift every
+ * row after the gap by one column — a board that renders perfectly and is wrong
+ * everywhere below the first missing square. A wrong length throws; an unknown
+ * character is treated as empty, which follows `positionAfter`'s rule for a
+ * mismatched history: draw a board that may be wrong, never blank the page.
+ */
+export function positionFromBoardString(board: string): XiangqiPosition {
+  const expected = XIANGQI_ROWS * XIANGQI_COLS;
+  if (board.length !== expected) {
+    throw new Error(
+      `Board string must be exactly ${expected} characters, got ${board.length}.`,
+    );
+  }
+
+  const cells: (XiangqiPiece | null)[] = new Array(expected).fill(null);
+  for (let i = 0; i < expected; i++) {
+    const code = board[i];
+    if (code === '.') continue;
+    const type = PIECE_CODES[code.toUpperCase()];
+    if (type === undefined) continue;
+    cells[i] = { type, side: code === code.toUpperCase() ? RED : BLACK };
+  }
+  return cells;
+}
+
+/**
+ * Wire code → piece type. Uppercase only; the side comes from the letter's case.
+ *
+ * Derived from `XiangqiPieceType` by hand is exactly the shape this repo has fixed
+ * seven times, so the pairing is asserted in `position.spec.ts` against the union's
+ * members rather than trusted here.
+ */
+const PIECE_CODES: Readonly<Record<string, XiangqiPieceType>> = {
+  R: 'chariot',
+  N: 'horse',
+  B: 'elephant',
+  A: 'advisor',
+  K: 'general',
+  C: 'cannon',
+  P: 'soldier',
+};

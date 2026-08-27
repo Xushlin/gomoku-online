@@ -79,9 +79,12 @@ describe('app routes', () => {
     expect(unguarded.map((r) => r.path ?? '(no path)')).toEqual([]);
 
     // 两边都要有样本,否则上面那行会在「全都匿名」或「全都有守卫」时空转。
+    // 三层古谱:谱的清单 -> 单谱目录 -> 学习页。**「恰好」而不是「至少」** —— 加第四条
+    // 匿名路由必须有人改这里,而 `add-xiangqi-endgames` 加第三条时它确实红了一次。
     expect(gameRoutes.filter(isPublic).map((r) => r.path)).toEqual([
       'g/xiangqi/manual',
-      'g/xiangqi/manual/:lineId',
+      'g/xiangqi/manual/:manualKey',
+      'g/xiangqi/manual/:manualKey/:lineId',
     ]);
     expect(gameRoutes.filter((r) => r.canMatch?.includes(authGuard)).length).toBeGreaterThan(5);
   });

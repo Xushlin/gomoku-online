@@ -49,7 +49,15 @@ public sealed class GetXiangqiManualQueryHandler
                     .ToList()))
             .ToList();
 
-        return new ManualCatalogueDto(request.ManualKey, GameKeys.Xiangqi, chapters);
+        // 书名与分组标记来自谱表。取不到时**不编一个** —— 一条有线路却没有身份行的谱
+        // 说明播种坏了,而 `manualKey` 本身至少是真的。
+        var manual = await _manuals.GetManualAsync(request.ManualKey, cancellationToken);
+        return new ManualCatalogueDto(
+            request.ManualKey,
+            manual?.Name ?? request.ManualKey,
+            manual?.Grouped ?? false,
+            GameKeys.Xiangqi,
+            chapters);
     }
 
     /// <summary>半手数 —— 由着法数组算出,不是存的一列。</summary>

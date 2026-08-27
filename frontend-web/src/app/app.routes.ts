@@ -52,12 +52,22 @@ export const routes: Routes = withLeaveGuard([
   },
   {
     /*
-     * 《梅花谱》—— **没有 authGuard**,而这不是漏了:它是一部三百年前的公开著作。
+     * 古谱 —— **没有 authGuard**,而这不是漏了:它们是明清的公开著作。
      * 回放页要求身份,是因为它暴露的是具体用户的对局,那是另一件事。
      */
     path: 'g/xiangqi/manual',
+    // 三层:谱的清单 -> 单谱目录 -> 学习页。学习页带上谱键是为了「返回这部谱」——
+    // 线路 id 全局唯一,所以那一段在寻址上冗余,而它承载的是导航。
     // 显式标记「这是公开资料」。走查认这个标记,所以少一个 authGuard 不再是一个洞,
     // 而是一处**写下来的**决定 —— 而走查同时断言豁免名单**恰好**是这两条。
+    data: { publicContent: true },
+    loadComponent: () =>
+      import('./games/xiangqi/manual/manual-list/manual-list').then(
+        (m) => m.ManualList,
+      ),
+  },
+  {
+    path: 'g/xiangqi/manual/:manualKey',
     data: { publicContent: true },
     loadComponent: () =>
       import('./games/xiangqi/manual/manual-catalogue/manual-catalogue').then(
@@ -65,7 +75,7 @@ export const routes: Routes = withLeaveGuard([
       ),
   },
   {
-    path: 'g/xiangqi/manual/:lineId',
+    path: 'g/xiangqi/manual/:manualKey/:lineId',
     data: { publicContent: true },
     loadComponent: () =>
       import('./games/xiangqi/manual/manual-study/manual-study').then((m) => m.ManualStudy),

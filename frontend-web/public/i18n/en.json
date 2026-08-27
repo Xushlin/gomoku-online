@@ -512,28 +512,41 @@
     }
   },
   "manual": {
+    "back-to-catalogue": "Back to the catalogue",
+    "chapter": "Game {{n}}",
+    "endgame-note": "An endgame: the pieces on the board are all there is; Red moves first unless noted.",
+    "entry": "Plum Blossom Manual",
+    "error-load-failed": "Could not load",
+    "flat": "Flat list",
+    "grouped": "By chapter",
+    "line-count": "{{count}} variations",
+    "line-not-found": "No such variation",
+    "loading": "Loading…",
+    "manuals-subtitle": "Ming and Qing collections, for study only.",
+    "manuals-title": "Xiangqi manuals",
     "meihuapu": {
       "title": "Plum Blossom Manual",
       "subtitle": "A Qing-dynasty xiangqi manual by Wang Zaiyue, studying the Screen Horse against the Central Cannon. Moves and titles come from the original; the modern vernacular notes are not included."
     },
-    "chapter": "Game {{n}}",
-    "line-count": "{{count}} variations",
     "moves": "{{count}} half-moves",
-    "study": "Study",
-    "loading": "Loading…",
-    "not-found": "No such manual",
-    "line-not-found": "No such variation",
-    "error-load-failed": "Could not load",
-    "retry": "Retry",
-    "back-to-catalogue": "Back to the catalogue",
-    "verdict-label": "The manual judges",
-    "verdict": {
-      "red": "Red is better",
-      "black": "Black is better"
+    "nature": {
+      "endgame": "Endgame",
+      "full": "Full board"
     },
-    "ply-of": "Half-move {{current}} of {{total}}",
     "no-commentary": "No commentary for this line yet.",
-    "entry": "Plum Blossom Manual"
+    "no-manuals": "No manuals have been imported yet.",
+    "not-found": "No such manual",
+    "open": "Open",
+    "ply-of": "Half-move {{current}} of {{total}}",
+    "retry": "Retry",
+    "study": "Study",
+    "verdict": {
+      "BlackBetter": "Manual: Black better",
+      "Draw": "Manual: draw",
+      "RedBetter": "Manual: Red better",
+      "Unrecorded": "Not recorded"
+    },
+    "verdict-label": "The manual judges"
   },
   "profile": {
     "online": "Online",

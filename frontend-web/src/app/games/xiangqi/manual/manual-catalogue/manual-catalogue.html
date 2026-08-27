@@ -1,9 +1,13 @@
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-5">
   <header class="flex flex-col gap-1">
-    <h1 class="text-text text-2xl font-semibold tracking-tight">
-      {{ 'manual.meihuapu.title' | transloco }}
+    <a
+      routerLink="/g/xiangqi/manual"
+      class="text-muted hover:text-text focus-visible:outline-primary self-start rounded text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+      >{{ 'manual.manuals-title' | transloco }}</a
+    >
+    <h1 class="text-text text-2xl font-semibold tracking-tight break-words">
+      {{ catalogue()?.name ?? '' }}
     </h1>
-    <p class="text-muted text-sm">{{ 'manual.meihuapu.subtitle' | transloco }}</p>
     @if (phase() === 'ready') {
       <p class="text-muted text-xs">
         {{ 'manual.line-count' | transloco: { count: lineCount() } }}
@@ -36,9 +40,15 @@
     @default {
       @for (chapter of catalogue()?.chapters ?? []; track chapter.chapter) {
         <section class="flex flex-col gap-2">
-          <h2 class="text-text text-lg font-medium">
-            {{ 'manual.chapter' | transloco: { n: chapter.chapter } }}
-          </h2>
+          <!--
+            没有分组层的谱不画这一行 —— 六辑残局的局号一律 0,而画一个「第0局」
+            是把一个不存在的层次画给玩家看。
+          -->
+          @if (catalogue()?.grouped) {
+            <h2 class="text-text text-lg font-medium">
+              {{ 'manual.chapter' | transloco: { n: chapter.chapter } }}
+            </h2>
+          }
           <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             @for (line of chapter.lines; track line.id) {
               <li class="panel-flat relative flex flex-col gap-1 border p-4">
@@ -46,14 +56,16 @@
                 <span class="text-muted text-xs">
                   {{ 'manual.moves' | transloco: { count: line.moveCount } }}
                   ·
-                  @if (line.winnerSeat === 0) {
-                    {{ 'manual.verdict.red' | transloco }}
+                  {{ 'manual.verdict.' + line.verdict | transloco }}
+                  ·
+                  @if (line.pieceCount === 32) {
+                    {{ 'manual.nature.full' | transloco }}
                   } @else {
-                    {{ 'manual.verdict.black' | transloco }}
+                    {{ 'manual.nature.endgame' | transloco }}
                   }
                 </span>
                 <a
-                  [routerLink]="['/g/xiangqi/manual', line.id]"
+                  [routerLink]="['/g/xiangqi/manual', catalogue()?.manualKey ?? '', line.id]"
                   class="text-primary focus-visible:outline-primary text-sm after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   {{ 'manual.study' | transloco }}

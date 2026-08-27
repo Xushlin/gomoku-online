@@ -11,6 +11,9 @@ import { XiangqiBoard } from '../../board/xiangqi-board';
 
 type Phase = 'loading' | 'ready' | 'not-found' | 'error';
 
+/** 满盘的子数。少于它就是残局 —— 而「满盘」不等于「标准开局」,见 `natureKey`。 */
+const FULL_BOARD_PIECES = 32;
+
 /**
  * 古谱不是对局,所以没有对手 —— 而 `RoomState.host` 不可空。
  *
@@ -51,10 +54,35 @@ export class ManualStudy implements OnInit {
    * 谱主的评断 —— **不是「将死」**。量过:《梅花谱》31 条线路里只有 11 条以杀棋收,
    * 20 条走到「优势已成」就停。把它说成将死,在那 20 条上是错的,而错的样子和对的样子
    * 在界面上完全一样。
+   *
+   * 键**从取值推**(`manual.verdict.<verdict>`),而不是一串 `if`:四态之外将来若再加一态,
+   * 缺的是一个 i18n 键(双语对齐那条测试会红),而不是一个静静落到「红优」的分支。
    */
-  protected readonly verdictKey = computed(() =>
-    this.line()?.winnerSeat === FIRST_SEAT ? 'manual.verdict.red' : 'manual.verdict.black',
-  );
+  protected readonly verdictKey = computed(() => {
+    const verdict = this.line()?.verdict;
+    return verdict === undefined ? null : `manual.verdict.${verdict}`;
+  });
+
+  /**
+   * 这条是残局还是满盘 —— **由子数推**,而不是按谱名判断。
+   *
+   * 32 子是满盘。注意它 MUST NOT 被读成「标准开局」:实测有 6 局是 32 子却不是标准摆法。
+   */
+  protected readonly natureKey = computed(() => {
+    const start = this.line()?.startPosition;
+    if (start === undefined) return null;
+    const pieces = [...start].filter((c) => c !== '.').length;
+    return pieces === FULL_BOARD_PIECES ? 'manual.nature.full' : 'manual.nature.endgame';
+  });
+
+  /**
+   * 这条记录的起始局面 —— **首帧就是它**。
+   *
+   * 判据是首帧的子数等于起始局面的子数,而不是「代码里传了起始局面」:改这条之前棋盘
+   * 从标准开局重放,一条 10 子的残局会渲染成 32 子加几步棋 —— **一个看起来完全正常的
+   * 错盘面**。
+   */
+  protected readonly startPosition = computed(() => this.line()?.startPosition ?? null);
 
   /** 棋盘那一帧。`status: 'Finished'` 让共享棋盘进永久只读。 */
   protected readonly boardState = computed<RoomState | null>(() => {

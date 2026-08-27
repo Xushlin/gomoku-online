@@ -512,28 +512,41 @@
     }
   },
   "manual": {
+    "back-to-catalogue": "返回目录",
+    "chapter": "第 {{n}} 局",
+    "endgame-note": "这是一则残局:棋盘上的子就是全部,红方先走除非另有标注。",
+    "entry": "梅花谱",
+    "error-load-failed": "载入失败",
+    "flat": "单列",
+    "grouped": "分局",
+    "line-count": "共 {{count}} 条变化",
+    "line-not-found": "没有这条变化",
+    "loading": "正在载入…",
+    "manuals-subtitle": "明清刊本的对局与残局,只供研习。",
+    "manuals-title": "象棋古谱",
     "meihuapu": {
       "title": "梅花谱",
       "subtitle": "清·王再越所著象棋古谱,屏风马对当头炮的全局研究。招法与局名取自原书;白话注解为近人所加,本站未收录。"
     },
-    "chapter": "第 {{n}} 局",
-    "line-count": "共 {{count}} 条变化",
     "moves": "{{count}} 手",
-    "study": "研习",
-    "loading": "正在载入…",
-    "not-found": "没有这部谱",
-    "line-not-found": "没有这条变化",
-    "error-load-failed": "载入失败",
-    "retry": "重试",
-    "back-to-catalogue": "返回目录",
-    "verdict-label": "谱评",
-    "verdict": {
-      "red": "红优",
-      "black": "黑优"
+    "nature": {
+      "endgame": "残局",
+      "full": "满盘"
     },
-    "ply-of": "第 {{current}} / {{total}} 手",
     "no-commentary": "本条暂无注解。",
-    "entry": "梅花谱"
+    "no-manuals": "还没有导入任何古谱。",
+    "not-found": "没有这部谱",
+    "open": "打开",
+    "ply-of": "第 {{current}} / {{total}} 手",
+    "retry": "重试",
+    "study": "研习",
+    "verdict": {
+      "BlackBetter": "谱评:黑优",
+      "Draw": "谱评:和棋",
+      "RedBetter": "谱评:红优",
+      "Unrecorded": "谱未标注"
+    },
+    "verdict-label": "谱评"
   },
   "profile": {
     "online": "在线",
