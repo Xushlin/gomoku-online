@@ -241,6 +241,7 @@ public static class BuiltInGameRules
         Gomoku,
         TicTacToe,
         Xiangqi,
+        new Xiangqi.XiangqiEndgameRules(),
         new IdiomChain.IdiomChainRules(idioms),
         new Doudizhu.DoudizhuRules(),
         new Wakeng.WakengRules(),

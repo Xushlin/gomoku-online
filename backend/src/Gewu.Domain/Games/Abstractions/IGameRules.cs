@@ -200,6 +200,48 @@ public interface IDealtGameRules : IGameRules
 }
 
 /// <summary>
+/// 开局需要一份**由调用方选定**的设置的棋种 —— 从一则古谱残局开局是第一个。
+/// <para>
+/// 它与 <see cref="IDealtGameRules"/> 是**并列**的两种设置来源,而不是它的变体:
+/// </para>
+/// <list type="bullet">
+/// <item><description><see cref="IDealtGameRules"/>:设置由**规则**从种子**生成**(发牌)——
+/// 调用方给一个 <c>int</c>,拿回一个它读不懂的字符串。</description></item>
+/// <item><description><see cref="IPositionalStartRules"/>:设置由**调用方选定**,规则只负责
+/// **校验** —— 调用方给一个它自己组装的字符串,规则说这份能不能用。</description></item>
+/// </list>
+/// <para>
+/// **为什么不让象棋实现 <see cref="IDealtGameRules"/> 并让 <c>CreateSetup</c> 返回标准开局:**
+/// 那个接口的文档自己写着「同一个种子 MUST 产出同一个字符串」,而一个**忽略**种子的实现
+/// 正是那份文档反对的「骗人的实现 —— 下一个人删不掉的东西」。种子在残局里没有意义,
+/// 因为局面是选的不是摇的。
+/// </para>
+/// <para>
+/// **两者都保持「设置存在 ⇔ 棋种说要」。** <c>Room</c> 的判断因此是「是不是这两者之一」,
+/// 而 MUST NOT 变成「设置是可选的」—— 后者会同时删掉两个方向的检查,而它们各自都在防一个
+/// 真实的错误心智模型(见 <c>Room.JoinAsPlayer</c> 里那两处抛)。
+/// </para>
+/// </summary>
+public interface IPositionalStartRules : IGameRules
+{
+    /// <summary>
+    /// 校验一份调用方给的设置。不合法 MUST 抛,并 MUST 说明**哪一条**不满足。
+    /// <para>
+    /// **校验发生在存下来之前。** 一份存进去才发现不合法的设置,表现是这一局谁都动不了,
+    /// 而那要等到几十秒后超时才暴露 —— 与 <see cref="IFirstSeatRules"/> 返回越界座位那条
+    /// 是同一种坏。
+    /// </para>
+    /// <para>
+    /// 实现 MUST NOT 在不合法时退回一个默认设置:那会让一个坏设置表现成「这局怎么是开局」,
+    /// 而那种表现和正常开局在界面上完全一样。
+    /// </para>
+    /// </summary>
+    /// <param name="setup">调用方组装的设置。</param>
+    /// <exception cref="Exceptions.InvalidGameSetupException">设置不合法。</exception>
+    void ValidateSetup(string setup);
+}
+
+/// <summary>
 /// 超时**不该判负**的棋种 —— 超时时替那个座位走一步(托管),而不是结束对局。
 /// <para>
 /// 从 <see cref="IGameRules"/> 分出来,理由与 <see cref="IDealtGameRules"/> 相同:两个座位下
@@ -412,4 +454,13 @@ public static class GameKeys
 
     /// <summary>挖坑 —— 平台第一个先手由发牌决定的棋种。</summary>
     public const string Wakeng = "wakeng";
+
+    /// <summary>
+    /// 象棋残局 —— 平台第一个**从调用方选定的局面**开局的棋种。
+    /// <para>
+    /// 它与 <see cref="Xiangqi"/> 共用走子逻辑,独立成键是因为内核用**类型**判断要不要设置;
+    /// 见 <c>XiangqiEndgameRules</c> 的类注释。
+    /// </para>
+    /// </summary>
+    public const string XiangqiEndgame = "xiangqi-endgame";
 }

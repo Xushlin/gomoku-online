@@ -142,17 +142,66 @@ public class FirstSeatTests
     }
 
     [Fact]
-    public void Exactly_one_built_in_game_picks_its_first_seat()
+    public void Exactly_two_built_in_games_pick_their_first_seat()
     {
-        // 这一条此前是"还没有棋种实现它",注释里写着挖坑落地那天改成"恰好一个"。照办。
+        // 这一条走过三代:先是"还没有棋种实现它",挖坑落地那天改成"恰好一个",而注释里
+        // 写着「第二个出现时它会红,那正是该问"这两个棋种的先手真是同一种东西吗"的时刻」。
         //
-        // 「恰好一个」比「至少一个」有牙:第二个出现时它会红,而那正是该问"这两个棋种的先手
-        // 真是同一种东西吗"的时刻。
+        // **第二个出现了,而问题的答案是:是同一种东西。**
+        //
+        //   挖坑  —— 先手由**发牌**决定(拿到某张牌的那个人先叫);
+        //   残局  —— 先手由**谱**决定(1634 局里 7 局是黑先走)。
+        //
+        // 两者都是「**服务端侧的设置**说了算」,而那正是这个接口承载的东西 —— 不同的只是
+        // 设置从哪来(规则摇出来 / 调用方选出来),而那件事由 IDealtGameRules 与
+        // IPositionalStartRules 分别承载。所以接口不用拆,名单加一个。
         var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
 
         BuiltInGameRules.All(lexicon).Where(r => r is IFirstSeatRules)
-            .Should().ContainSingle()
-            .Which.GameKey.Should().Be(GameKeys.Wakeng);
+            .Select(r => r.GameKey)
+            .Should().BeEquivalentTo([GameKeys.Wakeng, GameKeys.XiangqiEndgame]);
+    }
+
+    /// <summary>
+    /// 两种**设置来源**都要在注册表里有样本。
+    /// <para>
+    /// 少了任何一边,`Room` 里那条「是不是这两者之一」的判断就只走过一条腿 —— 而它在
+    /// 单一种类上恒真。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Both_setup_sources_have_a_built_in_example()
+    {
+        var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
+        var all = BuiltInGameRules.All(lexicon);
+
+        all.Where(r => r is IDealtGameRules).Select(r => r.GameKey)
+            .Should().BeEquivalentTo([GameKeys.Doudizhu, GameKeys.Wakeng], "规则从种子生成");
+        all.Where(r => r is IPositionalStartRules).Select(r => r.GameKey)
+            .Should().BeEquivalentTo([GameKeys.XiangqiEndgame], "调用方选定、规则校验");
+
+        // 而**没有棋种同时是两者** —— 一份设置只能有一个来源,两个来源会让"谁负责它的内容"
+        // 没有答案。
+        all.Where(r => r is IDealtGameRules and IPositionalStartRules).Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// 从选定局面开局的棋种 MUST NOT 计分。
+    /// <para>
+    /// 与既有的 <c>IsRated ⇒ SeatCount == 2</c> 并列。理由是残局**按构造就不公平** ——
+    /// 有一方是赢定的,那是谱主设计它的方式;给这样的局面算 ELO 是在给一个已知结局的
+    /// 局面发分。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void A_game_that_starts_from_a_chosen_position_is_never_rated()
+    {
+        var lexicon = new InMemoryIdiomLexicon(["一心一意"]);
+
+        BuiltInGameRules.All(lexicon)
+            .Where(r => r is IPositionalStartRules && r.IsRated)
+            .Select(r => r.GameKey)
+            .Should().BeEmpty();
     }
 
     [Fact]

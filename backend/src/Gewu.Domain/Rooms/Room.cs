@@ -238,11 +238,18 @@ public sealed class Room
         {
             // 一致性校验发生在**开局那一刻**,而不是每一次入座:否则三人棋种的前两次入座
             // 都得携带一份最终会被丢掉的设置,而那份设置的存在会误导下一个读代码的人。
-            var needsSetup = rules is IDealtGameRules;
+            // 设置有**两种来源,而它们是并列的**:规则从种子生成(发牌),或者调用方选定
+            // 而规则校验(从一则残局开局)。判断因此是「是不是这两者之一」,
+            // 而**不是**「设置是可选的」—— 后者会同时删掉下面两个方向的检查。
+            var dealt = rules is IDealtGameRules;
+            var positional = rules is IPositionalStartRules;
+            var needsSetup = dealt || positional;
             if (needsSetup && setup is null)
             {
                 throw new MissingGameSetupException(
-                    $"'{rules.GameKey}' deals a setup at start; none was supplied.");
+                    dealt
+                        ? $"'{rules.GameKey}' deals a setup at start; none was supplied."
+                        : $"'{rules.GameKey}' starts from a chosen setup; none was supplied.");
             }
             if (!needsSetup && setup is not null)
             {
@@ -250,6 +257,13 @@ public sealed class Room
                 // 心智模型,而那份设置会被存下来再也没人读。
                 throw new MissingGameSetupException(
                     $"'{rules.GameKey}' has no setup, but one was supplied.");
+            }
+
+            // 选定式的设置在**存下来之前**校验。存进去才发现不合法的话,表现是这一局谁都
+            // 动不了,而那要等到几十秒后超时才暴露 —— 与下面 `firstSeat` 越界那条同一种坏。
+            if (positional && setup is not null)
+            {
+                ((IPositionalStartRules)rules).ValidateSetup(setup);
             }
 
             // 谁先走:规则说了算,而默认仍是 0 号座位。**两个方向都钉住了** ——
