@@ -100,9 +100,12 @@ public UserId BlackPlayerId => _seats.Single(x => x.Index == FirstSeat).UserId;
 - **不改 `UserGameSummaryDto`。** 它有同一个缺陷,但修它要连带回答「三个人的一局,战绩行上
   的『对手』是谁」(今天 `opponentOf` 是 `black.id === me ? white : black`,对三座位悄悄给出
   两个对手中的一个)。那是显示层取舍,不是契约对错。**拆除条件写进了 spec**。
-- **不改席位叫法。** 标题区今天写死 `game.room.seat-black` / `seat-white`,对象棋与成语接龙都是
-  错的 —— 那是 `per-game-seat-labels` 在改的东西。**那个变更改叫法,本变更改有几个**,
-  它的 proposal 里「不做,而理由要写下来」一节点名把这个缺陷留给了本变更。两者落地顺序不限。
+- **不改席位叫法 —— 因为它已经改完了。** `per-game-seat-labels` 先合进 main,给了
+  `GameManifest.seatLabelKeys` + `seatNaming()`,象棋回放从此读作红 / 黑。**那个变更改叫法,
+  本变更改有几个**,而它当时只读得到 `Black` / `White`,所以在实现里写着「恰好两位,而那是
+  DTO 的形状,不是这一处的选择」,并在 proposal 的「不做,而理由要写下来」一节点名把契约
+  这一半留给了本变更。本变更把 `sides()` 的来源换成座位表,那张欠条到期 —— 于是标题区
+  既叫得对、也一个不少。
 - **不改领域字段名。** `Room.BlackPlayerId` / `WhitePlayerId` 是 0 / 1 号座位的派生读法,
   87 处调用点读的正是「谁是黑方」,它们的文档写着为什么留着。本变更只让**回放不再用它们**。
 - **不碰 `WinnerUserId` 说不清三人牌局的问题。** 斗地主农民赢是两个人赢,而那一格是一个 id。
