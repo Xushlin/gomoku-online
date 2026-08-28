@@ -44,7 +44,12 @@
             [attr.aria-label]="(online ? 'profile.online' : 'profile.offline') | transloco"
           ></span>
         }
-        <span>{{ p.username }}</span>
+        <!-- min-w-0 + break-words:**既有缺陷,不是本变更改出来的**,量到的 —— 20 字符
+             用户名(注册上限)在 375 px 下把整页撑到 scrollWidth 413 / clientWidth 375。
+             **`break-words` 单独不够**:这是个 flex item,`min-width: auto` 让它保持在
+             max-content 宽度(实测 352 px),`overflow-wrap` 根本没机会生效 ——
+             量之前以为一个类就够了,量完才知道要两个。 -->
+        <span class="min-w-0 break-words">{{ p.username }}</span>
       </h1>
 
       <!--

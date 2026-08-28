@@ -14,6 +14,8 @@ import type {
   PagedResult,
   UserGameSummaryDto,
 } from '../../../../core/api/models/user-profile.model';
+import type { UserSummary } from '../../../../core/api/models/room.model';
+import { opponentsOf, outcomeKeyFor } from '../../../../games/game-history';
 import { UsersApiService } from '../../../../core/api/users-api.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 
@@ -69,13 +71,19 @@ export class GamesList {
     });
   }
 
-  protected opponentOf(g: UserGameSummaryDto): { id: string; username: string } {
-    return g.black.id === this.userId() ? g.white : g.black;
+  /** 除本人以外的每一个座位 —— 三人局有**两个**对手。见 `games/game-history.ts`。 */
+  protected opponentsOf(g: UserGameSummaryDto): readonly UserSummary[] {
+    return opponentsOf(g.seats, this.userId());
   }
 
+  /**
+   * 「我方视角」的结果,四支之一 —— 第四支是「这一行说不出」。
+   *
+   * **两处消费方走同一个函数**,因为一个用户同时看得见大厅卡片和个人主页:
+   * 两份副本分叉的症状是同一局对局在两处给出不同的答案。
+   */
   protected resultKey(g: UserGameSummaryDto): string {
-    if (g.result === 'Draw') return 'profile.result-draw';
-    return g.winnerUserId === this.userId() ? 'profile.result-win' : 'profile.result-loss';
+    return outcomeKeyFor(g, this.userId());
   }
 
   protected reasonKey(g: UserGameSummaryDto): string {
