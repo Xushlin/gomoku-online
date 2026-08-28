@@ -1,8 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 import type { MoveDto, RoomState } from '../../../core/api/models/room.model';
 import { seatOfSide, FIRST_SEAT } from '../../board-seats';
+import { GameCapabilitiesService } from '../../game-capabilities.service';
+import { GameCatalogService } from '../../game-catalog.service';
+import { seatNaming } from '../../seat-labels';
 
 /**
  * 成语接龙's play surface: the chain played so far, plus a box to add to it.
@@ -44,7 +47,25 @@ export class ChainBoard {
   /** 模板只能读组件成员,所以把这个显示层常量挂上来。 */
   protected readonly FIRST_SEAT = FIRST_SEAT;
 
+  private readonly catalog = inject(GameCatalogService);
+  private readonly capabilities = inject(GameCapabilitiesService);
+
   readonly state = input<RoomState | null>(null);
+
+  /**
+   * 每一手前面那个说话的人怎么称呼。
+   *
+   * **这里此前写的是「黑方 / 白方」,而成语接龙没有棋盘,也没有颜色。** 它是同一个缺陷
+   * 的第四处 —— 前三处在房间侧栏、操作条、回放标题区,而这一处是靠「改完一处就 grep
+   * 一遍兄弟」找出来的,不是靠想起来的。
+   */
+  protected seatKeyOf(seat: number): string | null {
+    const gameKey = this.state()?.gameKey ?? '';
+    const seatCount = this.capabilities.of(gameKey)?.seatCount;
+    if (seatCount === undefined) return null;
+    const naming = seatNaming(this.catalog.byRoomKey(gameKey), seat, seatCount);
+    return naming.kind === 'named' ? naming.key : null;
+  }
   readonly mySide = input<'black' | 'white' | 'spectator'>('spectator');
   readonly submitting = input<boolean>(false);
   readonly = input<boolean>(false);

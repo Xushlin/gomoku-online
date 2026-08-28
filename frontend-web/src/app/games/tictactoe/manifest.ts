@@ -29,6 +29,8 @@ export const ticTacToeManifest: GameManifest = {
     { k: 'l', a: 15.4, b: 15.4, c: 18.6, d: 18.6 },
     { k: 'l', a: 18.6, b: 15.4, c: 15.4, d: 18.6 },
   ],
+  // 席位名 —— 一字棋是缩小的五子棋,同一套读法。
+  seatLabelKeys: ['game.seat.black', 'game.seat.white'],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/tictactoe',
 };

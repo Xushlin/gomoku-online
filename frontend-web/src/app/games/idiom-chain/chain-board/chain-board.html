@@ -11,7 +11,9 @@
           class="shrink-0 text-xs"
           [class.font-semibold]="move.seat === FIRST_SEAT"
           >{{
-            (move.seat === FIRST_SEAT ? 'game.room.seat-black' : 'game.room.seat-white') | transloco
+            seatKeyOf(move.seat) === null
+              ? ('game.room.seat-label' | transloco: { seat: move.seat + 1 })
+              : (seatKeyOf(move.seat)! | transloco)
           }}</span
         >
         <span class="min-w-0 flex-1 text-lg leading-snug break-words">{{ move.text }}</span>

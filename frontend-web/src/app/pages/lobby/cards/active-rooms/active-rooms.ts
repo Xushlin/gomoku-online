@@ -7,7 +7,7 @@ import { RoomsApiService } from '../../../../core/api/rooms-api.service';
 import { LobbyDataService } from '../../../../core/lobby/lobby-data.service';
 import { GameCapabilitiesService } from '../../../../games/game-capabilities.service';
 import { GameEmblem } from '../../../../games/emblem/game-emblem';
-import { GAME_REGISTRY } from '../../../../games';
+import { GameCatalogService } from '../../../../games/game-catalog.service';
 import type { EmblemShape } from '../../../../games/game-emblem';
 import {
   CreateRoomDialog,
@@ -33,20 +33,7 @@ export class ActiveRoomsCard {
 
   private readonly capabilities = inject(GameCapabilitiesService);
 
-  /**
-   * 棋种键 → 纹章形状表。注册表是静态导入,所以这张表不必等任何请求。
-   *
-   * **伴生键也进这张表,指向它主人的纹章** —— 象棋残局在服务端是另一个键,但它就是象棋。
-   * 不加的话那一行的纹章是一个**空数组**,画出来是一块什么都没有的空白:不抛、不报、
-   * 不红,只是不见 —— 与「同色画在同色上」同一族的失败。
-   */
-  private readonly emblems = new Map<string, readonly EmblemShape[]>(
-    GAME_REGISTRY.flatMap((g) =>
-      [g.key, ...(g.companionRoomKeys ?? [])].map(
-        (key) => [key, g.emblem] as [string, readonly EmblemShape[]],
-      ),
-    ),
-  );
+  private readonly catalog = inject(GameCatalogService);
 
   constructor() {
     // 座位总数来自 `GET /api/games`。这一句是必需的:目录服务是静态导入,而能力
@@ -54,8 +41,15 @@ export class ActiveRoomsCard {
     this.capabilities.ensureLoaded();
   }
 
+  /**
+   * 这一行画哪个纹章。
+   *
+   * **走 `byRoomKey`,而这里此前是一张自己拼的「伴生键 → 主棋种」表。** 同一条解析规则
+   * 有两份实现,迟早会与另一份不一致 —— 而这里不一致的样子是那一行的纹章变成一个
+   * **空数组**:不抛、不报、不红,只是不见。现在只有一份,在目录服务上。
+   */
   protected emblemOf(gameKey: string): readonly EmblemShape[] {
-    return this.emblems.get(gameKey) ?? [];
+    return this.catalog.byRoomKey(gameKey)?.emblem ?? [];
   }
 
   /**

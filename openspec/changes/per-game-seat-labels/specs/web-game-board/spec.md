@@ -165,8 +165,7 @@ utility 或 token —— 「厚重」在这套 token 里已经有说法了。
 
 `public/i18n/en.json` 与 `public/i18n/zh-CN.json` SHALL 同步新增 `game.*` 键集合,包含但不限于:
 
-- `game.room.{name-label, host-label, seat-n, status-waiting, status-playing, status-finished}`
-  (`seat-n` 带 `{{seat}}` 插值)
+- `game.room.{name-label, host-label, status-waiting, status-playing, status-finished}`
 - `game.seat.{black, white, red, first, second}` —— 席位名,由 manifest 的
   `seatLabelKeys` 指到。它们是**名词**(「红方」),因为侧栏与回合指示要的形态不同:
   前者直接用,后者拼进 `game.turn.side-turn`。
@@ -187,6 +186,10 @@ utility 或 token —— 「厚重」在这套 token 里已经有说法了。
 会让这份规格与那份规格说的是两件事,而读者无从分辨。它们的去处是
 `game.seat.{black,white}` 与 `game.turn.side-turn` —— 名词与句式分开,因为同一个席位名
 要在两种形态里出现。
+
+**编号那两个键 MUST 复用既有的 `game.room.seat-label` / `game.turn.seat-turn`,
+MUST NOT 新造。** 它们已经在用(三座位棋种走的就是这一支),而为同一句话造第二个键
+就是让两份文案各自漂。
 
 模板 MUST 零硬编码 CJK / 长英文显示字符串;按 scaffold / auth / lobby 已立规则。
 

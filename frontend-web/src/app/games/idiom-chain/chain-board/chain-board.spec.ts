@@ -1,4 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
+import { StubGameCapabilities } from '../../../games/game-capabilities.stub';
+import {
+  DefaultGameCatalogService,
+  GameCatalogService,
+} from '../../../games/game-catalog.service';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -71,6 +77,16 @@ describe('ChainBoard', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ChainBoard, TranslocoTestingModule.forRoot({ langs: { en: {} } })],
+      // **真的目录服务**,不是桩:席位名的数据源就是 manifest,而一个桩会让这些测试在
+      // 一个「成语接龙没有席位名」的世界里跑。
+      providers: [
+        { provide: GameCatalogService, useClass: DefaultGameCatalogService },
+        // 座位数来自描述符 —— 席位名是「全有或全无」的,判据是条数对得上。
+        {
+          provide: GameCapabilitiesService,
+          useValue: StubGameCapabilities.boardless('idiom-chain'),
+        },
+      ],
     }).compileComponents();
   });
 

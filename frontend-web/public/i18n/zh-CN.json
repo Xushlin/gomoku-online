@@ -115,32 +115,6 @@
     "scores-link": "分数榜"
   },
   "game": {
-    "room": {
-      "name-label": "房间",
-      "host-label": "房主",
-      "seat-black": "黑方",
-      "seat-white": "白方",
-      "seat-empty": "空位",
-      "spectators-label": "观众",
-      "status-waiting": "等待中",
-      "status-playing": "对局中",
-      "status-finished": "已结束",
-      "not-found": "房间不存在或已结束。",
-      "back-to-lobby": "返回大厅",
-      "seat-label": "{{seat}} 号座位"
-    },
-    "board": {
-      "cell-aria-label": "第 {{row}} 行 第 {{col}} 列",
-      "last-move-label": "最后一步"
-    },
-    "turn": {
-      "your-turn": "轮到你了",
-      "opponent-turn": "等待对手",
-      "black-turn": "黑方回合",
-      "white-turn": "白方回合",
-      "countdown-label": "剩余时间",
-      "seat-turn": "轮到 {{seat}} 号座位"
-    },
     "actions": {
       "resign": "认输",
       "resign-confirm-title": "确认认输?",
@@ -150,14 +124,9 @@
       "leave": "离开房间",
       "urge": "催促对手"
     },
-    "leave-confirm": {
-      "title": "真的要离开吗？",
-      "stay": "留下",
-      "leave": "离开",
-      "match": "离开不会结束这一局，座位仍然是你的 —— 而回合计时还在走，超时会判负。",
-      "klotski": "这一关走过的步数只在本机，离开就全部丢失。",
-      "crossword": "重新进入这一关会是新的一次尝试，用时与提示数从头算。",
-      "tetris": "这一局还没结束，离开的话成绩不会计入排行。"
+    "board": {
+      "cell-aria-label": "第 {{row}} 行 第 {{col}} 列",
+      "last-move-label": "最后一步"
     },
     "chat": {
       "title": "聊天",
@@ -169,10 +138,11 @@
       "max-length-error": "消息过长(最多 500 字符)。",
       "forbidden-error": "该频道不允许发送。"
     },
-    "urge": {
-      "toast": "对手在催你落子了。",
-      "button-disabled-own-turn": "当前是你的回合。",
-      "button-disabled-cooldown": "请稍后再催。"
+    "connection": {
+      "reconnecting": "正在重连…",
+      "disconnected": "已断开连接。",
+      "retry": "重试",
+      "connected": "已连接"
     },
     "ended": {
       "title-win": "你赢了!",
@@ -184,6 +154,9 @@
       "back-to-lobby": "返回大厅",
       "view-replay": "查看回放",
       "dismiss": "留下查看"
+    },
+    "endgame": {
+      "no-draw": "这是一则古谱残局:平台不判和棋。领域里没有重复局面 / 长将 / 长捉规则,所以这一局只会以将死、认输或超时结束 —— 走成和局时,你们可以自己商量,但平台不会宣布。"
     },
     "errors": {
       "concurrent-move-refetched": "状态不同步,棋盘已刷新。",
@@ -201,14 +174,45 @@
       "self-check": "这一步会让自己的帅／将被吃（送将，或与对方将帅照面）。",
       "urge-cooldown": "催促冷却中。"
     },
-    "connection": {
-      "reconnecting": "正在重连…",
-      "disconnected": "已断开连接。",
-      "retry": "重试",
-      "connected": "已连接"
+    "leave-confirm": {
+      "title": "真的要离开吗？",
+      "stay": "留下",
+      "leave": "离开",
+      "match": "离开不会结束这一局，座位仍然是你的 —— 而回合计时还在走，超时会判负。",
+      "klotski": "这一关走过的步数只在本机，离开就全部丢失。",
+      "crossword": "重新进入这一关会是新的一次尝试，用时与提示数从头算。",
+      "tetris": "这一局还没结束，离开的话成绩不会计入排行。"
     },
-    "endgame": {
-      "no-draw": "这是一则古谱残局:平台不判和棋。领域里没有重复局面 / 长将 / 长捉规则,所以这一局只会以将死、认输或超时结束 —— 走成和局时,你们可以自己商量,但平台不会宣布。"
+    "room": {
+      "back-to-lobby": "返回大厅",
+      "host-label": "房主",
+      "name-label": "房间",
+      "not-found": "房间不存在或已结束。",
+      "seat-empty": "空位",
+      "seat-label": "{{seat}} 号座位",
+      "spectators-label": "观众",
+      "status-finished": "已结束",
+      "status-playing": "对局中",
+      "status-waiting": "等待中"
+    },
+    "seat": {
+      "black": "黑方",
+      "first": "先手",
+      "red": "红方",
+      "second": "后手",
+      "white": "白方"
+    },
+    "turn": {
+      "countdown-label": "剩余时间",
+      "opponent-turn": "等待对手",
+      "seat-turn": "轮到 {{seat}} 号座位",
+      "side-turn": "{{side}}回合",
+      "your-turn": "轮到你了"
+    },
+    "urge": {
+      "toast": "对手在催你落子了。",
+      "button-disabled-own-turn": "当前是你的回合。",
+      "button-disabled-cooldown": "请稍后再催。"
     }
   },
   "games": {

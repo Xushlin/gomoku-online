@@ -49,19 +49,25 @@
         {{ r.name }}
       </h1>
       <p class="text-muted text-xs">
-        <span>{{ 'game.room.seat-black' | transloco }}:</span>
-        <a
-          class="username-link mx-1"
-          [routerLink]="['/users', r.black.id]"
-          (click)="$event.stopPropagation()"
-        >{{ r.black.username }}</a>
-        <span class="mx-1">·</span>
-        <span>{{ 'game.room.seat-white' | transloco }}:</span>
-        <a
-          class="username-link mx-1"
-          [routerLink]="['/users', r.white.id]"
-          (click)="$event.stopPropagation()"
-        >{{ r.white.username }}</a>
+        <!--
+          席位名由棋种说 —— 象棋回放读作「红方 / 黑方」。
+          **这里只有两位玩家,而那是 DTO 的限制,不是这一处的选择**:`GameReplayDto`
+          只有 Black / White 两个字段,所以一局三座位的回放会丢掉 2 号座位。
+          那是契约上的账,记在 CLAUDE.md 的延期表里。
+        -->
+        @for (side of sides(); track side.seat) {
+          @if (!$first) { <span class="mx-1">·</span> }
+          <span>{{
+            side.naming.kind === 'named'
+              ? (side.naming.key | transloco)
+              : ('game.room.seat-label' | transloco: { seat: side.naming.seat + 1 })
+          }}:</span>
+          <a
+            class="username-link mx-1"
+            [routerLink]="['/users', side.player.id]"
+            (click)="$event.stopPropagation()"
+          >{{ side.player.username }}</a>
+        }
         <span class="mx-1">·</span>
         @switch (r.endReason) {
           @case ('Decided') { <span>{{ 'game.ended.reason-decided' | transloco }}</span> }

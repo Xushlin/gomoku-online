@@ -15,50 +15,25 @@
     </header>
 
     <div class="flex flex-col gap-1">
-      <!-- **在浏览器里发现的,而且是同一个缺陷的第二处。** `add-web-doudizhu` 把「轮到谁」从
-           「白方走棋」改成了座位号,却没看旁边这份名单:一桌三个人时它只列黑白两个,
-           **2 号座位上的人在自己的房间里不出现**。判据仍是 `seats.length`,不是棋种键。 -->
-      @if (moreThanTwoSeats()) {
-        <!-- **判据是 `seatCount`,不是 `seats.length`** —— 后者是「坐了几个人」,
-             于是一个等待中的三座位房间此前落进了下面那条颜色分支。见 sidebar.ts。
-             座位数已知之后,空座位也画得出来了。 -->
-        @for (seat of allSeats(); track seat.index) {
-          <p>
-            <span class="text-muted">{{
-              'game.room.seat-label' | transloco: { seat: seat.index + 1 }
-            }}:</span>
-            @if (seat.player; as player) {
-              <a
-                class="username-link mx-1"
-                [routerLink]="['/users', player.id]"
-                (click)="$event.stopPropagation()"
-              >{{ player.username }}</a>
-            } @else {
-              <span class="mx-1">{{ 'game.room.seat-empty' | transloco }}</span>
-            }
-          </p>
-        }
-      } @else {
+      <!--
+        **一个循环,每个座位带自己的称呼。** 此前是两支:座位数大于二走编号,否则走
+        「黑方 / 白方」—— 而那一支把象棋的红方叫成黑方、把成语接龙编出一个不存在的白方。
+        判据换成「这个棋种声明了席位名吗」之后,三座位就是「没声明」的一种,那一支
+        连带 `room.black` / `room.white` 两个派生读法一起删掉了。
+      -->
+      @for (seat of allSeats(); track seat.index) {
         <p>
-          <span class="text-muted">{{ 'game.room.seat-black' | transloco }}:</span>
-          @if (room.black; as black) {
+          <span class="text-muted">{{
+            seat.naming.kind === 'named'
+              ? (seat.naming.key | transloco)
+              : ('game.room.seat-label' | transloco: { seat: seat.naming.seat + 1 })
+          }}:</span>
+          @if (seat.player; as player) {
             <a
               class="username-link mx-1"
-              [routerLink]="['/users', black.id]"
+              [routerLink]="['/users', player.id]"
               (click)="$event.stopPropagation()"
-            >{{ black.username }}</a>
-          } @else {
-            <span class="mx-1">{{ 'game.room.seat-empty' | transloco }}</span>
-          }
-        </p>
-        <p>
-          <span class="text-muted">{{ 'game.room.seat-white' | transloco }}:</span>
-          @if (room.white; as white) {
-            <a
-              class="username-link mx-1"
-              [routerLink]="['/users', white.id]"
-              (click)="$event.stopPropagation()"
-            >{{ white.username }}</a>
+            >{{ player.username }}</a>
           } @else {
             <span class="mx-1">{{ 'game.room.seat-empty' | transloco }}</span>
           }

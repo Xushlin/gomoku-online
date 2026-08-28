@@ -1,4 +1,8 @@
 import { Dialog } from '@angular/cdk/dialog';
+import {
+  DefaultGameCatalogService,
+  GameCatalogService,
+} from '../../../../games/game-catalog.service';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -52,7 +56,7 @@ function baseState(): RoomState {
   };
 }
 
-function mount(seatCount = 2) {
+function mount(seatCount = 2, gameKey = 'gomoku') {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [
@@ -63,9 +67,8 @@ function mount(seatCount = 2) {
             game: {
               room: {
                 'host-label': 'Host',
-                'seat-black': 'Black',
-                'seat-white': 'White',
                 'seat-empty': 'Open',
+                'seat-label': 'Seat {{seat}}',
                 'spectators-label': 'Spectators',
                 'status-waiting': 'Waiting',
                 'status-playing': 'Playing',
@@ -73,9 +76,15 @@ function mount(seatCount = 2) {
               },
               turn: {
                 'your-turn': 'Your turn',
-                'black-turn': 'Black turn',
-                'white-turn': 'White turn',
                 'countdown-label': 'Time left',
+              },
+              // 席位名 —— 由 manifest 指到,所以这里要有真实的几个。
+              seat: {
+                black: 'Black',
+                white: 'White',
+                red: 'Red',
+                first: 'First player',
+                second: 'Second player',
               },
               actions: {
                 resign: 'Resign',
@@ -90,6 +99,9 @@ function mount(seatCount = 2) {
       }),
     ],
     providers: [
+      // **真的目录服务**,不是桩:席位名的数据源就是 manifest,而一个桩会让这一组
+      // 测试在一个「象棋没有席位名」的世界里跑。这个坑本仓库付过四次账。
+      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
       { provide: Dialog, useValue: { open: () => ({ closed: { subscribe: () => ({}) } }) } },
       provideRouter([]),
       // **座位数来自描述符,不来自「坐了几个人」。** 见 sidebar.ts 上那段说明。
@@ -97,7 +109,7 @@ function mount(seatCount = 2) {
         provide: GameCapabilitiesService,
         useValue: new StubGameCapabilities([
           {
-            gameKey: 'gomoku',
+            gameKey,
             isRated: true,
             supportsHumanVsHuman: true,
             supportsAi: true,
@@ -151,6 +163,44 @@ describe('RoomSidebar', () => {
     expect(text).toContain('White');
   });
 
+  /**
+   * **象棋房说红黑,而这正是这个变更存在的理由。**
+   *
+   * 0 号座位在象棋里画的是 帥。此前侧栏写死读 `game.room.seat-black`,于是它管红方叫
+   * 黑方、管黑方叫白方 —— 在浏览器里量到的原文是「黑方:eg1 / 白方:eg2」。
+   */
+  it('says red and black in a xiangqi room, and never white', () => {
+    const fixture = mount(2, 'xiangqi');
+    fixture.componentInstance.state.set({ ...baseState(), gameKey: 'xiangqi' });
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Red');
+    expect(text).toContain('Black');
+    expect(text).not.toContain('White');
+  });
+
+  /** 象棋残局是**伴生键** —— 它没有自己的清单,但要用象棋的席位名。 */
+  it('says red and black in an endgame room too', () => {
+    const fixture = mount(2, 'xiangqi-endgame');
+    fixture.componentInstance.state.set({ ...baseState(), gameKey: 'xiangqi-endgame' });
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Red');
+    expect(text).not.toContain('White');
+  });
+
+  /** 成语接龙没有棋盘,也没有颜色 —— 它说先手 / 后手。 */
+  it('invents no colours for a game that has none', () => {
+    const fixture = mount(2, 'idiom-chain');
+    fixture.componentInstance.state.set({ ...baseState(), gameKey: 'idiom-chain' });
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('First player');
+    expect(text).toContain('Second player');
+    expect(text).not.toContain('Black');
+    expect(text).not.toContain('White');
+  });
+
   it('a WAITING three-seat room does not fall back to black and white', () => {
     // **这是这个变更修的那一格,而它此前红不了** —— 判据是 `seats.length`,
     // 而一个还差一个人的三座位房间那个数是 2,于是它落进了颜色分支。
@@ -192,10 +242,19 @@ describe('RoomSidebar', () => {
     expect(text.match(/Open/g)).toHaveLength(2);
   });
 
-  it('claims nothing while the descriptor has not arrived', () => {
-    // 描述符没到时 `seatCount` 是 null,于是它 MUST NOT 猜三座位。
-    // RoomPage 的 loading 状态本来就含 `!capabilities.loaded()`,所以整页是骨架屏;
-    // 这一条钉的是即便被渲染,它也不会画出一份凭空的座位名单。
+  /**
+   * 描述符没到时,**一个座位都不画** —— 而这是本变更**改掉的**行为,不是它保住的。
+   *
+   * 从前:没有描述符 → 不算「多于两个座位」→ 落进两座位那一支 → 读 `room.black` /
+   * `room.white`,于是画出两个人。那一支现在没了,而它是最后两处读这两个派生字段的地方。
+   *
+   * 现在:座位数未知 → **不知道该画几行,于是不画** —— 那是一句诚实的话,而不是退化。
+   * 从前那个答案在一个三座位房间里是错的(它只画得出两行),而它看起来完全正常。
+   *
+   * 生产里看不到这一帧:`RoomPage.loading()` 里本来就含 `!capabilities.loaded()`,
+   * 整页那时是骨架屏。这一条钉的是**即便被渲染,它也不编造任何东西**。
+   */
+  it('draws no seats at all while the descriptor has not arrived', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [Host, TranslocoTestingModule.forRoot({
@@ -204,6 +263,9 @@ describe('RoomSidebar', () => {
         preloadLangs: true,
       })],
       providers: [
+      // **真的目录服务**,不是桩:席位名的数据源就是 manifest,而一个桩会让这一组
+      // 测试在一个「象棋没有席位名」的世界里跑。这个坑本仓库付过四次账。
+      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
         { provide: Dialog, useValue: { open: () => ({ closed: { subscribe: () => ({}) } }) } },
         provideRouter([]),
         { provide: GameCapabilitiesService, useValue: new StubGameCapabilities([]) },
@@ -214,9 +276,13 @@ describe('RoomSidebar', () => {
     fixture.detectChanges();
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    // 没有描述符 → 不是「多于两个座位」→ 走两座位那一支,而它读的是 black / white,
-    // 那两个字段在快照里本来就有。**它不编造座位。**
+    // 房主那一行还在(它不是座位),而**座位名单是空的**。
     expect(text).toContain('alice');
-    expect(text).toContain('bob');
+    expect(text).not.toContain('bob');
+    // 正面对照:既没有编号,也没有任何席位名 —— 否则「不画」可能只是文案没渲染出来。
+    expect(text).not.toMatch(/Seat \d/);
+    for (const label of ['Black', 'White', 'Red', 'First player', 'Second player']) {
+      expect(text).not.toContain(label);
+    }
   });
 });
