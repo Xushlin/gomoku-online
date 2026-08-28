@@ -41,7 +41,6 @@ Each of these was decided, written down, and left. **A deferral that names its o
 
 | Deferred | Trigger |
 | --- | --- |
-| The Production no-signing-key exception names `GOMOKU_JWT__SIGNINGKEY`, a prefix the runtime **measurably ignores** — only `Jwt__SigningKey` is read. One line in `Program.cs` + an assertion on the message. | **The next backend change of any size.** |
 | Renaming `SayWord` — it is in fact the generic text-payload path (the server only builds `MakeMoveCommand(Text:)` and never reads the game key), but the name was coined for 成语接龙 and now misleads in three places. | The day a **third** text-payload game lands. |
 | `WakengScoring.Settle` / `DoudizhuScoring.Settle` have **no production caller**, and the same gap makes **认输 impossible in a three-seat game**: `Room.Resign` needs exactly two seats to name a winner, so the client hides the button and the API answers 409. **This trigger was written inside the `Room.Resign` requirement itself and nobody read it** — it said 「拆除条件：第一个 `SeatCount != 2` 的棋种落地」, 斗地主 and 挖坑 landed, and the cost was a **500** on a real click. | The platform needs a **points ladder** — then 认输 in a three-seat game means forfeiting on points. |
 | The per-seat broadcast fan-out has no end-to-end test — projection is unit-tested and the group function is exhaustive by construction, but "three real SignalR connections each receive only their own" is unasserted, so a typo in `ViewGroupName` turns nothing red. | A `Gewu.Api.Tests` project exists. |

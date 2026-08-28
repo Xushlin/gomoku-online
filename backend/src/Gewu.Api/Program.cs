@@ -171,7 +171,8 @@ var jwtOptions = jwtSection.Get<JwtOptions>()
 if (builder.Environment.IsProduction() && string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
 {
     throw new InvalidOperationException(
-        "Jwt:SigningKey is empty in Production. Set environment variable GOMOKU_JWT__SIGNINGKEY.");
+        $"Jwt:SigningKey is empty in Production. Set environment variable "
+        + $"{JwtOptions.SigningKeyEnvironmentVariable}.");
 }
 
 if (!string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
