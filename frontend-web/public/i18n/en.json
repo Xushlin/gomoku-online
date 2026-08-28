@@ -593,6 +593,7 @@
     "title-prefix": "Replay",
     "retry": "Retry",
     "back-to-lobby": "Back to lobby",
+    "no-board": "This game's board can't be drawn in replay yet — every move is still on the scrubber below.",
     "errors": {
       "not-found": "This replay isn't available — the room may have been cleaned up.",
       "still-in-progress": "Game is still in progress.",

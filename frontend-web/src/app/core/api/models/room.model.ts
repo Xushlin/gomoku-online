@@ -163,8 +163,14 @@ export interface GameReplayDto {
   /** Which game was played — the replay board needs it for the same reason the live board does. */
   readonly gameKey: string;
   readonly host: UserSummary;
-  readonly black: UserSummary;
-  readonly white: UserSummary;
+  /**
+   * 每一个座位上的人,按 `index` 升序。
+   *
+   * 此前这里是 `black` / `white` 两个字段,而它们是 0 号与 1 号座位的派生读法 ——
+   * 一局已结束的斗地主,**2 号座位上的人在整份载荷里都不出现**,而端点 200 成功返回。
+   * 更硬的判据是那份载荷自相矛盾:`moves[].seat` 里有 0/1/2,玩家字段只解析得出两个。
+   */
+  readonly seats: readonly RoomSeat[];
   readonly startedAt: string;
   readonly endedAt: string;
   readonly result: GameResult;
