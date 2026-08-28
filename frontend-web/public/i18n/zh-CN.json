@@ -170,6 +170,7 @@
       "not-a-player": "你不是这局的对弈者，只能观战。",
       "not-opponents-turn": "现在轮到你走，催不了对手。",
       "not-your-turn": "还没到你的回合。",
+      "repeated-check": "同一个将军最多只能重复三次，这一步是第四次。换一步走。",
       "room-not-in-play": "这局还没开始，或者已经结束了。",
       "self-check": "这一步会让自己的帅／将被吃（送将，或与对方将帅照面）。",
       "urge-cooldown": "催促冷却中。"

@@ -28,6 +28,7 @@ export type HubErrorKey =
   | 'game.errors.not-your-turn'
   | 'game.errors.invalid-move'
   | 'game.errors.self-check'
+  | 'game.errors.repeated-check'
   | 'game.errors.idiom-not-found'
   | 'game.errors.idiom-does-not-link'
   | 'game.errors.idiom-already-used'
@@ -52,6 +53,9 @@ const BY_CODE: Readonly<Record<string, HubErrorKey>> = {
   'not-your-turn': 'game.errors.not-your-turn',
   'invalid-move': 'game.errors.invalid-move',
   'self-check': 'game.errors.self-check',
+  // 长将超限也有自己的一行,而理由比自将那条更强:被拒的原因**不在玩家刚点的那两格上**,
+  // 而在十几手之前。「这一步不合法」说不出「同一个将军已经三次了」,而看着盘面也想不出来。
+  'repeated-check': 'game.errors.repeated-check',
   // 三条接龙规则各有自己的一行,而不是共用 invalid-move。象棋能共用是因为玩家看着盘面能
   // 自己想明白;接龙没有盘面,而它的界面**故意不在客户端判合法性**,所以服务端的拒绝是
   // 玩家了解规则的唯一途径 —— 「这一步不合法」说不出「不是成语」「接不上」「说过了」中的任何一种。
@@ -66,6 +70,19 @@ const BY_CODE: Readonly<Record<string, HubErrorKey>> = {
   'urge-too-frequent': 'game.errors.urge-cooldown',
   'concurrent-modification': 'game.errors.concurrent-move-refetched',
 };
+
+/**
+ * Every code this mapper knows — the list the "has copy in both locales" walk runs over.
+ *
+ * It is **derived**, not retyped. The walk used to carry a hand-written copy of these
+ * codes and that copy was missing the three 接龙 ones, so `idiom-not-found` had never
+ * once been checked for having copy. A code with no copy renders the key itself
+ * (`game.errors.x`) on screen — worse than the generic message it was meant to improve
+ * on, and nothing goes red.
+ *
+ * Exported for tests only; production reads `BY_CODE` directly.
+ */
+export const HUB_ERROR_CODES: readonly string[] = Object.keys(BY_CODE);
 
 export function hubErrorToKey(err: unknown): HubErrorKey {
   const message = extractMessage(err);

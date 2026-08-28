@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import en from '../../../../../public/i18n/en.json';
 import zhCN from '../../../../../public/i18n/zh-CN.json';
-import { hubErrorToKey } from './hub-error.mapper';
+import { HUB_ERROR_CODES, hubErrorToKey } from './hub-error.mapper';
 
 /**
  * The mapper reads the server's **error code**, not its prose.
@@ -13,23 +13,39 @@ import { hubErrorToKey } from './hub-error.mapper';
  * the same illegal 象棋 move read "That move isn't allowed." in Development and
  * "Something went wrong. Please try again." in Production.
  */
+/**
+ * The expected code → key pairs, spelled out on purpose.
+ *
+ * This list is NOT derived from the mapper — deriving it would make it assert that
+ * the table equals itself. What *is* derived is the check that it covers every code
+ * (below), so a new code cannot land without an explicit expectation here.
+ */
+const MAPPINGS: readonly (readonly [string, string])[] = [
+  ['not-your-turn', 'game.errors.not-your-turn'],
+  ['invalid-move', 'game.errors.invalid-move'],
+  ['self-check', 'game.errors.self-check'],
+  ['repeated-check', 'game.errors.repeated-check'],
+  ['idiom-not-found', 'game.errors.idiom-not-found'],
+  ['idiom-does-not-link', 'game.errors.idiom-does-not-link'],
+  ['idiom-already-used', 'game.errors.idiom-already-used'],
+  ['room-not-in-play', 'game.errors.room-not-in-play'],
+  ['not-a-player', 'game.errors.not-a-player'],
+  ['not-opponents-turn', 'game.errors.not-opponents-turn'],
+  ['invalid-chat-content', 'game.errors.invalid-chat'],
+  ['spectator-channel-forbidden', 'game.chat.forbidden-error'],
+  ['urge-too-frequent', 'game.errors.urge-cooldown'],
+  ['concurrent-modification', 'game.errors.concurrent-move-refetched'],
+];
+
 describe('hubErrorToKey', () => {
-  it.each([
-    ['not-your-turn', 'game.errors.not-your-turn'],
-    ['invalid-move', 'game.errors.invalid-move'],
-    ['self-check', 'game.errors.self-check'],
-    ['idiom-not-found', 'game.errors.idiom-not-found'],
-    ['idiom-does-not-link', 'game.errors.idiom-does-not-link'],
-    ['idiom-already-used', 'game.errors.idiom-already-used'],
-    ['room-not-in-play', 'game.errors.room-not-in-play'],
-    ['not-a-player', 'game.errors.not-a-player'],
-    ['not-opponents-turn', 'game.errors.not-opponents-turn'],
-    ['invalid-chat-content', 'game.errors.invalid-chat'],
-    ['spectator-channel-forbidden', 'game.chat.forbidden-error'],
-    ['urge-too-frequent', 'game.errors.urge-cooldown'],
-    ['concurrent-modification', 'game.errors.concurrent-move-refetched'],
-  ])('maps the code %s', (code, key) => {
+  it.each(MAPPINGS)('maps the code %s', (code, key) => {
     expect(hubErrorToKey(new Error(code))).toBe(key);
+  });
+
+  it('has an expectation for every code the mapper knows', () => {
+    // `exactly`, not `contains`: a code added to the mapper with no expectation
+    // here would otherwise be asserted by nothing at all.
+    expect([...MAPPINGS.map(([code]) => code)].sort()).toEqual([...HUB_ERROR_CODES].sort());
   });
 
   it('tolerates surrounding whitespace', () => {
@@ -122,20 +138,12 @@ describe('hubErrorToKey', () => {
     // A mapping that resolves to a missing key shows the player a raw
     // `game.errors.x` on screen — which is worse than the generic message it
     // was meant to improve on.
-    const codes = [
-      'not-your-turn',
-      'invalid-move',
-      'self-check',
-      'room-not-in-play',
-      'not-a-player',
-      'not-opponents-turn',
-      'invalid-chat-content',
-      'spectator-channel-forbidden',
-      'urge-too-frequent',
-      'concurrent-modification',
-      'anything-unmapped',
-      "No connection with id 'x'",
-    ];
+    // Derived from the mapper's own table, plus the two inputs that resolve to
+    // generic and network. The hand-written copy this replaced was missing all
+    // three 接龙 codes, so `idiom-not-found` having copy had never been checked —
+    // and the walk read exactly the same either way.
+    expect(HUB_ERROR_CODES.length).toBeGreaterThan(1); // an empty table makes the loop vacuous
+    const codes = [...HUB_ERROR_CODES, 'anything-unmapped', "No connection with id 'x'"];
 
     for (const [locale, tree] of Object.entries({ 'zh-CN': zhCN, en })) {
       for (const code of codes) {

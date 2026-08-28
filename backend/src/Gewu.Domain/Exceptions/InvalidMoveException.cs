@@ -39,6 +39,18 @@ public sealed class InvalidMoveException : DomainException
     /// <param name="message">人类散文,给日志看。</param>
     public static InvalidMoveException SelfCheck(string message) => new(message, "self-check");
 
+    /// <summary>
+    /// 同一个将军已经重复到上限,这一步不许再走(长将)。
+    /// <para>
+    /// 它带自己的码,理由比自将那条更强:被拒的原因**不在玩家刚点的那两格上**,而在十几手
+    /// 之前。「这一步不合法」说不出「同一个将军已经三次了」,而看着盘面也想不出来 ——
+    /// 玩家看到的会是「这步明明能走」。
+    /// </para>
+    /// </summary>
+    /// <param name="message">人类散文,给日志看。</param>
+    public static InvalidMoveException RepeatedCheck(string message)
+        => new(message, "repeated-check");
+
     // ── 成语接龙的三条规则 ────────────────────────────────────────────────────
     //
     // 三条各带自己的码,而不是共用 invalid-move。理由不是整洁:接龙的界面**故意不在客户端

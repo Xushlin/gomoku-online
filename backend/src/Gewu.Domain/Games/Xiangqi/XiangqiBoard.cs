@@ -102,6 +102,34 @@ internal sealed class XiangqiBoard
         return clone;
     }
 
+    /// <summary>
+    /// 两块盘面上的子完全相同吗 —— 「同一个局面出现过几次」要数的就是它。
+    /// <para>
+    /// 逐格比 90 格,而不是先算一个指纹字符串:指纹要么有碰撞(那时计数会**多**数,
+    /// 而多数的表现是一步合法的棋被拒),要么就是这 90 格本身。而每走一步都为整段历史
+    /// 生成 90 字符的串是真实的垃圾,只为省下一个不慢的循环。
+    /// </para>
+    /// <para>
+    /// <b>它不判「轮到谁」——那不在盘面里。</b> 一般而言同一块盘面在红走完与黑走完之后是两个
+    /// 不同的局面;而长将上限那一处不需要区分,理由在
+    /// <c>XiangqiRules.CountEarlierOccurrences</c> 上 —— 一个「对手被将」的盘面只可能由本方
+    /// 走出来。别处要区分的话,MUST 自己把那件事算进去。
+    /// </para>
+    /// </summary>
+    /// <param name="other">另一块盘面。</param>
+    /// <returns>每一格都相同则为 <c>true</c>。</returns>
+    internal bool SamePosition(XiangqiBoard other)
+    {
+        for (var i = 0; i < _cells.Length; i++)
+        {
+            if (_cells[i] != other._cells[i])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /// <summary>找某方的将帅;被吃掉(理论上不该发生)时返回 <c>null</c>。</summary>
     internal Position? FindGeneral(Stone side)
     {
