@@ -42,31 +42,51 @@
 ReplayPage 标题区 SHALL 渲染:
 
 - 房间名(纯文本)
-- **`replay().seats` 里的每一个座位**,按 `Index` 升序,每个渲染成
-  `<a [routerLink]="['/users', seat.player.id]" class="username-link">`
+- **`replay().seats` 里的每一个座位**,按 `Index` 升序,**席位名由该棋种的 manifest 给**
+  (象棋读作「红方 / 黑方」),username 是
+  `<a [routerLink]="['/users', <id>]" class="username-link">`。没声明席位名的棋种说座位号。
 - 状态徽章:`endReason` 翻译(`game.ended.reason-connected-5` / `.reason-resigned` / `.reason-timeout`)
 - 结束时间(`endedAt`,通过 Angular `formatDate` 按当前 locale 显示)
-
-**座位数 SHALL 由 `seats.length` 决定,MUST NOT 写死两个。** 此前这里是两个写死的槽位
-(黑方 / 白方),于是三座位对局的标题区**结构上就画不出第三个人** —— 后端补上字段而这里不改,
-第三个人依然不出现,而页面看起来一切正常。
-
-**席位怎么称呼不在本条里。** 今天这里写死的 `game.room.seat-black` / `seat-white` 两个键对象棋与
-成语接龙都是错的,而那是 `per-game-seat-labels` 在改的东西 —— 那个变更改**叫法**,本变更改
-**有几个**。两者落地顺序不限,但都落地之前,标题区 SHALL 至少能把每个座位画出来。
 
 #### Scenario: 用户名是链接
 - **WHEN** 渲染标题区
 - **THEN** 每个座位的 username 文本是 `<a>`,`href` 解析为 `/users/<userId>`;有 `username-link` class
 
+#### Scenario: 象棋回放说红黑
+- **WHEN** 渲染一局象棋的回放标题区
+- **THEN** MUST 说「红方 / 黑方」;MUST NOT 出现「白方」
+
+**座位数 SHALL 由 `seats.length` 决定,MUST NOT 写死两个。**
+
+这一条与上面那条席位名是**两件事,而它们此前各缺一半**。`per-game-seat-labels` 把「怎么称呼」
+做对了,但它当时只读得到 `GameReplayDto` 的 `Black` / `White`,所以它自己在实现里写着
+「恰好两位,而那是 DTO 的形状,不是这一处的选择」—— 一句诚实的话,也是一张欠条。
+`replay-every-seat` 把那个形状改成了座位表,欠条到期。
+
+两个都不能写死:写死名字会把象棋的红方叫成黑方,写死两个则让三座位对局的标题区
+**结构上就画不出第三个人**,而页面看起来一切正常。
+
+座位数取 `seats.length` 而不是描述符的 `seatCount`:回放只有 Finished 房间,坐满才开局,
+所以在这一页「有几个人」与「有几个座位」是同一个数。房间侧栏取 `seatCount`,因为它面对
+等待中的房间,那里两者会分叉 —— **判据不同是因为问题不同,不是漏抄。**
+
+标题区那一行 SHALL 能在长用户名下断行(`break-words`)。这是浏览器里量到的既有缺陷,
+与本变更无关但同一处模板:Angular 去掉元素间空白、`mx-1` 是 margin 不是断行机会,于是
+「席位名:」+ 20 字符用户名 + 「席位名:」+ 20 字符连成一个没有断点的长串,375 px 下
+`scrollWidth 504 / clientWidth 311`。20 字符是注册上限,所以那是真实的最长内容。
+
 #### Scenario: 三座位对局的标题区画三个人
-- **WHEN** 回放一局 `seats.length === 3` 的对局
+- **WHEN** 回放一局 `seats.length === 3` 的对局(斗地主)
 - **THEN** 标题区**恰好**三个 `username-link`,`href` 分别解析到三个不同的 `/users/<id>`
 
 #### Scenario: 两座位对局的标题区画两个人
 - **WHEN** 回放一局 `seats.length === 2` 的对局
 - **THEN** 标题区**恰好**两个 `username-link`。**这一条与上一条 MUST 同时存在** ——
   「每个座位都画出来了」在一个只有两座位样本的集合上恒真
+
+#### Scenario: 长用户名在 375 px 下不横向溢出
+- **WHEN** 三个 20 字符用户名(注册上限)的对局回放,视口 375 px
+- **THEN** 页面 `scrollWidth == clientWidth`;标题区那一行 MUST 带 `break-words`
 
 ---
 
