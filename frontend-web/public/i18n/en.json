@@ -170,6 +170,7 @@
       "not-a-player": "You are watching this game, not playing it.",
       "not-opponents-turn": "It is your move — there is nobody to nudge.",
       "not-your-turn": "It's not your turn.",
+      "repeated-check": "The same check may be repeated at most three times, and this would be the fourth. Try a different move.",
       "room-not-in-play": "This game has not started, or it has already finished.",
       "self-check": "That move would leave your own general open to capture (self-check, or the two generals facing each other).",
       "urge-cooldown": "Urge is on cooldown."

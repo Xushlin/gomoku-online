@@ -27,6 +27,26 @@ public sealed class XiangqiRules : IBoardGameRules
     /// <summary>红方(<see cref="Stone.Black"/>)一侧的底线行号。</summary>
     private const int RedHomeRow = 9;
 
+    /// <summary>
+    /// 同一个将军最多能重复几次 —— 第 <c>MaxRepeatedChecks + 1</c> 次被拒。
+    /// <para>
+    /// 一条棋理限制:没有它,一方可以无限长将,对手永远在应将,棋永远走不完,
+    /// 而界面上一切正常。
+    /// </para>
+    /// <para>
+    /// **数的是局面,不是走法。** 「将军」是**局面**的性质而不是那一步的性质,所以
+    /// 「同一个将军送出了 N 次」与「同一个局面出现了 N 次」是同一句话。因此实现不为
+    /// 每一步记「这一步是不是将军」—— 少的那份记录会和局面本身漂开。
+    /// </para>
+    /// <para>
+    /// <b>改这个数要连带改两个 locale 的文案</b> —— `game.errors.repeated-check` 把「三次」
+    /// 写在句子里(告诉玩家次数比说一句「太多次了」有用得多),而服务端只发码、不发参数,
+    /// 所以那两句只能写死。**没有任何测试会因此变红**:C# 常量与 JSON 文案分别在两套测试的
+    /// 视野之外。触发条件写在这里,因为这里是会被改的那一行。
+    /// </para>
+    /// </summary>
+    internal const int MaxRepeatedChecks = 3;
+
     /// <inheritdoc />
     public string GameKey => GameKeys.Xiangqi;
 
@@ -173,6 +193,18 @@ public sealed class XiangqiRules : IBoardGameRules
             return MoveApplication.Won(seat);
         }
 
+        // 长将上限。**顺序要紧:将死在它之前**,所以一步将死的棋永远不会被这条拒掉。
+        //
+        // 这两条其实撞不上:局面相同 ⇒ 合法着法集合相同 ⇒ 若此刻是将死,此前那次也是将死,
+        // 棋在那时就该结束了 —— 一个将死的局面不可能有过往出现。顺序仍然写成这样,
+        // 是为了让那段论证不必成为正确性的前提。
+        if (IsForbiddenRepeatedCheck(start, state.History, after, side))
+        {
+            throw InvalidMoveException.RepeatedCheck(
+                $"The same check may be given at most {MaxRepeatedChecks} times; "
+                + "this move would repeat it once more.");
+        }
+
         return MoveApplication.Ongoing();
     }
 
@@ -185,7 +217,20 @@ public sealed class XiangqiRules : IBoardGameRules
     /// <c>XiangqiBoard.Initial()</c> —— 那正是「从指定局面开局」这件事唯一挡在路上的一行。
     /// </para>
     /// </summary>
-    private static XiangqiBoard Replay(XiangqiBoard start, IReadOnlyList<PlayedMove> history)
+    /// <param name="start">起始盘面。</param>
+    /// <param name="history">走子历史。</param>
+    /// <param name="onEachPly">
+    /// 每一步走完之后回调一次,收到的是**那一刻**的盘面(同一个可变实例,MUST NOT 存下来)。
+    /// <para>
+    /// 长将上限要数「同一个局面出现过几次」,而那需要每一步之后的中间局面。它是一个回调而不是
+    /// 第二个重放循环:两个循环会各自漂,而漂的表现是**计数错**,没有任何断言会红。
+    /// 不传时零开销 —— 五子棋量级的路径一步都没变。
+    /// </para>
+    /// </param>
+    private static XiangqiBoard Replay(
+        XiangqiBoard start,
+        IReadOnlyList<PlayedMove> history,
+        Action<XiangqiBoard>? onEachPly = null)
     {
         var board = start.Clone();
         foreach (var played in history)
@@ -194,8 +239,94 @@ public sealed class XiangqiRules : IBoardGameRules
             {
                 board.Move(origin, played.RequirePosition());
             }
+            onEachPly?.Invoke(board);
         }
         return board;
+    }
+
+    /// <summary>
+    /// 这一步是不是一次**被禁的重复将军** —— <see cref="ApplyOn"/> 与
+    /// <see cref="LegalMoves"/> 共用的这一份判断。
+    /// <para>
+    /// **共用是必须的,不是整洁。** `ai-opponent` 那条要求的 Scenario 写着「`LegalMoves` 的每一条
+    /// 都能被 <c>Apply</c> 接受」;两处各写一遍迟早不一致,而不一致的表现是
+    /// **AI 走出规则会拒绝的棋**,用户看到的是它卡住了。
+    /// </para>
+    /// <para>
+    /// 局面的身份**就是盘面** —— 象棋里没有王车易位 / 吃过路兵那类额外状态。「下一手轮到谁」
+    /// 在这一处不必再算进去,理由在 <see cref="CountEarlierOccurrences"/> 上。
+    /// </para>
+    /// </summary>
+    /// <param name="start">这一局从哪块盘面开始。</param>
+    /// <param name="history">这一步之前的全部历史。</param>
+    /// <param name="after">这一步走完之后的盘面。</param>
+    /// <param name="side">走这一步的一方。</param>
+    /// <param name="seat">走这一步的座位。</param>
+    private static bool IsForbiddenRepeatedCheck(
+        XiangqiBoard start,
+        IReadOnlyList<PlayedMove> history,
+        XiangqiBoard after,
+        Stone side)
+    {
+        var opponent = Opponent(side);
+
+        // 不将军就不受这条限制 —— 它限制的是**长将**,不是重复本身。双方各自往复一个
+        // 不将军的局面,平台不管(而「判和」是另一笔账:见 xiangqi 那条「平台认不出和棋」)。
+        if (!IsInCheck(after, opponent))
+        {
+            return false;
+        }
+
+        // 将死优先 —— 而**这个分支没有任何测试能让它红**,所以它需要一段理由而不是一条断言。
+        //
+        // 「既达到上限又是将死」构造不出来:局面相同 ⇒ 合法着法集合相同(象棋里局面就是
+        // 盘面 + 轮到谁)⇒ 若此刻将死,此前那次也将死,棋在那时就该结束了。在任何上限值下都成立。
+        //
+        // 保留它,是让正确性不依赖上面那段论证。**它变成承重的那一天有名字**:谁把计数的键
+        // 从「这一个完整局面」换成更粗的东西(例如为长捉数「这一方将了几次」),不可能就
+        // 变成可能,而那时它是唯一挡着的东西。
+        //
+        // 顺带:它也让本判断在两个调用方里都自洽 —— ApplyOn 已经先判过将死,LegalMoves 没有。
+        if (!HasAnyLegalMove(after, opponent))
+        {
+            return false;
+        }
+
+        return CountEarlierOccurrences(start, history, after) >= MaxRepeatedChecks;
+    }
+
+    /// <summary>
+    /// 历史里出现过几次 <paramref name="target"/> 这个局面。
+    /// <para>
+    /// 数整局,不是只数最近一个循环 —— 长将可以隔着几手来回。起始局面不算:它不是任何人
+    /// 走出来的,所以一个开局就被将着的残局设置不计入「这个将军被送了几次」。
+    /// </para>
+    /// <para>
+    /// <b>它不问「是谁走出这个局面的」,而那不是漏了 —— 是它问不出别的答案。</b> 调用方只在
+    /// <paramref name="target"/> 里对手被将时才来数,而**一个「对手被将」的盘面只可能由本方
+    /// 走出来**:对手走到那儿等于把自己的将留在被吃的位置,那一步在 <see cref="ApplyOn"/>
+    /// 里就被 <c>SelfCheck</c> 挡掉了,进不了历史。所以「本方走出它几次」与「它出现过几次」
+    /// 是同一个数。
+    /// </para>
+    /// <para>
+    /// 这里原本有一个 <c>played.Seat == seat</c> 的条件。删掉它的理由不是它便宜 —— 是变异测试
+    /// 说它**不可能红**:五条变异里四条被杀,只有「去掉座位判断」活了下来。而上面那段论证
+    /// 靠的是自将必被拒,**那条规则自己有测试**。一个靠有测试的规则支撑的删除,好过一个
+    /// 没有任何断言能覆盖的分支。
+    /// </para>
+    /// </summary>
+    private static int CountEarlierOccurrences(
+        XiangqiBoard start, IReadOnlyList<PlayedMove> history, XiangqiBoard target)
+    {
+        var count = 0;
+        Replay(start, history, board =>
+        {
+            if (board.SamePosition(target))
+            {
+                count++;
+            }
+        });
+        return count;
     }
 
     /// <summary>本方是红方吗 —— 红方在下(第 5–9 行),兵朝行号减小的方向走。</summary>
@@ -316,17 +447,42 @@ public sealed class XiangqiRules : IBoardGameRules
     }
 
     /// <summary>
-    /// 某方在该局面下的**全部合法着法**(已排除会导致自将 / 照面的)。
+    /// 某方在该局面下的**全部合法着法**。
+    /// <para>
+    /// 判据是「<see cref="Apply"/> 会不会接受它」,而不是一份列举出来的排除项清单 ——
+    /// 后者每加一条规则就少一项,而少了的那一项不会有任何断言发现。当前被排除的是:
+    /// 自将 / 照面(**局面**的性质),以及超出上限的重复将军(**历史**的性质)。
+    /// </para>
     /// <para>
     /// 对外暴露是因为 AI 需要它。让 AI 自己再实现一遍走法枚举就是第二份真源,
     /// 而两份不一致的表现是 **AI 走出规则会拒绝的棋** —— 用户看到的是「机器人卡住了」。
+    /// </para>
+    /// <para>
+    /// <b>返回空表是可能的,而它不再只意味着「棋早该结束了」。</b> 一方的每一条着法都被长将
+    /// 上限挡住时,他确实一步也走不了 —— 收场的是回合超时(<c>TurnTimeoutWorker</c> 判走不了
+    /// 的一方负),那正是传统的长将判负。
     /// </para>
     /// </summary>
     /// <param name="history">本局已走的全部步,按 Ply 升序。</param>
     /// <param name="side">要枚举哪一方的着法。</param>
     public IReadOnlyList<MoveIntent> LegalMoves(
         IReadOnlyList<PlayedMove> history, Stone side)
-        => LegalMovesOn(Replay(XiangqiBoard.Initial(), history), side);
+    {
+        var start = XiangqiBoard.Initial();
+        var board = Replay(start, history);
+
+        var permitted = new List<MoveIntent>();
+        foreach (var move in LegalMovesOn(board, side))
+        {
+            var after = board.Clone();
+            after.Move(move.From!.Value, move.To!.Value);
+            if (!IsForbiddenRepeatedCheck(start, history, after, side))
+            {
+                permitted.Add(move);
+            }
+        }
+        return permitted;
+    }
 
     private static List<MoveIntent> LegalMovesOn(XiangqiBoard board, Stone side)
     {

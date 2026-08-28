@@ -63,8 +63,12 @@ public sealed class XiangqiAi : IBoardGameAi
         var moves = _rules.LegalMoves(history, myStone);
         if (moves.Count == 0)
         {
+            // 此前这句写的是「the game should already have ended」。长将上限落地之后那不再是
+            // 唯一的解释:一方的每一条着法都可以被上限挡住,而那时棋确实还没结束 ——
+            // 收场的是回合超时。一句断言了错误原因的报错,会把下一个人送错方向。
             throw new InvalidOperationException(
-                $"{myStone} has no legal move; the game should already have ended.");
+                $"{myStone} has no permitted move: checkmate, stalemate, or every move is a "
+                + "repeated check past its limit.");
         }
 
         var board = XiangqiRules.BoardFrom(history);
