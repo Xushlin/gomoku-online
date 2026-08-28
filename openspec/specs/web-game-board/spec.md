@@ -349,9 +349,13 @@ requirement,会在每一次那段源码变化时静静过期」。** 它随后�
 
 `public/i18n/en.json` 与 `public/i18n/zh-CN.json` SHALL 同步新增 `game.*` 键集合,包含但不限于:
 
-- `game.room.{name-label, host-label, seat-black, seat-white, status-waiting, status-playing, status-finished}`
+- `game.room.{name-label, host-label, status-waiting, status-playing, status-finished}`
+- `game.seat.{black, white, red, first, second}` —— 席位名,由 manifest 的
+  `seatLabelKeys` 指到。它们是**名词**(「红方」),因为侧栏与回合指示要的形态不同:
+  前者直接用,后者拼进 `game.turn.side-turn`。
 - `game.board.{cell-aria-label, last-move-label}`(cell-aria-label 带 `{{row}}` / `{{col}}` 插值占位符)
-- `game.turn.{your-turn, opponent-turn, black-turn, white-turn, countdown-label}`
+- `game.turn.{your-turn, opponent-turn, side-turn, seat-turn, countdown-label}`
+  (`side-turn` 带 `{{side}}`,`seat-turn` 带 `{{seat}}`)
 - `game.actions.{resign, resign-confirm-title, resign-confirm-body, resign-confirm-ok, leave, urge}`
 - `game.chat.{title, tab-room, tab-spectator, send, placeholder, empty, max-length-error, forbidden-error}`
 - `game.urge.{toast, button-disabled-own-turn, button-disabled-cooldown}`
@@ -360,6 +364,16 @@ requirement,会在每一次那段源码变化时静静过期」。** 它随后�
 - `game.connection.{reconnecting, disconnected, retry, connected}`
 
 键集合 MUST 两份 JSON 完全相等;已有 flattener parity check 持续 0 drift。
+
+**`game.room.seat-black` / `seat-white` 与 `game.turn.black-turn` / `white-turn` 退役,
+而退役的键名 MUST NOT 被重用。** 与 `web-lobby` 那条同一个理由:一个被重用的退役键名
+会让这份规格与那份规格说的是两件事,而读者无从分辨。它们的去处是
+`game.seat.{black,white}` 与 `game.turn.side-turn` —— 名词与句式分开,因为同一个席位名
+要在两种形态里出现。
+
+**编号那两个键 MUST 复用既有的 `game.room.seat-label` / `game.turn.seat-turn`,
+MUST NOT 新造。** 它们已经在用(三座位棋种走的就是这一支),而为同一句话造第二个键
+就是让两份文案各自漂。
 
 模板 MUST 零硬编码 CJK / 长英文显示字符串;按 scaffold / auth / lobby 已立规则。
 
@@ -691,9 +705,14 @@ RoomPage / Board / ChatPanel SHALL 把从 hub 命令 promise 抛出的 `HubExcep
   「有几个座位**被坐上了**」,于是一个**等待中**的三座位房间会被当成两座位房间渲染。
   (那正是本要求此前的写法留下的缺陷,在浏览器里量到:一个两人在座的斗地主房间,
   侧栏原文是 `Black: … White: …`。)
-  - `seatCount == 2`:渲染「黑方 / 白方」两个座位(象棋读作红 / 黑)。**颜色留着**,
-    因为你正看着一张摆着黑白子的棋盘,而「谁是黑方」是座位号给不出的信息。
-  - `seatCount > 2`:按座位号逐个渲染,**含空座位**。
+  - **座位怎么称呼由 manifest 说,而不是由座位数说。** 声明了席位名的棋种用它的名字
+    (五子棋「黑方 / 白方」、象棋族「红方 / 黑方」、成语接龙「先手 / 后手」);
+    没声明的按**座位号**渲染。
+  - **没声明时的缺省 MUST 是座位号,MUST NOT 是「黑方 / 白方」。** 一个忘了声明的棋种
+    因此显示「第 1 位」—— 不好看,但它不会把红方叫成黑方。**旧的缺省正是本变更要修的
+    那个失效,所以它不能继续当缺省。**
+  - `seatCount` 仍然决定**画几行**(含空座位)—— 「有几个座位」是服务端事实,
+    「它们叫什么」是显示层事实,两者不该由同一个数字回答。
   - 两支的 username SHALL 都是 `/users/<id>` 链接。
   - 描述符尚未到达时 MUST NOT 猜:`RoomPage` 的 loading 状态里本来就含
     `!capabilities.loaded()`,所以整页是骨架屏。
@@ -720,9 +739,21 @@ RoomPage / Board / ChatPanel SHALL 把从 hub 命令 promise 抛出的 `HubExcep
 - **WHEN** 一个 `seatCount == 3` 的房间只坐了两个人
 - **THEN** 侧栏按座位号渲染,MUST NOT 出现「黑方」/「白方」
 
-#### Scenario: 两座位棋种仍然说颜色
-- **WHEN** 一个 `seatCount == 2` 的房间
+#### Scenario: 席位名来自 manifest
+- **WHEN** 一个 `seatCount == 2` 的五子棋房间
 - **THEN** 侧栏说「黑方 / 白方」—— 棋盘上就是黑白子
+
+#### Scenario: 象棋房说红黑,而不是黑白
+- **WHEN** 一个象棋(或象棋残局)房间
+- **THEN** 侧栏 MUST 说「红方 / 黑方」;MUST NOT 出现「白方」—— 那张盘上没有白方
+
+#### Scenario: 没有颜色的两座位棋种不编一个出来
+- **WHEN** 一个成语接龙房间
+- **THEN** 侧栏 MUST 说「先手 / 后手」;MUST NOT 出现「黑方」或「白方」
+
+#### Scenario: 没声明席位名就说座位号
+- **WHEN** 一个没有声明席位名的棋种(斗地主 / 挖坑)
+- **THEN** 侧栏按座位号渲染,MUST NOT 出现任何颜色词
 
 ### Requirement: 棋盘底下的操作条 —— 现在怎么样,以及我能做什么
 
@@ -750,9 +781,18 @@ utility 或 token —— 「厚重」在这套 token 里已经有说法了。
 
 内容:
 
-- 当前回合指示:两座位棋种读作 `game.turn.black-turn` / `white-turn`,座位数大于二的棋种
-  MUST 说座位号 —— 「白方走棋」在一个没有白方的棋种里是错的(`add-web-doudizhu` 修的)。
-  若 `mySide()` 对应的座位等于 `currentSeat`,额外突出 `game.turn.your-turn`
+- 当前回合指示:**由该棋种的席位名组成**(`game.turn.side-turn`,把席位名填进去),
+  没声明席位名的棋种说座位号(`game.turn.seat-turn`)。
+  若 `mySide()` 对应的座位等于 `currentSeat`,额外突出 `game.turn.your-turn`。
+
+  **判据从「座位数」换成「这个棋种的席位叫什么」,而换的理由就是本条原来写下的那句话:**
+  「『白方走棋』在一个没有白方的棋种里是错的」。那句话当时只被用在座位数大于二上,
+  而它对**象棋**(红黑)和**成语接龙**(无颜色)一样成立 —— 判据错在把「有没有白方」
+  近似成了「有几个座位」。
+
+  文案是**拼出来的**,所以 MUST 有一条断言读**整句**,而不是分别断言两段:
+  一个标签与取值各带一次前缀的实现,在两段各自的 `toContain` 下是绿的
+  (`add-xiangqi-endgames` 的谱评行付过这个账)。
 - **回合倒计时**:
   - 计算 `deadline = state.game.turnStartedAt + state.game.turnTimeoutSeconds`
   - 显示剩余时间 `M:SS`,驱动源是 RoomPage 的 1 Hz `now` signal
@@ -772,7 +812,15 @@ utility 或 token —— 「厚重」在这套 token 里已经有说法了。
 
 #### Scenario: 我方回合突出
 - **WHEN** `mySide() === 'black'` 且 `state.game.currentSeat === 0`
-- **THEN** 操作条 MUST 同时显示 `game.turn.black-turn` 与 `game.turn.your-turn`
+- **THEN** 操作条 MUST 同时显示该棋种 0 号席位的「…走棋」与 `game.turn.your-turn`
+
+#### Scenario: 象棋的回合指示说红方
+- **WHEN** 一个象棋房间且 `currentSeat === 0`
+- **THEN** 整句 MUST 读作「红方走棋」;MUST NOT 出现「黑方走棋」或「白方走棋」
+
+#### Scenario: 拼出来的那句话整句断言
+- **WHEN** 断言回合指示
+- **THEN** MUST 有一条断言读**整句**渲染结果,而不是只断言席位名与「走棋」各自出现
 
 #### Scenario: 倒计时低于阈值强调
 - **WHEN** `turnRemainingMs() <= 10_000`
