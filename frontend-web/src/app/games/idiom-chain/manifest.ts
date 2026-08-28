@@ -12,6 +12,8 @@ export const idiomChainManifest: GameManifest = {
     { k: 'r', a: 3, b: 8, c: 11, d: 8, r: 4 },
     { k: 'r', a: 10, b: 8, c: 11, d: 8, r: 4 },
   ],
+  // 席位名 —— 成语接龙没有棋盘,也没有颜色。
+  seatLabelKeys: ['game.seat.first', 'game.seat.second'],
   contentLocales: ['zh-CN'],
   launchRoute: '/g/idiom-chain/lobby',
 };

@@ -67,8 +67,7 @@
   已经存在的那份「伴生键 → 主棋种」私拼表。
 - 三处调用点(侧栏 / 操作条 / 回放标题区)改用同一个解析函数;操作条的「座位数大于二」
   分支**被删掉** —— 三座位棋种就是「没声明席位名」的一种,不再需要单独一支。
-- i18n:新增 `game.seat.{black,white,red,first,second}` 与 `game.turn.side-turn`、
-  `game.room.seat-n`;退役 `game.room.seat-{black,white}` 与 `game.turn.{black,white}-turn`。
+- i18n:新增 `game.seat.{black,white,red,first,second}` 与 `game.turn.side-turn`(编号那两个键复用既有的 `game.room.seat-label` / `game.turn.seat-turn`,不新造);退役 `game.room.seat-{black,white}` 与 `game.turn.{black,white}-turn`。
   **退役的键名不许重用。**
 - 一条遍历 `GAME_REGISTRY` 的走查:每个声明的键两份 locale 都有文案;声明与不声明**两支
   都在样本里**;不同席位名组合**恰好三种**。

@@ -1,4 +1,8 @@
 import { Dialog } from '@angular/cdk/dialog';
+import {
+  DefaultGameCatalogService,
+  GameCatalogService,
+} from '../../../../games/game-catalog.service';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { GameCapabilitiesService } from '../../../../games/game-capabilities.service';
@@ -70,7 +74,7 @@ function baseState(): RoomState {
 const dialogCalls: unknown[] = [];
 let dialogResult: boolean | undefined = true;
 
-function mount(seatCount = 2) {
+function mount(seatCount = 2, gameKey = 'gomoku') {
   dialogCalls.length = 0;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -82,10 +86,17 @@ function mount(seatCount = 2) {
             game: {
               turn: {
                 'your-turn': 'Your turn',
-                'black-turn': 'Black turn',
-                'white-turn': 'White turn',
+                'side-turn': '{{side}} to play',
                 'seat-turn': 'Seat {{seat}} to play',
                 'countdown-label': 'Time left',
+              },
+              // 席位名 —— 由 manifest 指到,拼进 side-turn。
+              seat: {
+                black: 'Black',
+                white: 'White',
+                red: 'Red',
+                first: 'First player',
+                second: 'Second player',
               },
               actions: { resign: 'Resign', leave: 'Leave', urge: 'Urge' },
             },
@@ -96,6 +107,9 @@ function mount(seatCount = 2) {
       }),
     ],
     providers: [
+      // **真的目录服务**,不是桩:席位名的数据源就是 manifest,而一个桩会让这一组
+      // 测试在一个「象棋没有席位名」的世界里跑。这个坑本仓库付过四次账。
+      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
       {
         provide: Dialog,
         useValue: {
@@ -110,7 +124,7 @@ function mount(seatCount = 2) {
         provide: GameCapabilitiesService,
         useValue: new StubGameCapabilities([
           {
-            gameKey: 'gomoku',
+            gameKey,
             isRated: true,
             supportsHumanVsHuman: true,
             supportsAi: true,
@@ -176,7 +190,7 @@ describe('RoomActionBar', () => {
     expect(asSpectator).not.toContain('Leave');
     expect(asSpectator).not.toContain('Urge');
     // 而围观者仍然看得到「现在怎么样」。
-    expect(asSpectator).toContain('Black turn');
+    expect(asSpectator).toContain('Black to play');
   });
 
   it('says which seat is to play when there are more than two', () => {
@@ -189,14 +203,48 @@ describe('RoomActionBar', () => {
     expect(text).not.toContain('White turn');
   });
 
-  it('still says black and white for a two-seat game', () => {
-    // 上一条的正面对照。没有它,一个「永远说座位号」的实现在上一条下也是绿的。
+  /**
+   * 上一条的正面对照。没有它,一个「永远说座位号」的实现在上一条下也是绿的。
+   *
+   * **断言读的是拼出来的整句**,不是「Black」与「to play」各出现过。那两段各自的
+   * `toContain` 在一个把席位名拼两遍的实现下同样是绿的 ——
+   * `add-xiangqi-endgames` 的谱评行就是那么漏过去的(「谱评:谱评:黑优」)。
+   */
+  it('composes the whole sentence from the seat name the game itself declares', () => {
     const fixture = mount(2);
     fixture.componentInstance.state.set(baseState());
     fixture.detectChanges();
-    const text = bar(fixture)?.textContent ?? '';
-    expect(text).toContain('Black turn');
+    const text = (bar(fixture)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    expect(text).toContain('Black to play');
     expect(text).not.toContain('Seat 1 to play');
+    // 整句只出现一次,而且没有被拼重
+    expect(text.match(/Black/g)).toHaveLength(1);
+    expect(text).not.toContain('Black Black');
+  });
+
+  /**
+   * **象棋说红方,而这正是这个变更存在的理由。**
+   *
+   * 0 号座位在象棋里画的是 帥。此前这里写死读 `game.turn.black-turn`,于是操作条
+   * 管红方叫黑方 —— 在浏览器里量到的原文是「黑方回合」。
+   */
+  it('says red for xiangqi, never black', () => {
+    const fixture = mount(2, 'xiangqi');
+    fixture.componentInstance.state.set({ ...baseState(), gameKey: 'xiangqi' });
+    fixture.detectChanges();
+    const text = (bar(fixture)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    expect(text).toContain('Red to play');
+    expect(text).not.toContain('Black to play');
+  });
+
+  /** 成语接龙没有棋盘也没有颜色 —— 它说先手 / 后手。 */
+  it('says first player for a game with no colours', () => {
+    const fixture = mount(2, 'idiom-chain');
+    fixture.componentInstance.state.set({ ...baseState(), gameKey: 'idiom-chain' });
+    fixture.detectChanges();
+    const text = (bar(fixture)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    expect(text).toContain('First player to play');
+    expect(text).not.toContain('Black');
   });
 
   it('offers resign at two seats and never at three', () => {

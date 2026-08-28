@@ -34,6 +34,8 @@ export const xiangqiManifest: GameManifest = {
     { k: 'c', a: 12, b: 12, c: 7 },
     { k: 't', a: 12, b: 12, c: 7.5, s: '帥' },
   ],
+  // 席位名 —— 象棋是红黑,0 号座位画的是 帥。
+  seatLabelKeys: ['game.seat.red', 'game.seat.black'],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/xiangqi/lobby',
   // 《梅花谱》—— 只读资料,匿名可读。见 games/xiangqi/manual/。

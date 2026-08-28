@@ -2,7 +2,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { RoomState } from '../../../../core/api/models/room.model';
-import { FIRST_SEAT } from '../../../../games/board-seats';
+import { GameCatalogService } from '../../../../games/game-catalog.service';
+import { seatNaming } from '../../../../games/seat-labels';
 import { GameCapabilitiesService } from '../../../../games/game-capabilities.service';
 import {
   ResignConfirmDialog,
@@ -38,11 +39,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RoomActionBar {
-  /** 模板只能读组件成员,所以把这个显示层常量挂上来。 */
-  protected readonly FIRST_SEAT = FIRST_SEAT;
-
   private readonly dialog = inject(Dialog);
   private readonly capabilities = inject(GameCapabilitiesService);
+  private readonly catalog = inject(GameCatalogService);
 
   readonly state = input<RoomState | null>(null);
   /**
@@ -75,9 +74,25 @@ export class RoomActionBar {
    * 于是一个等待中的三座位房间会被当成两座位房间。侧栏为同一件事读同一个来源 ——
    * 两处都从 `GameCapabilitiesService` 读,所以它们不可能各自说出不同的数。
    */
-  protected readonly moreThanTwoSeats = computed(
-    () => (this.capabilities.of(this.state()?.gameKey ?? '')?.seatCount ?? 0) > 2,
-  );
+  /**
+   * 现在这一手该由**谁**走 —— 返回那个席位名的 i18n 键,没有名字时返回 `null`
+   * (模板落到座位号那一支)。
+   *
+   * **判据从「座位数大于二」换成了「这个棋种声明了席位名吗」。** 换的理由就是这里
+   * 原来那条注释自己写下的那句话:「三个座位没有黑白」—— 而象棋也没有白方,
+   * 成语接龙连颜色都没有。旧判据把「有没有白方」近似成了「有几个座位」,
+   * 而那两件事只在斗地主上一致。
+   *
+   * 清单用 `byRoomKey` 取:象棋残局是伴生键,没有自己的清单,但要用象棋的席位名。
+   */
+  protected readonly turnSideKey = computed(() => {
+    const seat = this.state()?.game?.currentSeat;
+    const seatCount = this.capabilities.of(this.state()?.gameKey ?? '')?.seatCount;
+    if (seat === undefined || seatCount === undefined) return null;
+    const naming = seatNaming(
+      this.catalog.byRoomKey(this.state()?.gameKey ?? ''), seat, seatCount);
+    return naming.kind === 'named' ? naming.key : null;
+  });
 
   /**
    * 认输只在**恰好两个座位**的棋种里给 —— 而这不是产品口味,是领域层的硬拒绝。

@@ -1,4 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import {
+  DefaultGameCatalogService,
+  GameCatalogService,
+} from '../../../games/game-catalog.service';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
@@ -71,6 +75,9 @@ function mount(opts: { id?: string | null; getReplay?: ReturnType<typeof vi.fn> 
       }),
     ],
     providers: [
+      // **真的目录服务**,不是桩:席位名的数据源就是 manifest,而一个桩会让这一组
+      // 测试在一个「象棋没有席位名」的世界里跑。这个坑本仓库付过四次账。
+      { provide: GameCatalogService, useClass: DefaultGameCatalogService },
       {
         provide: GameCapabilitiesService,
         useValue: StubGameCapabilities.sized({

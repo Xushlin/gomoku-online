@@ -23,6 +23,8 @@ export const gomokuManifest: GameManifest = {
     { k: 'c', a: 12, b: 12, c: 2.6 },
     { k: 'c', a: 16, b: 12, c: 2.6, f: 1 },
   ],
+  // 席位名 —— 五子棋就是黑白子。
+  seatLabelKeys: ['game.seat.black', 'game.seat.white'],
   contentLocales: ['zh-CN', 'en'],
   launchRoute: '/g/gomoku/lobby',
 };

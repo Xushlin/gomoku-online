@@ -7,13 +7,16 @@
       @if (room.game && playing()) {
         <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
           <span class="truncate">
-            <!-- 三个座位没有「黑白」。判据是 seatCount,不是 seats.length —— 见 action-bar.ts。 -->
-            @if (moreThanTwoSeats()) {
-              {{ 'game.turn.seat-turn' | transloco: { seat: room.game.currentSeat + 1 } }}
-            } @else if (room.game.currentSeat === FIRST_SEAT) {
-              {{ 'game.turn.black-turn' | transloco }}
+            <!--
+              **席位名由棋种说,而不是由座位数说。** 本条原来的理由写在规格里:
+              「『白方走棋』在一个没有白方的棋种里是错的」—— 那句话对象棋(红黑)和
+              成语接龙(无颜色)一样成立,只是当时只被用在座位数大于二上。
+              这句话是**拼**出来的,所以测试里有一条断言读整句。
+            -->
+            @if (turnSideKey(); as sideKey) {
+              {{ 'game.turn.side-turn' | transloco: { side: sideKey | transloco } }}
             } @else {
-              {{ 'game.turn.white-turn' | transloco }}
+              {{ 'game.turn.seat-turn' | transloco: { seat: room.game.currentSeat + 1 } }}
             }
           </span>
           @if (myTurn()) {

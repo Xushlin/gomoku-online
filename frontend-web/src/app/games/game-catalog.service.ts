@@ -20,6 +20,22 @@ export abstract class GameCatalogService {
 
   /** Look up one manifest, or `undefined` when the key is unknown. */
   abstract byKey(key: string): GameManifest | undefined;
+
+  /**
+   * 按**房间的**棋种键解析清单 —— 匹配清单自己的 `key`,**或**它声明的任一
+   * `companionRoomKeys`。
+   *
+   * 它与 {@link byKey} 不能合成一个,而两个方向都要紧:
+   *
+   * - `byKey('xiangqi-endgame')` MUST 是 `undefined` —— 残局没有自己的清单,它不该
+   *   出现在目录页上,也不该有自己的大厅;
+   * - `byRoomKey('xiangqi-endgame')` MUST 给出**象棋**那份 —— 一间残局房要画象棋的
+   *   纹章、用象棋的席位名。
+   *
+   * 它同时收拢一处已经存在的重复:大厅的房间行此前自己拼了一张「伴生键 → 主棋种」的表。
+   * 一份被复制的解析规则迟早与另一份不一致,而这个仓库为这个形状付过很多次账。
+   */
+  abstract byRoomKey(key: string): GameManifest | undefined;
 }
 
 /** Default implementation, reading the static {@link GAME_REGISTRY}. */
@@ -44,5 +60,12 @@ export class DefaultGameCatalogService extends GameCatalogService {
 
   byKey(key: string): GameManifest | undefined {
     return this.ordered.find((g) => g.key === key);
+  }
+
+  /** @inheritdoc */
+  byRoomKey(key: string): GameManifest | undefined {
+    return this.ordered.find(
+      (g) => g.key === key || (g.companionRoomKeys ?? []).includes(key),
+    );
   }
 }

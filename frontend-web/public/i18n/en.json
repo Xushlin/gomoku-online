@@ -115,32 +115,6 @@
     "scores-link": "High scores"
   },
   "game": {
-    "room": {
-      "name-label": "Room",
-      "host-label": "Host",
-      "seat-black": "Black",
-      "seat-white": "White",
-      "seat-empty": "Open",
-      "spectators-label": "Spectators",
-      "status-waiting": "Waiting",
-      "status-playing": "Playing",
-      "status-finished": "Finished",
-      "not-found": "This room doesn't exist or has ended.",
-      "back-to-lobby": "Back to lobby",
-      "seat-label": "Seat {{seat}}"
-    },
-    "board": {
-      "cell-aria-label": "Row {{row}} Column {{col}}",
-      "last-move-label": "Last move"
-    },
-    "turn": {
-      "your-turn": "Your turn",
-      "opponent-turn": "Opponent's turn",
-      "black-turn": "Black to play",
-      "white-turn": "White to play",
-      "countdown-label": "Time left",
-      "seat-turn": "Seat {{seat}} to play"
-    },
     "actions": {
       "resign": "Resign",
       "resign-confirm-title": "Resign?",
@@ -150,14 +124,9 @@
       "leave": "Leave room",
       "urge": "Urge opponent"
     },
-    "leave-confirm": {
-      "title": "Leave this game?",
-      "stay": "Stay",
-      "leave": "Leave",
-      "match": "Leaving does not end the game and does not free your seat — the turn clock keeps running, and losing on time counts as a loss.",
-      "klotski": "The moves you have made in this level live only in this browser; leaving loses all of them.",
-      "crossword": "Re-entering this level starts a fresh attempt — time and hints count from zero again.",
-      "tetris": "This run has not finished; if you leave, the score is not recorded."
+    "board": {
+      "cell-aria-label": "Row {{row}} Column {{col}}",
+      "last-move-label": "Last move"
     },
     "chat": {
       "title": "Chat",
@@ -169,10 +138,11 @@
       "max-length-error": "Message is too long (max 500 characters).",
       "forbidden-error": "Can't send on this channel."
     },
-    "urge": {
-      "toast": "Your opponent is urging you to move.",
-      "button-disabled-own-turn": "It's your turn.",
-      "button-disabled-cooldown": "Please wait before urging again."
+    "connection": {
+      "reconnecting": "Reconnecting…",
+      "disconnected": "Disconnected from the game server.",
+      "retry": "Retry",
+      "connected": "Connected"
     },
     "ended": {
       "title-win": "You won!",
@@ -184,6 +154,9 @@
       "back-to-lobby": "Back to lobby",
       "view-replay": "View replay",
       "dismiss": "Stay and review"
+    },
+    "endgame": {
+      "no-draw": "This is a classical endgame study, and the platform does not detect draws. There are no repetition or perpetual-check rules here, so this game can only end by mate, resignation or timeout — if you play it out to a draw, agree between yourselves; the platform will not announce one."
     },
     "errors": {
       "concurrent-move-refetched": "Out of sync — board refreshed.",
@@ -201,14 +174,45 @@
       "self-check": "That move would leave your own general open to capture (self-check, or the two generals facing each other).",
       "urge-cooldown": "Urge is on cooldown."
     },
-    "connection": {
-      "reconnecting": "Reconnecting…",
-      "disconnected": "Disconnected from the game server.",
-      "retry": "Retry",
-      "connected": "Connected"
+    "leave-confirm": {
+      "title": "Leave this game?",
+      "stay": "Stay",
+      "leave": "Leave",
+      "match": "Leaving does not end the game and does not free your seat — the turn clock keeps running, and losing on time counts as a loss.",
+      "klotski": "The moves you have made in this level live only in this browser; leaving loses all of them.",
+      "crossword": "Re-entering this level starts a fresh attempt — time and hints count from zero again.",
+      "tetris": "This run has not finished; if you leave, the score is not recorded."
     },
-    "endgame": {
-      "no-draw": "This is a classical endgame study, and the platform does not detect draws. There are no repetition or perpetual-check rules here, so this game can only end by mate, resignation or timeout — if you play it out to a draw, agree between yourselves; the platform will not announce one."
+    "room": {
+      "back-to-lobby": "Back to lobby",
+      "host-label": "Host",
+      "name-label": "Room",
+      "not-found": "This room doesn't exist or has ended.",
+      "seat-empty": "Open",
+      "seat-label": "Seat {{seat}}",
+      "spectators-label": "Spectators",
+      "status-finished": "Finished",
+      "status-playing": "Playing",
+      "status-waiting": "Waiting"
+    },
+    "seat": {
+      "black": "Black",
+      "first": "First player",
+      "red": "Red",
+      "second": "Second player",
+      "white": "White"
+    },
+    "turn": {
+      "countdown-label": "Time left",
+      "opponent-turn": "Opponent's turn",
+      "seat-turn": "Seat {{seat}} to play",
+      "side-turn": "{{side}} to play",
+      "your-turn": "Your turn"
+    },
+    "urge": {
+      "toast": "Your opponent is urging you to move.",
+      "button-disabled-own-turn": "It's your turn.",
+      "button-disabled-cooldown": "Please wait before urging again."
     }
   },
   "games": {

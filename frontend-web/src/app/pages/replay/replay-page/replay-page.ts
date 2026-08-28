@@ -18,6 +18,8 @@ import { XiangqiBoard } from '../../../games/xiangqi/board/xiangqi-board';
 import { isXiangqiFamily } from '../../../games/xiangqi/game-key';
 import type { GameReplayDto, RoomState } from '../../../core/api/models/room.model';
 import { boardSizeFor } from '../../../games/board-size';
+import { GameCatalogService } from '../../../games/game-catalog.service';
+import { seatNaming } from '../../../games/seat-labels';
 import { GameCapabilitiesService } from '../../../games/game-capabilities.service';
 import { RoomsApiService } from '../../../core/api/rooms-api.service';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -36,6 +38,7 @@ export class ReplayPage implements OnInit {
   private readonly router = inject(Router);
   private readonly rooms = inject(RoomsApiService);
   private readonly capabilities = inject(GameCapabilitiesService);
+  private readonly catalog = inject(GameCatalogService);
   protected readonly language = inject(LanguageService);
 
   protected readonly replay = signal<GameReplayDto | null>(null);
@@ -60,6 +63,27 @@ export class ReplayPage implements OnInit {
   protected readonly boardSize = computed(() =>
     boardSizeFor(this.capabilities, this.replay()?.gameKey),
   );
+
+  /**
+   * 标题区那两位玩家,每人带自己的席位称呼(象棋读作红 / 黑)。
+   *
+   * **恰好两位,而那是 `GameReplayDto` 的形状,不是这一处的选择** —— 它只有
+   * `Black` / `White` 两个字段,而 handler 无条件读 `room.BlackPlayerId` /
+   * `WhitePlayerId`,所以一局已结束的三座位棋(斗地主 / 挖坑)的回放会**静默丢掉
+   * 2 号座位**。这里修的是它表达得出来的那一半:那两位的称呼。契约那一半记在
+   * `CLAUDE.md` 的延期表里。
+   */
+  protected readonly sides = computed(() => {
+    const r = this.replay();
+    if (!r) return [];
+    const manifest = this.catalog.byRoomKey(r.gameKey);
+    return [r.black, r.white].map((player, seat) => ({
+      seat,
+      player,
+      // 2 —— 这份 DTO 只表达得出两位,见上面那段说明。
+      naming: seatNaming(manifest, seat, 2),
+    }));
+  });
 
   /** True until both the replay and the server's game descriptors are in hand. */
   protected readonly loadingBoard = computed(
