@@ -22,7 +22,7 @@
   } @else {
     <ul class="flex flex-col gap-1 text-sm">
       @for (g of games(); track g.roomId) {
-        @let opp = opponentOf(g);
+        @let opps = opponentsOf(g);
         <li>
           <button
             type="button"
@@ -31,11 +31,15 @@
           >
             <div class="flex w-full flex-wrap items-center gap-2">
               <span class="text-muted text-xs">vs</span>
-              <a
-                class="username-link"
-                [routerLink]="['/users', opp.id]"
-                (click)="$event.stopPropagation()"
-              >{{ opp.username }}</a>
+              <!-- 见 my-recent-games.html 上的同一段:对手是复数,数量由数据决定。 -->
+              @for (opp of opps; track opp.id) {
+                @if (!$first) { <span class="text-muted text-xs">·</span> }
+                <a
+                  class="username-link"
+                  [routerLink]="['/users', opp.id]"
+                  (click)="$event.stopPropagation()"
+                >{{ opp.username }}</a>
+              }
               <span class="text-muted text-xs">·</span>
               <span class="font-semibold">{{ resultKey(g) | transloco }}</span>
               <span class="text-muted text-xs">·</span>

@@ -576,6 +576,7 @@
     "result-win": "胜",
     "result-loss": "负",
     "result-draw": "平",
+    "result-unrecorded": "胜负未记录",
     "page-indicator": "第 {{page}} 页 / 共 {{total}} 页",
     "prev-page": "上一页",
     "next-page": "下一页",

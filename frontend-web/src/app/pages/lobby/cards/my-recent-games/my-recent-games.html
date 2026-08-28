@@ -39,7 +39,7 @@
   } @else {
     <ul class="flex flex-col gap-1 text-sm">
       @for (g of games(); track g.roomId) {
-        @let opp = opponentOf(g);
+        @let opps = opponentsOf(g);
         <li>
           <button
             type="button"
@@ -48,11 +48,17 @@
           >
             <div class="flex w-full flex-wrap items-center gap-2">
               <span class="text-muted text-xs">vs</span>
-              <a
-                class="username-link truncate"
-                [routerLink]="['/users', opp.id]"
-                (click)="$event.stopPropagation()"
-              >{{ opp.username }}</a>
+              <!-- 对手**们** —— 三人局有两个。数量由数据决定,MUST NOT 写死一个:
+                   此前是 `black.id === me ? white : black`,一个单数的答案,于是三人局里
+                   另外两个人只显示得出一个,读起来像是那一局只有两个人。 -->
+              @for (opp of opps; track opp.id) {
+                @if (!$first) { <span class="text-muted text-xs">·</span> }
+                <a
+                  class="username-link truncate"
+                  [routerLink]="['/users', opp.id]"
+                  (click)="$event.stopPropagation()"
+                >{{ opp.username }}</a>
+              }
               <span class="text-muted text-xs">·</span>
               <span class="font-semibold">{{ resultKey(g) | transloco }}</span>
             </div>
