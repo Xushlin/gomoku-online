@@ -1,7 +1,6 @@
 using Gewu.Application.Common.Mapping;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.Abstractions;
-using Gewu.Domain.Games.Doudizhu;
 using Gewu.Application.Features.Rooms.GetGameReplay;
 using Gewu.Domain.Enums;
 using Gewu.Domain.ValueObjects;
@@ -34,41 +33,6 @@ public class GetGameReplayQueryHandlerTests
         }
         room.PlayMove(alice.Id, MoveIntent.Place(new Position(7, 4)), start.AddSeconds(9), BuiltInGameRules.Gomoku);
         return room;
-    }
-
-    /// <summary>
-    /// 一局**真的**打完的斗地主:三个座位坐满,地主把 20 张牌一张一张出光。
-    /// <para>
-    /// 三座位样本不能用「造一个假 Room」凑 —— 这里要证的正是 handler 从真聚合里读座位,
-    /// 而一个手工塞进去的座位列表会把 <c>Room.Seats</c> 这一环跳过去。出牌脚本抄自
-    /// <c>DoudizhuThroughRoomTests</c>:过牌总是合法,所以它不依赖那副牌里谁能压谁。
-    /// </para>
-    /// </summary>
-    private static (Room Room, User[] Users) FinishedDoudizhuRoom()
-    {
-        var rules = new DoudizhuRules();
-        var alice = RoomsFixtures.NewUser("Alice");
-        var bob = RoomsFixtures.NewUser("Bob", "bob@example.com");
-        var carol = RoomsFixtures.NewUser("Carol", "carol@example.com");
-        var room = Room.Create(RoomId.NewId(), "ddz-replay", alice.Id, RoomsFixtures.Now, GameKeys.Doudizhu);
-        room.JoinAsPlayer(bob.Id, RoomsFixtures.Now.AddSeconds(1), rules, setup: null);
-        room.JoinAsPlayer(carol.Id, RoomsFixtures.Now.AddSeconds(2), rules, setup: rules.CreateSetup(20260819));
-
-        var t = 10;
-        room.PlayMove(alice.Id, MoveIntent.Say("bid:3"), RoomsFixtures.Now.AddSeconds(t++), rules);
-        // 地主手上是 17 张 + 3 张底牌 = 20 张。写成两个常量相加而不是字面量 20:
-        // 一个字面量在牌数改动时不会红,只会**打不完**,而症状是「测试卡在中间」。
-        const int landlordCards = DoudizhuDeal.HandSize + DoudizhuDeal.KittySize;
-        for (var played = 0; played < landlordCards; played++)
-        {
-            var hand = DoudizhuTable.Reconstruct(room.Game!.State()).HandOf(0);
-            room.PlayMove(alice.Id, MoveIntent.Say($"play:{hand[0].Encode()}"), RoomsFixtures.Now.AddSeconds(t++), rules);
-            if (played == landlordCards - 1) break;
-            room.PlayMove(bob.Id, MoveIntent.Say("pass"), RoomsFixtures.Now.AddSeconds(t++), rules);
-            room.PlayMove(carol.Id, MoveIntent.Say("pass"), RoomsFixtures.Now.AddSeconds(t++), rules);
-        }
-
-        return (room, [alice, bob, carol]);
     }
 
     [Fact]
@@ -143,7 +107,7 @@ public class GetGameReplayQueryHandlerTests
     {
         // 修之前:handler 无条件读 `BlackPlayerId` / `WhitePlayerId`,于是 2 号座位上的人
         // **在任何字段里都不出现**,而端点 200 成功返回 —— 一份丢了一个人的回放。
-        var (room, users) = FinishedDoudizhuRoom();
+        var (room, users) = RoomsFixtures.FinishedDoudizhuRoom();
 
         // 正面控制:少了这三条,「Carol 不在响应里」可能是夹具没坐满而不是 handler 丢人 ——
         // 两者长得一模一样。
@@ -169,7 +133,7 @@ public class GetGameReplayQueryHandlerTests
     [Fact]
     public async Task Every_move_resolves_to_exactly_one_seat()
     {
-        var (room, users) = FinishedDoudizhuRoom();
+        var (room, users) = RoomsFixtures.FinishedDoudizhuRoom();
         _rooms.Setup(r => r.FindByIdAsync(room.Id, It.IsAny<CancellationToken>())).ReturnsAsync(room);
         RoomsFixtures.SetupUserLookup(_users, users);
 

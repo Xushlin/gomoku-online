@@ -1,3 +1,5 @@
+using Gewu.Domain.Games.Doudizhu;
+using Gewu.Domain.ValueObjects;
 using Gewu.Domain.Games.NInARow;
 using Gewu.Domain.Games.Abstractions;
 using Microsoft.Extensions.Options;
@@ -64,6 +66,45 @@ internal static class RoomsFixtures
     public static Room WaitingRoom(
         User host, string name = "Test Room", string gameKey = GameKeys.Gomoku) =>
         Room.Create(RoomId.NewId(), name, host.Id, Now, gameKey);
+
+    /// <summary>
+    /// 一局**真的**打完的斗地主:三个座位坐满,地主把 20 张牌一张一张出光。
+    /// <para>
+    /// 住在这里而不是某个测试类里,因为第二个消费方到了(回放 + 战绩)。**一份复制品会分叉,
+    /// 而症状是两个套件对"三座位对局长什么样"给出不同的答案。**
+    /// </para>
+    /// <para>
+    /// 三座位样本不能用「造一个假 Room」凑 —— 这里要证的正是 handler 从真聚合里读座位,
+    /// 而一个手工塞进去的座位列表会把 <c>Room.Seats</c> 这一环跳过去。出牌脚本抄自
+    /// <c>DoudizhuThroughRoomTests</c>:过牌总是合法,所以它不依赖那副牌里谁能压谁。
+    /// </para>
+    /// </summary>
+    public static (Room Room, User[] Users) FinishedDoudizhuRoom()
+    {
+        var rules = new DoudizhuRules();
+        var alice = NewUser("Alice");
+        var bob = NewUser("Bob", "bob@example.com");
+        var carol = NewUser("Carol", "carol@example.com");
+        var room = Room.Create(RoomId.NewId(), "ddz-replay", alice.Id, Now, GameKeys.Doudizhu);
+        room.JoinAsPlayer(bob.Id, Now.AddSeconds(1), rules, setup: null);
+        room.JoinAsPlayer(carol.Id, Now.AddSeconds(2), rules, setup: rules.CreateSetup(20260819));
+
+        var t = 10;
+        room.PlayMove(alice.Id, MoveIntent.Say("bid:3"), Now.AddSeconds(t++), rules);
+        // 地主手上是 17 张 + 3 张底牌 = 20 张。写成两个常量相加而不是字面量 20:
+        // 一个字面量在牌数改动时不会红,只会**打不完**,而症状是「测试卡在中间」。
+        const int landlordCards = DoudizhuDeal.HandSize + DoudizhuDeal.KittySize;
+        for (var played = 0; played < landlordCards; played++)
+        {
+            var hand = DoudizhuTable.Reconstruct(room.Game!.State()).HandOf(0);
+            room.PlayMove(alice.Id, MoveIntent.Say($"play:{hand[0].Encode()}"), Now.AddSeconds(t++), rules);
+            if (played == landlordCards - 1) break;
+            room.PlayMove(bob.Id, MoveIntent.Say("pass"), Now.AddSeconds(t++), rules);
+            room.PlayMove(carol.Id, MoveIntent.Say("pass"), Now.AddSeconds(t++), rules);
+        }
+
+        return (room, [alice, bob, carol]);
+    }
 
     public static Room PlayingRoom(
         User host, User challenger, string name = "Test Room", string gameKey = GameKeys.Gomoku)
