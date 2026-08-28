@@ -36,7 +36,6 @@ public sealed class GetGameReplayQueryHandler : IRequestHandler<GetGameReplayQue
         }
 
         var game = room.Game;
-        var whiteId = room.WhitePlayerId!.Value; // Finished 保证
 
         var usernames = await _users.LookupUsernamesAsync(room.CollectUserIds(), cancellationToken);
 
@@ -53,8 +52,10 @@ public sealed class GetGameReplayQueryHandler : IRequestHandler<GetGameReplayQue
             Name: room.Name,
             GameKey: room.GameKey,
             Host: new UserSummaryDto(room.HostUserId.Value, UserName(room.HostUserId.Value)),
-            Black: new UserSummaryDto(room.BlackPlayerId.Value, UserName(room.BlackPlayerId.Value)),
-            White: new UserSummaryDto(whiteId.Value, UserName(whiteId.Value)),
+            // 走 `Room.Seats`,不走 `BlackPlayerId` / `WhitePlayerId` —— 后两个只认 0 号与 1 号,
+            // 于是三座位棋种的回放会**静默**丢掉 2 号座位上的人。`Room` 自己的文档写着
+            // 「牌类棋种 MUST NOT 用这两个名字」,而这里此前照用不误。
+            Seats: room.ToSeatDtos(usernames),
             StartedAt: game.StartedAt,
             EndedAt: game.EndedAt!.Value,
             Result: game.Result!.Value,

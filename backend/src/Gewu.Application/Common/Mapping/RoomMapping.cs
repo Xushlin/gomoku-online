@@ -23,10 +23,7 @@ public static class RoomMapping
             Host: UserSummary(room.HostUserId, usernames),
             Black: UserSummary(room.BlackPlayerId, usernames),
             White: room.WhitePlayerId is null ? null : UserSummary(room.WhitePlayerId.Value, usernames),
-            Seats: room.Seats
-                .Select(seat => new RoomSeatDto(seat.Index, UserSummary(seat.UserId, usernames)))
-                .ToList()
-                .AsReadOnly(),
+            Seats: room.ToSeatDtos(usernames),
             SpectatorCount: room.Spectators.Count,
             CreatedAt: room.CreatedAt);
     }
@@ -94,10 +91,7 @@ public static class RoomMapping
             Host: UserSummary(room.HostUserId, usernames),
             Black: UserSummary(room.BlackPlayerId, usernames),
             White: room.WhitePlayerId is null ? null : UserSummary(room.WhitePlayerId.Value, usernames),
-            Seats: room.Seats
-                .Select(seat => new RoomSeatDto(seat.Index, UserSummary(seat.UserId, usernames)))
-                .ToList()
-                .AsReadOnly(),
+            Seats: room.ToSeatDtos(usernames),
             Spectators: specDtos,
             Game: gameDto,
             ChatMessages: chatDtos,
@@ -109,6 +103,23 @@ public static class RoomMapping
             // 见 `RoomStateDto.ChosenSetup` 的说明。
             ChosenSetup: room.ChosenSetup);
     }
+
+    /// <summary>
+    /// 座位投影 —— 每个在座的座位一条,按座位号升序(<see cref="Room.Seats"/> 自己就是升序的)。
+    /// <para>
+    /// 抽出来是因为这已经是**第三个**读者(房间摘要 / 房间状态 / 回放),而前两个是逐字复制的。
+    /// 一份会分叉的副本在这里的症状是「某个视图少画一个座位」—— 与 <see cref="CollectUserIds"/>
+    /// 漏掉 2 号座位是同一类,只是那一类已经修过了。
+    /// </para>
+    /// </summary>
+    /// <param name="room">房间。</param>
+    /// <param name="usernames">Guid → username 字典,由调用方预先查好。</param>
+    public static IReadOnlyList<RoomSeatDto> ToSeatDtos(
+        this Room room, IReadOnlyDictionary<Guid, string> usernames) =>
+        room.Seats
+            .Select(seat => new RoomSeatDto(seat.Index, UserSummary(seat.UserId, usernames)))
+            .ToList()
+            .AsReadOnly();
 
     /// <summary>
     /// 把一组 <see cref="UserId"/> 归集为 Guid 列表,便于 handler 一次性 query。
