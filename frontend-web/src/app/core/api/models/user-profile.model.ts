@@ -4,7 +4,7 @@
  * serialiser is System.Text.Json with default camelCase + JsonStringEnumConverter
  * for enums.
  */
-import type { GameEndReason, GameResult, UserSummary } from './room.model';
+import type { GameEndReason, GameResult, RoomSeat } from './room.model';
 
 export interface UserPublicProfileDto {
   readonly id: string;
@@ -20,8 +20,13 @@ export interface UserPublicProfileDto {
 export interface UserGameSummaryDto {
   readonly roomId: string;
   readonly name: string;
-  readonly black: UserSummary;
-  readonly white: UserSummary;
+  /**
+   * 每一个座位上的人,按 `index` 升序。
+   *
+   * 此前是 `black` / `white` —— 0 / 1 号座位的派生读法,于是三座位棋种的战绩里
+   * 2 号座位上的人不出现。仓储**不按棋种过滤**,所以三座位对局照样进这个列表。
+   */
+  readonly seats: readonly RoomSeat[];
   readonly startedAt: string;
   readonly endedAt: string;
   readonly result: GameResult;

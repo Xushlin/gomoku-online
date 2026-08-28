@@ -577,6 +577,7 @@
     "result-win": "Won",
     "result-loss": "Lost",
     "result-draw": "Drew",
+    "result-unrecorded": "Not recorded",
     "page-indicator": "Page {{page}} of {{total}}",
     "prev-page": "Previous",
     "next-page": "Next",

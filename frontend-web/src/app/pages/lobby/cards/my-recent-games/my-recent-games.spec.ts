@@ -13,8 +13,10 @@ const sampleGames = [
   {
     roomId: 'r-1',
     name: 'Match 1',
-    black: { id: 'u-me', username: 'alice' },
-    white: { id: 'u-2', username: 'bob' },
+    seats: [
+      { index: 0, player: { id: 'u-me', username: 'alice' } },
+      { index: 1, player: { id: 'u-2', username: 'bob' } },
+    ],
     startedAt: '2026-04-25T00:00:00Z',
     endedAt: '2026-04-25T00:05:00Z',
     result: 'Decided' as const,
@@ -25,8 +27,10 @@ const sampleGames = [
   {
     roomId: 'r-2',
     name: 'Match 2',
-    black: { id: 'u-3', username: 'carol' },
-    white: { id: 'u-me', username: 'alice' },
+    seats: [
+      { index: 0, player: { id: 'u-3', username: 'carol' } },
+      { index: 1, player: { id: 'u-me', username: 'alice' } },
+    ],
     startedAt: '2026-04-24T00:00:00Z',
     endedAt: '2026-04-24T00:05:00Z',
     result: 'Decided' as const,
@@ -35,6 +39,23 @@ const sampleGames = [
     moveCount: 8,
   },
 ];
+
+const threeSeatGame = {
+  roomId: 'r-ddz',
+  name: '斗地主',
+  seats: [
+    { index: 0, player: { id: 'u-2', username: 'bob' } },
+    { index: 1, player: { id: 'u-me', username: 'alice' } },
+    { index: 2, player: { id: 'u-3', username: 'carol' } },
+  ],
+  startedAt: '2026-04-26T00:00:00Z',
+  endedAt: '2026-04-26T00:05:00Z',
+  result: 'Decided' as const,
+  // 赢家是 bob(地主)。**我(alice)可能是赢了的那个农民** —— 这一行说不出。
+  winnerUserId: 'u-2',
+  endReason: 'Decided' as const,
+  moveCount: 40,
+};
 
 class StubUsers {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -140,5 +161,33 @@ describe('MyRecentGamesCard', () => {
     );
     const viewAll = links.find((a) => a.textContent?.toLowerCase().includes('view-all'));
     expect(viewAll?.getAttribute('href')).toBe('/users/u-me');
+  });
+});
+
+describe('MyRecentGamesCard — 三人局', () => {
+  it('列出两个对手,而不是一个', () => {
+    const { fixture } = mount({
+      getGames: vi.fn(() => of({ items: [threeSeatGame], total: 1, page: 1, pageSize: 5 })),
+    });
+    // 收窄到 `li` 内:卡片头部的「View all」也带 username-link,不收窄的话这个
+    // 计数断言本身就是错的 —— 它会把一个无关链接算进对手里。
+    const links: HTMLAnchorElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('li a.username-link'),
+    );
+
+    // **恰好两个**:一个「至少一个」的断言在缺陷下依然是绿的。
+    expect(links).toHaveLength(2);
+    expect(links.map((a) => a.textContent?.trim()).sort()).toEqual(['bob', 'carol']);
+    expect(links.map((a) => a.textContent?.trim())).not.toContain('alice');
+  });
+
+  it('赢家不是我时说「说不出」,而不是「负」', () => {
+    const { fixture } = mount({
+      getGames: vi.fn(() => of({ items: [threeSeatGame], total: 1, page: 1, pageSize: 5 })),
+    });
+    const text = fixture.nativeElement.textContent ?? '';
+
+    expect(text).toContain('profile.result-unrecorded');
+    expect(text).not.toContain('profile.result-loss');
   });
 });

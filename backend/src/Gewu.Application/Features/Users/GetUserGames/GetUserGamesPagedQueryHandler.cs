@@ -49,12 +49,12 @@ public sealed class GetUserGamesPagedQueryHandler
         var items = rooms.Select(r =>
         {
             var game = r.Game!; // Finished 保证非 null(仓储 Where Status=Finished)
-            var whiteId = r.WhitePlayerId!.Value;
             return new UserGameSummaryDto(
                 RoomId: r.Id.Value,
                 Name: r.Name,
-                Black: new UserSummaryDto(r.BlackPlayerId.Value, UserName(r.BlackPlayerId.Value)),
-                White: new UserSummaryDto(whiteId.Value, UserName(whiteId.Value)),
+                // 走座位表 —— 与回放那条同一份投影。`BlackPlayerId` / `WhitePlayerId` 只认
+                // 0 号与 1 号,而仓储不按棋种过滤,所以三座位对局会带着一个查不到的人进列表。
+                Seats: r.ToSeatDtos(usernames),
                 StartedAt: game.StartedAt,
                 EndedAt: game.EndedAt!.Value,
                 Result: game.Result!.Value,
