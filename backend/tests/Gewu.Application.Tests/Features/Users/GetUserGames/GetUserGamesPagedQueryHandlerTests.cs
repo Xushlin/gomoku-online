@@ -53,8 +53,9 @@ public class GetUserGamesPagedQueryHandlerTests
 
         var first = result.Items[0];
         first.RoomId.Should().Be(r1.Id.Value);
-        first.Black.Username.Should().Be("Alice");
-        first.White.Username.Should().Be("Bob");
+        first.Seats.Should().HaveCount(2);
+        first.Seats.Select(s => s.Index).Should().Equal(0, 1);
+        first.Seats.Select(s => s.Player.Username).Should().Equal("Alice", "Bob");
         first.Result.Should().Be(GameResult.Decided);
         first.EndReason.Should().Be(GameEndReason.Decided);
         first.MoveCount.Should().Be(9);
@@ -108,5 +109,34 @@ public class GetUserGamesPagedQueryHandlerTests
             new GetUserGamesPagedQuery(alice.Id, 1, 20), default);
 
         result.Items[0].MoveCount.Should().Be(9);
+    }
+
+    [Fact]
+    public async Task A_three_seat_game_in_the_history_names_all_three()
+    {
+        // 修之前:handler 与回放那份逐字同形,无条件读 BlackPlayerId / WhitePlayerId,
+        // 于是 2 号座位上的人不进战绩 —— 而仓储**不按棋种过滤**,三座位对局照样进来。
+        var (ddz, players) = RoomsFixtures.FinishedDoudizhuRoom();
+        var alice = players[0];
+        var bob = players[1];
+        var gomoku = MakeFinishedRoom(alice, bob);
+
+        // **同一份响应里两种形状都在。** 只有三座位的样本会让「两座位仍是两条」无从检验;
+        // 只有两座位的样本会让「每个座位都在」恒真 —— 那正是这个缺陷活到今天的原因。
+        _rooms.Setup(r => r.GetUserFinishedGamesPagedAsync(
+                alice.Id, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Room> { ddz, gomoku }, 2));
+        RoomsFixtures.SetupUserLookup(_users, players);
+
+        var result = await Build().Handle(new GetUserGamesPagedQuery(alice.Id, 1, 10), default);
+
+        var threeSeat = result.Items.Single(i => i.Seats.Count == 3);
+        threeSeat.Seats.Select(s => s.Index).Should().Equal(0, 1, 2);
+        threeSeat.Seats.Select(s => s.Player.Username).Should().Equal("Alice", "Bob", "Carol");
+        threeSeat.Seats.Should().NotContain(s => s.Player.Username == "<unknown>");
+
+        // 反面控制:两座位那条**恰好**两条,第四个座位没被凭空补出来。
+        result.Items.Single(i => i.Seats.Count == 2)
+            .Seats.Select(s => s.Index).Should().Equal(0, 1);
     }
 }
