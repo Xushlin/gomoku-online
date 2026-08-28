@@ -29,7 +29,9 @@ Api 层 SHALL 暴露 `GET /api/rooms/{id}/replay`(`[Authorize]`)。成功响应 
 
 `GameReplayDto` 必含字段:
 - `RoomId: Guid`、`Name: string`
-- `Host: UserSummaryDto`、`Black: UserSummaryDto`、`White: UserSummaryDto`(Finished 房间保证 White 非 null)
+- `Host: UserSummaryDto`
+- `Seats: IReadOnlyList<RoomSeatDto>`,**按 `Index` 升序,每个在座的座位一条**;元素是与 `RoomStateDto.Seats`
+  **同一个** `RoomSeatDto`(`Index: int` + `Player: UserSummaryDto`)
 - `StartedAt: DateTime`、`EndedAt: DateTime`
 - `Result: GameResult`(非 null —— Finished 保证)
 - `WinnerUserId: Guid?`(平局时 null,否则非 null)
@@ -41,11 +43,29 @@ Api 层 SHALL 暴露 `GET /api/rooms/{id}/replay`(`[Authorize]`)。成功响应 
 - Room 在 Waiting / Playing → HTTP 409(`GameNotFinishedException`,"Replay is only available for finished games.")
 - 未登录 → HTTP 401(JWT 中间件)
 
+`GameReplayDto` MUST NOT 有 `Black` / `White` 字段。
+
+**它们此前有,而对三座位棋种它们是错的 —— 实测过。** 那两个字段无条件读 `room.BlackPlayerId` /
+`room.WhitePlayerId`,也就是 0 号与 1 号座位的派生读法,于是一局已结束的斗地主经此端点出来时:
+2 号座位上的人**在任何字段里都不出现**,而另外两人被叫作黑方 / 白方。`Room` 自己的文档写着
+「牌类棋种 MUST NOT 用这两个名字」,handler 照用不误。
+
+**载荷因此是自相矛盾的,而这是比「少一个人」更硬的判据:** 同一份 DTO 的 `Moves[].Seat` 里
+有 `0 / 1 / 2` 三个座位号,而玩家字段只能解析出其中两个 —— 59 手里有 20 手的出手人是**这份载荷
+自己说不出是谁**的。所以这不是文案问题,换个标签解决不了。
+
+`Seats` 与 `Moves[].Seat` MUST 是**同一套座位号**:每个 `Move.Seat` MUST 能在 `Seats` 里找到
+恰好一条 `Index` 相同的记录。
+
+删而不是留,理由是**留下来的那份会继续说谎**:改完之后这两个字段在整个仓库里
+**零个读者**(唯一的消费方是回放页,而它这次改成读 `Seats`)—— `RoomStateDto` 留着它们是因为
+那里有真读者,这里没有。一个没人读、又对三分之一棋种为假的字段,是下一个人照抄的模板。
+
 任何登录用户 MAY 请求任意房间的 replay(无需是该房间的参与者),因为 gomoku 对局记录是公开的。
 
 #### Scenario: 成功获取回放
 - **WHEN** Alice 登录,`GET /api/rooms/{fin-id}/replay` 目标房间 Status=Finished
-- **THEN** HTTP 200,Body 含完整 `GameReplayDto`;`Moves` 按 Ply 升序;`Black.Id == Host.Id`(创建者默认黑方);`EndReason` 非 null
+- **THEN** HTTP 200,Body 含完整 `GameReplayDto`;`Moves` 按 Ply 升序;`Seats[0].Player.Id == Host.Id`(创建者坐 0 号座);`EndReason` 非 null
 
 #### Scenario: 非登录用户
 - **WHEN** 无 Bearer token 请求 replay
@@ -62,6 +82,20 @@ Api 层 SHALL 暴露 `GET /api/rooms/{id}/replay`(`[Authorize]`)。成功响应 
 #### Scenario: 任意登录用户可查看他人的对局回放
 - **WHEN** 用户 Carol(与该房间无关联)`GET /api/rooms/{fin-id}/replay`
 - **THEN** HTTP 200 + 完整 Replay DTO(gomoku 对局公开)
+#### Scenario: 三座位棋种的回放三个座位一个不少
+- **WHEN** 请求一局已结束的斗地主(三个座位坐满)的回放
+- **THEN** `Seats.Count == 3`(**恰好三条,不是「至少两条」**);三个 `Index` 是 `0 / 1 / 2`;
+  2 号座位上那个人的 `Id` 与 `Username` 都在响应里
+
+#### Scenario: 两座位棋种仍然是两个座位
+- **WHEN** 请求一局已结束的五子棋对局的回放
+- **THEN** `Seats.Count == 2`;`Index` 是 `0 / 1`。**这一条与上一条 MUST 同时存在** ——
+  「每个座位都在」在一个只有两座位样本的集合上恒真
+
+#### Scenario: 每一手的出手人都解析得出来
+- **WHEN** 取任意一局回放,遍历 `Moves`
+- **THEN** 每个 `Move.Seat` 在 `Seats` 里**恰好**匹配一条 `Index`;三座位样本里 `Moves` 用到的
+  座位号集合 MUST 含 `2`,否则这条断言在样本上是空的
 
 ---
 
@@ -86,7 +120,14 @@ Validator 规则(`GetUserGamesPagedQueryValidator`):
 - `Page >= 1`,否则 HTTP 400。
 - `PageSize` ∈ [1, 100],否则 HTTP 400。
 
-用户维度范围:仅返回 `Status == Finished` 且 `BlackPlayerId == userId OR WhitePlayerId == userId` 的房间。
+用户维度范围:仅返回 `Status == Finished` 且 **`userId` 坐在任一座位上**的房间(见
+`GetUserFinishedGamesPagedAsync` 那条要求里的同一处漂移说明)。三座位棋种因此**会**出现在
+战绩列表里,而列表行点进去就是 `/replay/{id}` —— 这正是三座位回放的可达路径。
+
+**`UserGameSummaryDto` 的 `Black` / `White` 本变更不动,而理由要写下来。** 它有与回放同一个缺陷
+(2 号座位不出现),但修它要连带回答「三个人的一局,列表行上的『对手』是谁」——
+那是显示层的取舍,不是契约的对错,混进来会让这个变更同时改两层。**拆除条件:** 有人要在
+战绩列表里正确显示一局三人牌局的结果时(那时「谁赢了」也已经不是一个 `WinnerUserId` 说得清的了)。
 
 任何登录用户 MAY 查看他人战绩(无需 `id == 调用方`),同 Replay 公开原则。
 
@@ -113,8 +154,6 @@ Validator 规则(`GetUserGamesPagedQueryValidator`):
 #### Scenario: 只含 Finished
 - **WHEN** 用户参与了 1 个 Waiting(其自己创建的)+ 2 个 Playing(未结束)+ 3 个 Finished 房间
 - **THEN** 响应 `Items.Count == 3`,`Total == 3`;Waiting / Playing 不包含
-
----
 
 ### Requirement: `PagedResult<T>` 通用分页容器
 
@@ -165,7 +204,7 @@ Task<(IReadOnlyList<Room> Rooms, int Total)> GetUserFinishedGamesPagedAsync(
 
 实现 MUST:
 - 过滤 `Status == Finished`;
-- 过滤 `BlackPlayerId == userId OR WhitePlayerId == userId`;
+- 过滤**任一座位**上的人是 `userId`(`RoomSeats.Any(x => x.RoomId == r.Id && x.UserId == userId)`);
 - 按 `Game.EndedAt DESC` 排序;
 - 先做一次 `CountAsync` 得 Total;
 - `Skip((page - 1) * pageSize).Take(pageSize)` + `Include(r => r.Game!).ThenInclude(g => g.Moves)`;
@@ -174,6 +213,11 @@ Task<(IReadOnlyList<Room> Rooms, int Total)> GetUserFinishedGamesPagedAsync(
 **不**物化 `Spectators` / `ChatMessages`(战绩列表不需要)。
 
 签名不暴露 EF 类型。
+
+**座位过滤这一条是在改回放契约时发现的规格漂移,而漂的是规格不是代码:** 实现早就走
+`RoomSeats.Any(...)`(所有座位),规格却还写着「黑方或白方」(0 号或 1 号)。两者的差别只在
+三座位棋种上看得见 —— 按规格的字面写法,一个坐 2 号座位的人**自己的对局不会出现在自己的战绩里**。
+照着规格「修正」代码会造出那个缺陷,所以这里把规格对齐到已发布的行为。
 
 #### Scenario: 正确过滤
 - **WHEN** 数据库有:1 个 Alice 的 Waiting 房 + 2 个 Alice 的 Playing 房 + 3 个 Alice 的 Finished 房 + 其他用户房
@@ -241,7 +285,15 @@ Task<(IReadOnlyList<Room> Rooms, int Total)> GetUserFinishedGamesPagedAsync(
 - **WHEN** 请求一局 `gomoku` 对局的回放
 - **THEN** `GameKey == "gomoku"`,回放页渲染 225 格
 
-#### Scenario: 只增字段
-- **WHEN** 比对本变更前后的 `GameReplayDto`
-- **THEN** 既有字段的名称与类型 MUST NOT 改变
+#### Scenario: `GameKey` 本身不改名不改型
+- **WHEN** 比对任何一次后续变更前后的 `GameReplayDto`
+- **THEN** `GameKey` 的名称与类型 MUST NOT 改变
+
+本条此前写作「**既有字段**的名称与类型 MUST NOT 改变」,那句话是 `add-web-replay-and-profile`
+给**自己**立的规矩(原文是「比对**本变更**前后」),而归档之后它变成了一条对所有人生效的
+live 要求 —— 于是「删掉 `Black` / `White`」与它字面冲突。**一条被后来的事实推翻的要求,
+要么改要么删,不能一边留着一边违反**:留着它而照改不误,下一个读规格的人会以为代码漂了。
+这里收窄成它真正要守的东西 —— `GameKey` 是回放页选棋盘的唯一依据,改它会让每一局画错盘。
+
+---
 
