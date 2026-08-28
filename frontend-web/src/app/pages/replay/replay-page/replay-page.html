@@ -48,13 +48,17 @@
         <span class="text-muted text-sm">{{ 'replay.title-prefix' | transloco }} ·</span>
         {{ r.name }}
       </h1>
-      <p class="text-muted text-xs">
-        <!--
-          席位名由棋种说 —— 象棋回放读作「红方 / 黑方」。
-          **这里只有两位玩家,而那是 DTO 的限制,不是这一处的选择**:`GameReplayDto`
-          只有 Black / White 两个字段,所以一局三座位的回放会丢掉 2 号座位。
-          那是契约上的账,记在 CLAUDE.md 的延期表里。
-        -->
+      <!-- break-words:**在浏览器里量到的,而且不是这两个变更任何一个改出来的**。
+           Angular 去掉元素之间的空白,`mx-1` 给的是 margin 不是断行机会,于是
+           「席位名:」+ 20 字符用户名 + 「席位名:」+ 20 字符连成一个**没有断点**的长串:
+           375 px 下 scrollWidth 504 / clientWidth 311,横向溢出。编号那支恰好没事 ——
+           「Seat 1」里有个空格。20 字符是注册上限,所以这是真实的最长内容。 -->
+      <p class="text-muted text-xs break-words">
+        <!-- **席位怎么称呼**由棋种说(`per-game-seat-labels`),**有几个席位**由数据说
+             (`replay-every-seat`)。两件事都不能写死:写死名字会把象棋的红方叫成黑方,
+             写死两个则让三座位对局的标题区**结构上就画不出第三个人**。
+             座位数取 `sides().length` 而不是描述符的 `seatCount`,因为回放只有 Finished
+             房间 —— 坐满才开局,所以「有几个人」与「有几个座位」在这一页是同一个数。 -->
         @for (side of sides(); track side.seat) {
           @if (!$first) { <span class="mx-1">·</span> }
           <span>{{
@@ -97,6 +101,17 @@
         [submitting]="false"
         [readonly]="true"
       />
+    } @else {
+      <!-- 画不出来的棋种要**明说**。牌类棋种的描述符没有 rows / cols,所以上面三支全为假,
+           而此前这里什么都没有 —— 标题区下面直接是一个拖了不动的 scrubber。
+           「拖了没反应」读起来是功能坏了,而事实是这一格从来没画过。
+           判据是「有没有专用渲染组件」(即走到这个 @else),不是 boardSizeFor 是否为 null:
+           成语接龙也没有 rows / cols,但它有 app-chain-board。 -->
+      <div
+        class="panel-flat text-muted flex flex-col items-start gap-2 border p-6 text-sm"
+      >
+        <p>{{ 'replay.no-board' | transloco }}</p>
+      </div>
     }
 
     <app-move-scrubber

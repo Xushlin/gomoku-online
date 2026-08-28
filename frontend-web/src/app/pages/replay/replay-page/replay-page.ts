@@ -65,23 +65,25 @@ export class ReplayPage implements OnInit {
   );
 
   /**
-   * 标题区那两位玩家,每人带自己的席位称呼(象棋读作红 / 黑)。
+   * 标题区的每一位玩家,每人带自己的席位称呼(象棋读作红 / 黑)。
    *
-   * **恰好两位,而那是 `GameReplayDto` 的形状,不是这一处的选择** —— 它只有
-   * `Black` / `White` 两个字段,而 handler 无条件读 `room.BlackPlayerId` /
-   * `WhitePlayerId`,所以一局已结束的三座位棋(斗地主 / 挖坑)的回放会**静默丢掉
-   * 2 号座位**。这里修的是它表达得出来的那一半:那两位的称呼。契约那一半记在
-   * `CLAUDE.md` 的延期表里。
+   * **两件事在这里合流,而它们此前各缺一半:** `per-game-seat-labels` 给了「怎么称呼」,
+   * 但它当时只能读 `GameReplayDto` 的 `Black` / `White` 两个字段,所以自己在注释里写着
+   * 「恰好两位,而那是 DTO 的形状」;`replay-every-seat` 把那个形状改成了座位表,
+   * 于是这里既叫得对、也一个不少。
+   *
+   * 座位数取 `r.seats.length` 而不是描述符的 `seatCount`:回放只有 Finished 房间,
+   * 坐满才开局,所以在这一页「有几个人」与「有几个座位」是同一个数。房间侧栏面对
+   * 等待中的房间,那里两者会分叉 —— 判据不同是因为问题不同,不是漏抄。
    */
   protected readonly sides = computed(() => {
     const r = this.replay();
     if (!r) return [];
     const manifest = this.catalog.byRoomKey(r.gameKey);
-    return [r.black, r.white].map((player, seat) => ({
-      seat,
-      player,
-      // 2 —— 这份 DTO 只表达得出两位,见上面那段说明。
-      naming: seatNaming(manifest, seat, 2),
+    return r.seats.map((seat) => ({
+      seat: seat.index,
+      player: seat.player,
+      naming: seatNaming(manifest, seat.index, r.seats.length),
     }));
   });
 
@@ -127,15 +129,14 @@ export class ReplayPage implements OnInit {
       gameKey: r.gameKey,
       status: 'Finished',
       host: r.host,
-      black: r.black,
-      white: r.white,
-      // 回放的 DTO 只有黑白两方 —— 它是两座位棋种的产物,而三座位棋种的回放要等
-      // `GameReplayDto` 也改说座位。这里由两个已知的字段合成两个座位,而**不是给个空数组**:
-      // 空数组会让棋盘以为"这局没人下",而它其实是"这个 DTO 说不出第三个人"。
-      seats: [
-        { index: FIRST_SEAT, player: r.black },
-        { index: SECOND_SEAT, player: r.white },
-      ],
+      // **两个都给 null,而这是有意的。** 它们是 0 / 1 号座位的派生读法,合成一份出来
+      // 就等于把地主叫成黑方;而**没有任何棋盘组件读它们**(grep 过四个棋盘目录),
+      // 所以 null 既不骗人也不少画东西。将来真有人来读,拿到的是空,不是错的那个人。
+      black: null,
+      white: null,
+      // 座位直接来自服务端,**不再由两个玩家字段拼**。此前那段合成恒为两条,于是
+      // 三座位棋种的牌桌永远少画一家 —— 而症状是少一个人,不是一个报错。
+      seats: r.seats,
       spectators: [],
       game: {
         id: 'replay',

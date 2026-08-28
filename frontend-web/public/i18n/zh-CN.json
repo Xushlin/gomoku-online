@@ -593,6 +593,7 @@
     "title-prefix": "回放",
     "retry": "重试",
     "back-to-lobby": "返回大厅",
+    "no-board": "这个棋种的回放暂时画不出盘面,但每一步都在下面的进度条里。",
     "errors": {
       "not-found": "回放不可用 —— 该房间可能已被清理。",
       "still-in-progress": "对局尚未结束。",
