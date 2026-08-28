@@ -439,8 +439,12 @@ Lobby 页 SHALL 在卡片网格右列(在 `my-active-rooms` 与 `ai-game` 之间
   - **empty**:翻译键 `lobby.recent-games.empty`(全新用户友好文案)。
   - **error**:翻译键 `lobby.recent-games.error` + 重试按钮(再次调 `getGames`)。
   - **data**:up to 5 行,每行:
-    - 对手 username(链接 `[routerLink]="['/users', opp.id]"` + `class="username-link"` + `(click)="$event.stopPropagation()"`)。
-    - "我方视角"结果:profile user 是 winner → 翻译键 `profile.result-win`;loser → `result-loss`;draw → `result-draw`(复用 profile 已有的翻译,不新增键)。
+    - **对手们** —— `seats` 里除本人以外的每一个座位,各一个 username 链接
+      (`[routerLink]="['/users', <id>]"` + `class="username-link"` + `(click)="$event.stopPropagation()"`)。
+      数量由数据决定,MUST NOT 写死一个 —— 三人局有两个对手。
+    - "我方视角"结果:与 `web-user-profile` **同一套四支判据**(含说不出时的
+      `profile.result-unrecorded`)。两处 MUST 给同一局对局同一个答案 ——
+      它们读的是同一个 DTO,一处说「负」另一处说「说不出」是自相矛盾。
     - End reason 翻译(`game.ended.reason-*`)。
     - Ended-at 通过 Angular `formatDate` 按当前 locale 显示(`'short'` 风格)。
     - Move count 数字。
@@ -477,6 +481,10 @@ Lobby 页 SHALL 在卡片网格右列(在 `my-active-rooms` 与 `ai-game` 之间
 #### Scenario: 单卡 error 不影响其它
 - **WHEN** `getGames` 网络失败
 - **THEN** 本卡显示 error + retry;其它 5 张卡正常渲染
+
+#### Scenario: 三人局在大厅卡片里也列出两个对手
+- **WHEN** 最近 5 局里有一局三座位对局
+- **THEN** 那一行**恰好**两个对手链接;结果那一格与个人主页对同一局给出同一个翻译键
 
 ---
 

@@ -65,8 +65,7 @@ export interface UserPublicProfileDto {
 export interface UserGameSummaryDto {
   readonly roomId: string;
   readonly name: string;
-  readonly black: UserSummary;
-  readonly white: UserSummary;
+  readonly seats: readonly RoomSeat[];
   readonly startedAt: string;
   readonly endedAt: string;
   readonly result: GameResult;
@@ -94,6 +93,15 @@ export interface PagedResult<T> {
 #### Scenario: 枚举字段按字符串字面量
 - **WHEN** 代码写 `summary.result === 'Decided'`
 - **THEN** 编译通过;`=== 1` 不通过;`=== 'BlackWin'` 也不通过
+
+`seats` 取代了 `black` / `white`,理由见 `game-replay`:那两个是 0 / 1 号座位的派生读法,
+三座位棋种的战绩里 2 号座位上的人不出现。`RoomSeat` 从 `room.model.ts` 复用,**不新造一份**。
+
+#### Scenario: 类型里没有 black / white
+- **WHEN** 审阅 `UserGameSummaryDto`
+- **THEN** MUST NOT 有 `black` / `white`;`seats` 的元素类型 MUST 是 `room.model.ts` 那个 `RoomSeat`
+
+---
 
 ### Requirement: 个人主页 header card 渲染身份与战绩
 
@@ -131,8 +139,12 @@ card MUST 用 `bg-surface text-text border-border rounded-card shadow-elevated` 
 
 每行显示:
 
-- **对手** username(链接 `[routerLink]="['/users', opponent.id]" class="username-link"`,`(click)="$event.stopPropagation()"`)。"对手" = 当前 profile 的 user **不是**的那一方。
-- **我方视角的结果**:本 profile 的 user 是 winner → "胜";是 loser → "负";平局 → "平"。翻译键 `profile.result-{win,loss,draw}`。
+- **对手们** —— `seats` 里**除本人以外的每一个座位**,各渲染一个 username 链接
+  (`[routerLink]="['/users', <id>]" class="username-link"`,`(click)="$event.stopPropagation()"`)。
+  **数量由数据决定,MUST NOT 写死一个:** 此前这里写的是「"对手" = 当前 profile 的 user
+  **不是**的那一方」,一个单数的说法,于是三人局里另外两个人只显示得出一个 ——
+  而显示出来的是哪一个取决于本人坐 0 号还是别的座位,**读起来像是那一局只有两个人**。
+- **我方视角的结果**:见下面那四支。
 - **End reason** 翻译(`game.ended.reason-*`)
 - **Ended-at** Angular `formatDate`
 - **Move count**(纯数字)
@@ -146,6 +158,41 @@ card MUST 用 `bg-surface text-text border-border rounded-card shadow-elevated` 
 - **下一页** 按钮 —— `page * pageSize >= total` 时 disabled
 
 切页发起新一次 `getGames(id, page, 10)` 请求,渲染 loading skeleton 直到响应。
+
+**「我方视角的结果」SHALL 分两支,而 MUST NOT 只有胜 / 负 / 平三支。**
+
+- `result === 'Draw'` → `profile.result-draw`
+- `winnerUserId === 本人` → `profile.result-win`
+- `seats.length === 2` 且赢家不是本人 → `profile.result-loss`
+- **其余(三个及以上座位、赢家不是本人)→ `profile.result-unrecorded`**
+
+第四支存在的理由是**这一行说不出那个答案,而说了会是错的**:`WinnerUserId` 只装得下一个座位,
+斗地主两名农民却是一起赢的。领域层写明了这个取舍,并把出路留给客户端 ——「客户端从叫分历史里
+知道谁是地主」—— 而 `UserGameSummaryDto` 刻意不含 `Moves`,所以那条出路在这一行上不成立。
+按旧的三支渲染,**没走出去的那个农民,自己赢的一局显示成「负」**。
+
+一个「说不出」比一个错的答案好,而这条不是工期问题:让服务端算出每人胜负要的是棋种自己的
+阵营概念,那笔账的拆除条件是平台需要一条点数阶梯。
+
+#### Scenario: 三人局列出两个对手
+- **WHEN** 战绩里有一局三座位对局,本人坐其中一个座位
+- **THEN** 那一行**恰好**两个对手 username 链接,`href` 互不相同,且都不是本人
+
+#### Scenario: 两人局列出一个对手
+- **WHEN** 同一列表里有一局两座位对局
+- **THEN** 那一行**恰好**一个对手链接。**这一条与上一条 MUST 同时存在**
+
+#### Scenario: 三人局里赢家不是本人时不说「负」
+- **WHEN** 一局三座位对局,`winnerUserId` 是别人
+- **THEN** 渲染 `profile.result-unrecorded`;MUST NOT 渲染 `profile.result-loss`
+
+#### Scenario: 三人局里赢家是本人时照常说「胜」
+- **WHEN** 一局三座位对局,`winnerUserId === 本人`
+- **THEN** 渲染 `profile.result-win` —— 这一支说得出,就要说
+
+#### Scenario: 两人局照旧说胜负
+- **WHEN** 一局两座位对局,赢家不是本人
+- **THEN** 渲染 `profile.result-loss`。**反面控制**:第四支 MUST NOT 把两座位的负也吞掉
 
 #### Scenario: 首屏请求
 - **WHEN** 用户打开 `/users/u-1`
@@ -174,8 +221,6 @@ card MUST 用 `bg-surface text-text border-border rounded-card shadow-elevated` 
 #### Scenario: 空战绩
 - **WHEN** `getGames` 返回 `items: [], total: 0`
 - **THEN** 列表显示翻译键 `profile.games-empty`;翻页按钮全部 disabled
-
----
 
 ### Requirement: 大厅 "Find player" 卡片支持 prefix 搜索 + autocomplete 跳转
 
