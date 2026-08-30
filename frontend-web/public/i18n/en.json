@@ -156,7 +156,7 @@
       "dismiss": "Stay and review"
     },
     "endgame": {
-      "no-draw": "This is a classical endgame study, and the platform does not detect draws. There are no repetition or perpetual-check rules here, so this game can only end by mate, resignation or timeout — if you play it out to a draw, agree between yourselves; the platform will not announce one."
+      "no-draw": "This is a classical endgame study, and the platform does not detect draws. Perpetual check is capped (the same check may be repeated at most three times), but calling a draw also needs chasing rules this game does not have yet — so it can only end by mate, resignation or timeout. If you play it out to a draw, agree between yourselves; the platform will not announce one."
     },
     "errors": {
       "concurrent-move-refetched": "Out of sync — board refreshed.",
