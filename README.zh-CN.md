@@ -18,8 +18,28 @@ Clean Architecture + CQRS。
 | ---------------- | ---------------------------------------------------------- |
 | 后端 (`backend/`)            | **MVP 完成** — 鉴权、房间、对局、AI、ELO、回放、在线状态、可观测性、限流 |
 | Web (`frontend-web/`)         | **v1 功能完整** — 鉴权页、大厅、实时对局、回放、个人主页、AI 选边、音效、在线徽章 |
-| 桌面 (`frontend-desktop/`)    | 空 — 待 Electron 包壳                                       |
+| 桌面 (`frontend-desktop/`)    | **可打包** — Electron 壳,`npm run package` 出 portable + 安装包(各约 69 MB) |
 | 移动 (`frontend-mobile/`)     | 空 — 待 Flutter                                             |
+
+## 桌面版
+
+```bash
+cd frontend-desktop
+npm install
+npm run package     # 先构建 Angular,再打包
+```
+
+产物在 `frontend-desktop/release/`:一个免安装的 portable exe,和一个安装包,各约 **69 MB**(其中前端产物只有 1.1 MB,其余是 Electron 运行时)。
+
+**服务器地址**按下面的顺序取,第一个有值的赢:
+
+1. 环境变量 `GEWU_SERVER`
+2. exe 旁边的 `gewu.config.json` —— `{"server": "https://你的服务器"}`
+3. 默认 `http://localhost:5145`
+
+服务端还要把 **`app://gewu`** 加进 `Cors:AllowedOrigins`,否则桌面版一个请求都发不出去 —— 而症状是**界面完全正常、数据全都没有**,很容易误判成服务器挂了。
+
+> **首次运行 Windows 会拦一次。** 这个 exe **没有代码签名**,SmartScreen 会弹「Windows 已保护你的电脑」,要点「更多信息 → 仍要运行」。**这是预期行为,不是程序有问题** —— 签名需要代码签名证书,目前没有。
 
 ## Web 端做了什么
 
@@ -132,7 +152,7 @@ MediatR 跑 CQRS — 每个写操作是一个 `Command`,每个读操作是一个
 需要扩展时切 SQL Server 即可。
 
 JWT 鉴权用 HS256 —— `appsettings.Development.json` 里有 dev-only 密钥。
-**生产环境** 必须用环境变量 `GOMOKU_JWT__SIGNINGKEY` 覆盖;Production 模式下密钥为空时直接拒启动。
+**生产环境** 必须用环境变量 `Jwt__SigningKey` 覆盖(**没有 `GOMOKU_` 前缀** —— 那个前缀从未实现,实测被静默忽略;值必须是 base64);Production 模式下密钥为空时直接拒启动。
 
 CORS、限流、结构化日志(Serilog)、统一异常 → ProblemDetails 中间件全都布好了。
 
@@ -155,7 +175,8 @@ Tailwind v4 + token 层(`tailwind.css` 里 `@theme` 块 + `tokens.css` 里
 
 按优先级粗排 —— 细节看 `openspec/changes/archive/`,现状看 `openspec/specs/`:
 
-- Electron 桌面壳(`frontend-desktop/`)
+- 桌面版代码签名与 Microsoft Store 上架(需要发布者账号与证书)
+- Electron 自动更新
 - Flutter 移动客户端(`frontend-mobile/`)
 - 音量条 / 更多音效包 / 更多棋盘皮肤
 - 浏览器推送通知

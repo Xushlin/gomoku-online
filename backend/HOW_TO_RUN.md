@@ -18,7 +18,7 @@ dotnet run --project src/Gewu.Api --launch-profile http
 
 On first launch the app automatically runs the `InitialIdentity` EF Core migration against `gewu.db` (SQLite) in the `src/Gewu.Api/` working directory. Listens on `http://localhost:5145`.
 
-`appsettings.Development.json` already contains a local-only base64 JWT signing key — **never use it in production**. For production, set the environment variable `GOMOKU_JWT__SIGNINGKEY` (`__` is ASP.NET Core's config section separator); the app refuses to start in production with an empty key.
+`appsettings.Development.json` already contains a local-only base64 JWT signing key — **never use it in production**. For production, set the environment variable `Jwt__SigningKey` (`__` is ASP.NET Core's config section separator). **There is no `GOMOKU_` prefix** — it was never implemented, and setting the prefixed name is silently ignored, so the app still refuses to start and the failure looks identical to setting nothing at all (measured both ways in `fix-jwt-signing-key-env-var`). The value must be **base64**.
 
 ## Running tests
 

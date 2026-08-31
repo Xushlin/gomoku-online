@@ -19,6 +19,33 @@
  */
 export const DEFAULT_SERVER = 'http://localhost:5145';
 
+/**
+ * Which directory `gewu.config.json` is expected to sit in.
+ *
+ * **A portable build does not run from where the user put it.** electron-builder's
+ * portable target unpacks itself into a temp directory and launches from there —
+ * measured: `C:\Users\…\AppData\Local\Temp\3IfVAEDHBEkVmiFuhcTB1PVHZjb\Gewu.exe`.
+ * So `dirname(app.getPath('exe'))` is that temp directory, and a config file placed
+ * beside the exe the user actually double-clicked is never found.
+ *
+ * The failure is quiet: the app starts, shows a login page, and talks to the default
+ * server instead of the configured one. Nothing on screen says why.
+ *
+ * electron-builder sets `PORTABLE_EXECUTABLE_DIR` to the real location for exactly
+ * this reason, so it wins when present. Installed (NSIS) builds do not set it and
+ * genuinely run from their install directory, where `exeDir` is correct.
+ *
+ * **This was found by packaging and double-clicking, not by any test** — in
+ * development `app.getPath('exe')` is the Electron binary in `node_modules`, and the
+ * config file is not there either, so the fallback looked like normal behaviour.
+ */
+export function configDirectory(
+  env: Record<string, string | undefined>,
+  exeDir: string,
+): string {
+  return env['PORTABLE_EXECUTABLE_DIR']?.trim() || exeDir;
+}
+
 export function serverAddress(
   env: Record<string, string | undefined>,
   configFile: () => string | null,

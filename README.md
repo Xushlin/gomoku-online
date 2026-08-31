@@ -20,8 +20,28 @@ Clean Architecture and CQRS.
 | ------------------ | -------------------------------------------------------- |
 | Backend (`backend/`)         | **MVP done** — auth, rooms, gameplay, AI, ELO, replay, presence, observability, rate limiting |
 | Web (`frontend-web/`)        | **Feature-complete v1** — auth pages, lobby, real-time game board, replay, profiles, AI picker, sound, presence |
-| Desktop (`frontend-desktop/`) | empty — Electron wrap pending                           |
+| Desktop (`frontend-desktop/`) | **Packageable** — Electron shell; `npm run package` emits a portable exe + installer (~69 MB each) |
 | Mobile (`frontend-mobile/`)   | empty — Flutter pending                                  |
+
+## Desktop
+
+```bash
+cd frontend-desktop
+npm install
+npm run package     # builds Angular first, then packages
+```
+
+Output lands in `frontend-desktop/release/`: a portable exe and an installer, about **69 MB** each (the web build is only 1.1 MB of that; the rest is the Electron runtime).
+
+The **server address** is resolved in this order, first non-empty wins:
+
+1. `GEWU_SERVER` in the environment
+2. `gewu.config.json` beside the exe — `{"server": "https://your-server"}`
+3. `http://localhost:5145`
+
+The server must also list **`app://gewu`** in `Cors:AllowedOrigins`, or the desktop app cannot make a single request — and the symptom is a **perfectly normal-looking UI with no data at all**, which reads like the server being down.
+
+> **Windows will warn on first run.** This exe is **not code-signed**, so SmartScreen shows "Windows protected your PC"; choose *More info → Run anyway*. **That is expected, not a sign of anything wrong** — signing needs a code-signing certificate, which this project does not have.
 
 ## What's in the box (web)
 
@@ -138,7 +158,8 @@ Persistence is SQLite for local dev (`backend/src/Gewu.Api/gewu.db`,
 auto-migrated on first run); SQL Server-ready when needed.
 
 JWT auth with HS256 — dev-only key in `appsettings.Development.json`. Production
-**must** override via `GOMOKU_JWT__SIGNINGKEY` env var; the app refuses to
+**must** override via the `Jwt__SigningKey` env var (**no `GOMOKU_` prefix** — that
+prefix was never implemented and is silently ignored; the value must be base64); the app refuses to
 start in `Production` with an empty key.
 
 CORS, rate limiting, structured logging (Serilog), exception → ProblemDetails
@@ -166,7 +187,8 @@ Vitest for unit tests, no Karma. Templates use control-flow blocks (`@if /
 Roughly in priority order — see `openspec/changes/archive/` for fine-grained
 history and `openspec/specs/` for current behaviour:
 
-- Electron desktop wrap (`frontend-desktop/`)
+- Desktop code signing and Microsoft Store submission (needs a publisher account and certificate)
+- Electron auto-update
 - Flutter mobile client (`frontend-mobile/`)
 - Volume slider / additional sound packs / additional board skins
 - Browser push notifications
