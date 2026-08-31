@@ -1366,3 +1366,5 @@ Other platforms, unchanged from before:
   桌面项目 **25** 条测试(纯函数,不需要启动 Electron),前端 1053 → **1058** 绿(+5),lint 两边都绿,初始包 411.84 → **411.93 kB**。后端零改动。
 
   不做的:自动更新、Microsoft Store 提交(要发布者账号与签名证书)、离线、手机端 —— 每条的理由都在 proposal 里。
+
+  **补记一处随后修掉的缺陷:`npm install --package-lock-only` 产出的 lockfile 几乎没有完整性哈希。** 当时 Electron 的二进制还没装上,所以我用它生成 lockfile —— 结果 142 个包里**只有 25 个带 `integrity`**;真跑一遍 `npm install` 之后是 **141**(唯一没有的那个是根项目自己)。完整性哈希正是 lockfile 的意义所在:`npm ci` 靠它校验下下来的东西是不是原来那个。**一份「看起来正常、`npm ci` 也照跑、CI 也绿」的 lockfile,可以完全没有校验能力** —— 两者在任何一次构建里都长得一模一样。是后台那次安装最终跑完、把文件重写了,才让它显出来的。
