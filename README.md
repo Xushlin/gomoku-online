@@ -25,6 +25,16 @@ Clean Architecture and CQRS.
 
 ## Desktop
 
+The easy way — double-click:
+
+```cmd
+start-desktop.cmd
+```
+
+It installs dependencies (first run), builds Angular, starts the backend **with `app://gewu` added to CORS**, and opens the window. Forget that CORS entry and the app opens, renders its login page, and cannot make a single request — which looks exactly like the backend being down.
+
+To build an exe yourself:
+
 ```bash
 cd frontend-desktop
 npm install
