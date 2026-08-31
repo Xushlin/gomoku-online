@@ -1,0 +1,15 @@
+{
+  // 构建配置把 *.spec.ts 排除在外(它们不该进 dist),而那会让 spec 里的类型错误
+  // 永远不被发现 —— `lint` 因此跑两份:构建那份 + 这一份。
+  //
+  // `"exclude": []` 是必须的:`exclude` 会从父配置**继承**下来,而子配置里的
+  // `include` 不会覆盖它。第一版少了这一行,于是这份配置照样跳过所有 spec ——
+  // 正面对照(往 spec 里塞一个真的类型错误)当场发现它什么都没查。
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": []
+}

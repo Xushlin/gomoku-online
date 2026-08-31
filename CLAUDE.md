@@ -127,13 +127,20 @@ The solution file is `.slnx` (XML), not `.sln`. The `dotnet` CLI handles it tran
 - State: **Angular Signals** first; NgRx only for genuinely complex flows
 - Tests: **Vitest** (not Karma/Jasmine)
 
-### Desktop (`frontend-desktop/`) — phase 2
+### Desktop (`frontend-desktop/`) — Electron, shipped
 
-Electron wrapping the Angular app.
+Wraps the **built** Angular app (`dist/gewu-web/browser`) — ten games, four themes, two locales and every test come along unchanged, and game eleven still gets written once.
+
+Two things there are worth knowing before touching it, both measured:
+
+- **It loads over a custom `app://` protocol, not `file://`.** `index.html` carries `<base href="/" />`, and under `file://` that resolves to the *filesystem root*: every chunk 404s and the window is blank. `app://` also gives a real origin, which is what makes `localStorage` (the refresh token) partition sanely and lets a CSP be stated.
+- **`resolveAsset` is the whole attack surface**, and three layers stop a traversal — `new URL().pathname` already collapses `..`, `join`+`normalize` clamps, and only then the boundary check. **The first draft's traversal tests passed with the check deleted**, because a fake `exists()` sent them down the SPA fallback. The check earns its place only under a `join`→`resolve` refactor, and the spec pins exactly that.
+
+The server address comes from the host: preload freezes `window.gewuHost.apiBaseUrl`, and `API_BASE_URL`'s factory reads it. **No second Angular build** — a browser has no `gewuHost`, so it returns `''` and every URL stays same-origin.
 
 ### Mobile (`frontend-mobile/`) — phase 3
 
-Flutter + Material Design 3, `signalr_netcore` client.
+Flutter + Material Design 3, `signalr_netcore` client. **Note what Electron cannot do for this:** it reaches Microsoft Store / Mac App Store but never iOS or Google Play. And "offline play" is not a packaging feature here — it contradicts three kernels at once (answers never leave the server, 华容道 replays every move, 俄罗斯方块 is validated at submit), so it is a design decision, not a shell one.
 
 ## Backend architecture
 

@@ -18,8 +18,30 @@ import type { HttpInterceptorFn } from '@angular/common/http';
  */
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
   providedIn: 'root',
-  factory: () => '',
+  factory: () => hostApiBaseUrl(),
 });
+
+/**
+ * What the **host** says the server address is, or `''` when there is no host.
+ *
+ * A host is anything that loads this bundle from somewhere other than the server:
+ * today the Electron shell (whose preload freezes `window.gewuHost` before Angular
+ * bootstraps), tomorrow a mobile wrapper, or a static site served from a different
+ * domain than its API.
+ *
+ * **Reading a global rather than taking a second Angular build is the whole point.**
+ * One `dist/` serves both: a browser has no `gewuHost`, so this returns `''` and every
+ * URL stays same-origin and byte-for-byte what it was.
+ *
+ * It is read synchronously and defensively — during injector construction, before
+ * anything has had a chance to validate it. A host that sets a non-string is treated
+ * as absent rather than allowed to concatenate `[object Object]` onto every request.
+ */
+export function hostApiBaseUrl(): string {
+  const host = (globalThis as { gewuHost?: { apiBaseUrl?: unknown } }).gewuHost;
+  const value = host?.apiBaseUrl;
+  return typeof value === 'string' ? value : '';
+}
 
 /**
  * The path prefixes that belong to the **server**.
