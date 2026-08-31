@@ -353,6 +353,26 @@
       "load-level": "Couldn't start this level."
     }
   },
+  "idiom-guess": {
+    "back-to-levels": "Back to levels",
+    "best": "Best {{stars}}★ · {{seconds}}s",
+    "blank-aria": "Blank in puzzle {{n}}",
+    "cleared": "Level cleared!",
+    "difficulty-n": "Difficulty {{n}}",
+    "error-load-failed": "Could not load the level.",
+    "hint": "Hint",
+    "level-n": "Level {{n}}",
+    "loading": "Loading…",
+    "locked": "Locked",
+    "no-levels": "No levels yet.",
+    "not-played": "Not played yet",
+    "play": "Play",
+    "progress": "{{completed}} cleared, {{stars}} stars",
+    "retry": "Retry",
+    "solved": "Correct",
+    "subtitle": "Read the definition, then fill the missing character back in.",
+    "tally": "{{hints}} hints · {{mistakes}} wrong"
+  },
   "klotski": {
     "back-to-levels": "Back to levels",
     "best": "{{stars}} stars · {{seconds}}s",

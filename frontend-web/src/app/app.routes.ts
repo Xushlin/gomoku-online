@@ -128,6 +128,17 @@ export const routes: Routes = withLeaveGuard([
       ),
   },
   {
+    path: 'g/idiom-guess',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('./games/idiom-guess/level-list/level-list').then((m) => m.IdiomGuessLevelList),
+  },
+  {
+    path: 'g/idiom-guess/levels/:index',
+    canMatch: [authGuard],
+    loadComponent: () => import('./games/idiom-guess/play/play').then((m) => m.IdiomGuessPlay),
+  },
+  {
     path: 'g/klotski',
     canMatch: [authGuard],
     loadComponent: () =>

@@ -1,6 +1,7 @@
 using Gewu.Application.Abstractions;
 using Gewu.Domain.Ai;
 using Gewu.Domain.Games.IdiomCrossword;
+using Gewu.Domain.Games.IdiomGuess;
 using Gewu.Domain.Games.Klotski;
 using Gewu.Domain.Games.Abstractions;
 using Gewu.Domain.Idioms;
@@ -32,6 +33,9 @@ public static class DependencyInjection
 
     /// <summary>华容道的 seeder 键。</summary>
     public const string KlotskiKey = "klotski";
+
+    /// <summary>猜成语的 seeder 键。</summary>
+    public const string IdiomGuessKey = "idiom-guess";
 
     /// <summary>《梅花谱》古谱键。</summary>
     public const string MeihuapuKey = "meihuapu";
@@ -99,6 +103,7 @@ public static class DependencyInjection
         // 关卡产物再各配一个 seeder —— seeder 是通用的,游戏键与路径是它的构造参数。
         services.AddSingleton<IPuzzleRules, IdiomCrosswordRules>();
         services.AddSingleton<IPuzzleRules, KlotskiRules>();
+        services.AddSingleton<IPuzzleRules, IdiomGuessRules>();
 
         services.AddKeyedScoped(IdiomCrosswordKey, (sp, _) => new PuzzleLevelSeeder(
             IdiomCrosswordKey,
@@ -109,6 +114,12 @@ public static class DependencyInjection
         services.AddKeyedScoped(KlotskiKey, (sp, _) => new PuzzleLevelSeeder(
             KlotskiKey,
             PuzzleLevelSeeder.KlotskiPath,
+            sp.GetRequiredService<AppDbContext>(),
+            sp.GetRequiredService<ILogger<PuzzleLevelSeeder>>()));
+
+        services.AddKeyedScoped(IdiomGuessKey, (sp, _) => new PuzzleLevelSeeder(
+            IdiomGuessKey,
+            PuzzleLevelSeeder.IdiomGuessPath,
             sp.GetRequiredService<AppDbContext>(),
             sp.GetRequiredService<ILogger<PuzzleLevelSeeder>>()));
 

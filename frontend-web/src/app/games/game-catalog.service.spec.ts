@@ -21,7 +21,18 @@ describe('DefaultGameCatalogService', () => {
     const statuses = svc.all().map((g) => g.status);
     const lastAvailable = statuses.lastIndexOf('available');
     const firstPlanned = statuses.indexOf('planned');
+
     expect(lastAvailable).toBeGreaterThanOrEqual(0);
+
+    // 猜成语 shipped and it was the last planned game, so there is currently no
+    // `planned` entry to order after anything. The ordering rule still holds — it
+    // is just unexercised, and saying so beats a comparison against `indexOf`'s
+    // -1, which is how this assertion first failed.
+    if (firstPlanned === -1) {
+      expect(statuses.every((s) => s === 'available')).toBe(true);
+      return;
+    }
+
     expect(firstPlanned).toBeGreaterThan(lastAvailable);
   });
 

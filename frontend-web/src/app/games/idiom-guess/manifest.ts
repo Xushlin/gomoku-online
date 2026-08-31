@@ -4,7 +4,7 @@ import type { GameManifest } from '../game-manifest';
 export const idiomGuessManifest: GameManifest = {
   key: 'idiom-guess',
   category: 'puzzle',
-  status: 'planned',
+  status: 'available',
   titleKey: 'games.idiom-guess.title',
   descriptionKey: 'games.idiom-guess.description',
   // 三个格子一个空 —— 猜的就是那一个。
@@ -14,5 +14,6 @@ export const idiomGuessManifest: GameManifest = {
     { k: 'r', a: 15, b: 9, c: 6, d: 6, r: 1 },
     { k: 't', a: 12, b: 12, c: 4.5, s: '?' },
   ],
+  launchRoute: '/g/idiom-guess',
   contentLocales: ['zh-CN'],
 };

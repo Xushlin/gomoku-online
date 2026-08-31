@@ -1,0 +1,133 @@
+<div class="mx-auto flex w-full max-w-2xl flex-col gap-5">
+  <header class="flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="text-text text-xl font-semibold tracking-tight">
+      {{ 'idiom-guess.level-n' | transloco: { n: levelIndex() + 1 } }}
+    </h1>
+    <p class="text-muted text-sm">
+      {{ 'idiom-guess.tally' | transloco: { hints: hintsUsed(), mistakes: mistakes() } }}
+    </p>
+  </header>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <ul class="flex flex-col gap-3" aria-hidden="true">
+        @for (i of [1, 2, 3]; track i) {
+          <li class="panel-flat h-28 animate-pulse border"></li>
+        }
+      </ul>
+      <p class="text-muted text-sm">{{ 'idiom-guess.loading' | transloco }}</p>
+    }
+    @case ('error') {
+      <p class="text-danger text-sm" role="alert">
+        {{ 'idiom-guess.error-load-failed' | transloco }}
+      </p>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="cell text-text focus-visible:outline-primary border px-4 py-2 text-sm"
+          (click)="start()"
+        >
+          {{ 'idiom-guess.retry' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="cell text-text focus-visible:outline-primary border px-4 py-2 text-sm"
+          (click)="backToList()"
+        >
+          {{ 'idiom-guess.back-to-levels' | transloco }}
+        </button>
+      </div>
+    }
+    @case ('done') {
+      <section class="panel flex flex-col items-center gap-3 border p-6" role="status">
+        <p class="text-text text-lg font-medium">{{ 'idiom-guess.cleared' | transloco }}</p>
+        <p class="text-2xl leading-none" aria-hidden="true">
+          @for (s of [1, 2, 3]; track s) {
+            <span [class.opacity-25]="s > (stars() ?? 0)">★</span>
+          }
+        </p>
+        <p class="text-muted text-sm">
+          {{ 'idiom-guess.tally' | transloco: { hints: hintsUsed(), mistakes: mistakes() } }}
+        </p>
+        <button
+          type="button"
+          class="cell text-text focus-visible:outline-primary border px-4 py-2 text-sm"
+          (click)="backToList()"
+        >
+          {{ 'idiom-guess.back-to-levels' | transloco }}
+        </button>
+      </section>
+    }
+    @default {
+      <ul class="flex flex-col gap-3">
+        @for (state of puzzles(); track state.puzzle.index) {
+          <li
+            class="panel-flat flex flex-col gap-3 border p-4"
+            [class.opacity-70]="state.solved"
+            [class.animate-shake]="state.wrong"
+          >
+            <!-- 释义就是题面。break-words:最长的一条 74 字,而它不能把这一行撑破。 -->
+            <p class="text-muted text-sm break-words">{{ state.puzzle.explanation }}</p>
+
+            <div class="flex flex-wrap items-center gap-2">
+              @for (c of state.puzzle.chars; track $index) {
+                @if (isBlank(state.puzzle, $index)) {
+                  <input
+                    class="cell text-text focus-visible:outline-primary h-11 w-11 border text-center text-lg"
+                    [class.border-primary]="selected() === keyFor(state, $index)"
+                    type="text"
+                    inputmode="text"
+                    maxlength="1"
+                    autocomplete="off"
+                    [disabled]="state.solved"
+                    [value]="charAt(state, $index)"
+                    [attr.aria-label]="
+                      'idiom-guess.blank-aria' | transloco: { n: state.puzzle.index + 1 }
+                    "
+                    (focus)="select(keyFor(state, $index))"
+                    (input)="type(state, $index, $any($event.target).value)"
+                  />
+                } @else {
+                  <span
+                    class="cell text-text flex h-11 w-11 items-center justify-center border text-lg"
+                    >{{ c }}</span
+                  >
+                }
+              }
+
+              @if (state.solved) {
+                <span class="text-primary text-sm">{{ 'idiom-guess.solved' | transloco }}</span>
+              }
+            </div>
+
+            <!--
+              出处**可能没有** —— 可用池 9,615 条里 252 条为空,产物里就有一条。
+              没有时整块不画:一张空纸条在屏幕上和"加载失败"长得一样。
+            -->
+            @if (state.solved && state.derivation) {
+              <p class="text-muted border-l-2 pl-3 text-xs italic">{{ state.derivation }}</p>
+            }
+          </li>
+        }
+      </ul>
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="cell text-text focus-visible:outline-primary border px-4 py-2 text-sm"
+          [disabled]="busy()"
+          (click)="hint()"
+        >
+          {{ 'idiom-guess.hint' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="cell text-text focus-visible:outline-primary border px-4 py-2 text-sm"
+          (click)="backToList()"
+        >
+          {{ 'idiom-guess.back-to-levels' | transloco }}
+        </button>
+      </div>
+    }
+  }
+</div>

@@ -31,11 +31,21 @@ describe('GamesStrip', () => {
     expect(expected.length).toBeGreaterThan(0);
   });
 
-  it('omits planned games', () => {
+  it('omits planned games — and there are none left to omit', () => {
     const planned = GAME_REGISTRY.filter((g) => g.status === 'planned');
     const el = mount().nativeElement as HTMLElement;
 
-    expect(planned.length).toBeGreaterThan(0);
+    // 猜成语 was the **last** planned game, so this set is now empty and the walk
+    // below asserts nothing. That is stated rather than hidden.
+    //
+    // The guard here used to be `expect(planned.length).toBeGreaterThan(0)` — an
+    // anti-vacuity check, and it did its job: shipping the tenth game turned this
+    // walk into an empty loop and the suite went red instead of silently passing.
+    // Replacing it with `toEqual([])` keeps a live assertion in its place: it goes
+    // red the day an eleventh game is declared `planned`, which is exactly when
+    // this walk becomes real again.
+    expect(planned.map((g) => g.key)).toEqual([]);
+
     for (const game of planned) {
       expect(el.querySelector(`a[data-game-key="${game.key}"]`)).toBeNull();
     }

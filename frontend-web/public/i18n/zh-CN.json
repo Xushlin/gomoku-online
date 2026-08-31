@@ -353,6 +353,26 @@
       "load-level": "这一关没能开始。"
     }
   },
+  "idiom-guess": {
+    "back-to-levels": "返回关卡列表",
+    "best": "最好 {{stars}} 星 · {{seconds}} 秒",
+    "blank-aria": "第 {{n}} 题的空格",
+    "cleared": "本关完成!",
+    "difficulty-n": "难度 {{n}}",
+    "error-load-failed": "关卡加载失败。",
+    "hint": "提示",
+    "level-n": "第 {{n}} 关",
+    "loading": "加载中…",
+    "locked": "未解锁",
+    "no-levels": "还没有关卡。",
+    "not-played": "还没玩过",
+    "play": "开始",
+    "progress": "已通关 {{completed}} 关,共 {{stars}} 颗星",
+    "retry": "重试",
+    "solved": "答对了",
+    "subtitle": "看释义,把成语里挖掉的字填回去。",
+    "tally": "提示 {{hints}} 次 · 答错 {{mistakes}} 次"
+  },
   "klotski": {
     "back-to-levels": "返回关卡",
     "best": "{{stars}} 星 · {{seconds}} 秒",
