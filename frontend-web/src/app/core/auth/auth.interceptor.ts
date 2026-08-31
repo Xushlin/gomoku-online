@@ -17,8 +17,30 @@ import { AuthService } from './auth.service';
  */
 const NO_AUTH_PREFIXES = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh'] as const;
 
+/**
+ * The path part of a URL, whether it arrived relative or absolute.
+ *
+ * **This exists because `API_BASE_URL` can make these URLs absolute**, and the
+ * check below used to be `url.startsWith('/api/auth/login')` — which is simply
+ * `false` for `https://server/api/auth/login`. The consequence is not a crash:
+ * it is an `Authorization` header attached to login, register and refresh, and a
+ * silent refresh retried on the very request that *is* the credential.
+ *
+ * It would never show up in a browser, where the base is empty and every URL
+ * stays relative. It would show up only in the desktop shell — which is the
+ * worst place to find it, because there is nothing on screen to suggest the
+ * cause. Matching on the path is correct in both shapes.
+ */
+function pathOf(url: string): string {
+  const scheme = url.indexOf('://');
+  if (scheme === -1) return url;
+  const slash = url.indexOf('/', scheme + 3);
+  return slash === -1 ? '/' : url.slice(slash);
+}
+
 function isNoAuthRequest(url: string): boolean {
-  return NO_AUTH_PREFIXES.some((prefix) => url.startsWith(prefix));
+  const path = pathOf(url);
+  return NO_AUTH_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
 /**

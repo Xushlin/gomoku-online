@@ -19,8 +19,7 @@ import {
 import { DefaultRoomsApiService, RoomsApiService } from './core/api/rooms-api.service';
 import { DefaultUsersApiService, UsersApiService } from './core/api/users-api.service';
 import { AuthService, DefaultAuthService } from './core/auth/auth.service';
-import { authInterceptor } from './core/auth/auth.interceptor';
-import { provideAppHttp } from './core/http/http-config';
+import { APP_INTERCEPTORS, provideAppHttp } from './core/http/http-config';
 import { DefaultLanguageService, LanguageService } from './core/i18n/language.service';
 // Side-effect import: registers Angular locale data for every non-default
 // locale in SUPPORTED_LOCALES, so DatePipe / formatDate don't crash with
@@ -51,7 +50,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideAppHttp([authInterceptor]),
+    // 链条与顺序在 APP_INTERCEPTORS 里,那里也是测试能拿到的同一份 ——
+    // 在这里手写一份就等于production 与测试各持一份,而它们迟早不一致。
+    provideAppHttp([...APP_INTERCEPTORS]),
     provideAppI18n(),
     { provide: ThemeService, useClass: DefaultThemeService },
     { provide: BoardSkinService, useClass: DefaultBoardSkinService },
