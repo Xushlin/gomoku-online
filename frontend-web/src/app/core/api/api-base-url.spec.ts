@@ -4,7 +4,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { authInterceptor } from '../auth/auth.interceptor';
 import { APP_INTERCEPTORS } from '../http/http-config';
 import { AuthService } from '../auth/auth.service';
@@ -14,7 +14,7 @@ import {
   DefaultGameHubService,
   SIGNALR_LOADER,
 } from '../realtime/game-hub.service';
-import { API_BASE_URL, apiBaseUrlInterceptor, isServerPath, serverUrl } from './api-base-url';
+import { API_BASE_URL, apiBaseUrlInterceptor, hostApiBaseUrl, isServerPath, serverUrl } from './api-base-url';
 
 const REMOTE = 'https://gewu.example';
 
@@ -206,6 +206,70 @@ describe('API_BASE_URL', () => {
       // 精确匹配 —— 多一个前缀就红。这是「Web 端行为不变」唯一真正的守卫。
       ctrl.expectOne('/api/rooms');
       ctrl.expectOne('/i18n/zh-CN.json');
+    });
+  });
+
+  /**
+   * 宿主(Electron 壳 / 将来的手机壳 / 独立 API 域名的自托管)怎么给地址。
+   */
+  describe('the host global', () => {
+    const hostful = globalThis as { gewuHost?: unknown };
+
+    afterEach(() => {
+      delete hostful.gewuHost;
+    });
+
+    it('uses what the host says', () => {
+      hostful.gewuHost = Object.freeze({ apiBaseUrl: REMOTE });
+
+      expect(hostApiBaseUrl()).toBe(REMOTE);
+    });
+
+    /**
+     * **与上一条 MUST 同时存在。** 少了它,一个「永远返回宿主值」的实现在浏览器里
+     * 会返回 `undefined`,而每个地址都变成 `undefined/api/rooms` —— 全部 404,
+     * 且看起来像后端挂了。
+     */
+    it('is empty when there is no host, which is the browser', () => {
+      expect(hostApiBaseUrl()).toBe('');
+    });
+
+    /**
+     * 宿主是别人写的进程,而这个值在注入器构造期间被同步读走 —— 那时没有任何东西
+     * 校验过它。给一个非字符串就当没有:否则每个请求前面会挂上 `[object Object]`。
+     */
+    it('treats a host that sets a non-string as absent', () => {
+      hostful.gewuHost = { apiBaseUrl: { nope: 1 } };
+      expect(hostApiBaseUrl()).toBe('');
+
+      hostful.gewuHost = {};
+      expect(hostApiBaseUrl()).toBe('');
+    });
+
+    /**
+     * **`API_BASE_URL` 本身要读它 —— 而这一条是变异测试逼出来的。**
+     *
+     * 上面几条都直接调 `hostApiBaseUrl()`,所以把 token 的 factory 改回
+     * `() => ''` 时**一条都不红**:它们验的是那个函数,不是那个 token 在用它。
+     *
+     * 而那正是桌面壳会死掉的方式,并且死得很难看:每个请求退回同源,变成
+     * `app://gewu/api/…`,被壳自己的 SPA 回落当成路由,**返回 index.html 和一个 200**。
+     * 没有报错、没有 404 —— 只是所有数据都不见了。
+     */
+    it('is what API_BASE_URL resolves to, not just a function nobody calls', () => {
+      hostful.gewuHost = Object.freeze({ apiBaseUrl: REMOTE });
+
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [] });
+
+      expect(TestBed.inject(API_BASE_URL)).toBe(REMOTE);
+    });
+
+    it('resolves to empty when there is no host', () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [] });
+
+      expect(TestBed.inject(API_BASE_URL)).toBe('');
     });
   });
 
