@@ -23,6 +23,16 @@ Clean Architecture + CQRS。
 
 ## 桌面版
 
+最省事的办法 —— 双击:
+
+```cmd
+start-desktop.cmd
+```
+
+它会装依赖(首次)、构建 Angular、起后端(**并把 `app://gewu` 加进 CORS**)、开窗口。忘掉那个 CORS 项的话,桌面版打得开、登录页正常,**一个请求都发不出去** —— 而那看起来像后端没起。
+
+想自己打包成 exe:
+
 ```bash
 cd frontend-desktop
 npm install

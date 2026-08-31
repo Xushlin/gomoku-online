@@ -404,6 +404,8 @@ Authors can decline `should` / `nit` items but should briefly explain why. Don't
 
 ## Shell
 
+- **A `.cmd` written from this worktree gets LF, and cmd.exe shreds LF-only batch files.** `.gitattributes` says `*.cmd text eol=crlf`, and the **main checkout honours it** — but a `git worktree` checkout here does **not**: `start-dev.cmd` is CRLF in `D:\AILab\gomoku-online` and LF in `.claude/worktrees/…`. An LF-only batch file does not fail cleanly; cmd desyncs and executes fragments, so you get `'cho' is not recognized` (from `echo`) and lines of your REM prose run as commands. It reads exactly like the file is corrupt. Convert to CRLF before running one here; **the committed blob stays LF and is correct** — the user's checkout converts it.
+- **`set VAR=value&& cmd` — the missing space is load-bearing.** With a space, the space goes *inside* the value: measured, the child process sees `"app://gewu "`, which never matches an `Origin` header, so CORS rejects everything and the app looks unable to reach the server.
 - **A command started in the background has no network egress.** A 1634-request fetch logged **558 failures in a row** while the same `curl` line succeeded (200, 8 kB) in the foreground; the loop kept going and would have ended with a plausible-looking `fetched=` line. **Only the file count showed it.** Long fetches: start them in the foreground and let the tool move them to the background — a process that already has the socket keeps it.
 
 Windows host, bash shell. Use Unix syntax in commands (`/dev/null`, forward slashes), not `NUL` / backslashes.
