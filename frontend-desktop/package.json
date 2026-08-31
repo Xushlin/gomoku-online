@@ -2,19 +2,47 @@
   "name": "gewu-desktop",
   "version": "0.0.0",
   "private": true,
-  "description": "格物 / Gewu desktop shell — Electron around the built Angular app.",
+  "description": "Gewu desktop shell - Electron around the built Angular app.",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && electron .",
     "test": "vitest run",
     "test:ci": "vitest run",
-    "lint": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.spec.json"
+    "lint": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.spec.json",
+    "build:web": "npm --prefix ../frontend-web run build",
+    "copy:web": "node scripts/copy-web.mjs",
+    "package": "npm run build:web && npm run build && npm run copy:web && electron-builder --win"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "electron": "^33.3.1",
+    "electron-builder": "^26.15.3",
     "typescript": "~5.9.2",
     "vitest": "^4.1.5"
+  },
+  "productName": "Gewu",
+  "author": "Gewu",
+  "build": {
+    "appId": "dev.gewu.desktop",
+    "productName": "Gewu",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "web/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SERVER, serverAddress } from './server-address';
+import { configDirectory, DEFAULT_SERVER, serverAddress } from './server-address';
 
 const noFile = () => null;
 
@@ -50,5 +50,32 @@ describe('serverAddress', () => {
     expect(serverAddress({ GEWU_SERVER: '  ' }, () => '{"server":"https://b.test"}')).toBe(
       'https://b.test',
     );
+  });
+});
+
+/**
+ * 便携版从临时目录启动 —— 这一组是打包并**双击**之后才发现要写的。
+ */
+describe('configDirectory', () => {
+  const INSTALLED = String.raw`C:\Program Files\Gewu`;
+  const PORTABLE = String.raw`D:\Games\Gewu`;
+  // 实测的那个临时目录,原样抄下来。
+  const TEMP_COPY = String.raw`C:\Users\Michael\AppData\Local\Temp\3IfVAEDHBEkVmiFuhcTB1PVHZjb`;
+
+  it('uses the exe directory when nothing says otherwise', () => {
+    expect(configDirectory({}, INSTALLED)).toBe(INSTALLED);
+  });
+
+  /**
+   * 实测:便携 exe 跑在 `…\AppData\Local\Temp\3IfVAEDHBEkVmiFuhcTB1PVHZjb\Gewu.exe`。
+   * 配置文件在用户放 exe 的地方,而 `app.getPath('exe')` 指向那个临时目录 ——
+   * 于是配置**永远读不到**,应用安静地连去默认服务器,屏幕上没有任何提示。
+   */
+  it('prefers the portable directory, because the exe runs from a temp copy', () => {
+    expect(configDirectory({ PORTABLE_EXECUTABLE_DIR: PORTABLE }, TEMP_COPY)).toBe(PORTABLE);
+  });
+
+  it('ignores an empty portable dir rather than resolving to nothing', () => {
+    expect(configDirectory({ PORTABLE_EXECUTABLE_DIR: '   ' }, INSTALLED)).toBe(INSTALLED);
   });
 });

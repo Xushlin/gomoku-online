@@ -1368,3 +1368,19 @@ Other platforms, unchanged from before:
   不做的:自动更新、Microsoft Store 提交(要发布者账号与签名证书)、离线、手机端 —— 每条的理由都在 proposal 里。
 
   **补记一处随后修掉的缺陷:`npm install --package-lock-only` 产出的 lockfile 几乎没有完整性哈希。** 当时 Electron 的二进制还没装上,所以我用它生成 lockfile —— 结果 142 个包里**只有 25 个带 `integrity`**;真跑一遍 `npm install` 之后是 **141**(唯一没有的那个是根项目自己)。完整性哈希正是 lockfile 的意义所在:`npm ci` 靠它校验下下来的东西是不是原来那个。**一份「看起来正常、`npm ci` 也照跑、CI 也绿」的 lockfile,可以完全没有校验能力** —— 两者在任何一次构建里都长得一模一样。是后台那次安装最终跑完、把文件重写了,才让它显出来的。
+
+- [x] **`package-desktop-exe`** —— 打成一个能双击的 exe。**69.3 MB portable + 69.5 MB 安装包**,其中前端产物只占 1.1 MB。
+
+  **asar 那条风险量出来了,而答案是「不用管」。** 提案里把它写成头号未知:协议处理器用 `net.fetch(pathToFileURL(path))` 取文件,而打包后那个路径在 `app.asar` 里面;`existsSync` 在 asar 里是通的,但 `file://` 能不能指进 asar 是另一回事,猜错的表现是**打出来的 exe 一片白**。所以规格钉死了顺序:**先按默认打一次并运行**,白屏才动 asar。跑了 —— `app://gewu/login?returnUrl=%2Fhome`,标题 `Gewu`,Angular 渲染正常。**`net.fetch` 认得 asar 里的 `file://`,三条路里走了第一条,一行配置都没改。** 这条写下来是为了让下一个人不必再猜。
+
+  **而「真的双击」找到了一个只有打包后才存在的缺陷。** 便携版把自己解到临时目录再启动 —— 实测 `C:\Users\…\AppData\Local\Temp\3IfVAEDHBEkVmiFuhcTB1PVHZjb\Gewu.exe`。于是 `app.getPath('exe')` 指向那个临时目录,而放在**用户真正双击的那个 exe 旁边**的 `gewu.config.json` 永远读不到:应用照常启动、照常显示登录页,只是连去了默认服务器。**屏幕上没有任何东西说明原因。** electron-builder 为此设了 `PORTABLE_EXECUTABLE_DIR`,`configDirectory` 现在优先读它;安装版不设这个变量,而它本来就跑在安装目录里,所以两种形态各自正确。
+
+  这个缺陷**开发模式下看不见**:那时 `app.getPath('exe')` 是 `node_modules` 里的 Electron 二进制,配置文件也不在那儿,于是回落看起来就是正常行为。三条单测钉住了优先级。
+
+  打包脚本的顺序也进了规格:**构建 Angular → 编译壳 → 拷 `web/` → 打包**。拷贝在构建之后,否则打进去的是上一次的产物 —— 而那个错误在界面上**看不出来**:应用照常打开、照常能用,只是少了这次的改动。拷贝写成脚本而不是 `cp`,是因为它还断言源目录存在。
+
+  **顺带发现三处还在教运维设一个运行时不读的环境变量。** `fix-jwt-signing-key-env-var` 改掉了异常消息、`JwtOptions` 的文档和 `appsettings` 的注释,却没 grep markdown —— `README.md`、`README.zh-CN.md`、`backend/HOW_TO_RUN.md` 里仍然写着 `GOMOKU_JWT__SIGNINGKEY`。**「我刚修完这一类」是去 grep 的理由,不是放松的理由**,而当时我只 grep 了代码。三处都改了,并且都写明了「没有这个前缀、值必须是 base64」。
+
+  未签名:SmartScreen 首次运行会拦,两份 README 都写明**那是预期行为不是程序有毒**。签名与 Store 提交要发布者账号与证书,不在范围内。
+
+  桌面 25 → **28** 条测试,两边 lint 绿。前端与后端零改动。

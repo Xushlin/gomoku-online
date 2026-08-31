@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, shell, protocol, net } from 'electron';
 import { resolveAsset } from './resolve-asset';
-import { serverAddress } from './server-address';
+import { configDirectory, serverAddress } from './server-address';
 
 /**
  * 格物 / Gewu desktop shell.
@@ -37,7 +37,10 @@ function webRoot(): string {
 
 /** `gewu.config.json` beside the executable, if there is one. */
 function readConfigFile(): string | null {
-  const path = join(app.getPath('exe'), '..', 'gewu.config.json');
+  // 便携版会把自己解到临时目录再启动,所以 `exe` 的目录不是用户放它的地方 ——
+  // 见 `configDirectory`。
+  const dir = configDirectory(process.env, dirname(app.getPath('exe')));
+  const path = join(dir, 'gewu.config.json');
   try {
     return existsSync(path) ? readFileSync(path, 'utf8') : null;
   } catch {
