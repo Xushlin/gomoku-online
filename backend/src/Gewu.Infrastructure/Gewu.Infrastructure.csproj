@@ -55,6 +55,16 @@
           Condition="Exists('..\..\data\levels\klotski.json')" />
 
     <!--
+      猜成语的关卡产物:由 tools/IdiomGuessGenerator 从同一份精选词典产出,提交进仓库,
+      由 PuzzleLevelSeeder 从 `data/levels/idiom-guess.json` 读入。
+      少了这条复制规则的表现同样是一个 200 的空关卡列表。
+    -->
+    <None Include="..\..\data\levels\idiom-guess.json"
+          Link="data\levels\idiom-guess.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\data\levels\idiom-guess.json')" />
+
+    <!--
       《梅花谱》的古谱产物。招法取自公有领域的原书,导入时由 XiangqiManualSeeder 逐手过
       象棋规则;它从 `data/manuals/xiangqi-meihuapu.json` 读,路径相对 AppContext.BaseDirectory。
       **少了这条复制规则的表现是一个 200 的空目录** —— 所以播种器在文件缺失时抛,不是 warn。

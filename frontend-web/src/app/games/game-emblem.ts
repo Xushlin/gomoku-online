@@ -51,8 +51,15 @@ export interface EmblemRect {
 /**
  * A glyph centred at (a,b) at font-size c.
  *
- * Used by exactly two games, for the two characters that *are* their identity:
- * 象棋's 帥 and 斗地主's 王.
+ * Used for a character that *is* a game's identity: 象棋's 帥, 斗地主's 王, and
+ * 猜成语's `?`.
+ *
+ * This line used to say "exactly two games", and it had already been false since
+ * 猜成语's manifest landed with a `?` — a hand-written count in prose, which is
+ * the shape this repo keeps re-learning. It now names the users instead of
+ * counting them, and the assertions that actually hold the line derive from
+ * `GAME_REGISTRY` (see `game-emblem.spec.ts`: the font-size ceiling, and "no
+ * glyph sits on top of a filled shape" — the rule 猜成语's invisible `?` bought).
  *
  * **Size it from the measured box, not from the font-size.** Measured with
  * `getBBox()` rather than estimated, a CJK glyph's box is `width == font-size`

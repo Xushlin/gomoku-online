@@ -104,6 +104,9 @@ public sealed class PuzzleLevelSeeder
     /// <summary>华容道的产物路径。</summary>
     public static string KlotskiPath => Path.Combine("data", "levels", "klotski.json");
 
+    /// <summary>猜成语关卡产物的相对路径。</summary>
+    public static string IdiomGuessPath => Path.Combine("data", "levels", "idiom-guess.json");
+
     /// <summary>
     /// 若本游戏尚无关卡则载入产物,否则无操作。
     /// </summary>

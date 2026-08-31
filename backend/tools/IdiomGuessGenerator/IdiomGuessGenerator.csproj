@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Occasional developer tool, deliberately NOT part of the API dependency graph
+    and NOT registered in Gewu.slnx — same posture as CrosswordGenerator and
+    IdiomImporter. It turns backend/data/idioms.curated.json into
+    backend/data/levels/idiom-guess.json, which is what the seeder consumes.
+
+    It references Gewu.Domain so the emitted layout/solution shapes come from the
+    same records IdiomGuessRules deserialises, and so the one rule that matters —
+    "a blanked character must not appear in its own explanation" — lives in the
+    domain next to the rules and under unit test. The tool must never own a
+    second copy of that: a generator that judged leakage its own way would drift
+    from the checker, and the drift shows up as a puzzle whose answer is printed
+    beside the blank.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Gewu.Tools.IdiomGuessGenerator</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Gewu.Domain\Gewu.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
