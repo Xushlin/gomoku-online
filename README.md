@@ -31,7 +31,7 @@ The easy way — double-click:
 start-desktop.cmd
 ```
 
-It installs dependencies (first run), builds Angular, starts the backend **with `app://gewu` added to CORS**, and opens the window. Forget that CORS entry and the app opens, renders its login page, and cannot make a single request — which looks exactly like the backend being down.
+It installs dependencies (first run), builds Angular, starts the backend, and opens the window. No extra configuration is needed for a dev run.
 
 To build an exe yourself:
 
@@ -49,7 +49,7 @@ The **server address** is resolved in this order, first non-empty wins:
 2. `gewu.config.json` beside the exe — `{"server": "https://your-server"}`
 3. `http://localhost:5145`
 
-The server must also list **`app://gewu`** in `Cors:AllowedOrigins`, or the desktop app cannot make a single request — and the symptom is a **perfectly normal-looking UI with no data at all**, which reads like the server being down.
+A non-Development server must also list **`app://gewu`** in `Cors:AllowedOrigins` (the dev config already does), or the desktop app cannot make a single request — and the symptom is a **perfectly normal-looking UI with no data at all**, which reads like the server being down.
 
 > **Windows will warn on first run.** This exe is **not code-signed**, so SmartScreen shows "Windows protected your PC"; choose *More info → Run anyway*. **That is expected, not a sign of anything wrong** — signing needs a code-signing certificate, which this project does not have.
 
@@ -133,7 +133,8 @@ openspec/
   changes/
     archive/                        (every shipped change kept for audit trail)
 
-start-dev.cmd                       (Windows one-click launcher)
+start-dev.cmd                       (Windows one-click launcher — backend + web)
+start-desktop.cmd                   (Windows one-click launcher — backend + Electron)
 ```
 
 ## OpenSpec workflow

@@ -6,16 +6,17 @@ REM Opens two windows:
 REM   [Gewu Backend] .NET API on http://localhost:5145
 REM   [Gewu Desktop] the Electron window
 REM
-REM Three things this does that are easy to get wrong by hand:
+REM Two things this does that are easy to get wrong by hand:
 REM
-REM   1. Adds app://gewu to the backend's CORS allow-list. Without it the
-REM      window opens, the login page renders, and NOT ONE request goes
-REM      through — which looks exactly like the backend being down.
-REM   2. Rebuilds the Angular app first. The shell serves whatever is in
+REM   1. Rebuilds the Angular app first. The shell serves whatever is in
 REM      frontend-web\dist, so a stale build means you are using old UI
 REM      while everything looks perfectly normal.
-REM   3. Checks Electron's binary actually downloaded. npm install can
+REM   2. Checks Electron's binary actually downloaded. npm install can
 REM      finish "successfully" with the 115 MB runtime missing.
+REM
+REM (CORS used to be a third: the renderer's origin is app://gewu, which the
+REM backend must allow. appsettings.Development.json now lists it, so a dev
+REM run needs nothing — but a non-Development server still does.)
 REM
 REM Close either window to stop that side. Ctrl+C also works.
 REM ============================================================
@@ -68,13 +69,13 @@ if errorlevel 1 (
 popd
 
 echo.
-echo [3/5] Starting backend on http://localhost:5145 ^(with app://gewu allowed^)...
-REM NOTE the missing space before `&&` — it is not a typo. `set X=v && cmd`
-REM puts the space INSIDE the value: measured, the child sees "app://gewu "
-REM with a trailing space, which never matches the browser's Origin header.
-REM CORS then rejects every request and the app looks like it cannot reach
-REM the server. Do not "tidy" this line.
-start "Gewu Backend" cmd /k "cd /d "%ROOT%backend" && set Cors__AllowedOrigins__2=app://gewu&& dotnet run --project src\Gewu.Api --launch-profile http"
+echo [3/5] Starting backend on http://localhost:5145...
+REM The `http` launch profile runs as Development, and
+REM appsettings.Development.json already lists app://gewu among the allowed
+REM CORS origins — so nothing extra is needed here. A non-Development server
+REM must add that origin itself, or the app renders fine and cannot make a
+REM single request.
+start "Gewu Backend" cmd /k "cd /d "%ROOT%backend" && dotnet run --project src\Gewu.Api --launch-profile http"
 
 echo [4/5] Waiting for the backend to answer...
 REM /api/games needs auth, so a 401 IS the server being up. Treat any HTTP
