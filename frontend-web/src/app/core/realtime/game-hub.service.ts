@@ -10,6 +10,7 @@ import type {
   UrgeDto,
   UserSummary,
 } from '../api/models/room.model';
+import { API_BASE_URL, serverUrl } from '../api/api-base-url';
 import { AuthService } from '../auth/auth.service';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
@@ -113,6 +114,9 @@ export const GAME_HUB_URL = '/hubs/match';
 export class DefaultGameHubService extends GameHubService {
   private readonly auth = inject(AuthService);
   private readonly loader = inject(SIGNALR_LOADER);
+  // 实时连接不走 HttpClient,所以那个拦截器碰不到它 —— 它得自己取一次 base。
+  // **这一处最容易被忘掉**:忘了的表现不是报错,是棋盘再也不更新。
+  private readonly apiBase = inject(API_BASE_URL);
 
   private readonly _state = signal<RoomState | null>(null);
   private readonly _connectionStatus = signal<ConnectionStatus>('disconnected');
@@ -158,7 +162,9 @@ export class DefaultGameHubService extends GameHubService {
 
   private build(mod: SignalRModule): SignalRHubConnection {
     const conn = new mod.HubConnectionBuilder()
-      .withUrl(GAME_HUB_URL, { accessTokenFactory: () => this.auth.accessToken() ?? '' })
+      .withUrl(serverUrl(this.apiBase, GAME_HUB_URL), {
+        accessTokenFactory: () => this.auth.accessToken() ?? '',
+      })
       .withAutomaticReconnect([0, 2_000, 5_000, 10_000, 30_000])
       .configureLogging(mod.LogLevel['Warning'])
       .build();
