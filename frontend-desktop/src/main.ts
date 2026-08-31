@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, shell, protocol, net } from 'electron';
 import { resolveAsset } from './resolve-asset';
 import { configDirectory, serverAddress } from './server-address';
+import { undeferStylesheets } from './undefer-stylesheets';
 
 /**
  * 格物 / Gewu desktop shell.
@@ -63,7 +64,28 @@ app.whenReady().then(() => {
 
   protocol.handle(APP_SCHEME, async (request) => {
     const asset = resolveAsset(root, request.url, existsSync);
-    const response = await net.fetch(pathToFileURL(asset.path).toString());
+    const upstream = await net.fetch(pathToFileURL(asset.path).toString());
+
+    // HTML gets rewritten before it is served; everything else streams through.
+    //
+    // Angular defers the global stylesheet with `media="print"` plus an inline
+    // `onload` that flips it to `all`. The CSP below refuses inline handlers, so the
+    // flip never ran and the app rendered with NO global styles at all -- Tailwind,
+    // theme tokens and board skins all dead, while component styles (injected at
+    // runtime) still applied, so it did not look like "no CSS". Deferring buys
+    // nothing off local disk, so the dependency is removed rather than the CSP
+    // loosened. See undefer-stylesheets.ts.
+    const isHtml = asset.path.toLowerCase().endsWith('.html');
+    const headers = new Headers(upstream.headers);
+    let response: Response;
+    if (isHtml) {
+      const html = undeferStylesheets(await upstream.text());
+      // The rewrite changes the length, and a stale content-length truncates it.
+      headers.delete('content-length');
+      response = new Response(html, { status: upstream.status, headers });
+    } else {
+      response = new Response(upstream.body, { status: upstream.status, headers });
+    }
     // CSP 在这里给,而不是在 index.html 里 —— 那份 HTML 是 Web 端共用的产物,
     // 桌面壳的策略不该渗进浏览器那一份。
     response.headers.set(
