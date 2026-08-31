@@ -29,7 +29,7 @@ Clean Architecture + CQRS。
 start-desktop.cmd
 ```
 
-它会装依赖(首次)、构建 Angular、起后端(**并把 `app://gewu` 加进 CORS**)、开窗口。忘掉那个 CORS 项的话,桌面版打得开、登录页正常,**一个请求都发不出去** —— 而那看起来像后端没起。
+它会装依赖(首次)、构建 Angular、起后端、开窗口。开发环境不需要额外配置。
 
 想自己打包成 exe:
 
@@ -47,7 +47,7 @@ npm run package     # 先构建 Angular,再打包
 2. exe 旁边的 `gewu.config.json` —— `{"server": "https://你的服务器"}`
 3. 默认 `http://localhost:5145`
 
-服务端还要把 **`app://gewu`** 加进 `Cors:AllowedOrigins`,否则桌面版一个请求都发不出去 —— 而症状是**界面完全正常、数据全都没有**,很容易误判成服务器挂了。
+非开发环境的服务端还要把 **`app://gewu`** 加进 `Cors:AllowedOrigins`(开发配置里已经有了),否则桌面版一个请求都发不出去 —— 而症状是**界面完全正常、数据全都没有**,很容易误判成服务器挂了。
 
 > **首次运行 Windows 会拦一次。** 这个 exe **没有代码签名**,SmartScreen 会弹「Windows 已保护你的电脑」,要点「更多信息 → 仍要运行」。**这是预期行为,不是程序有问题** —— 签名需要代码签名证书,目前没有。
 
@@ -130,7 +130,8 @@ openspec/
   changes/
     archive/                        (每个已交付的变更全部保留,审计足迹完整)
 
-start-dev.cmd                       (Windows 一键启动脚本)
+start-dev.cmd                       (Windows 一键启动 —— 后端 + Web)
+start-desktop.cmd                   (Windows 一键启动 —— 后端 + Electron)
 ```
 
 ## OpenSpec 工作流
