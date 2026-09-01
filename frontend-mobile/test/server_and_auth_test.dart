@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gewu_mobile/api/api_client.dart';
+import 'package:gewu_mobile/data/services/dio_client.dart';
 import 'package:gewu_mobile/config/server.dart';
 import 'package:gewu_mobile/i18n/translations.dart';
 import 'package:gewu_mobile/theme/app_theme.dart';
@@ -41,16 +41,16 @@ void main() {
 
   group('the token is never attached to the endpoints that are the credential', () {
     test('login, register and refresh are exempt', () {
-      expect(ApiClient.needsNoAuth('/api/auth/login'), isTrue);
-      expect(ApiClient.needsNoAuth('/api/auth/register'), isTrue);
-      expect(ApiClient.needsNoAuth('/api/auth/refresh'), isTrue);
+      expect(isNoAuth('/api/auth/login'), isTrue);
+      expect(isNoAuth('/api/auth/register'), isTrue);
+      expect(isNoAuth('/api/auth/refresh'), isTrue);
     });
 
     /// **与上一条同时存在。** 少了它,一个「从不带 token」的实现也能通过,
     /// 而那样每个受保护的请求都会 401。
     test('everything else is not', () {
-      expect(ApiClient.needsNoAuth('/api/rooms'), isFalse);
-      expect(ApiClient.needsNoAuth('/api/auth/change-password'), isFalse);
+      expect(isNoAuth('/api/rooms'), isFalse);
+      expect(isNoAuth('/api/auth/change-password'), isFalse);
     });
   });
 

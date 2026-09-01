@@ -5,6 +5,6 @@ import 'app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final services = await bootstrap(rootBundle);
-  runApp(GewuApp(services: services));
+  final deps = await AppDependencies.build(rootBundle);
+  runApp(GewuApp(deps: deps));
 }
