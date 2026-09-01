@@ -88,16 +88,33 @@ class RoomSeat {
 }
 
 class Move {
-  const Move({required this.row, required this.col, required this.seat});
+  const Move({
+    required this.row,
+    required this.col,
+    required this.seat,
+    this.fromRow,
+    this.fromCol,
+  });
 
   final int row;
   final int col;
   final int seat;
 
+  /// Where the piece came from, for games that move rather than place.
+  ///
+  /// **Null for 五子棋 and every other placement game**, and that nullability is the
+  /// point: a placement game has no origin, so a non-null default would invent one.
+  final int? fromRow;
+  final int? fromCol;
+
+  bool get isRelocation => fromRow != null && fromCol != null;
+
   factory Move.fromJson(Map<String, dynamic> json) => Move(
     row: (json['row'] as num?)?.toInt() ?? 0,
     col: (json['col'] as num?)?.toInt() ?? 0,
     seat: (json['seat'] as num?)?.toInt() ?? 0,
+    fromRow: (json['fromRow'] as num?)?.toInt(),
+    fromCol: (json['fromCol'] as num?)?.toInt(),
   );
 }
 
@@ -142,6 +159,7 @@ class Room {
   const Room({
     required this.id,
     required this.name,
+    required this.gameKey,
     required this.status,
     required this.seats,
     required this.game,
@@ -151,6 +169,16 @@ class Room {
 
   final String id;
   final String name;
+
+  /// Which game this room is playing.
+  ///
+  /// **Required, and read from the room rather than from the route.** The server's own
+  /// DTO doc explains why: there are four ways into a room — a redirect from creating
+  /// it, a reload, a bookmarked link, and "my games" — and only the first one leaves
+  /// the client already knowing the game. On the other three it holds nothing but a
+  /// room id, so "carry the game key in the path" is a shortcut that works on one of
+  /// four paths and draws a 10×9 board as 15×15 on the rest.
+  final String gameKey;
   final RoomStatus status;
   final List<RoomSeat> seats;
   final GameSnapshot game;
@@ -166,6 +194,7 @@ class Room {
   factory Room.fromJson(Map<String, dynamic> json) => Room(
     id: '${json['id'] ?? ''}',
     name: '${json['name'] ?? ''}',
+    gameKey: '${json['gameKey'] ?? ''}',
     status: RoomStatus.parse(json['status'] as String?),
     seats: [
       for (final s in (json['seats'] as List<dynamic>? ?? const []))
@@ -176,5 +205,56 @@ class Room {
         : GameSnapshot.fromJson(json['game'] as Map<String, dynamic>),
     hostUsername: (json['host'] as Map<String, dynamic>?)?['username'] as String?,
     seatCount: (json['seatCount'] as num?)?.toInt(),
+  );
+}
+
+/// One versus game, as the server describes it — a read-only projection of the
+/// server's rules registry (`GET /api/games`).
+///
+/// **This is the whole reason the client keeps no game table of its own.** The
+/// server's DTO doc spells out the test for whether a copy is acceptable: not how
+/// small it is, but whether being wrong would ever be noticed. A wrong board size
+/// paints visibly wrong and the server's bounds check catches the move anyway; a wrong
+/// `isRated` shows up as **a leaderboard that is always empty**, which looks exactly
+/// like a game nobody has played yet. So none of it is copied.
+class GameDescriptor {
+  const GameDescriptor({
+    required this.gameKey,
+    required this.isRated,
+    required this.supportsHumanVsHuman,
+    required this.supportsAi,
+    required this.seatCount,
+    this.rows,
+    this.cols,
+  });
+
+  final String gameKey;
+
+  /// Whether a finished game settles ELO — i.e. whether this game has a leaderboard.
+  final bool isRated;
+
+  final bool supportsHumanVsHuman;
+  final bool supportsAi;
+
+  /// How many seats this game HAS, which is not how many are taken.
+  ///
+  /// **Non-null, and that is the difference from [rows] / [cols]:** every game with
+  /// rules has a seat count, so "not applicable" does not exist — whereas 成语接龙
+  /// genuinely has no board.
+  final int seatCount;
+
+  final int? rows;
+  final int? cols;
+
+  bool get hasBoard => rows != null && cols != null;
+
+  factory GameDescriptor.fromJson(Map<String, dynamic> json) => GameDescriptor(
+    gameKey: '${json['gameKey'] ?? ''}',
+    isRated: json['isRated'] == true,
+    supportsHumanVsHuman: json['supportsHumanVsHuman'] == true,
+    supportsAi: json['supportsAi'] == true,
+    seatCount: (json['seatCount'] as num?)?.toInt() ?? 0,
+    rows: (json['rows'] as num?)?.toInt(),
+    cols: (json['cols'] as num?)?.toInt(),
   );
 }

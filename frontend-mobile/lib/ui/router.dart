@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../app.dart';
+import 'catalog/view/catalog_view.dart';
+import 'catalog/view_model/catalog_view_model.dart';
 import 'game/view/game_view.dart';
 import 'game/view_model/game_view_model.dart';
 import 'lobby/view/lobby_view.dart';
@@ -15,27 +17,27 @@ import 'login/view_model/login_view_model.dart';
 
 /// Routes, as paths.
 const loginRoute = '/login';
-const lobbyRoute = '/';
-String roomRoute(String id) => '/rooms/$id';
+const catalogRoute = '/';
+String lobbyRouteFor(String gameKey) => '/games/$gameKey';
+String roomRouteFor(String gameKey, String roomId) => '/games/$gameKey/rooms/$roomId';
 
 /// Builds the router.
 ///
-/// **`rooms/:id` is nested under `/`, and that nesting is the whole point.** go_router
-/// builds the navigator stack out of the matched route *hierarchy*: a top-level
-/// `/rooms/:id` would replace the stack, so `canPop()` in a room would be false and
-/// the system back button would still exit the app — which is exactly the defect this
-/// route table exists to fix. Measured before the fix: `canPop()` was **false** in a
-/// room, and a `popRoute` left you in the room.
+/// **The three signed-in routes are nested, and that nesting is the whole point.**
+/// go_router builds the navigator stack out of the matched route *hierarchy*: a
+/// top-level `/games/:key` would replace the stack instead of sitting on the
+/// catalogue, so `canPop()` would be false and the system back button would exit the
+/// app. Measured in `add-mobile-router` by doing exactly that — it compiled, analysed
+/// clean, `redirect` kept working, and `AppBar` drew no back button at all.
 GoRouter buildRouter(AppDependencies deps) => GoRouter(
-  initialLocation: lobbyRoute,
+  initialLocation: catalogRoute,
 
   // A value, not an event: see `AuthRepository.signedIn`.
   //
   // **This carries every auth transition, not just expiry.** Measured by deleting it:
   // all three router integration tests go red at *login*, because nothing in
-  // `LoginView` navigates any more — a successful sign-in reaches the lobby only
-  // because this re-runs `redirect`. The prediction when the mutation was written was
-  // "the dead-session test goes red"; the mechanism is wider than that.
+  // `LoginView` navigates any more — a successful sign-in reaches the catalogue only
+  // because this re-runs `redirect`.
   refreshListenable: deps.auth.signedIn,
 
   redirect: (context, state) => redirectFor(
@@ -52,24 +54,47 @@ GoRouter buildRouter(AppDependencies deps) => GoRouter(
       ),
     ),
     GoRoute(
-      path: lobbyRoute,
+      path: catalogRoute,
       builder: (context, state) => ChangeNotifierProvider(
-        create: (_) => LobbyViewModel(rooms: deps.rooms, auth: deps.auth),
-        child: const LobbyView(),
+        create: (_) => CatalogViewModel(catalog: deps.catalog, auth: deps.auth),
+        child: const CatalogView(),
       ),
       routes: [
         GoRoute(
-          path: 'rooms/:id',
+          path: 'games/:key',
           builder: (context, state) {
-            final id = state.pathParameters['id']!;
+            final gameKey = state.pathParameters['key']!;
             return ChangeNotifierProvider(
-              // Keyed by room id: opening a different room must build a fresh view
-              // model rather than reuse one still pointed at the previous room.
-              key: ValueKey(id),
-              create: (_) => GameViewModel(rooms: deps.rooms, roomId: id),
-              child: const GameView(),
+              // Keyed by game: switching games must build a fresh view model rather
+              // than reuse one still listing the previous game's rooms.
+              key: ValueKey(gameKey),
+              create: (_) => LobbyViewModel(
+                rooms: deps.rooms,
+                auth: deps.auth,
+                gameKey: gameKey,
+              ),
+              child: const LobbyView(),
             );
           },
+          routes: [
+            GoRoute(
+              path: 'rooms/:id',
+              builder: (context, state) {
+                final roomId = state.pathParameters['id']!;
+                return ChangeNotifierProvider(
+                  // Keyed by room id: opening a different room must build a fresh view
+                  // model rather than reuse one pointed at the previous room.
+                  key: ValueKey(roomId),
+                  create: (_) => GameViewModel(
+                    rooms: deps.rooms,
+                    catalog: deps.catalog,
+                    roomId: roomId,
+                  ),
+                  child: const GameView(),
+                );
+              },
+            ),
+          ],
         ),
       ],
     ),
@@ -90,6 +115,6 @@ String? redirectFor({required bool signedIn, required String location}) {
   final atLogin = location == loginRoute;
 
   if (!signedIn) return atLogin ? null : loginRoute;
-  if (atLogin) return lobbyRoute;
+  if (atLogin) return catalogRoute;
   return null;
 }

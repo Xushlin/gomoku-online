@@ -3,15 +3,24 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/room_repository.dart';
 import '../../view_model.dart';
 
-/// Gomoku's lobby. One game this slice — a picker with one entry would be a picker
-/// pretending to be a platform.
-const gameKey = 'gomoku';
-
+/// One game's room list.
+///
+/// **The game key arrives from the route.** It used to be a top-level
+/// `const gameKey = 'gomoku'`, whose own comment said a picker with one entry is a
+/// picker pretending to be a platform. The catalogue is that picker, so the constant
+/// is gone.
 class LobbyViewModel extends ViewModel {
-  LobbyViewModel({required this._rooms, required this._auth});
+  LobbyViewModel({
+    required this._rooms,
+    required this._auth,
+    required this.gameKey,
+  });
 
   final RoomRepository _rooms;
   final AuthRepository _auth;
+
+  /// Which game's rooms this lists.
+  final String gameKey;
 
   List<Room> rooms = const [];
   bool loading = true;
@@ -24,7 +33,7 @@ class LobbyViewModel extends ViewModel {
     try {
       rooms = await _rooms.list(gameKey);
     } on RoomFailure {
-      errorKey = 'lobby.errors.load-failed';
+      errorKey = 'lobby.errors.generic';
     } catch (_) {
       errorKey = 'auth.errors.network';
     } finally {
@@ -40,7 +49,7 @@ class LobbyViewModel extends ViewModel {
       final room = await _rooms.create(name, gameKey);
       return room.id;
     } on RoomFailure {
-      errorKey = 'lobby.errors.create-failed';
+      errorKey = 'lobby.create-room.errors.generic';
       notifyIfAlive();
       return null;
     }
@@ -56,7 +65,7 @@ class LobbyViewModel extends ViewModel {
       await _rooms.join(roomId);
       return roomId;
     } on RoomFailure {
-      errorKey = 'lobby.errors.join-failed';
+      errorKey = 'lobby.errors.generic';
       notifyIfAlive();
       return null;
     }

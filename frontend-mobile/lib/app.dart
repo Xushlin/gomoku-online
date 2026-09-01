@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'config/server.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/game_catalog_repository.dart';
 import 'data/repositories/room_repository.dart';
 import 'data/services/dio_client.dart';
 import 'data/services/match_hub_service.dart';
@@ -23,12 +24,14 @@ class AppDependencies {
   AppDependencies._({
     required this.auth,
     required this.rooms,
+    required this.catalog,
     required this.strings,
     required this.tokens,
   });
 
   final AuthRepository auth;
   final RoomRepository rooms;
+  final GameCatalogRepository catalog;
   final Translations strings;
   final TokenStore tokens;
 
@@ -59,6 +62,7 @@ class AppDependencies {
     return AppDependencies._(
       auth: auth,
       rooms: RoomRepository(dio: dio, hub: hub),
+      catalog: GameCatalogRepository(dio),
       strings: await Translations.load(bundle, locale),
       tokens: tokens,
     );
@@ -90,6 +94,7 @@ class GewuApp extends StatelessWidget {
         Provider<Translations>.value(value: deps.strings),
         Provider<AuthRepository>.value(value: deps.auth),
         Provider<RoomRepository>.value(value: deps.rooms),
+        Provider<GameCatalogRepository>.value(value: deps.catalog),
       ],
       child: MaterialApp.router(
         title: 'Gewu',

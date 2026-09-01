@@ -3,14 +3,16 @@
 //   flutter test integration_test/router_test.dart -d windows \
 //     --dart-define=GEWU_PROBE_SERVER=http://127.0.0.1:5199
 //
-// These four readings are the ones that were taken BEFORE the route table existed and
-// came back wrong:
+// Four readings were taken here BEFORE the route table existed and came back wrong:
 //
 //   canPop-in-game=false        popRoute-left-the-room=false
 //   on-screen-arrow-works=true  dead-session-lands-at-login=false
 //
 // The third is why the finding was "the system back button does nothing" rather than
 // "you cannot leave a room", and it is kept below as a control for the same reason.
+//
+// The stack is now three deep — catalogue, lobby, game — so `canPop` is asserted at
+// every level, including the bottom, where it must be **false**.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,12 +21,22 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:gewu_mobile/app.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
-import 'package:gewu_mobile/ui/game/view/gomoku_board.dart';
+import 'package:gewu_mobile/ui/game/board_registry.dart';
+import 'package:gewu_mobile/ui/game/view/game_board.dart';
 import 'package:gewu_mobile/ui/login/view/login_view.dart';
 
 const server = String.fromEnvironment('GEWU_PROBE_SERVER');
 
-Future<MemoryTokenStore> _registerAndReachLobby(WidgetTester tester, String prefix) async {
+/// Registers through the real form and ends on the catalogue.
+///
+/// Asserts **both** redirect directions on the way: signed out lands at `/login` even
+/// though the initial location is `/`, and signing in bounces off `/login` — nothing in
+/// `LoginView` navigates any more, so the second one is the redirect and only the
+/// redirect.
+Future<({MemoryTokenStore tokens, AppDependencies deps})> _signIn(
+  WidgetTester tester,
+  String prefix,
+) async {
   final stamp = DateTime.now().millisecondsSinceEpoch.toString().substring(7);
   // 20 characters: the registration cap, i.e. the longest real content. Short names
   // pass every layout assertion, which is the trap this repo keeps re-learning.
@@ -36,8 +48,6 @@ Future<MemoryTokenStore> _registerAndReachLobby(WidgetTester tester, String pref
   await tester.pumpWidget(GewuApp(deps: deps));
   await tester.pumpAndSettle();
 
-  // Signed out, and the initial location is the lobby — so the redirect must already
-  // have moved us. If this fails, the redirect never ran.
   expect(find.byType(LoginView), findsOneWidget, reason: 'redirect: signed out -> /login');
 
   await tester.tap(find.text(deps.strings.t('auth.login.no-account-cta')));
@@ -52,11 +62,22 @@ Future<MemoryTokenStore> _registerAndReachLobby(WidgetTester tester, String pref
   await tester.tap(find.text(deps.strings.t('auth.register.submit')));
   await tester.pumpAndSettle(const Duration(seconds: 6));
 
-  // The other direction: signed in AT /login must bounce to the lobby. Nothing in
-  // LoginView navigates any more, so this is the redirect and only the redirect.
-  expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'redirect: signed in -> /');
+  expect(
+    find.text(deps.strings.t('catalog.title')),
+    findsOneWidget,
+    reason: 'redirect: signed in -> / (the catalogue)',
+  );
   expect(find.byType(LoginView), findsNothing);
-  return tokens;
+  return (tokens: tokens, deps: deps);
+}
+
+/// Catalogue -> 五子棋's lobby.
+Future<void> _enterGomokuLobby(WidgetTester tester, AppDependencies deps) async {
+  final card = find.text(deps.strings.t('games.$gomokuGameKey.title'));
+  expect(card, findsOneWidget, reason: 'the catalogue must list 五子棋');
+  await tester.tap(card);
+  await tester.pumpAndSettle(const Duration(seconds: 4));
+  expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'lobby should be showing');
 }
 
 bool _canPopUnder(WidgetTester tester, Finder anchor) =>
@@ -86,32 +107,89 @@ void main() {
     return;
   }
 
-  testWidgets('a room is a route the system back button can pop', (tester) async {
-    await _registerAndReachLobby(tester, 'rt');
+  testWidgets('three levels, and the system back button pops each one', (tester) async {
+    final signedIn = await _signIn(tester, 'rt');
+    final deps = signedIn.deps;
 
-    // --- direction one: the lobby is the bottom of the stack -----------------
+    // --- the catalogue is the bottom of the stack ----------------------------
     // Without this half, an implementation that pops anything at all would pass the
-    // assertions below while also throwing a logged-in person back to the login page.
+    // assertions below while also throwing a signed-in person back to the login page.
+    expect(
+      _canPopUnder(tester, find.text(deps.strings.t('catalog.title'))),
+      isFalse,
+      reason: 'the catalogue must be the bottom of the stack',
+    );
+
+    // --- the lobby sits on it ------------------------------------------------
+    await _enterGomokuLobby(tester, deps);
     expect(
       _canPopUnder(tester, find.byType(FloatingActionButton)),
-      isFalse,
-      reason: 'the lobby must be the bottom of the stack',
+      isTrue,
+      reason: 'games/:key must nest under /',
     );
 
-    // --- direction two: a room sits on top of it -----------------------------
+    // --- and a room sits on the lobby ---------------------------------------
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle(const Duration(seconds: 6));
-    expect(find.byType(GomokuBoard), findsOneWidget, reason: 'the room should be open');
-
+    expect(find.byType(GameBoard), findsOneWidget, reason: 'the room should be open');
     expect(
-      _canPopUnder(tester, find.byType(GomokuBoard)),
+      _canPopUnder(tester, find.byType(GameBoard)),
       isTrue,
-      reason: 'measured false before the route table: rooms/:id must nest under /',
+      reason: 'measured false before the route table: rooms/:id must nest under games/:key',
     );
 
+    // --- back down the stack, one level per press ----------------------------
     await systemBack(tester);
-    expect(find.byType(GomokuBoard), findsNothing, reason: 'system back must leave the room');
+    expect(find.byType(GameBoard), findsNothing, reason: 'back must leave the room');
     expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'and land on the lobby');
+
+    await systemBack(tester);
+    expect(
+      find.text(deps.strings.t('catalog.title')),
+      findsOneWidget,
+      reason: 'back again must land on the catalogue',
+    );
+    expect(find.byType(LoginView), findsNothing, reason: 'and MUST NOT reach the login page');
+  });
+
+  testWidgets('the catalogue lists what the server serves, minus the one with no copy',
+      (tester) async {
+    final signedIn = await _signIn(tester, 'rc');
+    final deps = signedIn.deps;
+
+    // The same three numbers the unit test pins, but against the **live** API rather
+    // than a copied fixture — so a server that starts serving an eighth game shows up
+    // here even though the fixture would not have moved.
+    final served = await http.get(
+      Uri.parse('$server/api/games'),
+      headers: {'authorization': 'Bearer ${signedIn.tokens.access}'},
+    );
+    expect(served.statusCode, 200);
+
+    // Every game with copy must be on screen…
+    final games = await deps.catalog.load();
+    final withCopy = games
+        .where((g) => deps.strings.t('games.${g.gameKey}.title') != 'games.${g.gameKey}.title')
+        .toList();
+    for (final g in withCopy) {
+      expect(
+        find.text(deps.strings.t('games.${g.gameKey}.title')),
+        findsOneWidget,
+        reason: g.gameKey,
+      );
+    }
+
+    // …and both sides of the sample are non-empty, or neither check means anything.
+    expect(withCopy.length, lessThan(games.length), reason: 'exactly one game has no copy');
+    expect(games.length - withCopy.length, 1);
+    expect(
+      withCopy.where((g) => boardRenderers.containsKey(g.gameKey)),
+      hasLength(boardRenderers.length),
+      reason: 'every game this client can draw is listed and enabled',
+    );
+
+    // The raw key must not be on screen anywhere — that is what the filter prevents.
+    expect(find.text('games.xiangqi-endgame.title'), findsNothing);
   });
 
   testWidgets('the on-screen arrow is the same mechanism, not a second one', (tester) async {
@@ -119,31 +197,34 @@ void main() {
     // which is a different claim — and it is what kept the earlier conclusion honest.
     // It now shares the navigator with the system back button because `AppBar` shows
     // its own leading button exactly when `canPop()` is true.
-    await _registerAndReachLobby(tester, 'ra');
+    final signedIn = await _signIn(tester, 'ra');
+    await _enterGomokuLobby(tester, signedIn.deps);
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle(const Duration(seconds: 6));
-    expect(find.byType(GomokuBoard), findsOneWidget);
+    expect(find.byType(GameBoard), findsOneWidget);
 
     expect(find.byIcon(Icons.arrow_back), findsOneWidget, reason: 'AppBar draws it itself now');
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle(const Duration(seconds: 3));
-    expect(find.byType(GomokuBoard), findsNothing);
+    expect(find.byType(GameBoard), findsNothing);
     expect(find.byType(FloatingActionButton), findsOneWidget);
   });
 
   testWidgets('a dead session lands at the login page', (tester) async {
-    final tokens = await _registerAndReachLobby(tester, 'rd');
+    final signedIn = await _signIn(tester, 'rd');
+    final tokens = signedIn.tokens;
 
-    // **The precondition, and it is the whole test.** A negative-turned-positive
-    // assertion ("we ended at login") is green for the wrong reason if the session
-    // was never alive — e.g. registration silently failed and we were at /login all
-    // along. So: prove it works first.
+    // **The precondition, and it is the whole test.** "We ended at login" is green for
+    // the wrong reason if the session was never alive — e.g. registration silently
+    // failed and we were at /login all along. So: prove it works first.
     final alive = await http.get(
-      Uri.parse('$server/api/rooms?gameKey=gomoku'),
+      Uri.parse('$server/api/rooms?gameKey=$gomokuGameKey'),
       headers: {'authorization': 'Bearer ${tokens.access}'},
     );
     expect(alive.statusCode, 200, reason: 'the session must be alive before we kill it');
     expect(find.byType(LoginView), findsNothing, reason: 'and we must not already be at login');
+
+    await _enterGomokuLobby(tester, signedIn.deps);
 
     // Kill it the way an expiry does: both tokens unusable, so the interceptor's
     // refresh fails too.
@@ -153,7 +234,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.refresh));
     await tester.pumpAndSettle(const Duration(seconds: 6));
 
-    // Measured false before this change: you stayed on the lobby with an error toast.
+    // Measured false before the route table: you stayed on the lobby with an error.
     expect(find.byType(LoginView), findsOneWidget, reason: 'a dead session must reach /login');
   });
 }

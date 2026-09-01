@@ -10,10 +10,19 @@
 
 走查 MUST 从 `GET /api/games` 的响应派生,MUST NOT 迭代一份手打的键清单。
 
-#### Scenario: 目录列出服务端返回的每一个棋种
+#### Scenario: 目录的条目来自服务端,而唯一的过滤器是翻译包
 - **WHEN** 棋种目录在屏上
-- **THEN** 条目数 MUST 等于 `GET /api/games` 返回的条数
-- **AND** MUST NOT 被任何客户端清单过滤掉 —— 过滤就是第二份表
+- **THEN** 条目 MUST 来自 `GET /api/games`,MUST NOT 来自任何客户端清单
+- **AND** 唯一允许的过滤是「翻译包里有没有 `games.<key>.title`」——
+  这不是第二份表,而是从 **web 同一份 i18n 产物**派生的判据,
+  而那份产物已经被 `test/shared_sync_test.dart` 钉住
+- **AND** 这条过滤是实测出来的,不是设计出来的：端点返回 **7** 个,
+  其中 `xiangqi-endgame` 在两个 locale 里都**没有标题也没有描述** ——
+  它在 web 端也不是一个可浏览的棋种(不在 `GAME_REGISTRY` 里,
+  是从象棋古谱页「摆此局对弈」进的)。
+  **不过滤它会在一个已发布的屏上渲出一行 `games.xiangqi-endgame.title`。**
+- **AND** 测试 MUST 钉住三个实测数字：服务端 **7**、有标题 **6**、可进入 **1**。
+  三个数字而不是一个,因为它们分别会在三种不同的变更里变
 
 #### Scenario: 画不出来的棋种显示为禁用,而「画得出来」是派生的
 - **WHEN** 某个棋种手机端还没有棋盘

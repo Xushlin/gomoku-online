@@ -98,6 +98,13 @@ void main() {
     expect(files.any((f) => f.startsWith('data/')), isTrue);
   });
 
+  test('the catalogue screen is covered by the rules below, not exempt from them', () {
+    // Same reasoning as the route table below: a newly-added, boundary-crossing area
+    // must be *inside* the sample, or the four rules quietly stop applying to it.
+    expect(files.any((f) => f.startsWith('ui/catalog/')), isTrue);
+    expect(files, contains('data/repositories/game_catalog_repository.dart'));
+  });
+
   test('the route table is covered by the rules below, not exempt from them', () {
     // Naming one file inside a derived walk is normally the smell this repo has fixed
     // eight times — but this is the opposite of a hand-written list to iterate: it is
