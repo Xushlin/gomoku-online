@@ -138,9 +138,15 @@ Two things there are worth knowing before touching it, both measured:
 
 The server address comes from the host: preload freezes `window.gewuHost.apiBaseUrl`, and `API_BASE_URL`'s factory reads it. **No second Angular build** — a browser has no `gewuHost`, so it returns `''` and every URL stays same-origin.
 
-### Mobile (`frontend-mobile/`) — phase 3
+### Mobile (`frontend-mobile/`) — Flutter, first slice shipped
 
-Flutter + Material Design 3, `signalr_netcore` client. **Note what Electron cannot do for this:** it reaches Microsoft Store / Mac App Store but never iOS or Google Play. And "offline play" is not a packaging feature here — it contradicts three kernels at once (answers never leave the server, 华容道 replays every move, 俄罗斯方块 is validated at submit), so it is a design decision, not a shell one.
+Material 3 + `signalr_netcore`. **One vertical slice: shell + auth + 五子棋**, verified on a real Android emulator (register, room, move, server records it). The other nine games are deliberately absent — one at a time, like the web client.
+
+Three things there were measured, not assumed:
+
+- **`signalr_netcore` works against this hub** — query-string JWT, `JoinRoom`, `MakeMove`. Proven by `test/hub_probe_test.dart` **before any UI existed**, because an unusable transport is a bigger decision than the screens.
+- **i18n and theme tokens are pulled from `frontend-web`, never retyped** (`tool/sync_shared.dart`); `test/shared_sync_test.dart` fails if the copies drift. 547 keys × 2 locales and 4 themes × light/dark × 25 values is not a hand-copy job.
+- **`10.0.2.2` is the host loopback from inside an emulator**, and Flutter's template grants `INTERNET` only in the debug/profile manifests while Android 9+ blocks cleartext by default. All three failures look identical from the app: a login that never succeeds. **Note what Electron cannot do for this:** it reaches Microsoft Store / Mac App Store but never iOS or Google Play. And "offline play" is not a packaging feature here — it contradicts three kernels at once (answers never leave the server, 华容道 replays every move, 俄罗斯方块 is validated at submit), so it is a design decision, not a shell one.
 
 ## Backend architecture
 
