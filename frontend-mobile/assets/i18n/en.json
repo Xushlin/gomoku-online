@@ -1,0 +1,739 @@
+{
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "submit": "Log in",
+      "submit-loading": "Logging in…",
+      "email-label": "Email",
+      "email-placeholder": "you@example.com",
+      "password-label": "Password",
+      "password-placeholder": "••••••••",
+      "no-account-cta": "Don't have an account? Register",
+      "flash": {
+        "password-changed": "Password changed. Please log in with your new password."
+      },
+      "errors": {
+        "invalid-credentials": "Email or password is incorrect.",
+        "account-inactive": "This account is not active.",
+        "network": "Network error — please try again."
+      }
+    },
+    "register": {
+      "title": "Create an account",
+      "submit": "Register",
+      "submit-loading": "Creating account…",
+      "email-label": "Email",
+      "username-label": "Username",
+      "password-label": "Password",
+      "already-have-account-cta": "Already have an account? Log in",
+      "errors": {
+        "email-taken": "That email is already registered.",
+        "username-taken": "That username is taken."
+      }
+    },
+    "change-password": {
+      "title": "Change password",
+      "submit": "Change password",
+      "submit-loading": "Updating…",
+      "current-label": "Current password",
+      "new-label": "New password",
+      "confirm-label": "Confirm new password",
+      "success-toast": "Password changed.",
+      "errors": {
+        "wrong-current": "Current password is incorrect.",
+        "mismatch": "Passwords don't match."
+      }
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "network": "Network error — please try again.",
+      "required": "This field is required.",
+      "email-invalid": "Enter a valid email address.",
+      "password-min-length": "Password must be at least 8 characters.",
+      "password-missing-letter": "Password must contain a letter.",
+      "password-missing-digit": "Password must contain a digit.",
+      "username-min-length": "Username must be at least 3 characters."
+    }
+  },
+  "cards": {
+    "phase": {
+      "Bidding": "Bidding",
+      "Playing": "Playing",
+      "Finished": "Finished"
+    },
+    "table": {
+      "base-score": "Base score {{score}}",
+      "kitty": "Kitty",
+      "seat": "Seat {{seat}}",
+      "cards-left": "{{count}} left",
+      "others-label": "The other two players",
+      "played-by": "Played by seat {{seat}}",
+      "free-lead": "Free lead — nothing on the table to beat",
+      "my-hand": "My hand ({{count}})",
+      "my-hand-label": "My hand; tap to select",
+      "waiting-for-deal": "Waiting for the deal…",
+      "hidden-hand": "{{count}} cards face down",
+      "kitty-hidden": "Kitty, not yet revealed",
+      "high-bid-seat": "High bid: seat {{seat}}",
+      "high-bid": "High"
+    },
+    "action": {
+      "play": "Play ({{count}})",
+      "pass": "Pass",
+      "waiting": "Waiting for the others…",
+      "hint": "Hint"
+    },
+    "card": {
+      "joker": "JK"
+    },
+    "bubble": {
+      "pass": "Pass"
+    },
+    "doudizhu": {
+      "bid": "Bid {{points}}",
+      "no-bid": "Pass",
+      "role": "Landlord",
+      "role-seat": "Landlord: seat {{seat}}"
+    },
+    "wakeng": {
+      "bid": "Dig {{points}}",
+      "first-bidder": "First bid: seat {{seat}}",
+      "no-bid": "No dig",
+      "role": "Digger",
+      "role-seat": "Digger: seat {{seat}}"
+    }
+  },
+  "catalog": {
+    "title": "Games",
+    "subtitle": "Chinese classics on a grid — word puzzles, board games, and a falling-block detour.",
+    "coming-soon": "Coming soon",
+    "chinese-only": "Chinese content",
+    "category-match": "Versus",
+    "category-puzzle": "Puzzle",
+    "category-score": "Score attack",
+    "leaderboard-link": "Leaderboard",
+    "scores-link": "High scores"
+  },
+  "game": {
+    "actions": {
+      "resign": "Resign",
+      "resign-confirm-title": "Resign?",
+      "resign-confirm-body": "You will lose this game.",
+      "resign-confirm-ok": "Resign",
+      "resign-confirm-cancel": "Cancel",
+      "leave": "Leave room",
+      "urge": "Urge opponent"
+    },
+    "board": {
+      "cell-aria-label": "Row {{row}} Column {{col}}",
+      "last-move-label": "Last move"
+    },
+    "chat": {
+      "title": "Chat",
+      "tab-room": "Room",
+      "tab-spectator": "Spectator",
+      "send": "Send",
+      "placeholder": "Message…",
+      "empty": "No messages yet.",
+      "max-length-error": "Message is too long (max 500 characters).",
+      "forbidden-error": "Can't send on this channel."
+    },
+    "connection": {
+      "reconnecting": "Reconnecting…",
+      "disconnected": "Disconnected from the game server.",
+      "retry": "Retry",
+      "connected": "Connected"
+    },
+    "ended": {
+      "title-win": "You won!",
+      "title-lose": "You lost.",
+      "title-draw": "Draw.",
+      "reason-decided": "The game was decided on the board.",
+      "reason-resigned": "Opponent resigned.",
+      "reason-timeout": "Turn timed out.",
+      "back-to-lobby": "Back to lobby",
+      "view-replay": "View replay",
+      "dismiss": "Stay and review"
+    },
+    "endgame": {
+      "no-draw": "This is a classical endgame study, and the platform does not detect draws. Perpetual check is capped (the same check may be repeated at most three times), but calling a draw also needs chasing rules this game does not have yet — so it can only end by mate, resignation or timeout. If you play it out to a draw, agree between yourselves; the platform will not announce one."
+    },
+    "errors": {
+      "concurrent-move-refetched": "Out of sync — board refreshed.",
+      "generic": "Something went wrong. Please try again.",
+      "idiom-already-used": "That idiom has already been played this game.",
+      "idiom-does-not-link": "That does not link on — it must start with the previous idiom's last character.",
+      "idiom-not-found": "That is not an idiom in the dictionary.",
+      "invalid-chat": "That message cannot be sent: it must not be empty or too long.",
+      "invalid-move": "That move isn't allowed.",
+      "network": "Network error — please try again.",
+      "not-a-player": "You are watching this game, not playing it.",
+      "not-opponents-turn": "It is your move — there is nobody to nudge.",
+      "not-your-turn": "It's not your turn.",
+      "repeated-check": "The same check may be repeated at most three times, and this would be the fourth. Try a different move.",
+      "room-not-in-play": "This game has not started, or it has already finished.",
+      "self-check": "That move would leave your own general open to capture (self-check, or the two generals facing each other).",
+      "urge-cooldown": "Urge is on cooldown."
+    },
+    "leave-confirm": {
+      "title": "Leave this game?",
+      "stay": "Stay",
+      "leave": "Leave",
+      "match": "Leaving does not end the game and does not free your seat — the turn clock keeps running, and losing on time counts as a loss.",
+      "klotski": "The moves you have made in this level live only in this browser; leaving loses all of them.",
+      "crossword": "Re-entering this level starts a fresh attempt — time and hints count from zero again.",
+      "tetris": "This run has not finished; if you leave, the score is not recorded."
+    },
+    "room": {
+      "back-to-lobby": "Back to lobby",
+      "host-label": "Host",
+      "name-label": "Room",
+      "not-found": "This room doesn't exist or has ended.",
+      "seat-empty": "Open",
+      "seat-label": "Seat {{seat}}",
+      "spectators-label": "Spectators",
+      "status-finished": "Finished",
+      "status-playing": "Playing",
+      "status-waiting": "Waiting"
+    },
+    "seat": {
+      "black": "Black",
+      "first": "First player",
+      "red": "Red",
+      "second": "Second player",
+      "white": "White"
+    },
+    "turn": {
+      "countdown-label": "Time left",
+      "opponent-turn": "Opponent's turn",
+      "seat-turn": "Seat {{seat}} to play",
+      "side-turn": "{{side}} to play",
+      "your-turn": "Your turn"
+    },
+    "urge": {
+      "toast": "Your opponent is urging you to move.",
+      "button-disabled-own-turn": "It's your turn.",
+      "button-disabled-cooldown": "Please wait before urging again."
+    }
+  },
+  "games": {
+    "gomoku": {
+      "title": "Gomoku",
+      "description": "Five in a row on 15×15. Play a human or the AI, with chat, spectators, and replays."
+    },
+    "idiom-crossword": {
+      "title": "Idiom Crossword",
+      "description": "Fill a grid with four-character idioms, one shared character at a time."
+    },
+    "idiom-chain": {
+      "title": "Idiom Chain",
+      "description": "Answer with an idiom starting on the character your opponent ended with."
+    },
+    "idiom-guess": {
+      "title": "Guess the Idiom",
+      "description": "Read the definition, name the idiom."
+    },
+    "tictactoe": {
+      "title": "Tic-tac-toe",
+      "description": "Three in a row on 3×3. Quick, and solved — but a fair fight against a careless opponent."
+    },
+    "xiangqi": {
+      "title": "Chinese Chess",
+      "description": "Xiangqi across the river: cannons, horses, and a general who cannot face his rival."
+    },
+    "klotski": {
+      "title": "Klotski",
+      "description": "Slide the blocks aside and escort Cao Cao out of the board."
+    },
+    "tetris": {
+      "title": "Tetris",
+      "description": "Stack the falling blocks, clear the lines, chase the leaderboard."
+    },
+    "doudizhu": {
+      "title": "Dou Dizhu",
+      "description": "Three players, one deck: the landlord against two peasants. Your hand is visible only to you."
+    },
+    "wakeng": {
+      "title": "Wakeng",
+      "description": "Three-handed 52-card game: 3 is highest, no bombs. Smallest club bids and leads."
+    }
+  },
+  "header": {
+    "brand": "Gewu",
+    "language": {
+      "label": "Language",
+      "en": "English",
+      "zh-CN": "简体中文"
+    },
+    "theme": {
+      "label": "Theme",
+      "material": "Material",
+      "system": "System",
+      "dark-toggle": "Dark mode",
+      "dark-on": "On",
+      "dark-off": "Off",
+      "ink": "Ink",
+      "qq-game": "Game hall"
+    },
+    "board-skin": {
+      "label": "Board",
+      "wood": "Wood",
+      "classic": "Classic",
+      "midnight": "Midnight"
+    },
+    "sound": {
+      "label": "Sound",
+      "on": "On",
+      "off": "Off",
+      "volume": "Volume"
+    },
+    "sound-pack": {
+      "label": "Sound pack",
+      "wood": "Wood",
+      "chiptune": "Chiptune",
+      "minimal": "Minimal"
+    },
+    "settings": {
+      "label": "Settings"
+    },
+    "auth": {
+      "login-cta": "Log in",
+      "logout": "Log out",
+      "account": "Account"
+    }
+  },
+  "idiom-chain": {
+    "board": {
+      "chain-label": "Chain so far",
+      "empty": "Nobody has opened yet — any idiom counts as the first move.",
+      "must-start-with": "The next idiom must start with:",
+      "opening-move": "Opening move: any idiom will do.",
+      "input-label": "The idiom you want to say",
+      "placeholder": "Type an idiom",
+      "submit": "Say it",
+      "waiting": "Waiting for your opponent…"
+    }
+  },
+  "idiom-crossword": {
+    "levels": {
+      "subtitle": "Fill the grid with four-character idioms. One shared character links two of them.",
+      "number": "Level {{number}}",
+      "difficulty": "Tier {{value}}",
+      "best-time": "Best {{time}}",
+      "unplayed": "Not played",
+      "locked": "Locked",
+      "stars-label": "{{count}} of 3 stars"
+    },
+    "board": {
+      "cell-aria": "Row {{row}}, column {{col}}",
+      "tray-aria": "Character tray"
+    },
+    "play": {
+      "mistakes": "Mistakes",
+      "hints": "Hints"
+    },
+    "actions": {
+      "restart": "Restart",
+      "hint": "Hint",
+      "retry": "Retry"
+    },
+    "result": {
+      "title": "Level complete",
+      "stars-label": "{{count}} of 3 stars",
+      "time": "Time",
+      "mistakes": "Mistakes",
+      "hints": "Hints",
+      "new-best": "New personal best",
+      "replay": "Play again",
+      "next-level": "Next level",
+      "back-to-levels": "Back to levels"
+    },
+    "errors": {
+      "load-levels": "Couldn't load the levels.",
+      "load-level": "Couldn't start this level."
+    }
+  },
+  "idiom-guess": {
+    "back-to-levels": "Back to levels",
+    "best": "Best {{stars}}★ · {{seconds}}s",
+    "blank-aria": "Blank in puzzle {{n}}",
+    "cleared": "Level cleared!",
+    "difficulty-n": "Difficulty {{n}}",
+    "error-load-failed": "Could not load the level.",
+    "hint": "Hint",
+    "level-n": "Level {{n}}",
+    "loading": "Loading…",
+    "locked": "Locked",
+    "no-levels": "No levels yet.",
+    "not-played": "Not played yet",
+    "play": "Play",
+    "progress": "{{completed}} cleared, {{stars}} stars",
+    "retry": "Retry",
+    "solved": "Correct",
+    "subtitle": "Read the definition, then fill the missing character back in.",
+    "tally": "{{hints}} hints · {{mistakes}} wrong"
+  },
+  "klotski": {
+    "back-to-levels": "Back to levels",
+    "best": "{{stars}} stars · {{seconds}}s",
+    "board": {
+      "piece": "{{name}}, row {{row}} column {{col}}, {{height}} by {{width}}",
+      "slide-here": "Slide to row {{row}} column {{col}}"
+    },
+    "difficulty-1": "Gentle",
+    "difficulty-2": "Tricky",
+    "difficulty-3": "Hard",
+    "error-hint-failed": "Could not get a hint. Please try again.",
+    "error-load-failed": "Could not load. Please try again.",
+    "error-submit-failed": "Could not submit. Please try again.",
+    "hint": "Hint",
+    "hint-cost": "A hint plays one move for you and affects your rating on this level.",
+    "hints-used": "{{count}} hints",
+    "level-n": "Level {{n}}",
+    "level-not-found": "That level does not exist.",
+    "loading": "Loading…",
+    "locked": "Finish the previous level first",
+    "moves": "{{count}} moves",
+    "new-best": "New best",
+    "no-levels": "No levels yet.",
+    "not-played": "Not played yet",
+    "play": "Play",
+    "play-again": "Play again",
+    "progress": "{{completed}} solved · {{stars}} stars",
+    "restart": "Restart",
+    "result-stars": "{{stars}} stars",
+    "retry": "Retry",
+    "solved": "Cao Cao is out!",
+    "subtitle": "Slide Cao Cao out through the gap at the bottom. Fewer moves is better."
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "title-for": "{{game}} leaderboard",
+    "subtitle": "Ranked by rating, then wins, then fewest games played.",
+    "rank": "Rank",
+    "player": "Player",
+    "rating": "Rating",
+    "record": "W/L/D",
+    "empty-title": "Nobody has played this game yet.",
+    "empty-hint": "The board fills up as games finish — a new game starts out empty.",
+    "error": "Couldn't load the leaderboard.",
+    "retry": "Try again",
+    "pagination": "Leaderboard pages",
+    "page-indicator": "Page {{page}} of {{total}}",
+    "prev-page": "Previous",
+    "next-page": "Next",
+    "back-to-games": "← All games"
+  },
+  "lobby": {
+    "hero": {
+      "welcome": "Welcome, {{username}}!",
+      "online-count-label": "players online",
+      "online-count-empty": "—"
+    },
+    "rooms": {
+      "title": "Active rooms",
+      "create-button": "Create room",
+      "empty": "No rooms yet — create one to get started.",
+      "loading-retry": "Retry",
+      "join": "Join",
+      "watch": "Watch",
+      "status-waiting": "Waiting",
+      "status-playing": "Playing",
+      "status-finished": "Finished",
+      "host": "Host",
+      "spectators": "Spectators",
+      "players": "Players",
+      "seat-vacant": "Empty seat"
+    },
+    "my-rooms": {
+      "title": "My active rooms",
+      "empty": "You have no games in progress.",
+      "resume": "Resume",
+      "you-are-spectator": "Spectating",
+      "game-label": "Game",
+      "you-are-seated": "You are seated"
+    },
+    "leaderboard": {
+      "title": "Top players",
+      "empty": "No ranked players yet.",
+      "rank": "Rank",
+      "rating": "Rating",
+      "wins": "Wins",
+      "losses": "Losses",
+      "draws": "Draws",
+      "tier-gold": "Gold",
+      "tier-silver": "Silver",
+      "tier-bronze": "Bronze"
+    },
+    "create-room": {
+      "dialog-title": "Create a new room",
+      "name-label": "Room name",
+      "name-placeholder": "My {{game}} room",
+      "submit": "Create",
+      "submit-loading": "Creating…",
+      "cancel": "Cancel",
+      "errors": {
+        "min-length": "Name must be at least 3 characters.",
+        "max-length": "Name must be at most 50 characters.",
+        "whitespace-only": "Name cannot be blank.",
+        "generic": "Couldn't create the room. Please try again.",
+        "network": "Network error — please try again."
+      }
+    },
+    "errors": {
+      "generic": "Couldn't load this card. Please try again.",
+      "network": "Network error — please try again.",
+      "retry": "Retry"
+    },
+    "find-player": {
+      "title": "Find player",
+      "placeholder": "Search by username…",
+      "hint-too-short": "Type 3+ characters to search.",
+      "no-results": "No players match.",
+      "error": "Search failed. Try again.",
+      "search-button-aria": "Search players"
+    },
+    "recent-games": {
+      "title": "Recent games",
+      "view-all": "View all",
+      "empty": "No finished games yet — play one to start your history.",
+      "error": "Couldn't load your recent games.",
+      "game-label": "Game"
+    },
+    "ai-game": {
+      "title": "Play vs AI",
+      "description": "Solo practice against the bot — pick a difficulty and start.",
+      "button": "New AI game",
+      "dialog-title": "New AI game",
+      "name-label": "Room name",
+      "name-placeholder": "AI match",
+      "difficulty-label": "Difficulty",
+      "difficulty-easy": "Easy",
+      "difficulty-medium": "Medium",
+      "difficulty-hard": "Hard",
+      "side-label": "Your side",
+      "side-black": "Black (you go first)",
+      "side-white": "White (AI goes first)",
+      "submit": "Start",
+      "submit-loading": "Starting…",
+      "cancel": "Cancel",
+      "errors": {
+        "generic": "Couldn't start the AI game. Please try again.",
+        "network": "Network error — please try again."
+      }
+    },
+    "game-lobby": {
+      "title": "Lobby",
+      "back-to-home": "Back to home",
+      "unavailable": {
+        "unknown-title": "No such game here",
+        "unknown-body": "This platform doesn't have a game with that name. Have a look at what is available.",
+        "unknown-cta": "Browse games",
+        "ai-only-title": "Against the computer only",
+        "ai-only-body": "This game doesn't have human-vs-human matches yet, so there is no room list. You can still play the computer.",
+        "ai-only-cta": "Play the computer"
+      }
+    },
+    "games-strip": {
+      "title": "Jump into a game",
+      "all-games": "All games"
+    }
+  },
+  "manual": {
+    "back-to-catalogue": "Back to the catalogue",
+    "chapter": "Game {{n}}",
+    "endgame-note": "An endgame: the pieces on the board are all there is; Red moves first unless noted.",
+    "entry": "Plum Blossom Manual",
+    "error-load-failed": "Could not load",
+    "flat": "Flat list",
+    "grouped": "By chapter",
+    "line-count": "{{count}} variations",
+    "line-not-found": "No such variation",
+    "loading": "Loading…",
+    "manuals-subtitle": "Ming and Qing collections, for study only.",
+    "manuals-title": "Xiangqi manuals",
+    "meihuapu": {
+      "title": "Plum Blossom Manual",
+      "subtitle": "A Qing-dynasty xiangqi manual by Wang Zaiyue, studying the Screen Horse against the Central Cannon. Moves and titles come from the original; the modern vernacular notes are not included."
+    },
+    "moves": "{{count}} half-moves",
+    "nature": {
+      "endgame": "Endgame",
+      "full": "Full board"
+    },
+    "no-commentary": "No commentary for this line yet.",
+    "no-manuals": "No manuals have been imported yet.",
+    "not-found": "No such manual",
+    "open": "Open",
+    "ply-of": "Half-move {{current}} of {{total}}",
+    "retry": "Retry",
+    "study": "Study",
+    "verdict": {
+      "BlackBetter": "Black better",
+      "Draw": "Draw",
+      "RedBetter": "Red better",
+      "Unrecorded": "Not recorded"
+    },
+    "verdict-label": "The manual judges",
+    "play": {
+      "action": "Play from this position",
+      "opening": "Opening a room…",
+      "failed": "Could not open a room. Please try again.",
+      "sign-in-first": "Sign in to play this position against another person.",
+      "no-draw-notice": "The platform does not call draws — if you play one out to a draw, agree between yourselves."
+    }
+  },
+  "profile": {
+    "online": "Online",
+    "offline": "Offline",
+    "rating-label": "Rating",
+    "wins-label": "Wins",
+    "losses-label": "Losses",
+    "draws-label": "Draws",
+    "win-rate-label": "Win rate",
+    "joined-label": "Joined",
+    "games-title": "Games (all types)",
+    "games-empty": "No finished games yet.",
+    "result-win": "Won",
+    "result-loss": "Lost",
+    "result-draw": "Drew",
+    "result-unrecorded": "Not recorded",
+    "page-indicator": "Page {{page}} of {{total}}",
+    "prev-page": "Previous",
+    "next-page": "Next",
+    "not-found": "User not found.",
+    "back-to-lobby": "Back to lobby",
+    "errors": {
+      "generic": "Couldn't load this profile. Please try again."
+    },
+    "game-switcher": {
+      "label": "Record for"
+    },
+    "no-games-in-game": "No finished games in this one yet."
+  },
+  "replay": {
+    "title-prefix": "Replay",
+    "retry": "Retry",
+    "back-to-lobby": "Back to lobby",
+    "no-board": "This game's board can't be drawn in replay yet — every move is still on the scrubber below.",
+    "errors": {
+      "not-found": "This replay isn't available — the room may have been cleaned up.",
+      "still-in-progress": "Game is still in progress.",
+      "still-in-progress-go-live": "Open the live room",
+      "generic": "Couldn't load the replay. Please try again."
+    },
+    "scrubber": {
+      "first": "First",
+      "prev": "Previous",
+      "next": "Next",
+      "last": "Last",
+      "play": "Play",
+      "pause": "Pause",
+      "replay": "Replay",
+      "speed-label": "Speed",
+      "end-of-game": "End of game",
+      "ply-label": "Move"
+    }
+  },
+  "scores": {
+    "title": "{{game}} high scores",
+    "back-to-game": "Back to the game",
+    "window-group": "Time range",
+    "window-week": "This week",
+    "window-month": "This month",
+    "window-all": "All time",
+    "loading": "Loading…",
+    "load-failed": "Could not load the board. Try again.",
+    "retry": "Try again",
+    "empty": "Nobody has played in this range yet.",
+    "caption": "High scores: each player's best run in the range.",
+    "rank": "Rank",
+    "player": "Player",
+    "score": "Score",
+    "lines": "Lines",
+    "level": "Level",
+    "prev": "Previous",
+    "next": "Next",
+    "page-of": "Page {{page}} of {{total}}"
+  },
+  "tetris": {
+    "subtitle": "Stack the falling blocks, clear lines, climb the board. Pieces only fall straight down — you cannot slide one under an overhang.",
+    "start": "Start a run",
+    "starting": "Asking the server for a seed…",
+    "retry": "Try again",
+    "submitting": "Scoring…",
+    "play-again": "Play again",
+    "pause": "Pause",
+    "resume": "Resume",
+    "score": "Score",
+    "lines": "Lines",
+    "level": "Level",
+    "next": "Next",
+    "scores-link": "High scores",
+    "keys": "Keyboard: ← → to move, ↑ to rotate, ↓ soft drop, Space hard drop, P to pause.",
+    "no-tuck": "A piece can only fall straight down its column, so it cannot be tucked under an overhang — that is exactly how the server replays it.",
+    "final-score": "{{score}} points",
+    "final-detail": "{{lines}} lines cleared, reached level {{level}}.",
+    "server-confirmed": "This score comes from the server replaying your placements.",
+    "no-placements": "No piece was placed, so there is no score.",
+    "control-left": "Move left",
+    "control-right": "Move right",
+    "control-rotate": "Rotate",
+    "control-soft-drop": "Soft drop",
+    "control-hard-drop": "Hard drop",
+    "error-start-failed": "Could not start — no seed from the server, so this run would have nowhere to go. Try again.",
+    "error-submit-failed": "Scoring failed and nothing was recorded. Try again."
+  },
+  "tictactoe": {
+    "back": "Back to games",
+    "difficulty-easy": "Easy",
+    "difficulty-hard": "Hard",
+    "difficulty-legend": "Difficulty",
+    "difficulty-medium": "Medium",
+    "error-create-failed": "Could not create the game. Please try again.",
+    "notice-unbeatable": "Hard searches the entire game tree. Tic-tac-toe is a solved game, so you cannot beat it — a draw is the best result available. Pick Easy or Medium if you want to win.",
+    "notice-unrated": "This game is unrated: results do not affect your rating or record.",
+    "side-black": "Black (first)",
+    "side-legend": "Your side",
+    "side-white": "White (second)",
+    "start": "Start game",
+    "starting": "Creating…",
+    "subtitle": "Three in a row on 3×3. A quick game against the machine — unrated."
+  },
+  "xiangqi": {
+    "back": "Back to games",
+    "board": {
+      "empty": "empty",
+      "point": "Rank {{row}}, file {{col}}, {{piece}}"
+    },
+    "difficulty-easy": "Easy",
+    "difficulty-hard": "Hard",
+    "difficulty-legend": "Difficulty",
+    "difficulty-medium": "Medium",
+    "error-create-failed": "Could not create the game. Please try again.",
+    "notice-ai": "The bot uses a depth-limited search: a higher setting looks further ahead and thinks a little longer. No claim is made about how strong any setting is — xiangqi cannot be searched exhaustively, so the only honest thing to state is what it does.",
+    "notice-unrated": "This game is unrated: results do not affect your rating or record.",
+    "piece": {
+      "black-advisor": "black advisor",
+      "black-cannon": "black cannon",
+      "black-chariot": "black chariot",
+      "black-elephant": "black elephant",
+      "black-general": "black general",
+      "black-horse": "black horse",
+      "black-soldier": "black soldier",
+      "red-advisor": "red advisor",
+      "red-cannon": "red cannon",
+      "red-chariot": "red chariot",
+      "red-elephant": "red elephant",
+      "red-general": "red general",
+      "red-horse": "red horse",
+      "red-soldier": "red soldier"
+    },
+    "side-black": "Red (first)",
+    "side-legend": "Your side",
+    "side-white": "Black (second)",
+    "start": "Start game",
+    "starting": "Creating…",
+    "subtitle": "Ten ranks, nine files, a river between them. A game against the machine — unrated."
+  }
+}

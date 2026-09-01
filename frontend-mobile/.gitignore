@@ -1,0 +1,11 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+
+# Synced from ../frontend-web by tool/sync_shared.dart.
+# Committed on purpose: the app must build without the web tree present,
+# and test/shared_sync_test.dart is what stops the copy going stale.
