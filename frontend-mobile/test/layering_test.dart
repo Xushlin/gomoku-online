@@ -98,6 +98,15 @@ void main() {
     expect(files.any((f) => f.startsWith('data/')), isTrue);
   });
 
+  test('the route table is covered by the rules below, not exempt from them', () {
+    // Naming one file inside a derived walk is normally the smell this repo has fixed
+    // eight times — but this is the opposite of a hand-written list to iterate: it is
+    // an assertion that a specific, newly-added, boundary-crossing file is *inside*
+    // the sample. `ui/router.dart` reaches for auth state, so if it ever moves out of
+    // `ui/` the four rules would stop applying to it and nothing else would say so.
+    expect(files, contains('ui/router.dart'));
+  });
+
   group('a View never reaches past its ViewModel', () {
     test('ui/** imports no service and no transport', () {
       expect(

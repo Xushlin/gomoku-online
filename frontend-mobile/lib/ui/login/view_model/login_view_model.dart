@@ -1,12 +1,11 @@
-import 'package:flutter/foundation.dart';
-
 import '../../../data/repositories/auth_repository.dart';
+import '../../view_model.dart';
 
 /// Login/register state and intent.
 ///
 /// **No `BuildContext` here.** Holding one would mean this cannot be tested without
 /// a widget, and being testable without a widget is the entire reason it exists.
-class LoginViewModel extends ChangeNotifier {
+class LoginViewModel extends ViewModel {
   LoginViewModel(this._auth);
 
   final AuthRepository _auth;
@@ -21,7 +20,7 @@ class LoginViewModel extends ChangeNotifier {
   void toggleMode() {
     registering = !registering;
     errorKey = null;
-    notifyListeners();
+    notifyIfAlive();
   }
 
   /// Returns true when the caller should move on.
@@ -32,7 +31,7 @@ class LoginViewModel extends ChangeNotifier {
   }) async {
     busy = true;
     errorKey = null;
-    notifyListeners();
+    notifyIfAlive();
     try {
       if (registering) {
         await _auth.register(email.trim(), username.trim(), password);
@@ -45,7 +44,7 @@ class LoginViewModel extends ChangeNotifier {
       return false;
     } finally {
       busy = false;
-      notifyListeners();
+      notifyIfAlive();
     }
   }
 

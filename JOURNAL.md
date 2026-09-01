@@ -1428,3 +1428,27 @@ Other platforms, unchanged from before:
   1403 → **1887** 行(+484),13 → 19 个文件;单测 17 → **30**;`flutter analyze` 零问题。Web / 桌面 / 后端零改动。
 
   不引 `freezed` / `json_serializable`:五个模型手写 `fromJson` 是几十行,生成器要一条 build 流水线。**触发条件:模型超过 ~12 个,或第一次因手写漏字段出错。**
+
+- [x] **`add-mobile-router`** —— 手机端三屏变成三个真路由(`go_router`),「回登录页」收到一个地方。
+
+  **这一笔的前提是先量出来的,不是先设计的。** 提案之前跑了一个探针:真实 widget 树 + 真后端,四个读数——房间里 `Navigator.canPop()` **false**;发一次 `popRoute`(安卓返回键走的就是这条)之后**还在房间里**;屏幕上那个返回箭头**能**离开房间;把两个 token 都弄死之后 `at-login=false`、`still-at-lobby=true`。
+
+  **第三个读数是对照组,而它把结论收窄成了对的那句。** 我第一次说的是「没有任何返回键处理」—— 对,但听起来像「离不开房间」。`AppBar` 里有个箭头,好用。真正的缺陷是**系统返回键什么也不做**:`WidgetsApp` 拿到 `maybePop()` 的 false 就告诉引擎自己没处理,于是安卓 finish activity。**一个对照组值一次措辞的降级。**
+
+  **判据没写成「用了 go_router」,因为装了包不等于屏变成了路由。** 写的是 `canPop`:一个把 `home:` 换成 `GoRouter` 却仍在一个路由里 `switch` 的实现会通过前者、通不过后者。
+
+  **八个正面对照,一个都没白跑,而其中两个纠正了我自己写下的话:**
+
+  - **`rooms/:id` 的嵌套是承重的,这句话原来只是「听起来对」。** 把它改成顶层路由 —— 编译通过、分析零问题、`redirect` 照旧 —— 房间里 `canPop()` 立刻回到 **false**,而且 `AppBar` **一个返回按钮都不画**(找到 0 个)。那正是原来的缺陷。go_router 是按匹配到的路由**层级**建栈的,顶层路由是替换而不是叠加。
+  - **`refreshListenable` 管的不止会话过期。** 我写这条 mutation 时预测「只有那条 dead-session 测试会红」,结果**三条全红,而且红在登录那一步** —— 因为 `LoginView` 里已经没有任何导航,登录成功能到大厅**只靠**它重跑 `redirect`。机制比我描述的宽,注释按实测改了。
+  - 另外六条:删掉 dispose 守卫 → 行为测试红;某个 ViewModel 里写一句裸 `notifyListeners()` → 走查红;让一个 ViewModel 退回 `extends ChangeNotifier` → 走查红;拆掉 `redirect` 的第二个方向 → 恰好 `signedIn=true at /login` 那一行红;把 `_authenticated` 加回 `app.dart` → 源码检查红并指名行号;把那个 tear-off 的类型改错 → 分析器 `invalid_assignment`,证明「`GewuApp` 必须是 `StatelessWidget`」这条是编译器在守,不是注释在守。
+
+  **顺手撞出来一个真 bug,而它是探针撞出来的,不是读代码读出来的。** `GameViewModel.open()` 在 `await` 之后无条件 `notifyListeners()`,`place()` 的 `finally` 里同一个形状。探针跑出 `A GameViewModel was used after being disposed`,触发条件是「点进房间、立刻返回」。**路由化会放大它**(路由被 pop 就 dispose),所以它是 task 0。而 `debugAssertNotDisposed` 是个 `assert` —— **它在 debug 崩、在 release 静默**,那是更糟的一半,不是更轻的一半。守卫用显式标志而不是 `hasListeners`:一个活着但恰好没人听的 notifier 也报 false,那会把正常通知也吞掉,症状是「界面就是不更新」。
+
+  **四个导航回调全删了** —— `onSignedIn` / `onOpenRoom` / `onSignedOut` / `onLeave`,还有 `GameView` 那个手写的 `leading:`。`AppBar` 在 `canPop()` 为真时自己画返回按钮,于是屏幕上的箭头和系统返回键**变成同一个机制**,而不是两个可能互相不同意的机制 —— 而它们此前确实不同意。**最好的机制是能被删掉的那种。**
+
+  **既有的端到端切片一个字没动就过了** —— 不是「期望值没动」,是整个文件 `git diff` 为空。上一笔(`refactor-mobile-mvvm`)改了三行接收者,这一笔改了零行,因为路由化整个发生在 widget 树对外那一面之下。顺带把 live spec 里那条**主语是上一次变更**的要求用 `RENAMED` 块改成了通用措辞 —— 触发条件写在上一笔的账里,这一笔是第二次用到同一条规则,所以现在就到期了。MODIFIED 的正文是**从 live spec 抽出来改的**,实测只动了 3 行原文(标题 + 那两句)。
+
+  单测 30 → **47**;`flutter analyze` 零问题。`go_router` 18.0.0(连带 `intl` / `flutter_localizations`)。Web / 桌面 / 后端零改动。
+
+  **不做深链接**:`go_router` 让它便宜,但要动 `AndroidManifest` 的 intent-filter 和一套 link host 约定,而现在**没有任何地方会产生房间链接**。触发条件:第一个会发出房间链接的功能落地。**不做底部导航 shell**:三屏还不需要。触发条件:第二个顶层目的地落地。

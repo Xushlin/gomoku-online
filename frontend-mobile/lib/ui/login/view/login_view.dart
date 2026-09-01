@@ -6,9 +6,7 @@ import '../view_model/login_view_model.dart';
 
 /// Renders and forwards intent. No business logic, no repository, no Dio.
 class LoginView extends StatefulWidget {
-  const LoginView({super.key, required this.onSignedIn});
-
-  final VoidCallback onSignedIn;
+  const LoginView({super.key});
 
   @override
   State<LoginView> createState() => _LoginViewState();
@@ -27,13 +25,17 @@ class _LoginViewState extends State<LoginView> {
     super.dispose();
   }
 
+  /// No navigation here on purpose. A successful login flips
+  /// `AuthRepository.signedIn`, the router's `redirect` sees "signed in, but at
+  /// /login" and sends us to the lobby. A `context.go` here as well would be a second
+  /// answer to the same question, and the two would disagree the first time one of
+  /// them changed.
   Future<void> _submit(LoginViewModel vm) async {
-    final ok = await vm.submit(
+    await vm.submit(
       email: _email.text,
       username: _username.text,
       password: _password.text,
     );
-    if (ok && mounted) widget.onSignedIn();
   }
 
   @override

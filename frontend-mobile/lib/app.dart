@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'config/server.dart';
@@ -12,12 +13,7 @@ import 'data/services/match_hub_service.dart';
 import 'data/services/token_store.dart';
 import 'i18n/translations.dart';
 import 'theme/app_theme.dart';
-import 'ui/game/view/game_view.dart';
-import 'ui/game/view_model/game_view_model.dart';
-import 'ui/lobby/view/lobby_view.dart';
-import 'ui/lobby/view_model/lobby_view_model.dart';
-import 'ui/login/view/login_view.dart';
-import 'ui/login/view_model/login_view_model.dart';
+import 'ui/router.dart';
 
 /// Wires services -> repositories -> view models.
 ///
@@ -69,77 +65,39 @@ class AppDependencies {
   }
 }
 
-class GewuApp extends StatefulWidget {
-  const GewuApp({super.key, required this.deps});
+/// The shell.
+///
+/// **`StatelessWidget`, and that is the mechanism rather than tidiness.** It used to
+/// be a `StatefulWidget` holding `_authenticated` and `_openRoomId` and switching on
+/// the pair — so "which screen" lived in two booleans that nothing enforced, no screen
+/// was a route, and the system back button had nothing to pop. A `StatelessWidget`
+/// cannot reach `setState`, so that state now has nowhere to hide: the compiler keeps
+/// this honest, not the next reader.
+class GewuApp extends StatelessWidget {
+  /// The router is built once, in the initializer list.
+  ///
+  /// **Not inside `build`**: a `GoRouter` owns the navigation stack, so rebuilding one
+  /// per frame would throw the history away on every repaint.
+  GewuApp({super.key, required this.deps}) : router = buildRouter(deps);
 
   final AppDependencies deps;
-
-  @override
-  State<GewuApp> createState() => _GewuAppState();
-}
-
-class _GewuAppState extends State<GewuApp> {
-  bool _authenticated = false;
-  String? _openRoomId;
-
-  @override
-  void initState() {
-    super.initState();
-    _tryResume();
-  }
-
-  /// A stored refresh token means "log in silently".
-  Future<void> _tryResume() async {
-    final ok = await widget.deps.auth.refresh();
-    if (mounted && ok) setState(() => _authenticated = true);
-  }
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
-    final deps = widget.deps;
-
     return MultiProvider(
       providers: [
         Provider<Translations>.value(value: deps.strings),
         Provider<AuthRepository>.value(value: deps.auth),
         Provider<RoomRepository>.value(value: deps.rooms),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Gewu',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.build(defaultThemeName, Brightness.light),
         darkTheme: AppTheme.build(defaultThemeName, Brightness.dark),
         themeMode: ThemeMode.dark,
-        home: Builder(
-          builder: (context) => switch ((_authenticated, _openRoomId)) {
-            (false, _) => ChangeNotifierProvider(
-              create: (_) => LoginViewModel(deps.auth),
-              child: LoginView(onSignedIn: () => setState(() => _authenticated = true)),
-            ),
-            (true, final String roomId) => ChangeNotifierProvider(
-              // Keyed by room id so opening a different room builds a fresh view
-              // model rather than reusing one pointed at the previous room.
-              key: ValueKey(roomId),
-              create: (_) => GameViewModel(rooms: deps.rooms, roomId: roomId),
-              child: GameView(onLeave: () => setState(() => _openRoomId = null)),
-            ),
-            (true, null) => ChangeNotifierProvider(
-              create: (_) => LobbyViewModel(rooms: deps.rooms, auth: deps.auth),
-              child: LobbyView(
-                onOpenRoom: (id) => setState(() => _openRoomId = id),
-                onSignedOut: () async {
-                  await deps.auth.logout();
-                  if (mounted) {
-                    setState(() {
-                      _authenticated = false;
-                      _openRoomId = null;
-                    });
-                  }
-                },
-              ),
-            ),
-          },
-        ),
+        routerConfig: router,
       ),
     );
   }
