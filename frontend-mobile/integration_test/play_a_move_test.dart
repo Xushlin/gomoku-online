@@ -22,11 +22,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
-import 'package:gewu_mobile/api/api_client.dart';
-import 'package:gewu_mobile/api/secure_token_store.dart';
 import 'package:gewu_mobile/app.dart';
-import 'package:gewu_mobile/i18n/translations.dart';
-import 'package:gewu_mobile/widgets/gomoku_board.dart';
+import 'package:gewu_mobile/data/services/token_store.dart';
+import 'package:gewu_mobile/ui/game/view/gomoku_board.dart';
 
 const server = String.fromEnvironment('GEWU_PROBE_SERVER');
 
@@ -77,23 +75,23 @@ void main() {
     final me = 'mob$stamp'.padRight(20, 'x').substring(0, 20);
 
     final tokens = MemoryTokenStore();
-    final services = AppServices(
-      api: ApiClient(baseUrl: server, tokens: tokens),
-      strings: await Translations.load(rootBundle, 'zh-CN'),
-      tokens: tokens,
+    final deps = await AppDependencies.build(
+      rootBundle,
+      baseUrl: server,
+      tokenStore: tokens,
     );
 
     // The translations must be real, not a stub. A card-table spec in the web client
     // mounts an EMPTY tree, which is why "renders a raw key" is invisible there —
     // this asserts the opposite before touching the UI.
-    expect(services.strings.keyCount, greaterThan(400));
-    expect(services.strings.t('auth.login.title'), isNot('auth.login.title'));
+    expect(deps.strings.keyCount, greaterThan(400));
+    expect(deps.strings.t('auth.login.title'), isNot('auth.login.title'));
 
-    await tester.pumpWidget(GewuApp(services: services));
+    await tester.pumpWidget(GewuApp(deps: deps));
     await tester.pumpAndSettle();
 
     // --- register through the actual form -----------------------------------
-    await tester.tap(find.text(services.strings.t('auth.login.no-account-cta')));
+    await tester.tap(find.text(deps.strings.t('auth.login.no-account-cta')));
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextField);
@@ -103,14 +101,14 @@ void main() {
     await tester.enterText(fields.at(2), 'Mobile-pass-1234');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text(services.strings.t('auth.register.submit')));
+    await tester.tap(find.text(deps.strings.t('auth.register.submit')));
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
     expect(tokens.access, isNotNull, reason: 'registration should have issued a token');
     expect(await tokens.readRefresh(), isNotNull, reason: 'refresh token must be stored');
     // The username lives under `user`; reading the wrong field made every room
     // `mobile-…`, which looks like a naming choice rather than a bug.
-    expect(services.username, me);
+    expect(deps.auth.currentUser?.username, me);
 
     // --- create a room from the lobby ---------------------------------------
     expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'lobby should be showing');

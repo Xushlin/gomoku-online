@@ -7,7 +7,17 @@ library;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'api_client.dart';
+/// Reads and writes the tokens. The backend is injected so tests need no keystore.
+///
+/// Declared here rather than beside the HTTP client because the interceptors depend
+/// on it, and a service must not depend on the transport that happens to use it.
+abstract class TokenStore {
+  Future<String?> readRefresh();
+  Future<void> writeRefresh(String? token);
+  String? get access;
+  set access(String? value);
+}
+
 
 class SecureTokenStore implements TokenStore {
   SecureTokenStore([FlutterSecureStorage? storage])

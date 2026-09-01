@@ -148,6 +148,33 @@ Three things there were measured, not assumed:
 - **i18n and theme tokens are pulled from `frontend-web`, never retyped** (`tool/sync_shared.dart`); `test/shared_sync_test.dart` fails if the copies drift. 547 keys × 2 locales and 4 themes × light/dark × 25 values is not a hand-copy job.
 - **`10.0.2.2` is the host loopback from inside an emulator**, and Flutter's template grants `INTERNET` only in the debug/profile manifests while Android 9+ blocks cleartext by default. All three failures look identical from the app: a login that never succeeds. **Note what Electron cannot do for this:** it reaches Microsoft Store / Mac App Store but never iOS or Google Play. And "offline play" is not a packaging feature here — it contradicts three kernels at once (answers never leave the server, 华容道 replays every move, 俄罗斯方块 is validated at submit), so it is a design decision, not a shell one.
 
+#### Mobile architecture — MVVM, and the rules that have mechanisms
+
+**Dio** for HTTP, **Provider** for DI and rebuilds, layering per Flutter's own architecture guidance. Adding a screen means adding a folder under `ui/`, not editing an existing one.
+
+```
+lib/
+  config/                build-time facts (the server address)
+  data/
+    models/              immutable; fromJson only; no network, no business rules
+    services/            raw IO — DioClient, MatchHub, TokenStore
+    repositories/        the ONLY thing a ViewModel talks to; JSON→model happens here
+  ui/<feature>/
+    view/                renders and forwards intent; no business logic
+    view_model/          ChangeNotifier; holds NO BuildContext
+  theme/ i18n/           cross-cutting
+```
+
+Five rules. **The first four are enforced by `test/layering_test.dart`, which resolves each import before judging it** — its first version matched the literal text `data/repositories/`, so it caught a violation written as a package import and missed the one an offender actually writes, `../repositories/x.dart`. Only the positive control found that.
+
+1. `ui/**` MUST NOT import `data/services/**` or `package:dio`; a `view/` MUST NOT import a repository either.
+2. `data/models/**` MUST NOT import anything above it.
+3. `package:dio` appears **only** under `data/`. (Paired with an assertion that something *does* import it — "nobody imports the transport" is trivially true of a codebase with no transport.)
+4. A `view_model/` MUST NOT import `material.dart` or mention `BuildContext` **in code** — the check skips comments, because the first version flagged the doc comment that states the rule, and the obvious fix for that is deleting the explanation.
+5. A ViewModel hands the View a **translation key**, never a formatted message. A ViewModel that formats prose has taken the View's job and the locale with it.
+
+**Auth lives in a Dio interceptor, and it hooks `onResponse`, not `onError`.** `validateStatus` admits everything under 500 so repositories inspect status codes instead of catching — which means a 401 arrives as a *successful* response and `onError` never fires. The first version put the retry in `onError` and was simply dead code whose only symptom was a request failing exactly as it would have anyway. Exempt paths (login/register/refresh) are matched on the **path**, because `startsWith('/api/auth/login')` is false for an absolute URL — a bug that shipped in the web client *and* the desktop shell before this.
+
 ## Backend architecture
 
 ### Layer dependency direction (strict)
