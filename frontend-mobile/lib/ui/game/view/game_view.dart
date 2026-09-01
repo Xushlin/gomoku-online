@@ -8,9 +8,7 @@ import '../view_model/game_view_model.dart';
 import 'gomoku_board.dart';
 
 class GameView extends StatefulWidget {
-  const GameView({super.key, required this.onLeave});
-
-  final VoidCallback onLeave;
+  const GameView({super.key});
 
   @override
   State<GameView> createState() => _GameViewState();
@@ -33,8 +31,12 @@ class _GameViewState extends State<GameView> {
 
     return Scaffold(
       appBar: AppBar(
+        // No `leading:` override. `AppBar` shows a back button exactly when
+        // `Navigator.canPop()` is true, so the on-screen arrow and the system back
+        // button are now the same mechanism instead of two that can disagree — and
+        // before this route table they did: the arrow worked, the system back exited
+        // the app.
         title: Text(room?.name ?? t.t('games.gomoku.title')),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: widget.onLeave),
       ),
       body: Column(
         children: [

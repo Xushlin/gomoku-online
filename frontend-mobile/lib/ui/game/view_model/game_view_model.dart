@@ -1,13 +1,12 @@
-import 'package:flutter/foundation.dart';
-
 import '../../../data/models/models.dart';
 import '../../../data/repositories/room_repository.dart';
+import '../../view_model.dart';
 
 /// One room in play.
 ///
 /// It owns the subscription to the repository's live room and republishes as its own
 /// change notification, so the View listens to exactly one thing.
-class GameViewModel extends ChangeNotifier {
+class GameViewModel extends ViewModel {
   GameViewModel({required this._rooms, required this.roomId});
 
   final RoomRepository _rooms;
@@ -28,12 +27,12 @@ class GameViewModel extends ChangeNotifier {
     } catch (_) {
       errorKey = 'game.errors.network';
     }
-    notifyListeners();
+    notifyIfAlive();
   }
 
   void _onPush() {
     room = _rooms.live.value ?? room;
-    notifyListeners();
+    notifyIfAlive();
   }
 
   /// **No legality check here** — the server owns that (design D2). A second copy of
@@ -42,14 +41,14 @@ class GameViewModel extends ChangeNotifier {
     if (sending) return;
     sending = true;
     errorKey = null;
-    notifyListeners();
+    notifyIfAlive();
     try {
       await _rooms.makeMove(roomId, row, col);
     } catch (_) {
       errorKey = 'game.errors.invalid-move';
     } finally {
       sending = false;
-      notifyListeners();
+      notifyIfAlive();
     }
   }
 

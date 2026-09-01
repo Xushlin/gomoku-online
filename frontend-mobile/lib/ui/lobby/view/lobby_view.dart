@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/models/models.dart';
 import '../../../i18n/translations.dart';
+import '../../router.dart';
 import '../view_model/lobby_view_model.dart';
 
 class LobbyView extends StatefulWidget {
-  const LobbyView({super.key, required this.onOpenRoom, required this.onSignedOut});
-
-  final void Function(String roomId) onOpenRoom;
-  final VoidCallback onSignedOut;
+  const LobbyView({super.key});
 
   @override
   State<LobbyView> createState() => _LobbyViewState();
@@ -28,7 +27,10 @@ class _LobbyViewState extends State<LobbyView> {
 
   Future<void> _open(Future<String?> Function() action) async {
     final id = await action();
-    if (id != null && mounted) widget.onOpenRoom(id);
+    // `go` and not `push`: the location is the truth, and `rooms/:id` is a child of
+    // `/`, so go_router puts the lobby underneath. That stack is what makes the
+    // system back button work.
+    if (id != null && mounted) context.go(roomRoute(id));
   }
 
   @override
@@ -41,7 +43,7 @@ class _LobbyViewState extends State<LobbyView> {
         title: Text(t.t('games.gomoku.title')),
         actions: [
           IconButton(onPressed: vm.load, icon: const Icon(Icons.refresh)),
-          IconButton(onPressed: widget.onSignedOut, icon: const Icon(Icons.logout)),
+          IconButton(onPressed: vm.signOut, icon: const Icon(Icons.logout)),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

@@ -159,19 +159,24 @@ lib/
     models/              immutable; fromJson only; no network, no business rules
     services/            raw IO — DioClient, MatchHub, TokenStore
     repositories/        the ONLY thing a ViewModel talks to; JSON→model happens here
+  ui/router.dart         the ONLY thing that decides which screen is on
+  ui/view_model.dart     the base every ViewModel extends
   ui/<feature>/
     view/                renders and forwards intent; no business logic
-    view_model/          ChangeNotifier; holds NO BuildContext
+    view_model/          extends ViewModel; holds NO BuildContext
   theme/ i18n/           cross-cutting
 ```
 
-Five rules. **The first four are enforced by `test/layering_test.dart`, which resolves each import before judging it** — its first version matched the literal text `data/repositories/`, so it caught a violation written as a package import and missed the one an offender actually writes, `../repositories/x.dart`. Only the positive control found that.
+Six rules. **The first four are enforced by `test/layering_test.dart`, which resolves each import before judging it** — its first version matched the literal text `data/repositories/`, so it caught a violation written as a package import and missed the one an offender actually writes, `../repositories/x.dart`. Only the positive control found that.
 
 1. `ui/**` MUST NOT import `data/services/**` or `package:dio`; a `view/` MUST NOT import a repository either.
 2. `data/models/**` MUST NOT import anything above it.
 3. `package:dio` appears **only** under `data/`. (Paired with an assertion that something *does* import it — "nobody imports the transport" is trivially true of a codebase with no transport.)
 4. A `view_model/` MUST NOT import `material.dart` or mention `BuildContext` **in code** — the check skips comments, because the first version flagged the doc comment that states the rule, and the obvious fix for that is deleting the explanation.
 5. A ViewModel hands the View a **translation key**, never a formatted message. A ViewModel that formats prose has taken the View's job and the locale with it.
+6. A ViewModel extends `ViewModel` and notifies through `notifyIfAlive()`, never `notifyListeners()` — `test/view_model_notify_test.dart` walks the directory and fails on a bare call. It exists because of a measured assertion (`A GameViewModel was used after being disposed`, thrown when a room is left while its open is still in flight), and because `debugAssertNotDisposed` is an `assert`: **that bug crashes in debug and goes silent in release**, which is the worse half, not the milder one.
+
+**Which screen is on is decided by `ui/router.dart` and nowhere else, and `GewuApp` is a `StatelessWidget` so that cannot quietly stop being true** — it used to hold `_authenticated` + `_openRoomId` and switch on the pair, and a `StatelessWidget` simply cannot reach `setState`. A tear-off typed as returning a `StatelessWidget` in `test/shell_state_test.dart` means the day someone makes it stateful again, the file stops compiling. **`rooms/:id` is nested under `/`, and that nesting is load-bearing, not tidiness:** go_router builds the navigator stack from the matched route *hierarchy*, so a top-level `/rooms/:id` replaces the stack instead of sitting on it. Measured by doing exactly that — `canPop()` in a room went back to **false** and `AppBar` drew no back button at all, i.e. the original defect. The system back button and the on-screen arrow are now one mechanism; before the route table the arrow worked and the system back **exited the app**.
 
 **Auth lives in a Dio interceptor, and it hooks `onResponse`, not `onError`.** `validateStatus` admits everything under 500 so repositories inspect status codes instead of catching — which means a 401 arrives as a *successful* response and `onError` never fires. The first version put the retry in `onError` and was simply dead code whose only symptom was a request failing exactly as it would have anyway. Exempt paths (login/register/refresh) are matched on the **path**, because `startsWith('/api/auth/login')` is false for an absolute URL — a bug that shipped in the web client *and* the desktop shell before this.
 

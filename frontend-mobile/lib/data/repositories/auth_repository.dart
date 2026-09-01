@@ -2,6 +2,7 @@
 library;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
 import '../services/token_store.dart';
@@ -26,6 +27,14 @@ class AuthRepository {
   final TokenStore _tokens;
 
   AuthUser? currentUser;
+
+  /// Whether a session is live. **A value, not an event, and that is load-bearing.**
+  ///
+  /// The router takes this as its `refreshListenable`, and the silent resume at
+  /// startup is fired before the router exists. An event would be lost in that gap;
+  /// a value is simply read as soon as the first `redirect` runs.
+  ValueListenable<bool> get signedIn => _signedIn;
+  final _signedIn = ValueNotifier<bool>(false);
 
   Future<AuthUser> login(String email, String password) =>
       _authenticate('/api/auth/login', {'email': email, 'password': password});
@@ -82,6 +91,7 @@ class AuthRepository {
     _tokens.access = result.tokens.access;
     await _tokens.writeRefresh(result.tokens.refresh);
     currentUser = result.user;
+    _signedIn.value = true;
     return result.user;
   }
 
@@ -89,6 +99,9 @@ class AuthRepository {
     _tokens.access = null;
     currentUser = null;
     await _tokens.writeRefresh(null);
+    // Last: everything downstream reacts to this, and reacting to a half-cleared
+    // session is how a redirect races the state it is redirecting on.
+    _signedIn.value = false;
   }
 
   /// Pulls the server's code out of a ProblemDetails-ish body. Never guesses from prose.

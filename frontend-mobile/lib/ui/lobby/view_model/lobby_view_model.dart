@@ -1,14 +1,13 @@
-import 'package:flutter/foundation.dart';
-
 import '../../../data/models/models.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/room_repository.dart';
+import '../../view_model.dart';
 
 /// Gomoku's lobby. One game this slice — a picker with one entry would be a picker
 /// pretending to be a platform.
 const gameKey = 'gomoku';
 
-class LobbyViewModel extends ChangeNotifier {
+class LobbyViewModel extends ViewModel {
   LobbyViewModel({required this._rooms, required this._auth});
 
   final RoomRepository _rooms;
@@ -21,7 +20,7 @@ class LobbyViewModel extends ChangeNotifier {
   Future<void> load() async {
     loading = true;
     errorKey = null;
-    notifyListeners();
+    notifyIfAlive();
     try {
       rooms = await _rooms.list(gameKey);
     } on RoomFailure {
@@ -30,7 +29,7 @@ class LobbyViewModel extends ChangeNotifier {
       errorKey = 'auth.errors.network';
     } finally {
       loading = false;
-      notifyListeners();
+      notifyIfAlive();
     }
   }
 
@@ -42,10 +41,15 @@ class LobbyViewModel extends ChangeNotifier {
       return room.id;
     } on RoomFailure {
       errorKey = 'lobby.errors.create-failed';
-      notifyListeners();
+      notifyIfAlive();
       return null;
     }
   }
+
+  /// Ends the session. **No navigation here** — the router watches
+  /// `AuthRepository.signedIn` and redirects, so a ViewModel that also pushed a route
+  /// would be a second answer to the same question.
+  Future<void> signOut() => _auth.logout();
 
   Future<String?> join(String roomId) async {
     try {
@@ -53,7 +57,7 @@ class LobbyViewModel extends ChangeNotifier {
       return roomId;
     } on RoomFailure {
       errorKey = 'lobby.errors.join-failed';
-      notifyListeners();
+      notifyIfAlive();
       return null;
     }
   }
