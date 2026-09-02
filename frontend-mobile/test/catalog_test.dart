@@ -177,11 +177,13 @@ void main() {
       // gaining a board.
       expect(servedKeys(), hasLength(7), reason: 'served by the API');
       expect(vm.entries, hasLength(6), reason: 'have copy, so they are listed');
-      // **This line went red the day 象棋 landed, which is what it is for.** The
-      // set-equality check below stayed green through the same change — a derived
-      // invariant proves the shape, a concrete number is what makes "the number moved"
-      // visible to a person.
-      expect(vm.entries.where((e) => e.playable), hasLength(2), reason: 'drawable here');
+      // **This line has now gone red twice on purpose** — once when 象棋 landed and once
+      // when 一字棋 did. The set-equality check below stayed green through both: a
+      // derived invariant proves the shape, a concrete number is what makes "the number
+      // moved" visible to a person. Both are needed.
+      //
+      // 3, not 2, and the third one added no renderer: 一字棋 shares 五子棋's.
+      expect(vm.entries.where((e) => e.playable), hasLength(3), reason: 'drawable here');
     });
 
     test('the one filtered game is the one with no copy, and it is named', () async {

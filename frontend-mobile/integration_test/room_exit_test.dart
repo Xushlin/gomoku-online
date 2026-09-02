@@ -29,6 +29,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:signalr_netcore/hub_connection_builder.dart';
 
 import 'package:gewu_mobile/app.dart';
+import 'package:gewu_mobile/i18n/translations.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
 import 'package:gewu_mobile/ui/game/board_registry.dart';
 import 'package:gewu_mobile/ui/game/view/game_board.dart';
@@ -87,7 +88,7 @@ Future<({MemoryTokenStore tokens, AppDependencies deps, String me})> _signIn(
 Future<void> _enterGomokuLobby(WidgetTester tester, AppDependencies deps) async {
   await tester.tap(find.text(deps.strings.t('games.$gomokuGameKey.title')));
   await tester.pumpAndSettle(const Duration(seconds: 4));
-  expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'lobby');
+  expect(createRoomButton(deps.strings), findsOneWidget, reason: 'lobby');
 }
 
 /// Taps the AppBar's back arrow, which `PopScope` routes into the leave handler — the
@@ -96,6 +97,15 @@ Future<void> _pressLeave(WidgetTester tester) async {
   await tester.tap(find.byIcon(Icons.arrow_back));
   await tester.pumpAndSettle(const Duration(seconds: 6));
 }
+
+/// The lobby's **create-room** button, found by its label.
+///
+/// **`find.byType(FloatingActionButton)` stopped being unambiguous** the day the lobby
+/// gained a second one (「新建 AI 对局」). Naming the button is better than counting
+/// them anyway: the label is what a player sees, and a finder that says *which* button
+/// cannot quietly start tapping the other one.
+Finder createRoomButton(Translations strings) =>
+    find.text(strings.t('lobby.rooms.create-button'));
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -113,7 +123,7 @@ void main() {
     final signedIn = await _signIn(tester, 'xa');
     await _enterGomokuLobby(tester, signedIn.deps);
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(createRoomButton(signedIn.deps.strings));
     await tester.pumpAndSettle(const Duration(seconds: 6));
     expect(find.byType(GameBoard), findsOneWidget, reason: 'the room should be open');
 
@@ -229,7 +239,7 @@ void main() {
     expect(find.byType(GameBoard), findsNothing, reason: 'out of A');
 
     // --- room B: a fresh room of our own ------------------------------------
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(createRoomButton(signedIn.deps.strings));
     await tester.pumpAndSettle(const Duration(seconds: 6));
     expect(find.byType(GameBoard), findsOneWidget, reason: 'in B');
 

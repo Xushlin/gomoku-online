@@ -48,6 +48,18 @@ void main() {
     expect(seatLabelKey(xiangqiGameKey, 0), isNot(seatLabelKey(gomokuGameKey, 0)));
   });
 
+  test('一字棋 reads like 五子棋, because it IS 五子棋 at three roads', () {
+      expect(seatLabelKey(tictactoeGameKey, 0), 'game.seat.black');
+      expect(seatLabelKey(tictactoeGameKey, 1), 'game.seat.white');
+      // And it is in the registry, so enabling a game without a reading cannot go
+      // unnoticed: every drawable game must have one.
+      final unnamed = [
+        for (final game in boardRenderers.keys)
+          if (seatLabelKey(game, 0) == null) game,
+      ];
+      expect(unnamed, equals(<String>[]), reason: 'every drawable game needs a reading');
+  });
+
   test('a game whose seats have no name falls back to seat numbers', () {
     // 斗地主 has three seats and no colours; answering null is how the caller knows to
     // say "seat N" instead of inventing a colour.
@@ -69,7 +81,7 @@ void main() {
           for (var seat = 0; seat < 2; seat++) seatLabelKey(game, seat),
       ].whereType<String>().toList();
 
-      expect(keys, hasLength(4), reason: 'two games x two seats');
+      expect(keys, hasLength(6), reason: 'three games x two seats');
       for (final key in keys) {
         expect(bundle.containsKey(key), isTrue, reason: '$locale $key');
       }

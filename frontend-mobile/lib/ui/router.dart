@@ -71,6 +71,7 @@ GoRouter buildRouter(AppDependencies deps) => GoRouter(
               create: (_) => LobbyViewModel(
                 rooms: deps.rooms,
                 auth: deps.auth,
+                catalog: deps.catalog,
                 gameKey: gameKey,
               ),
               child: const LobbyView(),
