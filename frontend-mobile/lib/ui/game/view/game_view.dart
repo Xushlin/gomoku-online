@@ -24,6 +24,40 @@ class _GameViewState extends State<GameView> {
   /// Guards the result dialog against the next push re-opening it while it is up.
   bool _announcingOutcome = false;
 
+  /// How many urges had arrived the last time we showed one.
+  ///
+  /// **A high-water mark rather than a flag**, because being urged twice has to be
+  /// visible twice — and because `build` runs on every push, so "show it once" needs
+  /// something to compare against.
+  int _urgesShown = 0;
+
+  /// Asks before giving up. **Irreversible, so the question is not optional.**
+  ///
+  /// It deliberately writes nothing down about the result: that arrives through the
+  /// snapshot and the `GameEnded` push, which is the one path that already exists.
+  Future<void> _resign(GameViewModel vm) async {
+    final t = context.read<Translations>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.t('game.actions.resign-confirm-title')),
+        content: Text(t.t('game.actions.resign-confirm-body')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t.t('game.actions.resign-confirm-cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(t.t('game.actions.resign-confirm-ok')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await vm.resign();
+  }
+
   /// Says who won, and offers the two ways out the copy already names.
   Future<void> _announce(
     GameViewModel vm,
@@ -140,6 +174,19 @@ class _GameViewState extends State<GameView> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _announce(vm, outcome));
     }
 
+    // Somebody is waiting on us. **A push, not part of any snapshot** — re-fetching
+    // the room would never reveal it. Scheduled after the frame because showing a
+    // SnackBar during build is an error.
+    if (vm.urgeCount > _urgesShown) {
+      _urgesShown = vm.urgeCount;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.t('game.urge.toast'))),
+        );
+      });
+    }
+
     // **Dissolved rooms are deleted, so no further `RoomState` will ever arrive.**
     // Waiting on this screen would be waiting forever. Navigation is scheduled after
     // the frame because navigating during build is an error.
@@ -188,6 +235,63 @@ class _GameViewState extends State<GameView> {
                 ),
               ),
             Expanded(child: Center(child: _board(context, vm))),
+            _actions(context, vm, t),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Resign and urge.
+  ///
+  /// **Leaving is not here.** It already has one entry — the AppBar's arrow, which is
+  /// the same mechanism as the system back button — and a second control that leaves
+  /// would be a second thing to keep in step with the confirmation rules.
+  ///
+  /// Each button appears only when the platform could actually accept it, and the urge
+  /// button says **why** when it cannot be pressed: a greyed-out control with no
+  /// explanation is not an explanation.
+  Widget _actions(BuildContext context, GameViewModel vm, Translations t) {
+    if (!vm.canResign && !vm.canUrge) return const SizedBox.shrink();
+
+    final reason = vm.urgeDisabledReasonKey;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (vm.canUrge && reason != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  t.t(reason),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            Row(
+              children: [
+                if (vm.canUrge)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: reason == null && !vm.sending ? vm.urge : null,
+                      icon: const Icon(Icons.notifications_active_outlined),
+                      label: Text(t.t('game.actions.urge')),
+                    ),
+                  ),
+                if (vm.canUrge && vm.canResign) const SizedBox(width: 8),
+                if (vm.canResign)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: vm.sending ? null : () => _resign(vm),
+                      icon: const Icon(Icons.flag_outlined),
+                      label: Text(t.t('game.actions.resign')),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

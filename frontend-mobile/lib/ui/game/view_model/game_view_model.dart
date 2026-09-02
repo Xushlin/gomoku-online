@@ -56,6 +56,112 @@ class GameViewModel extends ViewModel {
     return key == null || seat == null ? null : seatLabelKey(key, seat);
   }
 
+  /// Which seat this user occupies, or null when they are not playing this game.
+  ///
+  /// **By id, never by username** — a username is a display name and this platform has
+  /// already paid twice for treating one as an identity.
+  int? get mySeat {
+    final me = _auth.currentUser?.id;
+    if (me == null) return null;
+    for (final seat in room?.seats ?? const <RoomSeat>[]) {
+      if (seat.playerId == me) return seat.index;
+    }
+    return null;
+  }
+
+  bool get _playingNow => room?.status == RoomStatus.playing && mySeat != null;
+
+  /// Whether the resign entry may be shown at all.
+  ///
+  /// **Three conditions, and the third is the one that is not obvious.** `Room.Resign`
+  /// needs exactly two seats to name a winner; on a three-seat game the API answers 409
+  /// and the web client once returned a **500** on a real click because the client
+  /// assumed the count. Today both games here are two-seat, so this is constantly true
+  /// — **which is exactly why it is asserted against a fabricated three-seat room**, or
+  /// the branch would be an empty loop.
+  ///
+  /// The number comes from **the room**, not from the game catalogue: it is this room
+  /// being resigned, and the room already says how many seats it has.
+  bool get canResign => _playingNow && room?.totalSeats == 2;
+
+  /// Whether the urge entry may be shown at all. Being *able* to press it is
+  /// [urgeDisabledReasonKey] being null.
+  bool get canUrge => _playingNow;
+
+  /// Why the urge button cannot be pressed right now, or null when it can.
+  ///
+  /// **No cooldown timer lives here.** Whether the server will accept an urge is the
+  /// server's conclusion; this client only repeats back the 429 it was given. A
+  /// parallel 30-second timer would be a second copy of a rule, and the way two copies
+  /// fail is the button saying "yes" while the server says "no".
+  String? get urgeDisabledReasonKey {
+    if (!canUrge) return null;
+    if (room?.game.currentSeat == mySeat) return 'game.urge.button-disabled-own-turn';
+    if (_urgeRefused) return 'game.urge.button-disabled-cooldown';
+    return null;
+  }
+
+  bool _urgeRefused = false;
+
+  /// Gives up the game. **The caller has already asked** — this method does not.
+  ///
+  /// It writes down nothing about the outcome on success. The result reaches the screen
+  /// through the one path that already exists ([outcome], fed by the snapshot and the
+  /// `GameEnded` push); a second path would be a second answer to "who won".
+  Future<void> resign() async {
+    if (sending) return;
+    sending = true;
+    errorKey = null;
+    notifyIfAlive();
+    try {
+      await _rooms.resign(roomId);
+    } catch (_) {
+      errorKey = 'game.errors.generic';
+    } finally {
+      sending = false;
+      notifyIfAlive();
+    }
+  }
+
+  /// Urges whoever owes a move.
+  Future<void> urge() async {
+    if (sending) return;
+    sending = true;
+    errorKey = null;
+    notifyIfAlive();
+    try {
+      await _rooms.urge(roomId);
+      _urgeRefused = false;
+    } on RoomFailure catch (failure) {
+      _refuseUrge(failure.status);
+    } catch (e) {
+      // The hub reports a domain refusal as a `HubException` whose message carries the
+      // code — there is no status line on that path, so the code is what identifies it.
+      _refuseUrge(null, '$e');
+    } finally {
+      sending = false;
+      notifyIfAlive();
+    }
+  }
+
+  void _refuseUrge(int? status, [String message = '']) {
+    final cooldown = status == 429 || message.contains('UrgeTooFrequent');
+    _urgeRefused = cooldown;
+    errorKey = cooldown ? 'game.errors.urge-cooldown' : 'game.errors.generic';
+  }
+
+  /// Bumped each time somebody urges this user. The View shows a toast on it.
+  int urgeCount = 0;
+
+  /// Who urged, last — for the toast. Null before the first one.
+  String? get urgedBy => _rooms.lastUrgedBy;
+
+  void _onUrged() {
+    urgeCount = _rooms.urged.value;
+    // A fresh urge means the other side is waiting, so it cannot be our own cooldown.
+    notifyIfAlive();
+  }
+
   /// Whether leaving takes the host's route.
   ///
   /// **The server decides this, not the UI:** `/leave` refuses the host of a *waiting*
@@ -108,6 +214,7 @@ class GameViewModel extends ViewModel {
   Future<void> open() async {
     _rooms.live.addListener(_onPush);
     _rooms.dissolved.addListener(_onDissolved);
+    _rooms.urged.addListener(_onUrged);
     try {
       // The catalogue before the room: the board cannot be drawn without it, and it is
       // cached after the first load so this is free on every later room.
@@ -243,6 +350,7 @@ class GameViewModel extends ViewModel {
   void dispose() {
     _rooms.live.removeListener(_onPush);
     _rooms.dissolved.removeListener(_onDissolved);
+    _rooms.urged.removeListener(_onUrged);
     super.dispose();
   }
 }

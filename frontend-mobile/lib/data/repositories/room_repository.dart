@@ -169,6 +169,29 @@ class RoomRepository {
 
   void _onDissolved() => _dissolved.value = _dissolved.value + 1;
 
+  /// Gives up this game. **Irreversible — the View asks first.**
+  ///
+  /// The server names the winner and pushes `GameEnded`; this method returns nothing on
+  /// purpose. A caller that wrote down "I lost" from the fact that this succeeded would
+  /// be a **second** path announcing an outcome, and the way two such paths fail is one
+  /// of them naming the wrong winner.
+  Future<void> resign(String roomId) async {
+    final response = await _dio.post<dynamic>('/api/rooms/$roomId/resign');
+    _refuseFailure(response);
+  }
+
+  /// Urges whoever owes a move.
+  ///
+  /// Every rule about *whether* this is allowed — playing, a player, not your own turn,
+  /// 30-second cooldown — lives on the server. This client does not keep a timer.
+  Future<void> urge(String roomId) => _hub.urge(roomId);
+
+  /// Bumped each time somebody urges this user, with the payload beside it.
+  ValueListenable<int> get urged => _hub.urged;
+
+  /// Who urged, last. Null until the first one arrives.
+  String? get lastUrgedBy => _hub.lastUrge?['fromUsername'] as String?;
+
   /// Sends a move. **The server judges legality, not this client** (design D2).
   Future<void> makeMove(String roomId, int row, int col) =>
       _hub.makeMove(roomId, row, col);

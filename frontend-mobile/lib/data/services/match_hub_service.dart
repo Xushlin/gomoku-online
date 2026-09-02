@@ -39,8 +39,17 @@ class MatchHub {
 
   final _state = ValueNotifier<RoomSnapshot?>(null);
   final _dissolved = ValueNotifier<int>(0);
+  final _urged = ValueNotifier<int>(0);
+  Map<String, dynamic>? _lastUrge;
 
   ValueListenable<RoomSnapshot?> get state => _state;
+
+  /// Bumped each time somebody urges this user. See the subscription for why it is a
+  /// counter and not a flag.
+  ValueListenable<int> get urged => _urged;
+
+  /// The most recent `UrgeDto` — who urged, and when.
+  Map<String, dynamic>? get lastUrge => _lastUrge;
 
   /// Bumped each time the server says a room was dissolved.
   ///
@@ -82,6 +91,20 @@ class MatchHub {
     // board of a room that no longer exists, where every tap is an error.
     connection.on('RoomDissolved', (args) {
       _dissolved.value = _dissolved.value + 1;
+    });
+
+    // **Being urged is a push, not part of any snapshot.** The server never writes
+    // "you have been urged" into `RoomStateDto`, so an implementation that re-fetches
+    // the room to find out would never find out.
+    //
+    // A counter beside the payload for the same reason `dissolved` is a counter: "it
+    // happened again" has to be observable, and a value that is already set reports
+    // nothing the second time.
+    connection.on('UrgeReceived', (args) {
+      if (args != null && args.isNotEmpty && args.first is Map) {
+        _lastUrge = Map<String, dynamic>.from(args.first! as Map);
+      }
+      _urged.value = _urged.value + 1;
     });
 
     await connection.start();
@@ -135,10 +158,24 @@ class MatchHub {
     );
   }
 
+  /// Urges whoever owes a move.
+  ///
+  /// **One argument, and that is the whole signature.** SignalR applies no C#
+  /// optional-parameter defaults in either direction, so sending more or fewer is
+  /// rejected in the binding layer — invisibly, from both ends.
+  ///
+  /// The server decides who gets urged (`Room.UrgeOpponent` urges **the player who
+  /// owes a move**, not "the other seat"), enforces the 30-second cooldown, and
+  /// refuses when it is the caller's own turn. None of that is re-implemented here.
+  Future<void> urge(String roomId) async {
+    await _connection!.invoke('Urge', args: [roomId]);
+  }
+
   Future<void> dispose() async {
     await _connection?.stop();
     _connection = null;
     _state.dispose();
     _dissolved.dispose();
+    _urged.dispose();
   }
 }
