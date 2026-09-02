@@ -56,7 +56,18 @@ class MatchHub {
         .withAutomaticReconnect(retryDelays: [0, 2000, 5000, 10000, 30000])
         .build();
 
-    connection.on('RoomStateChanged', (args) {
+    // **`RoomState`, and the name is the whole bug this once was.**
+    //
+    // This read `RoomStateChanged` — a method the server has never sent. SignalR
+    // silently ignores a subscription to a name nobody invokes, so the entire *inbound*
+    // half of this connection was dead from the first day and nothing said so:
+    // outbound worked, every test asserted the **server's** state over REST, and the
+    // board people saw was the one-shot REST snapshot from `RoomRepository.open`.
+    //
+    // Found by looking at a real device: a second player joined, the server said
+    // `Playing`, and the screen still said 等待中. `test/hub_contract_test.dart` now
+    // derives the valid names from the server's own source.
+    connection.on('RoomState', (args) {
       if (args != null && args.isNotEmpty && args.first is Map) {
         _state.value = RoomSnapshot(Map<String, dynamic>.from(args.first as Map));
       }
