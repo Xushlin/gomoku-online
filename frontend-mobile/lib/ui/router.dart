@@ -88,6 +88,7 @@ GoRouter buildRouter(AppDependencies deps) => GoRouter(
                   create: (_) => GameViewModel(
                     rooms: deps.rooms,
                     catalog: deps.catalog,
+                    auth: deps.auth,
                     roomId: roomId,
                   ),
                   child: const GameView(),

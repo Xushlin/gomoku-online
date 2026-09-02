@@ -12,6 +12,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:gewu_mobile/data/models/models.dart';
+import 'package:gewu_mobile/data/repositories/auth_repository.dart';
 import 'package:gewu_mobile/data/repositories/game_catalog_repository.dart';
 import 'package:gewu_mobile/data/repositories/room_repository.dart';
 import 'package:gewu_mobile/data/services/dio_client.dart';
@@ -90,6 +91,7 @@ Future<({GameViewModel vm, RecordingHub hub})> openRoom(String gameKey) async {
   final vm = GameViewModel(
     rooms: RoomRepository(dio: dio, hub: hub),
     catalog: catalog,
+    auth: AuthRepository(dio: dio, tokens: MemoryTokenStore()),
     roomId: 'r1',
   );
   // Set the room directly: `open()` would go through the hub, and what is under test is

@@ -1,4 +1,5 @@
 import '../../../data/models/models.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/game_catalog_repository.dart';
 import '../../../data/repositories/room_repository.dart';
 import '../../view_model.dart';
@@ -14,11 +15,13 @@ class GameViewModel extends ViewModel {
   GameViewModel({
     required this._rooms,
     required this._catalog,
+    required this._auth,
     required this.roomId,
   });
 
   final RoomRepository _rooms;
   final GameCatalogRepository _catalog;
+  final AuthRepository _auth;
   final String roomId;
 
   Room? room;
@@ -53,8 +56,58 @@ class GameViewModel extends ViewModel {
     return key == null || seat == null ? null : seatLabelKey(key, seat);
   }
 
+  /// Whether leaving takes the host's route.
+  ///
+  /// **The server decides this, not the UI:** `/leave` refuses the host of a *waiting*
+  /// room (`HostCannotLeaveWaitingRoom`), and `/dissolve` exists only for waiting
+  /// rooms. Compared by **id**, because a username is a display name and this platform
+  /// has already paid twice for treating one as an identity.
+  bool get leavingDissolves {
+    final current = room;
+    if (current == null) return false;
+    return current.status == RoomStatus.waiting &&
+        current.hostId != null &&
+        current.hostId == _auth.currentUser?.id;
+  }
+
+  /// Whether leaving needs to ask first.
+  ///
+  /// Only a game in play: leaving does not end it and the seat stays yours, but the
+  /// turn clock keeps running and timing out has consequences. A waiting room has
+  /// nothing to warn about — **the same criterion the web client uses, deliberately
+  /// not a second one**: two rules diverge, and the way divergence shows up is one path
+  /// quietly stopping asking.
+  bool get leavingNeedsConfirmation => room?.status == RoomStatus.playing;
+
+  /// The warning to show, or null when none is needed.
+  String? get leaveWarningKey =>
+      leavingNeedsConfirmation ? 'game.leave-confirm.match' : null;
+
+  /// Leaves the room on the server and on the hub.
+  ///
+  /// Returns true when the caller should navigate away. False means the server refused
+  /// and the error is on [errorKey] — **navigating anyway would tell the player they
+  /// left a room they are still sitting in.**
+  Future<bool> leave() async {
+    if (sending) return false;
+    sending = true;
+    errorKey = null;
+    notifyIfAlive();
+    try {
+      await _rooms.leave(roomId, asHostOfWaitingRoom: leavingDissolves);
+      return true;
+    } catch (_) {
+      errorKey = 'game.errors.generic';
+      return false;
+    } finally {
+      sending = false;
+      notifyIfAlive();
+    }
+  }
+
   Future<void> open() async {
     _rooms.live.addListener(_onPush);
+    _rooms.dissolved.addListener(_onDissolved);
     try {
       // The catalogue before the room: the board cannot be drawn without it, and it is
       // cached after the first load so this is free on every later room.
@@ -70,6 +123,14 @@ class GameViewModel extends ViewModel {
 
   void _onPush() {
     room = _rooms.live.value ?? room;
+    notifyIfAlive();
+  }
+
+  /// True once the host dissolved this room. The View navigates out on it.
+  bool wasDissolved = false;
+
+  void _onDissolved() {
+    wasDissolved = true;
     notifyIfAlive();
   }
 
@@ -145,6 +206,7 @@ class GameViewModel extends ViewModel {
   @override
   void dispose() {
     _rooms.live.removeListener(_onPush);
+    _rooms.dissolved.removeListener(_onDissolved);
     super.dispose();
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/models/models.dart';
 import '../../../i18n/translations.dart';
 import '../../../theme/app_theme.dart';
 import '../view_model/game_view_model.dart';
+import '../../router.dart';
 import '../board_registry.dart';
 import 'game_board.dart';
 
@@ -16,6 +18,9 @@ class GameView extends StatefulWidget {
 }
 
 class _GameViewState extends State<GameView> {
+  /// Set once we are on our way out, so neither exit path fires twice.
+  bool _leaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -24,43 +29,113 @@ class _GameViewState extends State<GameView> {
     });
   }
 
+  /// Leaves the room. **The single exit**, so the on-screen arrow and the system back
+  /// button cannot disagree — they both arrive here through `PopScope`.
+  Future<void> _leave(GameViewModel vm) async {
+    if (_leaving) return;
+    final t = context.read<Translations>();
+
+    final warning = vm.leaveWarningKey;
+    if (warning != null) {
+      // `showDialog` rather than a hand-rolled overlay: focus trapping, the barrier and
+      // back-button handling are not things to reimplement.
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(t.t('game.leave-confirm.title')),
+          content: Text(t.t(warning)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(t.t('game.leave-confirm.stay')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(t.t('game.leave-confirm.leave')),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
+    // **Only navigate if the server agreed.** Leaving the screen on a refusal would
+    // tell the player they left a room they are still sitting in.
+    _leaving = true;
+    final left = await vm.leave();
+    if (!mounted) return;
+    if (!left) {
+      _leaving = false;
+      return;
+    }
+    _exit(vm);
+  }
+
+  void _exit(GameViewModel vm) {
+    final gameKey = vm.room?.gameKey;
+    if (gameKey != null && gameKey.isNotEmpty) {
+      context.go(lobbyRouteFor(gameKey));
+    } else {
+      context.go(catalogRoute);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<GameViewModel>();
     final t = context.read<Translations>();
     final room = vm.room;
 
-    return Scaffold(
-      appBar: AppBar(
-        // No `leading:` override. `AppBar` shows a back button exactly when
-        // `Navigator.canPop()` is true, so the on-screen arrow and the system back
-        // button are now the same mechanism instead of two that can disagree — and
-        // before this route table they did: the arrow worked, the system back exited
-        // the app.
-        title: Text(room?.name ?? ''),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_statusLabel(t, room?.status)),
-                Text(_turnLabel(t, vm, room)),
-              ],
-            ),
-          ),
-          if (vm.errorKey != null)
+    // **Dissolved rooms are deleted, so no further `RoomState` will ever arrive.**
+    // Waiting on this screen would be waiting forever. Navigation is scheduled after
+    // the frame because navigating during build is an error.
+    if (vm.wasDissolved && !_leaving) {
+      _leaving = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _exit(vm);
+      });
+    }
+
+    return PopScope(
+      // **Every exit goes through `_leave`.** `canPop: false` routes the system back
+      // gesture and the AppBar's own arrow into the same handler, which is what keeps
+      // them from disagreeing — they already did once, before there was a route table.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave(vm);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          // No `leading:` override. `AppBar` shows a back button exactly when
+          // `Navigator.canPop()` is true, so the on-screen arrow and the system back
+          // button are now the same mechanism instead of two that can disagree — and
+          // before this route table they did: the arrow worked, the system back exited
+          // the app.
+          title: Text(room?.name ?? ''),
+        ),
+        body: Column(
+          children: [
             Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(
-                t.t(vm.errorKey!),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(_statusLabel(t, room?.status)),
+                  Text(_turnLabel(t, vm, room)),
+                ],
               ),
             ),
-          Expanded(child: Center(child: _board(context, vm))),
-        ],
+            if (vm.errorKey != null)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  t.t(vm.errorKey!),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            Expanded(child: Center(child: _board(context, vm))),
+          ],
+        ),
       ),
     );
   }

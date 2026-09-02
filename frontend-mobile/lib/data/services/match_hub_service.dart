@@ -38,9 +38,16 @@ class MatchHub {
   HubConnection? _connection;
 
   final _state = ValueNotifier<RoomSnapshot?>(null);
+  final _dissolved = ValueNotifier<int>(0);
   final _errors = StreamController<String>.broadcast();
 
   ValueListenable<RoomSnapshot?> get state => _state;
+
+  /// Bumped each time the server says a room was dissolved.
+  ///
+  /// A counter rather than a bool, because "it happened again" has to be observable:
+  /// a bool that is already true reports nothing the second time.
+  ValueListenable<int> get dissolved => _dissolved;
   Stream<String> get errors => _errors.stream;
 
   bool get connected => _connection?.state == HubConnectionState.Connected;
@@ -76,6 +83,13 @@ class MatchHub {
       if (args != null && args.isNotEmpty) _errors.add('game-ended');
     });
 
+    // **After this there is no `RoomState`** — the room is physically deleted. So
+    // ignoring this push is not "one missing toast": it leaves a person sitting on the
+    // board of a room that no longer exists, where every tap is an error.
+    connection.on('RoomDissolved', (args) {
+      _dissolved.value = _dissolved.value + 1;
+    });
+
     await connection.start();
     _connection = connection;
   }
@@ -83,6 +97,18 @@ class MatchHub {
   Future<void> joinRoom(String roomId) async {
     await connect();
     await _connection!.invoke('JoinRoom', args: [roomId]);
+  }
+
+  /// Leaves the room's broadcast group.
+  ///
+  /// **Not optional cleanup.** Staying in the group means this client keeps receiving
+  /// that room's pushes after it has moved on: enter A, leave, enter B, and a move in A
+  /// repaints B's board with A's position. That was harmless for exactly as long as the
+  /// inbound half was dead — see `fix-mobile-hub-inbound`. Fixing inbound made it live.
+  Future<void> leaveRoom(String roomId) async {
+    final connection = _connection;
+    if (connection == null) return;
+    await connection.invoke('LeaveRoom', args: [roomId]);
   }
 
   /// Places a stone. **The server judges legality, not this client.**
@@ -120,5 +146,6 @@ class MatchHub {
     _connection = null;
     await _errors.close();
     _state.dispose();
+    _dissolved.dispose();
   }
 }

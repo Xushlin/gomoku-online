@@ -164,6 +164,7 @@ class Room {
     required this.seats,
     required this.game,
     this.hostUsername,
+    this.hostId,
     this.seatCount,
   });
 
@@ -183,6 +184,14 @@ class Room {
   final List<RoomSeat> seats;
   final GameSnapshot game;
   final String? hostUsername;
+
+  /// The host's user id.
+  ///
+  /// **Needed because leaving takes a different route for the host of a waiting room**
+  /// — the server refuses `/leave` there (`HostCannotLeaveWaitingRoom`) and wants
+  /// `/dissolve`. Compared by id rather than by username: a username is a display
+  /// name, and two of this platform's bugs have come from treating one as an identity.
+  final String? hostId;
 
   /// How many seats this game HAS, which is not how many are taken. The web client
   /// got this wrong in five places; `seats.length` answers the other question.
@@ -204,6 +213,7 @@ class Room {
         ? GameSnapshot.empty
         : GameSnapshot.fromJson(json['game'] as Map<String, dynamic>),
     hostUsername: (json['host'] as Map<String, dynamic>?)?['username'] as String?,
+    hostId: (json['host'] as Map<String, dynamic>?)?['id']?.toString(),
     seatCount: (json['seatCount'] as num?)?.toInt(),
   );
 }
