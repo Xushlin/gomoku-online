@@ -14,10 +14,13 @@ import 'lobby/view/lobby_view.dart';
 import 'lobby/view_model/lobby_view_model.dart';
 import 'login/view/login_view.dart';
 import 'login/view_model/login_view_model.dart';
+import 'settings/view/settings_view.dart';
+import 'settings/view_model/settings_view_model.dart';
 
 /// Routes, as paths.
 const loginRoute = '/login';
 const catalogRoute = '/';
+const settingsRoute = '/settings';
 String lobbyRouteFor(String gameKey) => '/games/$gameKey';
 String roomRouteFor(String gameKey, String roomId) => '/games/$gameKey/rooms/$roomId';
 
@@ -56,10 +59,19 @@ GoRouter buildRouter(AppDependencies deps) => GoRouter(
     GoRoute(
       path: catalogRoute,
       builder: (context, state) => ChangeNotifierProvider(
-        create: (_) => CatalogViewModel(catalog: deps.catalog, auth: deps.auth),
+        create: (_) => CatalogViewModel(catalog: deps.catalog),
         child: const CatalogView(),
       ),
       routes: [
+        GoRoute(
+          // Nested under `/`, like every other screen: the back stack and `canPop` come
+          // from the route hierarchy, so settings needs no navigation of its own.
+          path: 'settings',
+          builder: (context, state) => ChangeNotifierProvider(
+            create: (_) => SettingsViewModel(settings: deps.settings, auth: deps.auth),
+            child: const SettingsView(),
+          ),
+        ),
         GoRoute(
           path: 'games/:key',
           builder: (context, state) {

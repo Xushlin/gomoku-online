@@ -42,7 +42,16 @@ class _CatalogViewState extends State<CatalogView> {
         title: Text(t.t('catalog.title')),
         actions: [
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-          IconButton(onPressed: vm.signOut, icon: const Icon(Icons.logout)),
+          // **Signing out moved behind settings, and it lives in exactly one place.**
+          // It used to be an icon here and another in the lobby, both calling `signOut`
+          // with no confirmation — and two copies of one rule diverge, with the
+          // divergence showing up as one path quietly stopping asking. One entry point
+          // cannot diverge from itself.
+          IconButton(
+            onPressed: () => context.go(settingsRoute),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: t.t('header.settings.label'),
+          ),
         ],
       ),
       body: switch ((vm.loading, vm.errorKey, vm.entries.isEmpty)) {

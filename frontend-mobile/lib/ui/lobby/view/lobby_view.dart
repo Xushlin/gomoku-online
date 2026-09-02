@@ -124,7 +124,6 @@ class _LobbyViewState extends State<LobbyView> {
         title: Text(t.t('games.${vm.gameKey}.title')),
         actions: [
           IconButton(onPressed: vm.load, icon: const Icon(Icons.refresh)),
-          IconButton(onPressed: vm.signOut, icon: const Icon(Icons.logout)),
         ],
       ),
       // **Both buttons are derived, and both are labelled.** `heroTag` has to differ:

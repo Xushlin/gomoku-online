@@ -96,11 +96,6 @@ class LobbyViewModel extends ViewModel {
     }
   }
 
-  /// Ends the session. **No navigation here** — the router watches
-  /// `AuthRepository.signedIn` and redirects, so a ViewModel that also pushed a route
-  /// would be a second answer to the same question.
-  Future<void> signOut() => _auth.logout();
-
   Future<String?> join(String roomId) async {
     try {
       await _rooms.join(roomId);

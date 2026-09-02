@@ -37,6 +37,16 @@ Color? colorOf(String? token) {
 }
 
 class AppTheme {
+  /// Every theme the synced token artefact carries.
+  ///
+  /// **Derived from `themeTokens`, never typed out.** A hand-written list posing as a
+  /// registry is the defect this repo has fixed eight times, and four theme names look
+  /// stable enough to be exactly where it happens again. The artefact comes from
+  /// `tool/sync_shared.dart` and is pinned by `shared_sync_test`, so adding a theme on
+  /// the web side makes it appear here — and makes the copy walk go red until it has a
+  /// name.
+  static List<String> get availableThemes => themeTokens.keys.toList()..sort();
+
   /// Builds a [ThemeData] for one theme name and mode.
   ///
   /// Falls back to Material's own colour only where a token genuinely has no

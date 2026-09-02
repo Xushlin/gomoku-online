@@ -92,9 +92,9 @@ void main() {
     test('the walk found them, so the checks below are not vacuous', () {
       // Without this, a renamed directory leaves both checks iterating an empty list
       // and passing — the exact shape of the bug they exist for.
-      // **This number changing is the point.** It was 3 (login + lobby + game) and
-      // the catalogue makes it 4; the day a fifth lands, this line is what says so.
-      expect(viewModels, hasLength(4), reason: 'login + lobby + game + catalog');
+      // **This number changing is the point, and it has now said so twice** — the
+      // catalogue took it from 3 to 4, settings from 4 to 5.
+      expect(viewModels, hasLength(5), reason: 'login + lobby + game + catalog + settings');
     });
 
     test('each one extends ViewModel', () {
@@ -130,7 +130,7 @@ void main() {
       final callers = viewModels
           .where((f) => f.readAsStringSync().contains('notifyIfAlive('))
           .length;
-      expect(callers, 4);
+      expect(callers, 5);
       expect(
         File('lib/ui/view_model.dart').readAsStringSync(),
         contains('if (!_disposed) notifyListeners();'),
