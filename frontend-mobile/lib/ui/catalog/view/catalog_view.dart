@@ -112,11 +112,13 @@ class _GameCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 4,
                 children: [
-                  // No seat-count chip: there is no copy for "N seats" in the shared
-                  // i18n artefact, and inventing a mobile-only key would break
-                  // `shared_sync_test`. `seatCount` is still parsed — 斗地主 and 挖坑
-                  // need it — it just has nothing to render into yet.
-                  if (rated) _Chip(label: '★'),
+                  // **No ★ chip, and no seat-count chip.** Both were dropped after
+                  // looking at this screen on a real device: a bare ★ tells a player
+                  // nothing — it meant "this game is rated", and mobile has no
+                  // leaderboard to send them to — and there is no copy for "N seats" in
+                  // the shared i18n artefact, so inventing one would break
+                  // `shared_sync_test`. `isRated` and `seatCount` are still parsed;
+                  // they have nothing to render into yet.
                   if (!playable) _Chip(label: comingSoon, tone: scheme.tertiary),
                 ],
               ),
@@ -162,7 +164,10 @@ class _Message extends StatelessWidget {
       children: [
         Text(text, textAlign: TextAlign.center),
         const SizedBox(height: 8),
-        TextButton(onPressed: onRetry, child: const Text('↻')),
+        TextButton(
+          onPressed: onRetry,
+          child: Text(context.read<Translations>().t('lobby.errors.retry')),
+        ),
       ],
     ),
   );

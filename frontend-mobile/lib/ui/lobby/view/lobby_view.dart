@@ -81,15 +81,31 @@ class _RoomTile extends StatelessWidget {
   final Room room;
   final VoidCallback onTap;
 
+  /// **`status.wire` is the on-the-wire value, not something to show a person.**
+  /// This tile used to print it, so a Chinese UI said `Playing` — visible on the very
+  /// first real device it ran on, and invisible to every test, because "shows a raw
+  /// English enum" is not a missing key.
+  static String _statusKey(RoomStatus status) => switch (status) {
+    RoomStatus.waiting => 'lobby.rooms.status-waiting',
+    RoomStatus.playing => 'lobby.rooms.status-playing',
+    RoomStatus.finished => 'lobby.rooms.status-finished',
+    RoomStatus.unknown => 'lobby.rooms.status-waiting',
+  };
+
   @override
-  Widget build(BuildContext context) => ListTile(
-    title: Text(room.name),
-    // `totalSeats` is how many seats the game HAS; `takenSeats` is how many are
-    // filled. The web client conflated those in five places.
-    subtitle: Text('${room.status.wire} · ${room.takenSeats}/${room.totalSeats}'),
-    trailing: const Icon(Icons.chevron_right),
-    onTap: onTap,
-  );
+  Widget build(BuildContext context) {
+    final t = context.read<Translations>();
+    return ListTile(
+      title: Text(room.name),
+      // `totalSeats` is how many seats the game HAS; `takenSeats` is how many are
+      // filled. The web client conflated those in five places.
+      subtitle: Text(
+        '${t.t(_statusKey(room.status))} · ${room.takenSeats}/${room.totalSeats}',
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
 }
 
 class _Message extends StatelessWidget {
@@ -107,7 +123,14 @@ class _Message extends StatelessWidget {
         const SizedBox(height: 80),
         Center(child: Text(text)),
         const SizedBox(height: 12),
-        Center(child: TextButton(onPressed: onRetry, child: const Text('↻'))),
+        Center(
+          child: TextButton(
+            onPressed: onRetry,
+            // A labelled button, not a bare glyph: `↻` says nothing to somebody who has
+            // not seen the code, and the copy for it was already in the bundle.
+            child: Text(context.read<Translations>().t('lobby.errors.retry')),
+          ),
+        ),
       ],
     );
   }
