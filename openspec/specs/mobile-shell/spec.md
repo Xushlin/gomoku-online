@@ -5,19 +5,26 @@ TBD - created by archiving change add-mobile-shell. Update Purpose after archive
 ## Requirements
 ### Requirement: SignalR 连通性 SHALL 在写任何 UI 之前被证伪
 
-本变更 SHALL 先用一个不带 UI 的最小 Dart 脚本证明 `signalr_netcore` 能与本平台的 hub 通信:连上 `/hubs/match`、带查询串 JWT、`JoinRoom` 与 `MakeMove` 各成功一次。
+本平台的每一个实时客户端 SHALL 先用一个不带 UI 的最小脚本证明它能与本平台的 hub 通信,而那份证明 MUST 覆盖**两个方向**:连上 `/hubs/match`、带查询串 JWT、`JoinRoom` 与一次落子各成功一次(**出向**),**并且收到至少一条服务端推送、断言它的内容**(**入向**)。
+
+**一个只测发送的连通性证明是半个证明,而这笔账已经付过了。** 手机端订阅的是 `RoomStateChanged`,服务端发的是 `RoomState` —— SignalR 对「订阅了一个没人调用的名字」不报错也不警告,于是**入向从第一天起就是死的**,而这条要求是满足的、每一条测试是绿的。症状是对手加入后屏幕还写「等待中」、自己落了子盘面一动不动。
 
 **这不是流程洁癖,是这个变更最大的风险。** `signalr_netcore` 是社区包(1.4.4,最近发布 2025-09-05),而我们的 hub 走查询串 JWT + JSON 协议 + 具名方法。它**可能根本不通**,而那时要做的决定是**换传输方案**(自研协议层,或给 hub 加 REST 落子路径)—— 一个比 UI 重写更大的决定。
 
 铺完 UI 再发现,等于那些 UI 白做。所以顺序是规格的一部分。
 
 #### Scenario: 不通就停下来
-- **WHEN** 最小脚本无法完成 `JoinRoom` 或 `MakeMove`
-- **THEN** 本变更 MUST 停止并汇报,MUST NOT 继续写 UI
+- **WHEN** 最小脚本无法完成出向调用,**或者一条推送都没收到**
+- **THEN** 该变更 MUST 停止并汇报,MUST NOT 继续写 UI
+
+#### Scenario: 入向的判据是内容,不是「连上了」
+- **WHEN** 客户端已经进了房间,且服务端广播了一次房间状态
+- **THEN** 脚本 MUST 收到那条推送,并 MUST 断言它的内容(那一步棋在里面)
+- **AND** 拿 REST 查「服务端有没有这一步」**MUST NOT** 算作入向的证明 —— 它证明的是**服务端收到了**,不是**客户端收得到**。旧版探针里那一条自称「正面对照」的断言正是这个形状
 
 #### Scenario: 通了才继续
-- **WHEN** 脚本两个调用都成功
-- **THEN** 把「能通」这件事写进 JOURNAL,再开始外壳
+- **WHEN** 两个方向都成功
+- **THEN** 把「两个方向都能通」这件事写进 JOURNAL,再开始外壳
 
 ### Requirement: 手机端 SHALL 读 web 端那份 i18n 产物,MUST NOT 建第二套翻译
 
@@ -370,4 +377,24 @@ GameViewModel.open (game_view_model.dart:31)
 - **THEN** 客户端 MUST 把它发出去
 - **AND** 服务端 MUST 拒绝,界面 MUST 显示错误
 - **AND** 落点 MUST 是空格或敌子 —— 这是唯一能确认客户端没有偷偷自己判合法性的路
+
+### Requirement: 客户端订阅的 hub 方法名 SHALL 从服务端源码派生
+
+客户端 `connection.on('X')` 里的每一个 `X` MUST 属于服务端 `SendAsync("X"` 的全集,而那个全集 MUST 从服务端源码里抽,MUST NOT 手写在客户端旁边。
+
+**这条机制已经落地(`test/hub_contract_test.dart`),而当时没有任何要求守着它。** 一个有机制没要求的东西,是下一个整理代码的人第一个删掉的。
+
+实测的数字:服务端发 **10** 个方法名,web 端订阅的 10 个逐字对得上(那是同时写出来的,不是有机制),手机端订阅 **2** 个、其中 **1** 个不存在。
+
+#### Scenario: 订阅一个不存在的名字会红
+- **WHEN** 客户端订阅一个服务端不发的方法名
+- **THEN** 走查 MUST 红,并 MUST 指名那个字符串
+- **AND** 合法名字的全集 MUST 从 `backend/src/Gewu.Api/Hubs/SignalRRoomNotifier.cs` 里抽,
+  `shared_sync_test` 读 `frontend-web/` 早有先例
+
+#### Scenario: 两边都不能是空的
+- **WHEN** 跑那条走查
+- **THEN** 服务端那份名字集 MUST 非空(至少 8 个),客户端那份 MUST 非空
+- **AND** 少了这一条,一个源文件改名就会让两边都变空,而「每个名字都合法」对空集
+  平凡成立 —— 正是这条要求要防的那种形状
 
