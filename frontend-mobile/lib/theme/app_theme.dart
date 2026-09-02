@@ -99,6 +99,20 @@ class AppTheme {
         style: FilledButton.styleFrom(backgroundColor: primary, foregroundColor: onPrimary),
       ),
       snackBarTheme: SnackBarThemeData(backgroundColor: surface, contentTextStyle: TextStyle(color: text)),
+      // **The board's colour rides on the `ThemeData`, and that is the mechanism.**
+      //
+      // It used to be read at the call site as `boardBackground(defaultThemeName, …)` —
+      // a literal — so the board stayed one colour while everything around it changed.
+      // The claim "choosing a theme is choosing the board colour" was true of the token
+      // bag and false of the screen, which is the worst combination: the assertion that
+      // four themes give more than one board colour was green throughout.
+      //
+      // As an extension it cannot drift: the board reads whatever theme is painting it,
+      // and a `view/` may not reach a repository to ask (`layering_test`), so there is
+      // no second way to get this wrong.
+      extensions: <ThemeExtension<dynamic>>[
+        BoardColors(background: boardBackground(name, brightness)),
+      ],
     );
   }
 
@@ -110,4 +124,22 @@ class AppTheme {
     final tokens = themeTokens[name]?[mode] ?? const {};
     return colorOf(tokens['color-well']) ?? colorOf(tokens['color-surface']) ?? const Color(0xFFD9B382);
   }
+}
+
+/// The board's own colours, carried on the `ThemeData` so the board follows the theme
+/// without anybody passing a theme name around.
+class BoardColors extends ThemeExtension<BoardColors> {
+  const BoardColors({required this.background});
+
+  final Color background;
+
+  @override
+  BoardColors copyWith({Color? background}) =>
+      BoardColors(background: background ?? this.background);
+
+  @override
+  BoardColors lerp(ThemeExtension<BoardColors>? other, double t) =>
+      other is BoardColors
+          ? BoardColors(background: Color.lerp(background, other.background, t)!)
+          : this;
 }

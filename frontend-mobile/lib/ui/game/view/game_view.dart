@@ -215,10 +215,10 @@ class _GameViewState extends State<GameView> {
         cols: descriptor.cols!,
         renderer: renderer,
         moves: vm.moves,
-        background: AppTheme.boardBackground(
-          defaultThemeName,
-          Theme.of(context).brightness,
-        ),
+        // From the theme that is painting this screen. **Not from a theme name** —
+        // that call site used to pass the literal `defaultThemeName`, so the board
+        // stayed one colour under every theme while the token bag said otherwise.
+        background: Theme.of(context).extension<BoardColors>()!.background,
         selected: vm.selected,
         onTap: vm.tap,
       ),

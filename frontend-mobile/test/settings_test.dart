@@ -291,6 +291,63 @@ void main() {
       }
     });
 
+    test('the board colour rides on the ThemeData, not on a name passed by a caller', () {
+      // **This is the assertion the first version of this feature did not have, and it
+      // is the one that mattered.** The token bag supported four board colours the
+      // whole time; `game_view.dart` called `boardBackground(defaultThemeName, …)` with
+      // a literal, so the board stayed one colour under every theme. The test below
+      // ("four themes give more than one board colour") was green throughout, because
+      // it asked the token bag rather than the screen.
+      for (final name in AppTheme.availableThemes) {
+        for (final b in Brightness.values) {
+          expect(
+            AppTheme.build(name, b).extension<BoardColors>()?.background,
+            AppTheme.boardBackground(name, b),
+            reason: '$name/$b',
+          );
+        }
+      }
+    });
+
+    test('and no view names a theme, so no call site can pin one', () {
+      // Derived from the directory, not a list: every `view/` file under `ui/` is
+      // walked, so a new screen is covered the day it is written. A view that names a
+      // theme has taken a decision that belongs to `SettingsRepository`, and the
+      // symptom is one widget that never changes colour.
+      // **The non-vacuity check below caught this walk being empty once already**,
+      // and the cause is worth keeping: the separator was written as an escaped
+      // backslash that collapsed to an empty string, so zero files matched, every
+      // offender list was `[]`, and the output was identical to a clean codebase.
+      final offenders = <String>[];
+      for (final entity in Directory('lib/ui').listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        if (!entity.path.replaceAll('\\', '/').contains('/view/')) continue;
+        // **Code only, not prose** — the same rule `layering_test.dart` already had to
+        // learn. The first version of this walk flagged the comment in `game_view.dart`
+        // that *explains* why a view must not name a theme, and the obvious fix for
+        // that is deleting the explanation.
+        final code = entity.readAsLinesSync().where((line) {
+          final t = line.trimLeft();
+          return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*');
+        }).join(' ');
+        for (final name in AppTheme.availableThemes) {
+          if (code.contains("'$name'")) offenders.add('${entity.path} names $name');
+        }
+        if (code.contains('defaultThemeName')) {
+          offenders.add('${entity.path} names defaultThemeName');
+        }
+      }
+      expect(offenders, equals(<String>[]));
+      // Non-vacuity: the walk found files at all.
+      expect(
+        Directory('lib/ui').listSync(recursive: true).whereType<File>().where(
+          (f) => f.path.replaceAll('\\', '/').contains('/view/'),
+        ),
+        isNotEmpty,
+        reason: 'a walk over zero files asserts nothing',
+      );
+    });
+
     test('the board colour follows the theme, which is why there is no skin axis',
         () {
       // 「棋盘颜色」was asked for as a separate setting. On this client it is not one:
