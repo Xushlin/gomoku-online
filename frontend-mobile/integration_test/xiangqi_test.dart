@@ -23,6 +23,7 @@ import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
 import 'package:gewu_mobile/app.dart';
+import 'package:gewu_mobile/i18n/translations.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
 import 'package:gewu_mobile/ui/game/board_registry.dart';
 import 'package:gewu_mobile/ui/game/view/board_geometry.dart';
@@ -62,6 +63,15 @@ Offset intersection(WidgetTester tester, int row, int col) {
   );
   return rect.topLeft + g.centreOf(row, col);
 }
+
+/// The lobby's **create-room** button, found by its label.
+///
+/// **`find.byType(FloatingActionButton)` stopped being unambiguous** the day the lobby
+/// gained a second one (「新建 AI 对局」). Naming the button is better than counting
+/// them anyway: the label is what a player sees, and a finder that says *which* button
+/// cannot quietly start tapping the other one.
+Finder createRoomButton(Translations strings) =>
+    find.text(strings.t('lobby.rooms.create-button'));
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -103,10 +113,10 @@ void main() {
     expect(card, findsOneWidget, reason: '象棋 must be listed');
     await tester.tap(card);
     await tester.pumpAndSettle(const Duration(seconds: 4));
-    expect(find.byType(FloatingActionButton), findsOneWidget, reason: '象棋 lobby');
+    expect(createRoomButton(deps.strings), findsOneWidget, reason: '象棋 lobby');
 
     // --- create a room ------------------------------------------------------
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(createRoomButton(deps.strings));
     await tester.pumpAndSettle(const Duration(seconds: 6));
     expect(find.byType(GameBoard), findsOneWidget, reason: 'the room should be open');
 

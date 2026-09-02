@@ -60,6 +60,36 @@ class RoomRepository {
     return Room.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Creates a room against the machine.
+  ///
+  /// **`POST /api/rooms/ai`, checked against the controller's own attribute before it
+  /// was written** — the previous change guessed a route (`POST .../dissolve`) that does
+  /// not exist, and the unit test beside it asserted the guess and passed.
+  /// `test/room_route_contract_test.dart` covers this one too.
+  ///
+  /// `difficulty` is `Easy` / `Medium` / `Hard` and `humanSide` is `Black` / `White`;
+  /// both are the server's spellings. A wrong `difficulty` comes back as a **binding**
+  /// error (`"The body field is required"` plus a JSON conversion failure on
+  /// `$.difficulty`), not a domain one, so there is no field-level message to show.
+  Future<Room> createAiRoom({
+    required String name,
+    required String gameKey,
+    required String difficulty,
+    required String humanSide,
+  }) async {
+    final response = await _dio.post<dynamic>(
+      '/api/rooms/ai',
+      data: {
+        'name': name,
+        'gameKey': gameKey,
+        'difficulty': difficulty,
+        'humanSide': humanSide,
+      },
+    );
+    _refuseFailure(response);
+    return Room.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Joining a room you already sit in answers 409, and that is not a failure worth
   /// blocking on — the server owns seats, and the caller's intent (open this room)
   /// is still satisfiable.

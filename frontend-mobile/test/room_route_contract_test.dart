@@ -35,15 +35,28 @@ Set<String> serverRoutes(File source) {
 }
 
 /// `VERB path` for every call the repository makes, with ids collapsed to a template.
+///
+/// **Scanned over the whole file, not line by line.** The first version was line-scoped
+/// and therefore missed
+///
+/// ```dart
+/// await _dio.post<dynamic>(
+///   '/api/rooms/ai',
+/// ```
+///
+/// — a real call, formatted the way a call with a body gets formatted. A pattern that
+/// only matches the *simplest* shape reports nothing about the others, and its output is
+/// indistinguishable from "they are all fine". The non-vacuity test below pins the
+/// multi-line one so it cannot narrow again.
 Set<String> clientCalls(File source) {
-  final call = RegExp(r"_dio\.(get|post|put|delete|patch)<[^>]*>\(\s*'([^']+)'");
+  final call = RegExp(
+    r"_dio\.(get|post|put|delete|patch)<[^>]*>\(\s*'([^']+)'",
+    multiLine: true,
+    dotAll: true,
+  );
   final found = <String>{};
-  for (final line in source.readAsLinesSync()) {
-    final trimmed = line.trimLeft();
-    if (trimmed.startsWith('//') || trimmed.startsWith('///')) continue;
-    for (final m in call.allMatches(line)) {
-      found.add('${m.group(1)!.toUpperCase()} ${m.group(2)!}');
-    }
+  for (final m in call.allMatches(source.readAsStringSync())) {
+    found.add('${m.group(1)!.toUpperCase()} ${m.group(2)!}');
   }
   return found;
 }
@@ -67,6 +80,9 @@ void main() {
     expect(repository.existsSync(), isTrue, reason: repository.path);
     expect(serverRoutes(controller).length, greaterThanOrEqualTo(5));
     expect(clientCalls(repository), isNotEmpty);
+    // The multi-line call the first version of the pattern missed. Missing it looked
+    // exactly like the file being clean.
+    expect(clientCalls(repository), contains('POST /api/rooms/ai'));
   });
 
   test('every room route the client calls exists on the controller', () {
@@ -103,5 +119,8 @@ void main() {
     final calls = clientCalls(repository);
     expect(calls, contains('DELETE /api/rooms/\$roomId'));
     expect(calls, contains('POST /api/rooms/\$roomId/leave'));
+    // The AI room, checked against the controller *before* it was written this time.
+    expect(routes, contains('POST ai'), reason: 'the AI room');
+    expect(calls, contains('POST /api/rooms/ai'));
   });
 }

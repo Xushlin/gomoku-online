@@ -35,6 +35,83 @@ class _LobbyViewState extends State<LobbyView> {
     }
   }
 
+
+  /// Picks a difficulty and a side, then creates the room.
+  ///
+  /// `showDialog` rather than a hand-rolled overlay: focus trapping, the barrier and
+  /// back-button handling come with it.
+  Future<void> _openAiDialog(LobbyViewModel vm) async {
+    final t = context.read<Translations>();
+    var difficulty = 'Medium';
+    var side = 'Black';
+
+    final start = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(t.t('lobby.ai-game.dialog-title')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(t.t('lobby.ai-game.difficulty-label')),
+              const SizedBox(height: 6),
+              // The three spellings are the server's own enum names.
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'Easy',
+                    label: Text(t.t('lobby.ai-game.difficulty-easy')),
+                  ),
+                  ButtonSegment(
+                    value: 'Medium',
+                    label: Text(t.t('lobby.ai-game.difficulty-medium')),
+                  ),
+                  ButtonSegment(
+                    value: 'Hard',
+                    label: Text(t.t('lobby.ai-game.difficulty-hard')),
+                  ),
+                ],
+                selected: {difficulty},
+                onSelectionChanged: (v) => setDialogState(() => difficulty = v.first),
+              ),
+              const SizedBox(height: 16),
+              Text(t.t('lobby.ai-game.side-label')),
+              const SizedBox(height: 6),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'Black',
+                    label: Text(t.t('lobby.ai-game.side-black')),
+                  ),
+                  ButtonSegment(
+                    value: 'White',
+                    label: Text(t.t('lobby.ai-game.side-white')),
+                  ),
+                ],
+                selected: {side},
+                onSelectionChanged: (v) => setDialogState(() => side = v.first),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(t.t('lobby.ai-game.cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(t.t('lobby.ai-game.submit')),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (start != true || !mounted) return;
+    await _open(() => vm.createAiRoom(difficulty: difficulty, humanSide: side));
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<LobbyViewModel>();
@@ -50,14 +127,39 @@ class _LobbyViewState extends State<LobbyView> {
           IconButton(onPressed: vm.signOut, icon: const Icon(Icons.logout)),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _open(vm.create),
-        icon: const Icon(Icons.add),
-        label: Text(t.t('lobby.rooms.create-button')),
+      // **Both buttons are derived, and both are labelled.** `heroTag` has to differ:
+      // two `FloatingActionButton`s sharing the default tag throw at runtime, and the
+      // failure is a Hero conflict that reads nothing like "you have two FABs".
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (vm.canPlayAi)
+            FloatingActionButton.extended(
+              heroTag: 'ai-game',
+              onPressed: () => _openAiDialog(vm),
+              icon: const Icon(Icons.smart_toy_outlined),
+              label: Text(t.t('lobby.ai-game.button')),
+            ),
+          if (vm.canPlayAi && vm.canCreateRoom) const SizedBox(height: 12),
+          if (vm.canCreateRoom)
+            FloatingActionButton.extended(
+              heroTag: 'create-room',
+              onPressed: () => _open(vm.create),
+              icon: const Icon(Icons.add),
+              label: Text(t.t('lobby.rooms.create-button')),
+            ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: vm.load,
         child: switch ((vm.loading, vm.errorKey, vm.rooms.isEmpty)) {
+          // A game with no human-vs-human mode has no room list to show, and offering
+          // one would be offering a button the server answers 400 to.
+          (false, null, _) when !vm.canCreateRoom => _AiOnly(
+            title: t.t('lobby.game-lobby.unavailable.ai-only-title'),
+            body: t.t('lobby.game-lobby.unavailable.ai-only-body'),
+          ),
           (true, _, _) => const Center(child: CircularProgressIndicator()),
           (_, final String key, _) => _Message(text: t.t(key), onRetry: vm.load),
           (_, _, true) => _Message(text: t.t('lobby.rooms.empty'), onRetry: vm.load),
@@ -131,6 +233,28 @@ class _Message extends StatelessWidget {
             child: Text(context.read<Translations>().t('lobby.errors.retry')),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// A game the platform only offers against the machine.
+class _AiOnly extends StatelessWidget {
+  const _AiOnly({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    // Inside a RefreshIndicator the child must scroll, or pull-to-refresh cannot start.
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const SizedBox(height: 60),
+        Text(title, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        Text(body, textAlign: TextAlign.center),
       ],
     );
   }

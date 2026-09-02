@@ -21,6 +21,11 @@ import 'board_registry.dart';
 const _labelsByGame = <String, List<String>>{
   // 五子棋: black moves first.
   gomokuGameKey: ['game.seat.black', 'game.seat.white'],
+  // 一字棋: the same reading, because it is the same game at three roads — web's
+  // manifest spells it out (`seatLabelKeys: ['game.seat.black', 'game.seat.white']`).
+  // **Without this entry it silently fell back to "seat N"**, which is the correct
+  // fallback for a game whose seats have no colour and the wrong answer for this one.
+  tictactoeGameKey: ['game.seat.black', 'game.seat.white'],
   // 象棋: **red moves first**, so seat 0 is red.
   xiangqiGameKey: ['game.seat.red', 'game.seat.black'],
 };

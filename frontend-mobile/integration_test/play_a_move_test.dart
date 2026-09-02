@@ -23,6 +23,7 @@ import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
 import 'package:gewu_mobile/app.dart';
+import 'package:gewu_mobile/i18n/translations.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
 import 'package:gewu_mobile/ui/game/view/game_board.dart';
 
@@ -48,6 +49,15 @@ Future<Map<String, dynamic>> _get(String path, String token) async {
   );
   return jsonDecode(res.body) as Map<String, dynamic>;
 }
+
+/// The lobby's **create-room** button, found by its label.
+///
+/// **`find.byType(FloatingActionButton)` stopped being unambiguous** the day the lobby
+/// gained a second one (「新建 AI 对局」). Naming the button is better than counting
+/// them anyway: the label is what a player sees, and a finder that says *which* button
+/// cannot quietly start tapping the other one.
+Finder createRoomButton(Translations strings) =>
+    find.text(strings.t('lobby.rooms.create-button'));
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -117,8 +127,8 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 4));
 
     // --- create a room from the lobby ---------------------------------------
-    expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'lobby should be showing');
-    await tester.tap(find.byType(FloatingActionButton));
+    expect(createRoomButton(deps.strings), findsOneWidget, reason: 'lobby should be showing');
+    await tester.tap(createRoomButton(deps.strings));
     await tester.pumpAndSettle(const Duration(seconds: 6));
 
     expect(find.byType(GameBoard), findsOneWidget, reason: 'the room should be open');

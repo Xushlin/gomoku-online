@@ -20,6 +20,7 @@ import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
 import 'package:gewu_mobile/app.dart';
+import 'package:gewu_mobile/i18n/translations.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
 import 'package:gewu_mobile/ui/game/board_registry.dart';
 import 'package:gewu_mobile/ui/game/view/game_board.dart';
@@ -77,7 +78,7 @@ Future<void> _enterGomokuLobby(WidgetTester tester, AppDependencies deps) async 
   expect(card, findsOneWidget, reason: 'the catalogue must list 五子棋');
   await tester.tap(card);
   await tester.pumpAndSettle(const Duration(seconds: 4));
-  expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'lobby should be showing');
+  expect(createRoomButton(deps.strings), findsOneWidget, reason: 'lobby should be showing');
 }
 
 bool _canPopUnder(WidgetTester tester, Finder anchor) =>
@@ -94,6 +95,15 @@ Future<void> systemBack(WidgetTester tester) async {
   );
   await tester.pumpAndSettle(const Duration(seconds: 2));
 }
+
+/// The lobby's **create-room** button, found by its label.
+///
+/// **`find.byType(FloatingActionButton)` stopped being unambiguous** the day the lobby
+/// gained a second one (「新建 AI 对局」). Naming the button is better than counting
+/// them anyway: the label is what a player sees, and a finder that says *which* button
+/// cannot quietly start tapping the other one.
+Finder createRoomButton(Translations strings) =>
+    find.text(strings.t('lobby.rooms.create-button'));
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -123,13 +133,13 @@ void main() {
     // --- the lobby sits on it ------------------------------------------------
     await _enterGomokuLobby(tester, deps);
     expect(
-      _canPopUnder(tester, find.byType(FloatingActionButton)),
+      _canPopUnder(tester, createRoomButton(deps.strings)),
       isTrue,
       reason: 'games/:key must nest under /',
     );
 
     // --- and a room sits on the lobby ---------------------------------------
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(createRoomButton(signedIn.deps.strings));
     await tester.pumpAndSettle(const Duration(seconds: 6));
     expect(find.byType(GameBoard), findsOneWidget, reason: 'the room should be open');
     expect(
@@ -141,7 +151,7 @@ void main() {
     // --- back down the stack, one level per press ----------------------------
     await systemBack(tester);
     expect(find.byType(GameBoard), findsNothing, reason: 'back must leave the room');
-    expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'and land on the lobby');
+    expect(createRoomButton(deps.strings), findsOneWidget, reason: 'and land on the lobby');
 
     await systemBack(tester);
     expect(
@@ -199,7 +209,7 @@ void main() {
     // its own leading button exactly when `canPop()` is true.
     final signedIn = await _signIn(tester, 'ra');
     await _enterGomokuLobby(tester, signedIn.deps);
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(createRoomButton(signedIn.deps.strings));
     await tester.pumpAndSettle(const Duration(seconds: 6));
     expect(find.byType(GameBoard), findsOneWidget);
 
@@ -207,7 +217,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle(const Duration(seconds: 3));
     expect(find.byType(GameBoard), findsNothing);
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(createRoomButton(signedIn.deps.strings), findsOneWidget);
   });
 
   testWidgets('a dead session lands at the login page', (tester) async {
