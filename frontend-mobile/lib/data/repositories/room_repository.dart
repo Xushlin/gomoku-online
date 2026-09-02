@@ -87,6 +87,10 @@ class RoomRepository {
   Future<void> makeMove(String roomId, int row, int col) =>
       _hub.makeMove(roomId, row, col);
 
+  /// Sends a relocation. **The server judges legality, not this client** (design D2).
+  Future<void> movePiece(String roomId, int fromRow, int fromCol, int row, int col) =>
+      _hub.movePiece(roomId, fromRow, fromCol, row, col);
+
   Future<void> close() async {
     _hub.state.removeListener(_republish);
     await _hub.dispose();

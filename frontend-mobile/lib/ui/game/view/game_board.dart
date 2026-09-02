@@ -5,6 +5,8 @@
 /// square, which 象棋 (10×9) is not, and it had exactly one caller that always passed
 /// 15 — so nothing ever checked that any other value worked. It did not: the star
 /// points were the literal `[3, 7, 11]`, which on a smaller board falls outside it.
+///
+/// Both shapes now have a production caller: 五子棋 at 15×15 and 中国象棋 at 10×9.
 library;
 
 import 'package:flutter/material.dart';
@@ -22,6 +24,7 @@ class GameBoard extends StatelessWidget {
     required this.moves,
     required this.background,
     required this.onTap,
+    this.selected,
   });
 
   final int rows;
@@ -32,6 +35,9 @@ class GameBoard extends StatelessWidget {
   final List<Move> moves;
 
   final Color background;
+
+  /// The chosen origin, for a game whose renderer [BoardRenderer.relocates].
+  final (int, int)? selected;
 
   /// Called with the intersection tapped. **Not called at all** for a tap on the
   /// letterbox margin a non-square board leaves inside its square box.
@@ -61,6 +67,7 @@ class GameBoard extends StatelessWidget {
                 geometry: geometry,
                 renderer: renderer,
                 moves: moves,
+                selected: selected,
                 background: background,
                 lineColor: Theme.of(context).dividerColor,
               ),
@@ -77,6 +84,7 @@ class _BoardPainter extends CustomPainter {
     required this.geometry,
     required this.renderer,
     required this.moves,
+    required this.selected,
     required this.background,
     required this.lineColor,
   });
@@ -84,6 +92,7 @@ class _BoardPainter extends CustomPainter {
   final BoardGeometry geometry;
   final BoardRenderer renderer;
   final List<Move> moves;
+  final (int, int)? selected;
   final Color background;
   final Color lineColor;
 
@@ -101,12 +110,13 @@ class _BoardPainter extends CustomPainter {
       Paint()..color = background,
     );
     renderer.paintDecoration(canvas, geometry, lineColor);
-    renderer.paintOccupants(canvas, geometry, moves);
+    renderer.paintOccupants(canvas, geometry, moves, selected);
   }
 
   @override
   bool shouldRepaint(_BoardPainter old) =>
       old.moves.length != moves.length ||
+      old.selected != selected ||
       old.background != background ||
       old.lineColor != lineColor ||
       old.renderer != renderer ||

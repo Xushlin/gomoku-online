@@ -17,12 +17,17 @@
 library;
 
 import 'view/board_renderer.dart';
+import 'view/xiangqi_renderer.dart';
 
 /// 五子棋.
 const gomokuGameKey = 'gomoku';
 
+/// 中国象棋.
+const xiangqiGameKey = 'xiangqi';
+
 const boardRenderers = <String, BoardRenderer>{
   gomokuGameKey: GomokuRenderer(),
+  xiangqiGameKey: XiangqiRenderer(),
 };
 
 /// The renderer for [gameKey], or null when this client has no board for it.

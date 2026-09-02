@@ -114,6 +114,14 @@ void main() {
     expect(files, contains('ui/router.dart'));
   });
 
+  test('the 象棋 files are inside the sample too', () {
+    // Same reasoning again: a new area that crosses no boundary today is still an area
+    // the four rules must be *applying* to, or the day it does cross one nothing says so.
+    expect(files, contains('ui/game/xiangqi/position.dart'));
+    expect(files, contains('ui/game/view/xiangqi_renderer.dart'));
+    expect(files, contains('ui/game/seat_labels.dart'));
+  });
+
   group('a View never reaches past its ViewModel', () {
     test('ui/** imports no service and no transport', () {
       expect(

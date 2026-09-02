@@ -47,11 +47,7 @@ class _GameViewState extends State<GameView> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(_statusLabel(t, room?.status)),
-                Text(
-                  room?.game.currentSeat == null
-                      ? ''
-                      : t.t('game.turn.seat-turn', {'seat': room!.game.currentSeat! + 1}),
-                ),
+                Text(_turnLabel(t, vm, room)),
               ],
             ),
           ),
@@ -94,9 +90,27 @@ class _GameViewState extends State<GameView> {
           defaultThemeName,
           Theme.of(context).brightness,
         ),
-        onTap: vm.place,
+        selected: vm.selected,
+        onTap: vm.tap,
       ),
     );
+  }
+
+  /// Whose move it is.
+  ///
+  /// **A side's name when this game's seats have one, a seat number otherwise** —
+  /// dispatched on the game key, never on the seat count. 象棋 and 五子棋 both have two
+  /// seats, so a seat-count criterion cannot tell them apart, and the case it was
+  /// written for (a game with no 白方) slipped through exactly there.
+  String _turnLabel(Translations t, GameViewModel vm, Room? room) {
+    final seat = room?.game.currentSeat;
+    if (seat == null) return '';
+
+    final labelKey = vm.turnSeatLabelKey;
+    if (labelKey != null) {
+      return t.t('game.turn.side-turn', {'side': t.t(labelKey)});
+    }
+    return t.t('game.turn.seat-turn', {'seat': seat + 1});
   }
 
   String _statusLabel(Translations t, RoomStatus? status) => switch (status) {
