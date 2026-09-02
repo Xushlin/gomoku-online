@@ -39,7 +39,6 @@ class MatchHub {
 
   final _state = ValueNotifier<RoomSnapshot?>(null);
   final _dissolved = ValueNotifier<int>(0);
-  final _errors = StreamController<String>.broadcast();
 
   ValueListenable<RoomSnapshot?> get state => _state;
 
@@ -48,7 +47,6 @@ class MatchHub {
   /// A counter rather than a bool, because "it happened again" has to be observable:
   /// a bool that is already true reports nothing the second time.
   ValueListenable<int> get dissolved => _dissolved;
-  Stream<String> get errors => _errors.stream;
 
   bool get connected => _connection?.state == HubConnectionState.Connected;
 
@@ -79,10 +77,6 @@ class MatchHub {
         _state.value = RoomSnapshot(Map<String, dynamic>.from(args.first as Map));
       }
     });
-    connection.on('GameEnded', (args) {
-      if (args != null && args.isNotEmpty) _errors.add('game-ended');
-    });
-
     // **After this there is no `RoomState`** — the room is physically deleted. So
     // ignoring this push is not "one missing toast": it leaves a person sitting on the
     // board of a room that no longer exists, where every tap is an error.
@@ -144,7 +138,6 @@ class MatchHub {
   Future<void> dispose() async {
     await _connection?.stop();
     _connection = null;
-    await _errors.close();
     _state.dispose();
     _dissolved.dispose();
   }
