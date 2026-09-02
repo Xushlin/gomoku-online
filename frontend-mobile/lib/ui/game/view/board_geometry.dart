@@ -10,6 +10,10 @@
 /// 15-road board. A parameter with one caller that always passes the same value is not
 /// a parameter; it is an unverified promise.
 ///
+/// `add-mobile-game-catalog` left that promise **half kept** — `rows != cols` had only
+/// tests using it, and the debt was written down here with a named caller. That caller
+/// has since arrived: 中国象棋 renders 10×9 in production, so the note is closed.
+///
 /// Stones sit on **intersections**, not inside cells. There are `rows` lines one way
 /// and `cols` the other, each inset half a step from the edge — that inset is what
 /// makes the outermost line of stones look centred rather than clipped.

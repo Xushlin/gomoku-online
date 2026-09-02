@@ -177,7 +177,11 @@ void main() {
       // gaining a board.
       expect(servedKeys(), hasLength(7), reason: 'served by the API');
       expect(vm.entries, hasLength(6), reason: 'have copy, so they are listed');
-      expect(vm.entries.where((e) => e.playable), hasLength(1), reason: 'drawable here');
+      // **This line went red the day 象棋 landed, which is what it is for.** The
+      // set-equality check below stayed green through the same change — a derived
+      // invariant proves the shape, a concrete number is what makes "the number moved"
+      // visible to a person.
+      expect(vm.entries.where((e) => e.playable), hasLength(2), reason: 'drawable here');
     });
 
     test('the one filtered game is the one with no copy, and it is named', () async {

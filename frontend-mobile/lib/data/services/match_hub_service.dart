@@ -83,6 +83,27 @@ class MatchHub {
     await _connection!.invoke('MakeMove', args: [roomId, row, col]);
   }
 
+  /// A relocation: `from → to`. **A separate method, not extra arguments on
+  /// [makeMove].**
+  ///
+  /// SignalR applies no C# optional-parameter defaults in either direction: a client
+  /// sending fewer *or more* arguments than the hub method declares is rejected in the
+  /// binding layer — before any filter, and below the configured log level, so it is
+  /// invisible from both ends. Adding a parameter to a live hub method is a breaking
+  /// change; adding a method is not.
+  Future<void> movePiece(
+    String roomId,
+    int fromRow,
+    int fromCol,
+    int row,
+    int col,
+  ) async {
+    await _connection!.invoke(
+      'MovePiece',
+      args: [roomId, fromRow, fromCol, row, col],
+    );
+  }
+
   Future<void> dispose() async {
     await _connection?.stop();
     _connection = null;

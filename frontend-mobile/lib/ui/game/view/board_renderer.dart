@@ -15,11 +15,35 @@ import 'board_geometry.dart';
 abstract class BoardRenderer {
   const BoardRenderer();
 
+  /// Whether this game **moves** pieces rather than placing them.
+  ///
+  /// It lives on the renderer because the board registry is the only place this client
+  /// knows anything at all about a game, and "one tap or two" is the same fact as "does
+  /// it have pieces that already exist". A game that relocates gets `from → to` and a
+  /// selection step; a game that places gets one tap.
+  bool get relocates => false;
+
+  /// The seat owning the occupant of `(row, col)`, or null when it is empty.
+  ///
+  /// Asked by the selection logic, which must not know how any particular game stores
+  /// its board: a placement game answers from the move list, a relocation game replays
+  /// it. **Neither answer is a legality judgement** — "who is standing here" is not
+  /// "may they go there".
+  int? seatAt(List<Move> moves, int row, int col);
+
   /// Lines and ornament. Called before the pieces.
   void paintDecoration(Canvas canvas, BoardGeometry g, Color lineColor);
 
   /// The occupants, in play order. The last element is the most recent ply.
-  void paintOccupants(Canvas canvas, BoardGeometry g, List<Move> moves);
+  ///
+  /// [selected] is the intersection the player has picked as an origin, for a game
+  /// where [relocates] is true. Placement games ignore it.
+  void paintOccupants(
+    Canvas canvas,
+    BoardGeometry g,
+    List<Move> moves,
+    (int, int)? selected,
+  );
 }
 
 /// 五子棋 — a plain grid with star points, stones on the intersections.
@@ -40,6 +64,16 @@ class GomokuRenderer extends BoardRenderer {
   static List<int> starLines(int rows, int cols) {
     if (rows != cols || rows < 9 || rows.isEven) return const [];
     return [3, (rows - 1) ~/ 2, rows - 4];
+  }
+
+  @override
+  int? seatAt(List<Move> moves, int row, int col) {
+    // A placement game's history *is* its board, so the last stone on a point wins —
+    // and nothing in 五子棋 ever vacates one.
+    for (final move in moves.reversed) {
+      if (move.row == row && move.col == col) return move.seat;
+    }
+    return null;
   }
 
   @override
@@ -73,7 +107,12 @@ class GomokuRenderer extends BoardRenderer {
   }
 
   @override
-  void paintOccupants(Canvas canvas, BoardGeometry g, List<Move> moves) {
+  void paintOccupants(
+    Canvas canvas,
+    BoardGeometry g,
+    List<Move> moves,
+    (int, int)? selected,
+  ) {
     for (var i = 0; i < moves.length; i++) {
       final move = moves[i];
       if (!g.holds(move.row, move.col)) continue;
