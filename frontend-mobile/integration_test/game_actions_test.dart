@@ -12,7 +12,6 @@
 // would have failed with the button working perfectly: `Clients.User(...)` had no
 // `IUserIdProvider`, so every directed push in the platform's life went nowhere,
 // silently, and no test anywhere went red.
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';

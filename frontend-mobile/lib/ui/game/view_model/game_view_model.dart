@@ -150,6 +150,55 @@ class GameViewModel extends ViewModel {
     errorKey = cooldown ? 'game.errors.urge-cooldown' : 'game.errors.generic';
   }
 
+  /// Everything said in this room, oldest first.
+  List<ChatMessage> get chatMessages => _rooms.chat.value;
+
+  /// The error from the last send, or null. Separate from [errorKey] so a refused
+  /// message does not look like a refused move.
+  String? chatErrorKey;
+
+  bool sendingChat = false;
+
+  /// Says something in the room channel.
+  ///
+  /// **Whitespace-only is not sent, and that is not a legality judgement** — there is
+  /// simply nothing to send. Whether a message is acceptable (trim 1-500) is the
+  /// server's call, and this client does not keep a second copy of that rule: two
+  /// copies diverge, and the way it shows is the input saying yes while the server
+  /// says no.
+  Future<void> sendChat(String content) async {
+    if (sendingChat || content.trim().isEmpty) return;
+    sendingChat = true;
+    chatErrorKey = null;
+    notifyIfAlive();
+    try {
+      await _rooms.sendChat(roomId, content);
+    } catch (e) {
+      chatErrorKey = _chatErrorFor('$e');
+    } finally {
+      sendingChat = false;
+      notifyIfAlive();
+    }
+  }
+
+  /// Maps the server's refusal to copy.
+  ///
+  /// **Not everything is a length problem.** Mapping every failure to the length
+  /// message would pass a test that only checks the length case, and telling somebody
+  /// their message is too long when the connection dropped is a wrong answer that
+  /// looks like a right one.
+  static String _chatErrorFor(String message) {
+    if (message.contains('TooLong') || message.contains('MaxLength')) {
+      return 'game.chat.max-length-error';
+    }
+    if (message.contains('Chat') || message.contains('Invalid')) {
+      return 'game.errors.invalid-chat';
+    }
+    return 'game.errors.generic';
+  }
+
+  void _onChat() => notifyIfAlive();
+
   /// Bumped each time somebody urges this user. The View shows a toast on it.
   int urgeCount = 0;
 
@@ -215,6 +264,7 @@ class GameViewModel extends ViewModel {
     _rooms.live.addListener(_onPush);
     _rooms.dissolved.addListener(_onDissolved);
     _rooms.urged.addListener(_onUrged);
+    _rooms.chat.addListener(_onChat);
     try {
       // The catalogue before the room: the board cannot be drawn without it, and it is
       // cached after the first load so this is free on every later room.
@@ -351,6 +401,7 @@ class GameViewModel extends ViewModel {
     _rooms.live.removeListener(_onPush);
     _rooms.dissolved.removeListener(_onDissolved);
     _rooms.urged.removeListener(_onUrged);
+    _rooms.chat.removeListener(_onChat);
     super.dispose();
   }
 }

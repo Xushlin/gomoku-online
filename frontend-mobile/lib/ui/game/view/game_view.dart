@@ -8,6 +8,7 @@ import '../../../theme/app_theme.dart';
 import '../view_model/game_view_model.dart';
 import '../../router.dart';
 import '../board_registry.dart';
+import 'chat_panel.dart';
 import 'game_board.dart';
 
 class GameView extends StatefulWidget {
@@ -213,6 +214,13 @@ class _GameViewState extends State<GameView> {
           // before this route table they did: the arrow worked, the system back exited
           // the app.
           title: Text(room?.name ?? ''),
+          actions: [
+            IconButton(
+              tooltip: t.t('game.chat.title'),
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () => _openChat(vm),
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -238,6 +246,24 @@ class _GameViewState extends State<GameView> {
             _actions(context, vm, t),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Opens the conversation.
+  ///
+  /// **A `ListenableBuilder` around the panel**, because the sheet has its own element
+  /// tree: a push that arrives while it is open changes the ViewModel, and without a
+  /// listener rebuilding *inside* the sheet the new message would only appear after
+  /// closing and reopening it.
+  Future<void> _openChat(GameViewModel vm) async {
+    final t = context.read<Translations>();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ListenableBuilder(
+        listenable: vm,
+        builder: (context, _) => ChatPanel(vm: vm, strings: t),
       ),
     );
   }

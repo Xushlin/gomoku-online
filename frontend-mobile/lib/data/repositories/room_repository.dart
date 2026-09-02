@@ -35,6 +35,14 @@ class RoomRepository {
   ValueListenable<int> get dissolved => _dissolved;
   final _dissolved = ValueNotifier<int>(0);
 
+  /// Everything said in the room that is currently open.
+  ///
+  /// **Seeded from the room snapshot, then appended to.** The server sends one message
+  /// per push, so a listener that assigned instead of appending would wipe the history
+  /// the first time anybody spoke.
+  ValueListenable<List<ChatMessage>> get chat => _chat;
+  final _chat = ValueNotifier<List<ChatMessage>>(const []);
+
   /// Which room `open` last opened. Used to ignore pushes for rooms we have left.
   String? _openRoomId;
   bool _listening = false;
@@ -114,6 +122,9 @@ class RoomRepository {
     final snapshot = await byId(roomId);
     _live.value = snapshot;
     _openRoomId = roomId;
+    // The history rides on the snapshot, so opening a room already has it and there is
+    // no second endpoint to call.
+    _chat.value = snapshot.chatMessages;
 
     // **Registered once, not once per room.** This used to `addListener` on every
     // `open` with nothing ever removing it, so five rooms meant five registrations and
@@ -122,6 +133,7 @@ class RoomRepository {
     if (!_listening) {
       _hub.state.addListener(_republish);
       _hub.dissolved.addListener(_onDissolved);
+      _hub.chat.addListener(_onChat);
       _listening = true;
     }
     await _hub.joinRoom(roomId);
@@ -169,6 +181,21 @@ class RoomRepository {
 
   void _onDissolved() => _dissolved.value = _dissolved.value + 1;
 
+  void _onChat() {
+    final pushed = _hub.chat.value;
+    if (pushed == null) return;
+    final message = ChatMessage.fromJson(pushed);
+    // Append. **Never assign** — the push is one message, not the conversation.
+    // A duplicate id is dropped so a reconnect that replays does not double up.
+    if (_chat.value.any((m) => m.id.isNotEmpty && m.id == message.id)) return;
+    _chat.value = [..._chat.value, message];
+  }
+
+  /// Says something. **Content rules live on the server** (trim 1-500); this only
+  /// declines to send nothing at all, which is not the same judgement.
+  Future<void> sendChat(String roomId, String content) =>
+      _hub.sendChat(roomId, content, ChatChannelWire.room);
+
   /// Gives up this game. **Irreversible — the View asks first.**
   ///
   /// The server names the winner and pushes `GameEnded`; this method returns nothing on
@@ -209,6 +236,7 @@ class RoomRepository {
     if (_listening) {
       _hub.state.removeListener(_republish);
       _hub.dissolved.removeListener(_onDissolved);
+      _hub.chat.removeListener(_onChat);
       _listening = false;
     }
     _openRoomId = null;

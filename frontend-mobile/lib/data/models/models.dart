@@ -216,6 +216,58 @@ enum RoomStatus {
   );
 }
 
+/// Which conversation a message belongs to.
+///
+/// **Parsed by name, and an unrecognised value stays unrecognised.** Collapsing it to
+/// `room` would take a channel nobody here understands and broadcast it to the table —
+/// the spectator channel exists precisely so that some messages do not reach players.
+enum ChatChannel {
+  room('Room'),
+  spectator('Spectator'),
+  unknown('');
+
+  const ChatChannel(this.wire);
+
+  final String wire;
+
+  static ChatChannel parse(String? value) => switch (value) {
+    'Room' => ChatChannel.room,
+    'Spectator' => ChatChannel.spectator,
+    _ => ChatChannel.unknown,
+  };
+}
+
+/// One thing somebody said.
+class ChatMessage {
+  const ChatMessage({
+    required this.id,
+    required this.senderUserId,
+    required this.senderUsername,
+    required this.content,
+    required this.channel,
+    this.sentAt,
+  });
+
+  final String id;
+  final String senderUserId;
+
+  /// The name to show. **A snapshot taken by the server when the message was sent** —
+  /// so a later rename does not rewrite history.
+  final String senderUsername;
+  final String content;
+  final ChatChannel channel;
+  final DateTime? sentAt;
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+    id: '${json['id'] ?? ''}',
+    senderUserId: '${json['senderUserId'] ?? ''}',
+    senderUsername: '${json['senderUsername'] ?? ''}',
+    content: '${json['content'] ?? ''}',
+    channel: ChatChannel.parse(json['channel'] as String?),
+    sentAt: DateTime.tryParse('${json['sentAt'] ?? ''}'),
+  );
+}
+
 class Room {
   const Room({
     required this.id,
@@ -227,6 +279,7 @@ class Room {
     this.hostUsername,
     this.hostId,
     this.seatCount,
+    this.chatMessages = const [],
   });
 
   final String id;
@@ -258,6 +311,13 @@ class Room {
   /// got this wrong in five places; `seats.length` answers the other question.
   final int? seatCount;
 
+  /// What has been said in this room so far.
+  ///
+  /// **It rides on the room snapshot**, so opening a room already has the history and
+  /// there is no second endpoint to call. Pushes carry **one** message each and are
+  /// appended by the repository — never used to replace this list.
+  final List<ChatMessage> chatMessages;
+
   int get takenSeats => seats.where((s) => s.isTaken).length;
   int get totalSeats => seatCount ?? seats.length;
 
@@ -276,6 +336,10 @@ class Room {
     hostUsername: (json['host'] as Map<String, dynamic>?)?['username'] as String?,
     hostId: (json['host'] as Map<String, dynamic>?)?['id']?.toString(),
     seatCount: (json['seatCount'] as num?)?.toInt(),
+    chatMessages: [
+      for (final m in (json['chatMessages'] as List<dynamic>? ?? const []))
+        ChatMessage.fromJson(m as Map<String, dynamic>),
+    ],
   );
 }
 

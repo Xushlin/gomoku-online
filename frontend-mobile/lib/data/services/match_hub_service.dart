@@ -40,9 +40,13 @@ class MatchHub {
   final _state = ValueNotifier<RoomSnapshot?>(null);
   final _dissolved = ValueNotifier<int>(0);
   final _urged = ValueNotifier<int>(0);
+  final _chat = ValueNotifier<Map<String, dynamic>?>(null);
   Map<String, dynamic>? _lastUrge;
 
   ValueListenable<RoomSnapshot?> get state => _state;
+
+  /// The most recent chat message the server pushed. **One message, not a list.**
+  ValueListenable<Map<String, dynamic>?> get chat => _chat;
 
   /// Bumped each time somebody urges this user. See the subscription for why it is a
   /// counter and not a flag.
@@ -100,6 +104,14 @@ class MatchHub {
     // A counter beside the payload for the same reason `dissolved` is a counter: "it
     // happened again" has to be observable, and a value that is already set reports
     // nothing the second time.
+    // **One message per push, not the whole conversation.** A listener that treated
+    // this as the new list would wipe the history on the first thing anybody said.
+    connection.on('ChatMessage', (args) {
+      if (args != null && args.isNotEmpty && args.first is Map) {
+        _chat.value = Map<String, dynamic>.from(args.first! as Map);
+      }
+    });
+
     connection.on('UrgeReceived', (args) {
       if (args != null && args.isNotEmpty && args.first is Map) {
         _lastUrge = Map<String, dynamic>.from(args.first! as Map);
@@ -171,11 +183,43 @@ class MatchHub {
     await _connection!.invoke('Urge', args: [roomId]);
   }
 
+  /// Says something in a room.
+  ///
+  /// **The channel goes as a string, and that was measured rather than inferred.** Both
+  /// the REST pipeline and the hub register `JsonStringEnumConverter`, and
+  /// `test/room_social_probe_test.dart` confirmed `'Room'` binds against the live hub
+  /// (an integer binds too; the string form matches how this client reads every other
+  /// enum). Reading the DI registration would not have been enough: SignalR rejects a
+  /// badly-typed argument in the binding layer, before any filter and below the log
+  /// level, invisibly from both ends.
+  ///
+  /// **Three arguments, exactly.** No optional-parameter defaults are applied in either
+  /// direction.
+  Future<void> sendChat(String roomId, String content, ChatChannelWire channel) async {
+    await _connection!.invoke('SendChat', args: [roomId, content, channel.wire]);
+  }
+
   Future<void> dispose() async {
     await _connection?.stop();
     _connection = null;
     _state.dispose();
     _dissolved.dispose();
     _urged.dispose();
+    _chat.dispose();
   }
+}
+
+/// The wire name of a chat channel.
+///
+/// A separate two-value type rather than importing the model's `ChatChannel`: this file
+/// is a **service**, and services here do not know about models — the repository is
+/// where JSON becomes a model. Two values is small enough that the duplication cannot
+/// drift unnoticed, and `chat_test.dart` asserts the two agree.
+enum ChatChannelWire {
+  room('Room'),
+  spectator('Spectator');
+
+  const ChatChannelWire(this.wire);
+
+  final String wire;
 }
