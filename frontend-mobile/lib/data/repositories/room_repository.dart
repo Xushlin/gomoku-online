@@ -28,6 +28,17 @@ class RoomRepository {
   ValueListenable<Room?> get live => _live;
   final _live = ValueNotifier<Room?>(null);
 
+  /// Bumped when the room this repository has open was dissolved by its host.
+  ///
+  /// **There is no `RoomState` after a dissolve** — the room is deleted — so a screen
+  /// that waits for one waits forever.
+  ValueListenable<int> get dissolved => _dissolved;
+  final _dissolved = ValueNotifier<int>(0);
+
+  /// Which room `open` last opened. Used to ignore pushes for rooms we have left.
+  String? _openRoomId;
+  bool _listening = false;
+
   Future<List<Room>> list(String gameKey) async {
     final response = await _dio.get<dynamic>(
       '/api/rooms',
@@ -72,16 +83,61 @@ class RoomRepository {
   Future<Room> open(String roomId) async {
     final snapshot = await byId(roomId);
     _live.value = snapshot;
+    _openRoomId = roomId;
 
-    _hub.state.addListener(_republish);
+    // **Registered once, not once per room.** This used to `addListener` on every
+    // `open` with nothing ever removing it, so five rooms meant five registrations and
+    // five parses per push. Harmless, because `_republish` is idempotent — and harmless
+    // is exactly how a thing like this survives.
+    if (!_listening) {
+      _hub.state.addListener(_republish);
+      _hub.dissolved.addListener(_onDissolved);
+      _listening = true;
+    }
     await _hub.joinRoom(roomId);
     return snapshot;
   }
 
+  /// Leaves the room, on the server and on the hub.
+  ///
+  /// **Which route is the server's rule, not this client's preference:** the host of a
+  /// *waiting* room is refused by `/leave` (`HostCannotLeaveWaitingRoom`) and must use
+  /// `/dissolve`, which in turn only exists for waiting rooms. Writing it as a client
+  /// choice would invite the next reader to try both.
+  /// **Dissolve is `DELETE /api/rooms/{id}`, and getting that wrong is measured
+  /// history, not caution.** The first version of this method posted to
+  /// `/api/rooms/{id}/dissolve` — a route that does not exist — and the unit test
+  /// beside it asserted that exact path and passed, because a fake adapter accepts any
+  /// URL. **A test asserting that the client sent the URL the client was written to
+  /// send knows nothing about the URL the server has.** Only the live server said 404.
+  /// `test/room_route_contract_test.dart` now derives the legal routes from the
+  /// controller's own attributes.
+  Future<void> leave(String roomId, {required bool asHostOfWaitingRoom}) async {
+    final response = asHostOfWaitingRoom
+        ? await _dio.delete<dynamic>('/api/rooms/$roomId')
+        : await _dio.post<dynamic>('/api/rooms/$roomId/leave');
+    // 404 means it is already gone, which is the outcome the caller wanted.
+    if (response.statusCode != 404) _refuseFailure(response);
+
+    await _hub.leaveRoom(roomId);
+    if (_openRoomId == roomId) _openRoomId = null;
+  }
+
   void _republish() {
     final pushed = _hub.state.value;
-    if (pushed != null) _live.value = Room.fromJson(pushed.raw);
+    if (pushed == null) return;
+    final room = Room.fromJson(pushed.raw);
+
+    // **A second guard, and it is not redundant with leaving the group.** Leaving is
+    // asynchronous and a push already in flight can land after it; and a push for a
+    // room we are not looking at must never repaint the one we are. Enter A, leave,
+    // enter B, someone moves in A — without this, B's board shows A.
+    final open = _openRoomId;
+    if (open != null && room.id != open) return;
+    _live.value = room;
   }
+
+  void _onDissolved() => _dissolved.value = _dissolved.value + 1;
 
   /// Sends a move. **The server judges legality, not this client** (design D2).
   Future<void> makeMove(String roomId, int row, int col) =>
@@ -91,10 +147,21 @@ class RoomRepository {
   Future<void> movePiece(String roomId, int fromRow, int fromCol, int row, int col) =>
       _hub.movePiece(roomId, fromRow, fromCol, row, col);
 
+  /// Tears the connection down for good — app shutdown, not room exit.
+  ///
+  /// **Room exit goes through [leave], which keeps the connection.** Stopping the hub
+  /// on every exit would mean a fresh handshake for every room, and `_live` must stay
+  /// alive because the next room reuses it.
   Future<void> close() async {
-    _hub.state.removeListener(_republish);
+    if (_listening) {
+      _hub.state.removeListener(_republish);
+      _hub.dissolved.removeListener(_onDissolved);
+      _listening = false;
+    }
+    _openRoomId = null;
     await _hub.dispose();
     _live.dispose();
+    _dissolved.dispose();
   }
 
   void _refuseFailure(Response<dynamic> response) {

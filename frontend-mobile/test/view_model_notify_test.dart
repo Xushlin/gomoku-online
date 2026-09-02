@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:gewu_mobile/data/repositories/auth_repository.dart';
 import 'package:gewu_mobile/data/repositories/game_catalog_repository.dart';
 import 'package:gewu_mobile/data/repositories/room_repository.dart';
 import 'package:gewu_mobile/data/services/dio_client.dart';
@@ -59,6 +60,7 @@ void main() {
       final vm = GameViewModel(
         rooms: rooms,
         catalog: GameCatalogRepository(gatedDio),
+        auth: AuthRepository(dio: gatedDio, tokens: MemoryTokenStore()),
         roomId: 'r1',
       );
       final open = vm.open();
