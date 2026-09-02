@@ -1669,3 +1669,18 @@ Other platforms, unchanged from before:
   单测 164 → 182 → **184**;集成测试新增一个文件两条(换主题重画整个 app / 取消不登出、确认才触发路由重定向),六个既有集成测试文件**逐个**跑全绿,**匹配器与期望值一字未动**。`flutter analyze` 零问题。Web / 桌面 / 后端零改动。
 
   **一处只有整目录跑才会看见、而且会骗人的事:** `flutter test integration_test`(整个目录)报了 6 个失败,全是 `Unable to start the app on the device` —— 每个文件都要起一个 Windows 应用实例,互相抢。**它长得就像六个真失败**;逐个文件跑全绿。这个仓的集成测试只能一次一个文件。
+- [x] **`fix-urge-user-routing`** —— 催促这个功能**从上线那天起从未送达过任何一个人**,而全平台没有一行会因此变红。
+
+  `SignalRRoomNotifier.OpponentUrgedAsync` 写的是 `Clients.User(urgedUser)`。SignalR 靠 `IUserIdProvider` 把一条连接映射到用户 id,默认那个读 `ClaimTypes.NameIdentifier` —— 而 `Program.cs` **第 20 行**就写了 `JwtSecurityTokenHandler.DefaultMapInboundClaims = false`,于是 token 里的 `sub` 保持原名,`NameIdentifier` 这条 claim **根本不存在**;`NameClaimType = sub` 只设了 `Identity.Name`,不是同一条。全仓**没有注册过任何 `IUserIdProvider`**。
+
+  **症状是没有症状。** hub 方法正常返回、命令正常执行、`Room.LastUrgeAt` 正常更新、冷却正常生效 —— 推送寄给一个没人登记的地址,两端都不报错。web 端订阅了 `UrgeReceived`,音效包里有催促音,**一次都没响过**。这是平台上唯一走定向推送(`Clients.User`)的事件,所以别的什么都没坏。
+
+  **它是被一个还没有界面的客户端探针量出来的,而那不是巧合。** `frontend-mobile/test/room_social_probe_test.dart` 按这个仓自己的规矩写:先证明传输,再写屏幕。而它能抓到这条,靠的是**负面断言必须配一条证明机制活着的正面断言** —— 「只有被催方收到」这句话里的「只有」,在**谁都没收到**时是成立的,而那正是当时的实际情况。
+
+  **同一个探针在同一趟里还纠正了我自己的一个错误结论**,值得写下来因为它长得跟 bug 一模一样:「围观者收不到房间频道的消息」FAIL 了,而那是探针写错了 —— 围观者只调了 `JoinSpectatorGroup`,没调 `JoinRoom`,所以它根本不在房间组里。**围观入场是三步:`POST /spectate` → `JoinRoom` → `JoinSpectatorGroup`**,而中间那步正是会被跳过的那一步。改对之后绿。**一个探针可以以答案的形状出错**,而这一轮它错了一次、对了一次,两次的输出长得一样。
+
+  **建了 `Gewu.Api.Tests`,而这让一条早就写好的触发条件当场触发。** CLAUDE.md 的欠账表里那条「按座位扇出没有端到端测试」写着触发条件是「存在一个 `Gewu.Api.Tests` 项目」—— 现在存在了。它**没有**顺手把那条还上:这个项目里是纯单元测试,没有 host。所以那条欠账的触发条件改写成了「存在一个 `WebApplicationFactory` 骨架」,并且把**这一次的代价**记了进去:那个缺席具体损失了什么,现在量到了一次。
+
+  测试拆成两半,因为**值得测的是「读哪一条 claim」而不是「怎么拿到 principal」**:`HubConnectionContext` 在单测里几乎构造不出来,而把两件事绑在一起的后果不是「测不了」,是「不测了」。三条断言,其中一条是反向的 —— 只给 `NameIdentifier` 时**也**必须认不出来,因为那两条 claim 是不同的东西,而这正是默认实现失效的原因。哪天有人把入站映射打开,那条会红,那是对的。
+
+  后端 1614 → **1617**;探针 13 条判据,修之前**恰好一条红**(催促),修之后全绿。前端零改动。

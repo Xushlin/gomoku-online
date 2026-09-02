@@ -9,6 +9,7 @@
     <Project Path="smoke/AiSmoke/AiSmoke/AiSmoke.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Gewu.Api.Tests/Gewu.Api.Tests.csproj" />
     <Project Path="tests/Gewu.Application.Tests/Gewu.Application.Tests.csproj" />
     <Project Path="tests/Gewu.Domain.Tests/Gewu.Domain.Tests.csproj" />
     <Project Path="tests/Gewu.Infrastructure.Tests/Gewu.Infrastructure.Tests.csproj" />
