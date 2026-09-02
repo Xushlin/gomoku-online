@@ -118,13 +118,62 @@ class Move {
   );
 }
 
+/// How a game finished. **Parsed by name, not by ordinal** — the server's enum is
+/// `Ongoing = 0`, `Decided = 1`, `Draw = 3`, with **no 2**, so counting positions here
+/// would be a copy of a gap.
+enum GameResult {
+  ongoing('Ongoing'),
+  decided('Decided'),
+  draw('Draw'),
+  unknown('');
+
+  const GameResult(this.wire);
+  final String wire;
+
+  static GameResult parse(String? value) => GameResult.values.firstWhere(
+    (r) => r.wire == value,
+    orElse: () => GameResult.unknown,
+  );
+}
+
+/// Why it finished.
+enum GameEndReason {
+  decided('Decided'),
+  resigned('Resigned'),
+  turnTimeout('TurnTimeout'),
+  unknown('');
+
+  const GameEndReason(this.wire);
+  final String wire;
+
+  static GameEndReason parse(String? value) => GameEndReason.values.firstWhere(
+    (r) => r.wire == value,
+    orElse: () => GameEndReason.unknown,
+  );
+}
+
 class GameSnapshot {
-  const GameSnapshot({required this.moves, this.currentSeat});
+  const GameSnapshot({
+    required this.moves,
+    this.currentSeat,
+    this.result = GameResult.ongoing,
+    this.winnerUserId,
+    this.endReason,
+  });
 
   final List<Move> moves;
 
   /// Whose turn it is, as a seat index. Null before the game starts.
   final int? currentSeat;
+
+  /// **The server has always sent these three, and the client used to drop them.**
+  /// The symptom on a real phone was a finished game where the screen just stopped:
+  /// the board still there, every tap refused, and nothing saying who won.
+  final GameResult result;
+  final String? winnerUserId;
+  final GameEndReason? endReason;
+
+  bool get isOver => result == GameResult.decided || result == GameResult.draw;
 
   static const empty = GameSnapshot(moves: <Move>[]);
 
@@ -134,6 +183,18 @@ class GameSnapshot {
         Move.fromJson(m as Map<String, dynamic>),
     ],
     currentSeat: (json['currentSeat'] as num?)?.toInt(),
+    // **Null is "not finished", not "unrecognised".** The server's `GameResult?` is null
+    // for a game still in play, and collapsing that into `unknown` would throw away the
+    // difference between "we know it is ongoing" and "the server said something this
+    // client has never heard of" — and the second one is the case where guessing is the
+    // wrong thing to do.
+    result: json['result'] == null
+        ? GameResult.ongoing
+        : GameResult.parse(json['result'] as String?),
+    winnerUserId: json['winnerUserId']?.toString(),
+    endReason: json['endReason'] == null
+        ? null
+        : GameEndReason.parse(json['endReason'] as String?),
   );
 }
 

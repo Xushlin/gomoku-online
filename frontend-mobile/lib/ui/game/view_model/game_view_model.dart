@@ -126,6 +126,42 @@ class GameViewModel extends ViewModel {
     notifyIfAlive();
   }
 
+  /// Set once the result has been shown and dismissed, so it is not re-announced on
+  /// every push. **Re-popping a dialog on each snapshot is worse than not popping one.**
+  bool outcomeDismissed = false;
+
+  /// What to say when the game is over, or null while it is still on.
+  ///
+  /// Win or lose is decided by **user id**, never by username: a username is a display
+  /// name, and this platform has already paid twice for treating one as an identity.
+  ({String titleKey, String? reasonKey})? get outcome {
+    final game = room?.game;
+    if (game == null || !game.isOver) return null;
+
+    final titleKey = switch (game.result) {
+      GameResult.draw => 'game.ended.title-draw',
+      GameResult.decided =>
+        game.winnerUserId != null && game.winnerUserId == _auth.currentUser?.id
+            ? 'game.ended.title-win'
+            : 'game.ended.title-lose',
+      _ => null,
+    };
+    if (titleKey == null) return null;
+
+    final reasonKey = switch (game.endReason) {
+      GameEndReason.decided => 'game.ended.reason-decided',
+      GameEndReason.resigned => 'game.ended.reason-resigned',
+      GameEndReason.turnTimeout => 'game.ended.reason-timeout',
+      _ => null,
+    };
+    return (titleKey: titleKey, reasonKey: reasonKey);
+  }
+
+  void dismissOutcome() {
+    outcomeDismissed = true;
+    notifyIfAlive();
+  }
+
   /// True once the host dissolved this room. The View navigates out on it.
   bool wasDissolved = false;
 

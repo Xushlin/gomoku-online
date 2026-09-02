@@ -21,6 +21,49 @@ class _GameViewState extends State<GameView> {
   /// Set once we are on our way out, so neither exit path fires twice.
   bool _leaving = false;
 
+  /// Guards the result dialog against the next push re-opening it while it is up.
+  bool _announcingOutcome = false;
+
+  /// Says who won, and offers the two ways out the copy already names.
+  Future<void> _announce(
+    GameViewModel vm,
+    ({String titleKey, String? reasonKey}) outcome,
+  ) async {
+    if (!mounted) return;
+    final t = context.read<Translations>();
+
+    final backToLobby = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.t(outcome.titleKey)),
+        content: outcome.reasonKey == null ? null : Text(t.t(outcome.reasonKey!)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t.t('game.ended.dismiss')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(t.t('game.ended.back-to-lobby')),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+
+    // Dismissed either way: re-announcing on every later push would be a worse defect
+    // than not announcing at all.
+    vm.dismissOutcome();
+    _announcingOutcome = false;
+
+    if (backToLobby == true) {
+      // The game is over, so there is nothing to leave — no confirmation, no server
+      // call. Just go.
+      _leaving = true;
+      _exit(vm);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +128,17 @@ class _GameViewState extends State<GameView> {
     final vm = context.watch<GameViewModel>();
     final t = context.read<Translations>();
     final room = vm.room;
+
+    // The result, once, when the game is over.
+    //
+    // **`game.ended.dismiss` (「重新查看」) is what decides the shape:** a thing you can
+    // close and still look at the board behind it — so a dialog, not a permanent banner.
+    // Scheduled after the frame because showing a dialog during build is an error.
+    final outcome = vm.outcome;
+    if (outcome != null && !vm.outcomeDismissed && !_announcingOutcome && !_leaving) {
+      _announcingOutcome = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _announce(vm, outcome));
+    }
 
     // **Dissolved rooms are deleted, so no further `RoomState` will ever arrive.**
     // Waiting on this screen would be waiting forever. Navigation is scheduled after
