@@ -24,7 +24,7 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:gewu_mobile/app.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
-import 'package:gewu_mobile/ui/game/view/gomoku_board.dart';
+import 'package:gewu_mobile/ui/game/view/game_board.dart';
 
 const server = String.fromEnvironment('GEWU_PROBE_SERVER');
 
@@ -110,12 +110,18 @@ void main() {
     // `mobile-…`, which looks like a naming choice rather than a bug.
     expect(deps.auth.currentUser?.username, me);
 
+    // --- the catalogue is now the first screen after signing in --------------
+    // One extra tap, and it is the only change to this file's flow: the game key used
+    // to be a constant in the lobby, so signing in landed straight in 五子棋's lobby.
+    await tester.tap(find.text(deps.strings.t('games.gomoku.title')));
+    await tester.pumpAndSettle(const Duration(seconds: 4));
+
     // --- create a room from the lobby ---------------------------------------
     expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'lobby should be showing');
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle(const Duration(seconds: 6));
 
-    expect(find.byType(GomokuBoard), findsOneWidget, reason: 'the room should be open');
+    expect(find.byType(GameBoard), findsOneWidget, reason: 'the room should be open');
 
     // --- find MY room. No fallback: not finding it is the finding. -----------
     final list = jsonDecode(
@@ -149,7 +155,7 @@ void main() {
 
     // --- place a stone -------------------------------------------------------
     // Dead centre of a 15x15 board is (7, 7). The server judges legality, not us.
-    final board = tester.getRect(find.byType(GomokuBoard));
+    final board = tester.getRect(find.byType(GameBoard));
     await tester.tapAt(board.center);
     await tester.pumpAndSettle(const Duration(seconds: 5));
 

@@ -16,13 +16,13 @@ void main() {
     // Signed out: everything but the login page bounces to it.
     (signedIn: false, location: '/login', goes: null),
     (signedIn: false, location: '/', goes: '/login'),
-    (signedIn: false, location: '/rooms/abc', goes: '/login'),
+    (signedIn: false, location: '/games/gomoku/rooms/abc', goes: '/login'),
 
     // Signed in: the login page bounces the OTHER way. Without this half, an
     // implementation that sent everything to /login would pass the three above.
     (signedIn: true, location: '/login', goes: '/'),
     (signedIn: true, location: '/', goes: null),
-    (signedIn: true, location: '/rooms/abc', goes: null),
+    (signedIn: true, location: '/games/gomoku/rooms/abc', goes: null),
   ];
 
   test('both directions are present in the sample', () {
@@ -48,7 +48,8 @@ void main() {
     // types. If the constants move, this is the line that says so instead of six
     // tests failing for a reason that looks unrelated.
     expect(loginRoute, '/login');
-    expect(lobbyRoute, '/');
-    expect(roomRoute('abc'), '/rooms/abc');
+    expect(catalogRoute, '/');
+    expect(lobbyRouteFor('gomoku'), '/games/gomoku');
+    expect(roomRouteFor('gomoku', 'abc'), '/games/gomoku/rooms/abc');
   });
 }

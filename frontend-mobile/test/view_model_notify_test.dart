@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:gewu_mobile/data/repositories/game_catalog_repository.dart';
 import 'package:gewu_mobile/data/repositories/room_repository.dart';
 import 'package:gewu_mobile/data/services/dio_client.dart';
 import 'package:gewu_mobile/data/services/match_hub_service.dart';
@@ -44,17 +45,22 @@ void main() {
   group('a ViewModel disposed mid-flight does not notify', () {
     test('GameViewModel.open() resolving after dispose throws nothing', () async {
       final adapter = GatedAdapter();
+      final gatedDio = buildDio(
+        baseUrl: 'http://example.invalid',
+        tokens: MemoryTokenStore(),
+        refresh: () async => false,
+        adapter: adapter,
+      );
       final rooms = RoomRepository(
-        dio: buildDio(
-          baseUrl: 'http://example.invalid',
-          tokens: MemoryTokenStore(),
-          refresh: () async => false,
-          adapter: adapter,
-        ),
+        dio: gatedDio,
         hub: MatchHub(serverAddress: 'http://example.invalid', accessToken: () => ''),
       );
 
-      final vm = GameViewModel(rooms: rooms, roomId: 'r1');
+      final vm = GameViewModel(
+        rooms: rooms,
+        catalog: GameCatalogRepository(gatedDio),
+        roomId: 'r1',
+      );
       final open = vm.open();
 
       // The window: the request is still open, and the view is already gone.
@@ -84,7 +90,9 @@ void main() {
     test('the walk found them, so the checks below are not vacuous', () {
       // Without this, a renamed directory leaves both checks iterating an empty list
       // and passing — the exact shape of the bug they exist for.
-      expect(viewModels, hasLength(3), reason: 'login + lobby + game');
+      // **This number changing is the point.** It was 3 (login + lobby + game) and
+      // the catalogue makes it 4; the day a fifth lands, this line is what says so.
+      expect(viewModels, hasLength(4), reason: 'login + lobby + game + catalog');
     });
 
     test('each one extends ViewModel', () {
@@ -120,7 +128,7 @@ void main() {
       final callers = viewModels
           .where((f) => f.readAsStringSync().contains('notifyIfAlive('))
           .length;
-      expect(callers, 3);
+      expect(callers, 4);
       expect(
         File('lib/ui/view_model.dart').readAsStringSync(),
         contains('if (!_disposed) notifyListeners();'),

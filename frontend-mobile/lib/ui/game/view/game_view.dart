@@ -5,7 +5,8 @@ import '../../../data/models/models.dart';
 import '../../../i18n/translations.dart';
 import '../../../theme/app_theme.dart';
 import '../view_model/game_view_model.dart';
-import 'gomoku_board.dart';
+import '../board_registry.dart';
+import 'game_board.dart';
 
 class GameView extends StatefulWidget {
   const GameView({super.key});
@@ -36,7 +37,7 @@ class _GameViewState extends State<GameView> {
         // button are now the same mechanism instead of two that can disagree — and
         // before this route table they did: the arrow worked, the system back exited
         // the app.
-        title: Text(room?.name ?? t.t('games.gomoku.title')),
+        title: Text(room?.name ?? ''),
       ),
       body: Column(
         children: [
@@ -62,24 +63,38 @@ class _GameViewState extends State<GameView> {
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: GomokuBoard(
-                  stones: [
-                    for (final m in vm.moves) [m.row, m.col, m.seat],
-                  ],
-                  background: AppTheme.boardBackground(
-                    defaultThemeName,
-                    Theme.of(context).brightness,
-                  ),
-                  onTap: vm.place,
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: Center(child: _board(context, vm))),
         ],
+      ),
+    );
+  }
+
+  /// The board, or a placeholder while its shape is still unknown.
+  ///
+  /// **No default size.** The shape comes from the room's own `gameKey` via the
+  /// catalogue; guessing 15×15 while that is in flight is exactly how a 10×9 board
+  /// gets painted square, and it would look like a rendering bug rather than a missing
+  /// fetch.
+  Widget _board(BuildContext context, GameViewModel vm) {
+    final descriptor = vm.descriptor;
+    final renderer = descriptor == null ? null : rendererFor(descriptor.gameKey);
+
+    if (descriptor == null || !descriptor.hasBoard || renderer == null) {
+      return const CircularProgressIndicator();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: GameBoard(
+        rows: descriptor.rows!,
+        cols: descriptor.cols!,
+        renderer: renderer,
+        moves: vm.moves,
+        background: AppTheme.boardBackground(
+          defaultThemeName,
+          Theme.of(context).brightness,
+        ),
+        onTap: vm.place,
       ),
     );
   }

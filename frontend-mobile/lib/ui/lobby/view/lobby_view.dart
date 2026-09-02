@@ -30,7 +30,9 @@ class _LobbyViewState extends State<LobbyView> {
     // `go` and not `push`: the location is the truth, and `rooms/:id` is a child of
     // `/`, so go_router puts the lobby underneath. That stack is what makes the
     // system back button work.
-    if (id != null && mounted) context.go(roomRoute(id));
+    if (id != null && mounted) {
+      context.go(roomRouteFor(context.read<LobbyViewModel>().gameKey, id));
+    }
   }
 
   @override
@@ -40,7 +42,9 @@ class _LobbyViewState extends State<LobbyView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(t.t('games.gomoku.title')),
+        // The game's own title, from the shared i18n artefact. It used to be
+        // hard-coded to 五子棋 because there was only one game.
+        title: Text(t.t('games.${vm.gameKey}.title')),
         actions: [
           IconButton(onPressed: vm.load, icon: const Icon(Icons.refresh)),
           IconButton(onPressed: vm.signOut, icon: const Icon(Icons.logout)),
@@ -49,7 +53,7 @@ class _LobbyViewState extends State<LobbyView> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _open(vm.create),
         icon: const Icon(Icons.add),
-        label: Text(t.t('lobby.create.submit')),
+        label: Text(t.t('lobby.rooms.create-button')),
       ),
       body: RefreshIndicator(
         onRefresh: vm.load,
