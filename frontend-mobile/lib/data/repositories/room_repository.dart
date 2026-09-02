@@ -191,10 +191,42 @@ class RoomRepository {
     _chat.value = [..._chat.value, message];
   }
 
+  /// Starts watching a room.
+  ///
+  /// **Three steps, and the middle one is the one that gets skipped.** `JoinRoom` is
+  /// what puts this connection in the *room* group, which is where room-channel chat
+  /// and room state are broadcast; `JoinSpectatorGroup` only adds the spectator
+  /// sub-group. A version that called only the third produced a spectator who could not
+  /// hear the table — which reads exactly like a server bug and is not one. Measured:
+  /// `test/room_social_probe_test.dart` made that mistake first.
+  Future<Room> spectate(String roomId) async {
+    final response = await _dio.post<dynamic>('/api/rooms/$roomId/spectate');
+    _refuseFailure(response);
+    final room = await open(roomId);
+    await _hub.joinSpectatorGroup(roomId);
+    return room;
+  }
+
+  /// Stops watching. **A different route from a player's exit**, because that is what
+  /// the server has — not because one reads better.
+  Future<void> unspectate(String roomId) async {
+    final response = await _dio.delete<dynamic>('/api/rooms/$roomId/spectate');
+    if (response.statusCode != 404) _refuseFailure(response);
+    await _hub.leaveRoom(roomId);
+    if (_openRoomId == roomId) _openRoomId = null;
+  }
+
   /// Says something. **Content rules live on the server** (trim 1-500); this only
   /// declines to send nothing at all, which is not the same judgement.
-  Future<void> sendChat(String roomId, String content) =>
-      _hub.sendChat(roomId, content, ChatChannelWire.room);
+  ///
+  /// **The model's channel becomes the wire channel here, and nowhere else.** A
+  /// ViewModel may not import `data/services` (`layering_test`), so if this translation
+  /// lived above, the rule would have to be broken to write it.
+  Future<void> sendChat(String roomId, String content, ChatChannel channel) => _hub.sendChat(
+    roomId,
+    content,
+    channel == ChatChannel.spectator ? ChatChannelWire.spectator : ChatChannelWire.room,
+  );
 
   /// Gives up this game. **Irreversible — the View asks first.**
   ///

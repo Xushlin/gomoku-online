@@ -10,9 +10,12 @@ import '../view_model/game_view_model.dart';
 /// the width; a side panel there is either unreadable or squeezes the board, and the
 /// board is what the screen is for.
 ///
-/// **There is no spectator tab.** The copy for one exists (`game.chat.tab-spectator`)
-/// and the server has the channel, but this client cannot yet spectate — so the tab
-/// would be a permanently empty one, which looks exactly like a broken one.
+/// **The channel tabs appear only for somebody who can reach both channels.** The
+/// spectator channel is sent to spectators and only spectators, so a player shown that
+/// tab would be looking at a permanently empty one — which looks exactly like a broken
+/// one. The criterion is therefore "who can reach this channel", not "does this client
+/// support spectating": the second one becomes true for everybody the day spectating
+/// ships, and puts the empty tab in front of players.
 class ChatPanel extends StatefulWidget {
   const ChatPanel({super.key, required this.vm, required this.strings});
 
@@ -46,8 +49,9 @@ class _ChatPanelState extends State<ChatPanel> {
   Widget build(BuildContext context) {
     final t = widget.strings;
     final vm = widget.vm;
+    final channels = vm.chatChannels;
     final messages = vm.chatMessages
-        .where((m) => m.channel == ChatChannel.room)
+        .where((m) => m.channel == vm.chatChannel)
         .toList();
 
     return Padding(
@@ -64,6 +68,25 @@ class _ChatPanelState extends State<ChatPanel> {
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
+              if (channels.length > 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: SegmentedButton<ChatChannel>(
+                    segments: [
+                      for (final c in channels)
+                        ButtonSegment<ChatChannel>(
+                          value: c,
+                          label: Text(t.t(
+                            c == ChatChannel.spectator
+                                ? 'game.chat.tab-spectator'
+                                : 'game.chat.tab-room',
+                          )),
+                        ),
+                    ],
+                    selected: {vm.chatChannel},
+                    onSelectionChanged: (s) => vm.chooseChatChannel(s.first),
+                  ),
+                ),
               const Divider(height: 1),
               Expanded(
                 child: messages.isEmpty

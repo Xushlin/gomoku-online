@@ -71,6 +71,27 @@ class GameViewModel extends ViewModel {
 
   bool get _playingNow => room?.status == RoomStatus.playing && mySeat != null;
 
+  /// Whether this user is watching rather than playing.
+  bool get isSpectator => room?.isSpectator(_auth.currentUser?.id) ?? false;
+
+  /// Which chat channels this user can actually reach.
+  ///
+  /// **The criterion is who can reach the channel, not whether this client supports
+  /// spectating.** Written the second way, the spectator tab would appear in front of
+  /// players the day spectating shipped — a permanently empty tab, which looks like a
+  /// broken one.
+  List<ChatChannel> get chatChannels =>
+      isSpectator ? const [ChatChannel.room, ChatChannel.spectator] : const [ChatChannel.room];
+
+  /// Which channel new messages go to. Room unless the user picked the other one.
+  ChatChannel chatChannel = ChatChannel.room;
+
+  void chooseChatChannel(ChatChannel channel) {
+    if (!chatChannels.contains(channel)) return;
+    chatChannel = channel;
+    notifyIfAlive();
+  }
+
   /// Whether the resign entry may be shown at all.
   ///
   /// **Three conditions, and the third is the one that is not obvious.** `Room.Resign`
@@ -172,7 +193,7 @@ class GameViewModel extends ViewModel {
     chatErrorKey = null;
     notifyIfAlive();
     try {
-      await _rooms.sendChat(roomId, content);
+      await _rooms.sendChat(roomId, content, chatChannel);
     } catch (e) {
       chatErrorKey = _chatErrorFor('$e');
     } finally {
@@ -232,7 +253,13 @@ class GameViewModel extends ViewModel {
   /// nothing to warn about — **the same criterion the web client uses, deliberately
   /// not a second one**: two rules diverge, and the way divergence shows up is one path
   /// quietly stopping asking.
-  bool get leavingNeedsConfirmation => room?.status == RoomStatus.playing;
+  /// Whether leaving needs to ask.
+  ///
+  /// **Not for a spectator.** The warning is about a seat whose clock keeps running;
+  /// a spectator has no seat and no clock, so asking would be a question with no
+  /// consequence behind it.
+  bool get leavingNeedsConfirmation =>
+      room?.status == RoomStatus.playing && !isSpectator;
 
   /// The warning to show, or null when none is needed.
   String? get leaveWarningKey =>
@@ -249,7 +276,11 @@ class GameViewModel extends ViewModel {
     errorKey = null;
     notifyIfAlive();
     try {
-      await _rooms.leave(roomId, asHostOfWaitingRoom: leavingDissolves);
+      if (isSpectator) {
+        await _rooms.unspectate(roomId);
+      } else {
+        await _rooms.leave(roomId, asHostOfWaitingRoom: leavingDissolves);
+      }
       return true;
     } catch (_) {
       errorKey = 'game.errors.generic';
@@ -346,7 +377,10 @@ class GameViewModel extends ViewModel {
   /// illegal move needs a destination that is empty or enemy, which is also the only
   /// way to know this client did not quietly block it itself.
   Future<void> tap(int row, int col) async {
-    if (sending) return;
+    // **A spectator sends nothing, and the check is here rather than in the View.** A
+    // rule enforced only by not drawing something stops holding the moment a second
+    // path reaches this object — and there are already four ways into a room.
+    if (sending || isSpectator) return;
     final renderer = _renderer;
     if (renderer == null) return;
 

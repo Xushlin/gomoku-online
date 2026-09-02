@@ -271,22 +271,8 @@ void main() {
     });
   });
 
-  group('there is no spectator channel here yet', () {
-    test('the panel names no spectator key', () {
-      // A tab for a channel only spectators can reach, on a screen only players can
-      // reach, is a permanently empty tab — and an empty tab looks like a broken one.
-      // This client cannot spectate yet; the tab arrives with that ability.
-      final source = File('lib/ui/game/view/chat_panel.dart').readAsLinesSync().where((l) {
-        final t = l.trimLeft();
-        return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*');
-      }).join(' ');
-      expect(source.contains('tab-spectator'), isFalse);
-      expect(source.contains('tab-room'), isFalse, reason: 'one channel needs no tabs');
-      // Non-vacuity: the file is the one we think it is and does render chat.
-      expect(source.contains('game.chat.send'), isTrue);
-    });
-
-    test('and a spectator-channel message is not shown to a player', () async {
+  group('the spectator channel is not for players', () {
+    test('a spectator-channel message is not shown to a player', () async {
       final o = await open(roomJson(chat: [
         messageJson('1', 'to the room'),
         messageJson('2', 'behind their backs', channel: 'Spectator'),

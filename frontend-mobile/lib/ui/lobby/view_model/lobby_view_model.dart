@@ -106,4 +106,39 @@ class LobbyViewModel extends ViewModel {
       return null;
     }
   }
+
+  /// Whether anybody could still sit down in [room].
+  ///
+  /// **The seat total comes from the game descriptor, and that is measured, not
+  /// stylistic.** `GET /api/rooms` returns `RoomSummaryDto`, which carries **no
+  /// `seatCount`** and lists **only the taken seats** — so `seats.length` is the number
+  /// of players present, and `takenSeats < totalSeats` degenerates to `1 < 1` for a
+  /// half-empty room. Reading it off the room made every room in the lobby offer
+  /// "watch", including the empty ones.
+  ///
+  /// The lobby is per-game (`gameKey` is a constructor argument), so the descriptor is
+  /// the right authority here and it is already loaded.
+  ///
+  /// **Not the status either.** A room that is full but still `Waiting` cannot be
+  /// joined, and `Waiting` is also what an empty room says; the count answers both.
+  bool hasFreeSeat(Room room) {
+    final seats = _catalog.of(gameKey)?.seatCount;
+    // No descriptor yet is not "the room is full" — offer the seat and let the server
+    // refuse, which is the outcome that at least says something.
+    return seats == null || room.takenSeats < seats;
+  }
+
+  /// Sits down if there is room, watches if there is not.
+  Future<String?> enter(Room room) => hasFreeSeat(room) ? join(room.id) : spectate(room.id);
+
+  Future<String?> spectate(String roomId) async {
+    try {
+      await _rooms.spectate(roomId);
+      return roomId;
+    } on RoomFailure {
+      errorKey = 'lobby.errors.generic';
+      notifyIfAlive();
+      return null;
+    }
+  }
 }

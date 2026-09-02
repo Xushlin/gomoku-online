@@ -280,6 +280,7 @@ class Room {
     this.hostId,
     this.seatCount,
     this.chatMessages = const [],
+    this.spectators = const [],
   });
 
   final String id;
@@ -318,7 +319,14 @@ class Room {
   /// appended by the repository — never used to replace this list.
   final List<ChatMessage> chatMessages;
 
+  /// Who is watching. Ids and names, as the server reports them.
+  final List<RoomSeat> spectators;
+
   int get takenSeats => seats.where((s) => s.isTaken).length;
+
+  /// Whether [userId] is watching rather than playing. **By id, never by username.**
+  bool isSpectator(String? userId) =>
+      userId != null && spectators.any((s) => s.playerId == userId);
   int get totalSeats => seatCount ?? seats.length;
 
   factory Room.fromJson(Map<String, dynamic> json) => Room(
@@ -339,6 +347,17 @@ class Room {
     chatMessages: [
       for (final m in (json['chatMessages'] as List<dynamic>? ?? const []))
         ChatMessage.fromJson(m as Map<String, dynamic>),
+    ],
+    // The server sends spectators as bare users, not as seats — reuse `RoomSeat` for
+    // the id/name pair rather than adding a model whose only job is to hold two
+    // strings. `index` is meaningless here and is never read.
+    spectators: [
+      for (final u in (json['spectators'] as List<dynamic>? ?? const []))
+        RoomSeat(
+          index: -1,
+          playerId: (u as Map<String, dynamic>)['id']?.toString(),
+          username: u['username'] as String?,
+        ),
     ],
   );
 }

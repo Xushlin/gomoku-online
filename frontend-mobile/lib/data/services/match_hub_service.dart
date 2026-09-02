@@ -183,6 +183,16 @@ class MatchHub {
     await _connection!.invoke('Urge', args: [roomId]);
   }
 
+  /// Joins the spectator sub-group.
+  ///
+  /// **Idempotent, and a silent no-op for anybody who is not a spectator** — the server
+  /// asks the aggregate rather than believing the caller, so this needs no "am I a
+  /// spectator" guard on this side. A guard here would be a second judgement that can
+  /// go stale; the server's cannot.
+  Future<void> joinSpectatorGroup(String roomId) async {
+    await _connection!.invoke('JoinSpectatorGroup', args: [roomId]);
+  }
+
   /// Says something in a room.
   ///
   /// **The channel goes as a string, and that was measured rather than inferred.** Both
