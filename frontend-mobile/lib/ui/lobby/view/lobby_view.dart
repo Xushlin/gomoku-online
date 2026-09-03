@@ -167,7 +167,8 @@ class _LobbyViewState extends State<LobbyView> {
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) => _RoomTile(
               room: vm.rooms[index],
-              onTap: () => _open(() => vm.join(vm.rooms[index].id)),
+              hasFreeSeat: vm.hasFreeSeat(vm.rooms[index]),
+              onTap: () => _open(() => vm.enter(vm.rooms[index])),
             ),
           ),
         },
@@ -177,9 +178,15 @@ class _LobbyViewState extends State<LobbyView> {
 }
 
 class _RoomTile extends StatelessWidget {
-  const _RoomTile({required this.room, required this.onTap});
+  const _RoomTile({required this.room, required this.hasFreeSeat, required this.onTap});
 
   final Room room;
+
+  /// Passed in rather than computed here: the answer needs the game descriptor, which
+  /// a `view/` may not go and fetch, and the label must not be able to promise one
+  /// thing while the tap does another.
+  final bool hasFreeSeat;
+
   final VoidCallback onTap;
 
   /// **`status.wire` is the on-the-wire value, not something to show a person.**
@@ -203,7 +210,13 @@ class _RoomTile extends StatelessWidget {
       subtitle: Text(
         '${t.t(_statusKey(room.status))} · ${room.takenSeats}/${room.totalSeats}',
       ),
-      trailing: const Icon(Icons.chevron_right),
+      // What this tap will do. **Derived from the free seat, not from the status** —
+      // the same criterion the ViewModel dispatches on, so the label cannot promise
+      // one thing while the tap does another.
+      trailing: Text(
+        t.t(hasFreeSeat ? 'lobby.rooms.join' : 'lobby.rooms.watch'),
+        style: Theme.of(context).textTheme.labelLarge,
+      ),
       onTap: onTap,
     );
   }

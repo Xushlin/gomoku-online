@@ -35,6 +35,14 @@ class RoomRepository {
   ValueListenable<int> get dissolved => _dissolved;
   final _dissolved = ValueNotifier<int>(0);
 
+  /// Everything said in the room that is currently open.
+  ///
+  /// **Seeded from the room snapshot, then appended to.** The server sends one message
+  /// per push, so a listener that assigned instead of appending would wipe the history
+  /// the first time anybody spoke.
+  ValueListenable<List<ChatMessage>> get chat => _chat;
+  final _chat = ValueNotifier<List<ChatMessage>>(const []);
+
   /// Which room `open` last opened. Used to ignore pushes for rooms we have left.
   String? _openRoomId;
   bool _listening = false;
@@ -114,6 +122,9 @@ class RoomRepository {
     final snapshot = await byId(roomId);
     _live.value = snapshot;
     _openRoomId = roomId;
+    // The history rides on the snapshot, so opening a room already has it and there is
+    // no second endpoint to call.
+    _chat.value = snapshot.chatMessages;
 
     // **Registered once, not once per room.** This used to `addListener` on every
     // `open` with nothing ever removing it, so five rooms meant five registrations and
@@ -122,6 +133,7 @@ class RoomRepository {
     if (!_listening) {
       _hub.state.addListener(_republish);
       _hub.dissolved.addListener(_onDissolved);
+      _hub.chat.addListener(_onChat);
       _listening = true;
     }
     await _hub.joinRoom(roomId);
@@ -169,6 +181,76 @@ class RoomRepository {
 
   void _onDissolved() => _dissolved.value = _dissolved.value + 1;
 
+  void _onChat() {
+    final pushed = _hub.chat.value;
+    if (pushed == null) return;
+    final message = ChatMessage.fromJson(pushed);
+    // Append. **Never assign** — the push is one message, not the conversation.
+    // A duplicate id is dropped so a reconnect that replays does not double up.
+    if (_chat.value.any((m) => m.id.isNotEmpty && m.id == message.id)) return;
+    _chat.value = [..._chat.value, message];
+  }
+
+  /// Starts watching a room.
+  ///
+  /// **Three steps, and the middle one is the one that gets skipped.** `JoinRoom` is
+  /// what puts this connection in the *room* group, which is where room-channel chat
+  /// and room state are broadcast; `JoinSpectatorGroup` only adds the spectator
+  /// sub-group. A version that called only the third produced a spectator who could not
+  /// hear the table — which reads exactly like a server bug and is not one. Measured:
+  /// `test/room_social_probe_test.dart` made that mistake first.
+  Future<Room> spectate(String roomId) async {
+    final response = await _dio.post<dynamic>('/api/rooms/$roomId/spectate');
+    _refuseFailure(response);
+    final room = await open(roomId);
+    await _hub.joinSpectatorGroup(roomId);
+    return room;
+  }
+
+  /// Stops watching. **A different route from a player's exit**, because that is what
+  /// the server has — not because one reads better.
+  Future<void> unspectate(String roomId) async {
+    final response = await _dio.delete<dynamic>('/api/rooms/$roomId/spectate');
+    if (response.statusCode != 404) _refuseFailure(response);
+    await _hub.leaveRoom(roomId);
+    if (_openRoomId == roomId) _openRoomId = null;
+  }
+
+  /// Says something. **Content rules live on the server** (trim 1-500); this only
+  /// declines to send nothing at all, which is not the same judgement.
+  ///
+  /// **The model's channel becomes the wire channel here, and nowhere else.** A
+  /// ViewModel may not import `data/services` (`layering_test`), so if this translation
+  /// lived above, the rule would have to be broken to write it.
+  Future<void> sendChat(String roomId, String content, ChatChannel channel) => _hub.sendChat(
+    roomId,
+    content,
+    channel == ChatChannel.spectator ? ChatChannelWire.spectator : ChatChannelWire.room,
+  );
+
+  /// Gives up this game. **Irreversible — the View asks first.**
+  ///
+  /// The server names the winner and pushes `GameEnded`; this method returns nothing on
+  /// purpose. A caller that wrote down "I lost" from the fact that this succeeded would
+  /// be a **second** path announcing an outcome, and the way two such paths fail is one
+  /// of them naming the wrong winner.
+  Future<void> resign(String roomId) async {
+    final response = await _dio.post<dynamic>('/api/rooms/$roomId/resign');
+    _refuseFailure(response);
+  }
+
+  /// Urges whoever owes a move.
+  ///
+  /// Every rule about *whether* this is allowed — playing, a player, not your own turn,
+  /// 30-second cooldown — lives on the server. This client does not keep a timer.
+  Future<void> urge(String roomId) => _hub.urge(roomId);
+
+  /// Bumped each time somebody urges this user, with the payload beside it.
+  ValueListenable<int> get urged => _hub.urged;
+
+  /// Who urged, last. Null until the first one arrives.
+  String? get lastUrgedBy => _hub.lastUrge?['fromUsername'] as String?;
+
   /// Sends a move. **The server judges legality, not this client** (design D2).
   Future<void> makeMove(String roomId, int row, int col) =>
       _hub.makeMove(roomId, row, col);
@@ -186,6 +268,7 @@ class RoomRepository {
     if (_listening) {
       _hub.state.removeListener(_republish);
       _hub.dissolved.removeListener(_onDissolved);
+      _hub.chat.removeListener(_onChat);
       _listening = false;
     }
     _openRoomId = null;

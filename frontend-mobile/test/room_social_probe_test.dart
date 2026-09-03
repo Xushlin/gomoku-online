@@ -22,7 +22,6 @@
 //
 // It skips unless GEWU_PROBE_SERVER is set — skipping keeps CI green without
 // pretending the probe ran.
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
