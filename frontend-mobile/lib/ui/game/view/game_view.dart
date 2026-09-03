@@ -234,15 +234,30 @@ class _GameViewState extends State<GameView> {
                 ],
               ),
             ),
-            if (vm.errorKey != null)
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  t.t(vm.errorKey!),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+            // **The error is drawn OVER the board, not above it.** As a row in this
+            // column it changed the column's height, so the board resized by 44 px the
+            // moment a move was refused — and resizing the thing you just tapped is
+            // worse feedback than the message is good. A `SnackBar` was the other
+            // candidate and is wrong here: it dismisses itself, and one of this
+            // client's integration tests asserts the refusal is *on screen*.
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(child: Center(child: _board(context, vm))),
+                  if (vm.errorKey != null)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      top: 0,
+                      child: Text(
+                        t.t(vm.errorKey!),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                    ),
+                ],
               ),
-            Expanded(child: Center(child: _board(context, vm))),
+            ),
             _actions(context, vm, t),
           ],
         ),
@@ -288,13 +303,30 @@ class _GameViewState extends State<GameView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (vm.canUrge && reason != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  t.t(reason),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
+            // **The space is reserved whether or not there is a reason to show.**
+            //
+            // This line is the flicker somebody reported from a real phone: the reason
+            // it carries is 「现在是你的回合」, which is true on your turn and false on
+            // your opponent's — so it appeared and vanished on **every single ply**,
+            // and the board above it (inside an `Expanded`) resized by 20 px each
+            // time. Both games, because it has nothing to do with either renderer.
+            //
+            // `maintainSize` rather than deleting the line: `add-mobile-game-actions`
+            // requires the urge entry to say *why* it cannot be pressed, and a greyed
+            // control with no explanation is not an explanation.
+            if (vm.canUrge)
+              Visibility(
+                visible: reason != null,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    t.t(reason ?? 'game.urge.button-disabled-own-turn'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
               ),
             Row(
