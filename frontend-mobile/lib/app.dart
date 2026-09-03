@@ -8,9 +8,11 @@ import 'package:provider/provider.dart';
 import 'config/server.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/game_catalog_repository.dart';
+import 'data/repositories/settings_repository.dart';
 import 'data/repositories/room_repository.dart';
 import 'data/services/dio_client.dart';
 import 'data/services/match_hub_service.dart';
+import 'data/services/preferences_store.dart';
 import 'data/services/token_store.dart';
 import 'i18n/translations.dart';
 import 'theme/app_theme.dart';
@@ -25,6 +27,7 @@ class AppDependencies {
     required this.auth,
     required this.rooms,
     required this.catalog,
+    required this.settings,
     required this.strings,
     required this.tokens,
   });
@@ -32,6 +35,7 @@ class AppDependencies {
   final AuthRepository auth;
   final RoomRepository rooms;
   final GameCatalogRepository catalog;
+  final SettingsRepository settings;
   final Translations strings;
   final TokenStore tokens;
 
@@ -40,6 +44,7 @@ class AppDependencies {
     String locale = 'zh-CN',
     String? baseUrl,
     TokenStore? tokenStore,
+    PreferencesStore? preferences,
   }) async {
     final tokens = tokenStore ?? SecureTokenStore();
     final address = baseUrl ?? serverAddress;
@@ -63,6 +68,7 @@ class AppDependencies {
       auth: auth,
       rooms: RoomRepository(dio: dio, hub: hub),
       catalog: GameCatalogRepository(dio),
+      settings: SettingsRepository(preferences ?? await SharedPreferencesStore.open()),
       strings: await Translations.load(bundle, locale),
       tokens: tokens,
     );
@@ -95,14 +101,25 @@ class GewuApp extends StatelessWidget {
         Provider<AuthRepository>.value(value: deps.auth),
         Provider<RoomRepository>.value(value: deps.rooms),
         Provider<GameCatalogRepository>.value(value: deps.catalog),
+        Provider<SettingsRepository>.value(value: deps.settings),
       ],
-      child: MaterialApp.router(
-        title: 'Gewu',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.build(defaultThemeName, Brightness.light),
-        darkTheme: AppTheme.build(defaultThemeName, Brightness.dark),
-        themeMode: ThemeMode.dark,
-        routerConfig: router,
+      // **A listener, not state on the shell.** `GewuApp` has to stay a
+      // `StatelessWidget` — `test/shell_state_test.dart` pins that with a tear-off the
+      // compiler checks — so the rebuild on a theme change hangs off the settings value
+      // rather than moving "which theme" back into the widget.
+      child: ValueListenableBuilder<AppSettings>(
+        valueListenable: deps.settings.current,
+        builder: (context, settings, _) => MaterialApp.router(
+          title: 'Gewu',
+          debugShowCheckedModeBanner: false,
+          // Two orthogonal axes: the theme names the palette, `themeMode` picks the
+          // half of it to use. Flattening them into one list is how switching to dark
+          // starts resetting the theme.
+          theme: AppTheme.build(settings.themeName, Brightness.light),
+          darkTheme: AppTheme.build(settings.themeName, Brightness.dark),
+          themeMode: settings.isDark ? ThemeMode.dark : ThemeMode.light,
+          routerConfig: router,
+        ),
       ),
     );
   }

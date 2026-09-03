@@ -37,6 +37,16 @@ Color? colorOf(String? token) {
 }
 
 class AppTheme {
+  /// Every theme the synced token artefact carries.
+  ///
+  /// **Derived from `themeTokens`, never typed out.** A hand-written list posing as a
+  /// registry is the defect this repo has fixed eight times, and four theme names look
+  /// stable enough to be exactly where it happens again. The artefact comes from
+  /// `tool/sync_shared.dart` and is pinned by `shared_sync_test`, so adding a theme on
+  /// the web side makes it appear here — and makes the copy walk go red until it has a
+  /// name.
+  static List<String> get availableThemes => themeTokens.keys.toList()..sort();
+
   /// Builds a [ThemeData] for one theme name and mode.
   ///
   /// Falls back to Material's own colour only where a token genuinely has no
@@ -89,6 +99,20 @@ class AppTheme {
         style: FilledButton.styleFrom(backgroundColor: primary, foregroundColor: onPrimary),
       ),
       snackBarTheme: SnackBarThemeData(backgroundColor: surface, contentTextStyle: TextStyle(color: text)),
+      // **The board's colour rides on the `ThemeData`, and that is the mechanism.**
+      //
+      // It used to be read at the call site as `boardBackground(defaultThemeName, …)` —
+      // a literal — so the board stayed one colour while everything around it changed.
+      // The claim "choosing a theme is choosing the board colour" was true of the token
+      // bag and false of the screen, which is the worst combination: the assertion that
+      // four themes give more than one board colour was green throughout.
+      //
+      // As an extension it cannot drift: the board reads whatever theme is painting it,
+      // and a `view/` may not reach a repository to ask (`layering_test`), so there is
+      // no second way to get this wrong.
+      extensions: <ThemeExtension<dynamic>>[
+        BoardColors(background: boardBackground(name, brightness)),
+      ],
     );
   }
 
@@ -100,4 +124,22 @@ class AppTheme {
     final tokens = themeTokens[name]?[mode] ?? const {};
     return colorOf(tokens['color-well']) ?? colorOf(tokens['color-surface']) ?? const Color(0xFFD9B382);
   }
+}
+
+/// The board's own colours, carried on the `ThemeData` so the board follows the theme
+/// without anybody passing a theme name around.
+class BoardColors extends ThemeExtension<BoardColors> {
+  const BoardColors({required this.background});
+
+  final Color background;
+
+  @override
+  BoardColors copyWith({Color? background}) =>
+      BoardColors(background: background ?? this.background);
+
+  @override
+  BoardColors lerp(ThemeExtension<BoardColors>? other, double t) =>
+      other is BoardColors
+          ? BoardColors(background: Color.lerp(background, other.background, t)!)
+          : this;
 }

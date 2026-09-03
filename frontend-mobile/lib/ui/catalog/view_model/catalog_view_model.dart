@@ -1,5 +1,4 @@
 import '../../../data/models/models.dart';
-import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/game_catalog_repository.dart';
 import '../../game/board_registry.dart';
 import '../../view_model.dart';
@@ -20,10 +19,9 @@ class CatalogEntry {
 }
 
 class CatalogViewModel extends ViewModel {
-  CatalogViewModel({required this._catalog, required this._auth});
+  CatalogViewModel({required this._catalog});
 
   final GameCatalogRepository _catalog;
-  final AuthRepository _auth;
 
   List<CatalogEntry> entries = const [];
   bool loading = true;
@@ -65,5 +63,4 @@ class CatalogViewModel extends ViewModel {
     }
   }
 
-  Future<void> signOut() => _auth.logout();
 }

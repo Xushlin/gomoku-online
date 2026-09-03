@@ -10,7 +10,6 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:gewu_mobile/data/repositories/auth_repository.dart';
 import 'package:gewu_mobile/data/repositories/game_catalog_repository.dart';
 import 'package:gewu_mobile/data/services/dio_client.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
@@ -65,11 +64,6 @@ Dio dioWith(HttpClientAdapter adapter) => buildDio(
 
 GameCatalogRepository repoWith(HttpClientAdapter adapter) =>
     GameCatalogRepository(dioWith(adapter));
-
-AuthRepository idleAuth() => AuthRepository(
-  dio: dioWith(FixedAdapter('{}')),
-  tokens: MemoryTokenStore(),
-);
 
 Map<String, String> flatten(Map<String, dynamic> json, [String prefix = '']) {
   final out = <String, String>{};
@@ -164,7 +158,6 @@ void main() {
     Future<CatalogViewModel> loaded() async {
       final vm = CatalogViewModel(
         catalog: repoWith(FixedAdapter(servedGames)),
-        auth: idleAuth(),
       );
       await vm.load(hasCopy: zh.containsKey);
       return vm;
@@ -226,7 +219,6 @@ void main() {
     test('a fetch failure surfaces as a key that has copy', () async {
       final vm = CatalogViewModel(
         catalog: repoWith(FixedAdapter('{"code":"nope"}', 500)),
-        auth: idleAuth(),
       );
       await vm.load(hasCopy: (_) => true);
       expect(vm.errorKey, isNotNull);
