@@ -580,3 +580,377 @@ POST /api/rooms  {"gameKey":"tictactoe"}
 - **THEN** 回合 MUST 是我,盘面 MUST 是空的
 - **AND** 这一条与上一条 MUST 同时存在:少了它,一个「总是等 AI」的实现在执黑时会永远等
 
+### Requirement: 一局结束时,手机端 SHALL 说出结果
+
+对局结束时客户端 SHALL 显示赢 / 输 / 和,以及结束原因,并给出「返回大厅」与「关掉再看棋盘」两条出路。
+
+**在真机上量到的缺陷是「界面停在那」:** 棋盘还在,点哪儿都没反应(服务端在拒),没有任何一句话说结果。而数据到了**两次**都被扔了 —— 服务端每一份快照都带 `Result` / `WinnerUserId` / `EndReason`,客户端只解析 `moves` 和 `currentSeat`;`GameEnded` 推送订阅了,却推进一个没人消费的流。
+
+赢还是输 MUST 按 **`WinnerUserId` 与自己的用户 id** 判定,MUST NOT 按用户名 —— 用户名是显示名,这个平台已经为「把显示名当身份」付过两次账。
+
+#### Scenario: 三个结果都说得出来
+- **WHEN** 一局以我获胜 / 我落败 / 和局结束
+- **THEN** 分别 MUST 显示 `game.ended.title-win` / `title-lose` / `title-draw`
+- **AND** 三个方向 MUST 同时被测:只测「赢」的话,一个「永远说你赢了」的实现同样通过
+
+#### Scenario: 未结束时什么都不显示
+- **WHEN** 对局仍在进行(`Result` 为 `Ongoing`,或者根本没有 `result` 字段)
+- **THEN** MUST NOT 显示任何结果
+- **AND** 这一条与上一条 MUST 同时存在:少了它,一个「一进房间就报结果」的实现同样通过
+
+#### Scenario: 结束原因跟着结果一起说
+- **WHEN** 结束原因是 `Decided` / `Resigned` / `TurnTimeout`
+- **THEN** MUST 显示对应的 `game.ended.reason-*`
+- **AND** 每一个键 MUST 在两个 locale 里都有文案 —— 一个渲成原始键的结果框比没有更糟
+
+---
+
+### Requirement: 对局结果 SHALL 只有一个来源:房间快照
+
+客户端 SHALL 从 `RoomState` 携带的 `Result` / `WinnerUserId` / `EndReason` 得出结果,MUST NOT 另外依赖 `GameEnded` 推送。
+
+**理由是从服务端源码量出来的顺序:** `MakeMoveCommandHandler` 与 `ResignCommandHandler` 都是 `SaveChangesAsync` → `RoomStateChangedAsync` → `GameEndedAsync`,而 `GameEndedDto` 是从**已经写好的** `room.Game` 上取的。所以结束时那份 `RoomState` 一定带着结果,`GameEnded` 对这件事是冗余的。
+
+**两个来源描述同一件事正是这个仓库反复付账的形状**,所以这一笔**删掉** `GameEnded` 订阅和那条没人消费的 `_errors` 流 —— 最好的机制是能被删掉的那种。
+
+#### Scenario: 只靠快照就够
+- **WHEN** 一局真的下到结束
+- **THEN** 结果 MUST 出现在**屏幕**上
+- **AND** 判据 MUST 是屏幕而不是服务端:问服务端「有没有结果」只证明服务端结束了,
+  而这个区别在 `fix-mobile-hub-inbound` 里刚付过一次学费
+
+#### Scenario: 那条没人消费的流没了
+- **WHEN** 检查 hub 服务
+- **THEN** MUST NOT 再有 `GameEnded` 订阅,也 MUST NOT 再有一条没有消费者的错误流
+- **AND** `hub_contract_test` 的订阅数从 3 回到 2,而走查 MUST 仍然绿
+  (它断言的是「订阅的 ⊆ 服务端发的」,不是「订阅得越多越好」)
+
+### Requirement: 主题与深色模式 SHALL 可切换,而主题列表 SHALL 从同步产物派生
+
+设置页 SHALL 让人选主题与深浅色,并持久化到本地。
+
+可选主题 SHALL 从 `themeTokens` 的键派生,MUST NOT 在页面里手写一份名单。那份产物由 `tool/sync_shared.dart` 从 web 同步、由 `shared_sync_test` 钉住;**「手写清单假装成注册表」是这个仓库修过八次的缺陷**,而四个主题名字看起来足够稳定,正是它容易再犯一次的地方。
+
+主题与深浅 SHALL 是**两个正交的轴**,MUST NOT 合并成一个八选一的列表 —— 与 web 端同一个模型。
+
+#### Scenario: 每一个主题都有名字
+- **WHEN** 走查遍历 `themeTokens` 的键
+- **THEN** 每一个 MUST 有 `header.theme.<key>` 的文案,两个 locale 都要有
+- **AND** 这条走查 MUST 从 `themeTokens` 派生 —— 下次 web 加一套主题同步过来,
+  它 MUST 红,而不是页面上多一个渲成原始键的选项
+
+#### Scenario: 两个轴各自独立
+- **WHEN** 切换深色模式
+- **THEN** 主题名 MUST 不变;反之切换主题时深浅 MUST 不变
+- **AND** 两个方向 MUST 同时被测:少了任何一半,一个「切一个就重置另一个」的实现
+  都能通过剩下那半
+
+#### Scenario: 选择留得住
+- **WHEN** 选好之后重启应用
+- **THEN** MUST 仍然是那个主题和那个深浅
+- **AND** MUST NOT 存进放刷新令牌的那个安全存储 —— 主题名不是秘密
+
+#### Scenario: 棋盘颜色跟着主题走,而这不是第三件事
+- **WHEN** 主题改变
+- **THEN** 棋盘底色 MUST 跟着变(`AppTheme.boardBackground` 读的就是主题 token 的
+  `color-well`)
+- **AND** 手机端 MUST NOT 另建一条独立的棋盘皮肤轴 —— 那是 web 的 `BoardSkinService`
+  那一摊,没有同步过来,而**换主题已经换了棋盘颜色**
+
+---
+
+### Requirement: 退出登录 SHALL 先确认,而 MUST NOT 为此新增翻译键
+
+点退出 SHALL 先弹确认,取消则 MUST NOT 退出。
+
+文案 SHALL 由既有的键拼出(标题 `header.auth.logout`,按钮 `lobby.ai-game.cancel` 与 `header.auth.logout`)。**MUST NOT 新增手机端专属的键** —— 手机端那两份 i18n 是 web 产物的同步副本,`shared_sync_test` 会红,而那条走查存在的理由就是不许有第二套翻译。
+
+#### Scenario: 取消不退出
+- **WHEN** 弹出确认后选「取消」
+- **THEN** MUST NOT 调用登出,MUST 仍然停在当前页
+- **AND** 这条负面断言 MUST 配一条前置断言证明**当时确实是登录状态** ——
+  否则它对「根本没弹窗」也是绿的
+
+#### Scenario: 确认才退出
+- **WHEN** 选「退出登录」
+- **THEN** MUST 登出,并 MUST 回到登录页
+- **AND** 回登录页 MUST 由既有的 `redirect` 完成,MUST NOT 另写一次导航 ——
+  两个答案回答同一个问题,第一次改动就会分叉
+
+---
+
+### Requirement: 设置页 SHALL 是既有三层栈里的一层,而外壳 SHALL 保持无状态
+
+设置页 SHALL 是嵌在 `/` 底下的一条路由,MUST NOT 自造导航。
+
+`GewuApp` SHALL 仍然是 `StatelessWidget`。**这一条由编译器钉着**(`test/shell_state_test.dart` 里一个类型为「返回 `StatelessWidget` 的构造函数」的 tear-off),所以主题改变时的重建 SHALL 由 `MaterialApp.router` 外面的一个监听器完成,MUST NOT 把状态搬回外壳。
+
+#### Scenario: 返回键照旧
+- **WHEN** 从目录进设置页
+- **THEN** `canPop()` MUST 为 true,一次 `popRoute` MUST 回到目录
+- **AND** 判据仍然是 `canPop` —— `add-mobile-router` 里量过:改成顶层路由会编译通过、
+  分析零问题、`redirect` 照旧,而 `canPop()` 立刻变 false
+
+### Requirement: 认输入口 SHALL 只在能成功时出现,而「能不能」的三个判据里有一个是座位数
+
+手机端的对局页 SHALL 在满足**全部三个**条件时显示认输入口,否则 MUST NOT 显示:
+
+1. 当前用户坐在这局的某个座位上(不是围观者、不是路人);
+2. 房间状态是进行中;
+3. **这个房间的座位数恰好是 2**,而该数字 SHALL 读自**房间自身**的 `seatCount`(服务端已随
+   `RoomStateDto` 下发),MUST NOT 由客户端按棋种猜、也 MUST NOT 绕道再查一次棋种目录 ——
+   被认输的是**这个房间**,而房间自己就说了它有几个座位。
+
+第三条不是保守。平台的 `Room.Resign` 需要恰好两个座位才能指出赢家,三座位棋种上 API 答 409 ——
+web 端曾因为客户端假设了座位数而在真实点击上返回 **500**。手机端目前两个棋种都是两座位,所以
+这条判据**今天恒真**;它存在是为了第三个棋种落地那天不必重新发现。
+
+认输 SHALL 走 `POST /api/rooms/{id}/resign`。
+
+#### Scenario: 玩家在进行中的两座位对局里看得到认输
+- **WHEN** 当前用户坐在一局进行中的五子棋房间里
+- **THEN** 对局页显示认输入口
+
+#### Scenario: 围观者看不到
+- **WHEN** 当前用户不在任何座位上
+- **THEN** 对局页 MUST NOT 显示认输入口
+
+#### Scenario: 等待中的房间看不到
+- **WHEN** 房间还在等待对手
+- **THEN** 对局页 MUST NOT 显示认输入口
+
+#### Scenario: 座位数不是 2 就看不到
+- **WHEN** 房间的 `seatCount` 是 3
+- **THEN** 对局页 MUST NOT 显示认输入口(平台无法在三座位下指出赢家)
+
+---
+
+### Requirement: 认输 SHALL 先确认,且 MUST NOT 自己宣布结果
+
+认输不可逆,所以 SHALL 先弹确认;取消 MUST NOT 发出任何请求。
+
+确认之后,客户端 MUST NOT 自行渲染「你输了」——结果 SHALL 走既有的那一条路:房间快照的
+`result` / `winnerUserId` / `endReason`,以及 `GameEnded` 推送。**两条宣布结果的路会分叉,而
+分叉的表现是其中一条说错了赢家。**
+
+文案 SHALL 复用 `game.actions.resign-confirm-title` / `-body` / `-ok` / `-cancel`,MUST NOT 新增键。
+
+#### Scenario: 取消不发请求
+- **WHEN** 玩家点认输,然后在确认框里点取消
+- **THEN** MUST NOT 调用 `POST /api/rooms/{id}/resign`,且对局仍在进行中
+
+#### Scenario: 确认才认输
+- **WHEN** 玩家点认输并确认
+- **THEN** 调用 `POST /api/rooms/{id}/resign`
+
+#### Scenario: 结果由既有那条路显示
+- **WHEN** 认输成功,服务端随后推来 `GameEnded`(或快照带上 `result`)
+- **THEN** 屏幕上的结果来自那一份数据,而不是客户端在认输成功时自己写下的
+
+---
+
+### Requirement: 催促入口 SHALL 在不可用时说明原因,而冷却 MUST NOT 由客户端判定
+
+催促入口 SHALL 在「当前用户是玩家 且 对局进行中」时显示。**可点**的条件再加一条:当前不是
+自己的回合。
+
+不可点时 SHALL 显示原因文案,MUST NOT 只是把按钮变灰:
+
+- 轮到自己 → `game.urge.button-disabled-own-turn`
+- 刚催过(收到 429 之后) → `game.urge.button-disabled-cooldown`
+
+客户端 MUST NOT 自己实现 30 秒冷却计时。它 MAY 在收到 429 之后临时禁用按钮,但「服务端会不会
+接受这次催促」这个结论 SHALL 由服务端给出。**一份并行的冷却计时器是第二处规则,而两处规则会
+分叉,分叉的表现是按钮说「可以」而服务端说「不行」。**
+
+催促 SHALL 走 hub 方法 `Urge(roomId)`。
+
+#### Scenario: 轮到对手时可以催
+- **WHEN** 对局进行中且当前回合是对手
+- **THEN** 催促入口可点
+
+#### Scenario: 轮到自己时不可点,并说明原因
+- **WHEN** 对局进行中且当前回合是自己
+- **THEN** 催促入口不可点,且屏幕上出现 `game.urge.button-disabled-own-turn` 的文案
+
+#### Scenario: 冷却由服务端告知
+- **WHEN** 服务端以 429 拒绝一次催促
+- **THEN** 屏幕上出现 `game.errors.urge-cooldown`,MUST NOT 落到通用错误文案
+
+---
+
+### Requirement: `UrgeReceived` SHALL 出现在屏幕上,且 MUST NOT 需要刷新
+
+客户端 SHALL 订阅 hub 方法 `UrgeReceived`,收到时在对局页上给出可见反馈(`game.urge.toast`)。
+
+这是**推送**,不是快照的一部分 —— 服务端不会把「你被催了」写进 `RoomStateDto`,所以任何靠
+重新拉取房间来发现它的实现都会永远发现不了。
+
+被催的那一方 SHALL 收到;催的那一方 MUST NOT 收到自己那一条。
+
+#### Scenario: 被催的人看得见
+- **WHEN** 对手催促当前用户,服务端推来 `UrgeReceived`
+- **THEN** 对局页上出现催促提示
+
+#### Scenario: 催的人不会被自己催
+- **WHEN** 当前用户催促对手
+- **THEN** 当前用户的屏幕上 MUST NOT 出现催促提示
+
+### Requirement: 聊天历史 SHALL 来自房间快照,而推送 SHALL 追加而不是替换
+
+客户端 SHALL 从 `RoomStateDto.chatMessages` 读取进入房间时已有的消息,MUST NOT 为此调用
+第二个接口。
+
+服务端推送的 `ChatMessage` 每次只带**一条**消息。客户端 SHALL 把它**追加**到已有列表之后,
+MUST NOT 用它替换整个列表 —— 后者的表现是「一发消息,前面的全没了」。
+
+`ChatChannel` SHALL 按**名字**解析(`Room` / `Spectator`),不认识的取值 MUST NOT 塌成一个
+默认频道 —— 一个没人认识的频道应该是可见的,不是被悄悄当成房间频道广播出去。
+
+#### Scenario: 进房间就看得到之前的话
+- **WHEN** 房间快照里有 3 条消息
+- **THEN** 打开房间时这 3 条都在列表里
+
+#### Scenario: 推送追加
+- **WHEN** 列表里已有 3 条,服务端推来第 4 条
+- **THEN** 列表变成 4 条,前 3 条不变
+
+#### Scenario: 不认识的频道不当成房间频道
+- **WHEN** 一条消息的 `channel` 是服务端将来新增的取值
+- **THEN** 它 MUST NOT 被当作 `Room` 频道
+
+---
+
+### Requirement: 发送 SHALL 走 `SendChat`,频道以字符串给出,合法性 MUST NOT 由客户端判定
+
+发送 SHALL 调用 hub 方法 `SendChat(roomId, content, channel)`,三个参数一个不多一个不少
+—— SignalR 两个方向都不套用 C# 可选参数默认值,多一个少一个都在绑定层被拒,而那层的拒绝
+低于日志级别,两端都看不见。
+
+`channel` SHALL 以**字符串**给出(`'Room'`),与本客户端解析其他枚举的方式一致。
+
+内容规则(trim 后 1–500 字符)由服务端判定。客户端 MAY 限制输入长度作为输入体验,但
+MUST NOT 据此断定一条消息「能不能发」;被拒时 SHALL 显示服务端错误码对应的文案。
+
+#### Scenario: 发送用字符串频道
+- **WHEN** 玩家在房间频道发一条消息
+- **THEN** 调用 `SendChat`,第三个参数是字符串 `'Room'`
+
+#### Scenario: 空白内容不发
+- **WHEN** 输入框里只有空白
+- **THEN** MUST NOT 调用 `SendChat`(这不是判定合法性,是没有内容可发)
+
+#### Scenario: 服务端拒绝时说服务端的理由
+- **WHEN** 服务端以 `InvalidChatMessage` 拒绝
+- **THEN** 屏幕上出现 `game.errors.invalid-chat`,MUST NOT 落到通用错误文案
+
+---
+
+### Requirement: 手机端的聊天频道页签 SHALL 只对到得了那个频道的人出现
+
+聊天面板 SHALL 只把一个频道的入口显示给到得了那个频道的人。
+
+围观频道**只有围观者收得到、也只有围观者发得出**。
+
+因此聊天面板 SHALL 只对**围观者**显示频道页签(房间 / 围观);对坐在座位上的玩家 SHALL
+只显示房间频道,且 MUST NOT 显示围观页签。
+
+判据是**「谁到得了这个频道」**,不是「这个客户端支不支持围观」。前者在围观落地之后对玩家
+仍然成立,后者不成立 —— 一个写成后者的条件会在围观落地当天把一个永远空的页签放到玩家
+面前,而一个永远空的页签看起来像坏了。
+
+#### Scenario: 玩家看不到围观页签
+- **WHEN** 坐在座位上的玩家打开聊天面板
+- **THEN** 界面上 MUST NOT 出现围观频道的入口
+
+#### Scenario: 围观者两个频道都看得到
+- **WHEN** 围观者打开聊天面板
+- **THEN** 房间与围观两个频道都可选
+
+### Requirement: 围观入场 SHALL 是三步,而 `JoinRoom` 是其中一步
+
+以围观者身份进入房间,客户端 SHALL 依次执行:
+
+1. `POST /api/rooms/{id}/spectate`;
+2. hub `JoinRoom(roomId)`;
+3. hub `JoinSpectatorGroup(roomId)`。
+
+**第二步不可省。** 房间频道的推送发给**房间组**,而进房间组的方法是 `JoinRoom`;
+`JoinSpectatorGroup` 只加围观子群。少了第二步的表现是「围观者收不到房间里的消息」,而那
+读起来和一个服务端缺陷一模一样 —— 这个平台的探针第一版就是这么错的。
+
+第三步对非围观者是服务端侧的静默无操作,所以客户端 MUST NOT 为它加一个「我是不是围观者」
+的前置判断:那是一个会过期的判断,而服务端已经查过聚合了。
+
+#### Scenario: 三步都发生,顺序正确
+- **WHEN** 用户围观一个进行中的房间
+- **THEN** 客户端先 `POST /api/rooms/{id}/spectate`,再 `JoinRoom`,再 `JoinSpectatorGroup`
+
+#### Scenario: 围观者收得到房间频道
+- **WHEN** 围观期间桌上有人说话
+- **THEN** 围观者的屏幕上出现那条消息
+
+---
+
+### Requirement: 围观者离开 SHALL 走 `DELETE /api/rooms/{id}/spectate`
+
+围观者退出房间 SHALL 调用 `DELETE /api/rooms/{id}/spectate`,MUST NOT 调用
+`POST /api/rooms/{id}/leave`(那是玩家的路由)。
+
+**哪条路由由服务端的规则决定**,与「主持人退等待中的房间要走 `DELETE /api/rooms/{id}`」
+是同一类。客户端 MUST NOT 按「哪条更顺手」选。
+
+#### Scenario: 围观者退出
+- **WHEN** 围观者离开房间
+- **THEN** 客户端调用 `DELETE /api/rooms/{id}/spectate`
+
+#### Scenario: 玩家退出仍走玩家的路由
+- **WHEN** 坐在座位上的玩家离开一个进行中的房间
+- **THEN** 客户端调用 `POST /api/rooms/{id}/leave`,MUST NOT 调用围观的那条
+
+---
+
+### Requirement: 围观者的棋盘 SHALL 是只读的,而 MUST NOT 靠界面隐藏来实现
+
+围观者点棋盘 MUST NOT 向服务端发出任何走子。这条 SHALL 在 ViewModel 上成立,而不是靠
+View 不画棋盘或不接收点击 —— 一个只在界面层拦住的规则,会在下一个进入这块棋盘的路径上
+失效。
+
+认输与催促的入口对围观者 MUST NOT 出现(它们的条件已经要求「坐在座位上」)。
+
+#### Scenario: 围观者点棋盘什么都不发
+- **WHEN** 围观者在棋盘上点一个空点
+- **THEN** MUST NOT 调用 `MakeMove` 或 `MovePiece`
+
+#### Scenario: 玩家点棋盘照常
+- **WHEN** 轮到自己的玩家点一个空点
+- **THEN** 照常发出走子(否则上一条是因为整条路断了才成立的)
+
+---
+
+### Requirement: 大厅 SHALL 给坐不下的房间一个围观入口,而判据是空位不是状态
+
+大厅列表 SHALL 按「这个房间还坐得下吗」决定点击的去向:
+
+- 还有空位的房间 → 入座(`POST /join`);
+- 没有空位或已经开打的房间 → 围观。
+
+**判据是「这个房间还坐得下吗」,不是房间状态的字面值** —— 一个满员但仍在 `Waiting` 的房间
+坐不下,而客户端按状态判断会给出一个必然被服务端拒绝的入座按钮。
+
+**而「还坐得下吗」的座位总数 SHALL 取自棋种描述符,MUST NOT 取自房间摘要。** 这是量出来的:
+`GET /api/rooms` 返回的 `RoomSummaryDto` **不含 `seatCount`**,且 `seats` **只列已坐下的
+座位** —— 于是「已坐 < 总数」在摘要上退化成 `1 < 1`,每个房间(包括空房间)都会被判成坐不下。
+大厅是按棋种打开的,所以描述符就在手边。
+
+**一份用完整房间 JSON 造的夹具证明不了这件事**:它带着 `seatCount`,于是无论实现读哪一个都
+绿。这个缺陷是集成测试抓到的,而单测夹具此后 SHALL 用**摘要的形状**。
+
+#### Scenario: 进行中的房间给的是围观
+- **WHEN** 大厅里有一个进行中的房间
+- **THEN** 点它进入围观,而不是尝试入座
+
+#### Scenario: 有空位的房间给的是入座
+- **WHEN** 大厅里有一个还有空位的房间
+- **THEN** 点它尝试入座
+
