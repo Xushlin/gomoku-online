@@ -10,6 +10,7 @@ using Gewu.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -159,6 +160,9 @@ builder.Services.AddSignalR(options =>
     options.PayloadSerializerOptions.Converters.Add(
         new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
+// `Clients.User(...)` 的收件人从哪里来。**没有这一行,定向推送发给零个人且不报错** ——
+// 见 SubClaimUserIdProvider 的注释,以及本文件第 20 行那个 DefaultMapInboundClaims = false。
+builder.Services.AddSingleton<IUserIdProvider, SubClaimUserIdProvider>();
 builder.Services.AddSingleton<IConnectionTracker, ConnectionTracker>();
 builder.Services.AddScoped<IRoomNotifier, SignalRRoomNotifier>();
 
