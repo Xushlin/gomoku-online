@@ -102,6 +102,7 @@ GoRouter buildRouter(AppDependencies deps) => GoRouter(
                     rooms: deps.rooms,
                     catalog: deps.catalog,
                     auth: deps.auth,
+                    sound: deps.sound,
                     roomId: roomId,
                   ),
                   child: const GameView(),

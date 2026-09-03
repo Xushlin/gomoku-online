@@ -133,6 +133,14 @@ Future<SettingsViewModel> pumpSettings(
   return vm;
 }
 
+/// The switches, named. See the comment at their first use for why this is not
+/// `find.byType(SwitchListTile)` any more.
+Finder darkToggle(Translations t) =>
+    find.widgetWithText(SwitchListTile, t.t('header.theme.dark-toggle'));
+
+Finder soundToggle(Translations t) =>
+    find.widgetWithText(SwitchListTile, t.t('header.sound.label'));
+
 void main() {
   late Translations zh;
 
@@ -386,7 +394,12 @@ void main() {
         expect(label, isNot('header.theme.$name'), reason: 'raw key on screen');
         expect(find.text(label), findsOneWidget, reason: name);
       }
-      expect(find.byType(SwitchListTile), findsOneWidget, reason: 'the dark toggle');
+      // **Found by its label, not its type.** There are two switches on this screen now
+      // (dark and sound), so `find.byType(SwitchListTile)` stopped being unambiguous —
+      // the same shape as the lobby's second FAB. A finder that names the control
+      // cannot quietly start flipping the other one.
+      expect(darkToggle(zh), findsOneWidget, reason: 'the dark toggle');
+      expect(soundToggle(zh), findsOneWidget, reason: 'and the sound toggle');
       vm.dispose();
     });
 
@@ -424,13 +437,46 @@ void main() {
       );
       expect(vm.isDark, isTrue, reason: 'precondition — the default is dark');
 
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(darkToggle(zh));
       await tester.pumpAndSettle();
       expect(settings.current.value.isDark, isFalse);
+      expect(settings.current.value.soundOn, isTrue, reason: 'and it left sound alone');
 
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(darkToggle(zh));
       await tester.pumpAndSettle();
       expect(settings.current.value.isDark, isTrue, reason: 'and back');
+      vm.dispose();
+    });
+  });
+
+  group('the sound switch', () {
+    testWidgets('flips both ways and leaves the other axes alone', (tester) async {
+      final settings = SettingsRepository(MemoryPreferencesStore());
+      final vm = await pumpSettings(
+        tester,
+        settings: settings,
+        auth: await signedInAuth(tester, MemoryTokenStore()),
+        strings: zh,
+      );
+      expect(vm.soundOn, isTrue, reason: 'precondition — the default is on');
+
+      await tester.tap(soundToggle(zh));
+      await tester.pumpAndSettle();
+      expect(settings.current.value.soundOn, isFalse);
+      expect(
+        settings.current.value.isDark,
+        isTrue,
+        reason: 'muting must not change the brightness',
+      );
+      expect(
+        settings.current.value.themeName,
+        defaultThemeName,
+        reason: 'nor the theme',
+      );
+
+      await tester.tap(soundToggle(zh));
+      await tester.pumpAndSettle();
+      expect(settings.current.value.soundOn, isTrue, reason: 'and back');
       vm.dispose();
     });
   });

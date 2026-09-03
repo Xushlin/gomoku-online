@@ -9,10 +9,12 @@ import 'config/server.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/game_catalog_repository.dart';
 import 'data/repositories/settings_repository.dart';
+import 'data/repositories/sound_repository.dart';
 import 'data/repositories/room_repository.dart';
 import 'data/services/dio_client.dart';
 import 'data/services/match_hub_service.dart';
 import 'data/services/preferences_store.dart';
+import 'data/services/sound_player.dart';
 import 'data/services/token_store.dart';
 import 'i18n/translations.dart';
 import 'theme/app_theme.dart';
@@ -28,6 +30,7 @@ class AppDependencies {
     required this.rooms,
     required this.catalog,
     required this.settings,
+    required this.sound,
     required this.strings,
     required this.tokens,
   });
@@ -36,6 +39,7 @@ class AppDependencies {
   final RoomRepository rooms;
   final GameCatalogRepository catalog;
   final SettingsRepository settings;
+  final SoundRepository sound;
   final Translations strings;
   final TokenStore tokens;
 
@@ -45,12 +49,15 @@ class AppDependencies {
     String? baseUrl,
     TokenStore? tokenStore,
     PreferencesStore? preferences,
+    SoundPlayer? soundPlayer,
   }) async {
     final tokens = tokenStore ?? SecureTokenStore();
     final address = baseUrl ?? serverAddress;
 
     // The refresh call goes through this same client, so it is injected as a
     // callback rather than a constructor argument — otherwise the wiring is circular.
+    final settings = SettingsRepository(preferences ?? await SharedPreferencesStore.open());
+
     late final AuthRepository auth;
     final dio = buildDio(
       baseUrl: address,
@@ -68,7 +75,11 @@ class AppDependencies {
       auth: auth,
       rooms: RoomRepository(dio: dio, hub: hub),
       catalog: GameCatalogRepository(dio),
-      settings: SettingsRepository(preferences ?? await SharedPreferencesStore.open()),
+      settings: settings,
+      sound: SoundRepository(
+        player: soundPlayer ?? AudioPlayersSoundPlayer(),
+        settings: settings,
+      ),
       strings: await Translations.load(bundle, locale),
       tokens: tokens,
     );
@@ -102,6 +113,7 @@ class GewuApp extends StatelessWidget {
         Provider<RoomRepository>.value(value: deps.rooms),
         Provider<GameCatalogRepository>.value(value: deps.catalog),
         Provider<SettingsRepository>.value(value: deps.settings),
+        Provider<SoundRepository>.value(value: deps.sound),
       ],
       // **A listener, not state on the shell.** `GewuApp` has to stay a
       // `StatelessWidget` — `test/shell_state_test.dart` pins that with a tear-off the

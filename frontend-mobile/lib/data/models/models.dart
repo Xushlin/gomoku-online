@@ -216,6 +216,37 @@ enum RoomStatus {
   );
 }
 
+/// A UX event that may make a noise.
+///
+/// **The names are the web client's `SOUND_EVENTS`, and that is enforced rather than
+/// intended**: `test/sound_test.dart` reads
+/// `frontend-web/src/app/core/sound/sound.tokens.ts` and asserts the two sets are
+/// *equal*. A hand-copied list would fall behind it, and the symptom of falling behind
+/// is one event that silently never makes a sound — this repo has paid for a
+/// hand-written list posing as a registry nine times.
+///
+/// The set is **platform-wide, not per-client**: this client only plays a subset today
+/// (it has no card games and no 俄罗斯方块), and that is not a gap to fix. A game plays
+/// the events it has.
+enum SoundEvent {
+  movePlace('move-place'),
+  capture('capture'),
+  lineClear('line-clear'),
+  lineClearQuad('line-clear-quad'),
+  levelUp('level-up'),
+  cardDeal('card-deal'),
+  cardPlay('card-play'),
+  gameWin('game-win'),
+  gameLose('game-lose'),
+  gameDraw('game-draw'),
+  urge('urge');
+
+  const SoundEvent(this.wire);
+
+  /// The name the web client uses. The walk compares on this.
+  final String wire;
+}
+
 /// Which conversation a message belongs to.
 ///
 /// **Parsed by name, and an unrecognised value stays unrecognised.** Collapsing it to

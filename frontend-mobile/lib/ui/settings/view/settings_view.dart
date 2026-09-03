@@ -43,6 +43,13 @@ class SettingsView extends StatelessWidget {
             ),
           ),
           const Divider(height: 24),
+          SwitchListTile(
+            value: vm.soundOn,
+            onChanged: vm.setSoundOn,
+            title: Text(t.t('header.sound.label')),
+            subtitle: Text(t.t(vm.soundOn ? 'header.sound.on' : 'header.sound.off')),
+          ),
+          const Divider(height: 24),
           ListTile(
             leading: const Icon(Icons.logout),
             title: Text(t.t('header.auth.logout')),

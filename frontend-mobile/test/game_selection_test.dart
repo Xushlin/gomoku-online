@@ -20,6 +20,10 @@ import 'package:gewu_mobile/data/services/match_hub_service.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
 import 'package:gewu_mobile/ui/game/board_registry.dart';
 import 'package:gewu_mobile/ui/game/view_model/game_view_model.dart';
+import 'package:gewu_mobile/data/repositories/settings_repository.dart';
+import 'package:gewu_mobile/data/repositories/sound_repository.dart';
+import 'package:gewu_mobile/data/services/preferences_store.dart';
+import 'package:gewu_mobile/data/services/sound_player.dart';
 import 'package:gewu_mobile/ui/game/xiangqi/position.dart';
 
 /// What the client sent, if anything. **A hub that records instead of connecting**, so
@@ -92,6 +96,7 @@ Future<({GameViewModel vm, RecordingHub hub})> openRoom(String gameKey) async {
     rooms: RoomRepository(dio: dio, hub: hub),
     catalog: catalog,
     auth: AuthRepository(dio: dio, tokens: MemoryTokenStore()),
+    sound: recordingSound(),
     roomId: 'r1',
   );
   // Set the room directly: `open()` would go through the hub, and what is under test is
@@ -106,6 +111,13 @@ Future<({GameViewModel vm, RecordingHub hub})> openRoom(String gameKey) async {
   );
   return (vm: vm, hub: hub);
 }
+
+/// A sound repository over a fake device, so a test can assert what was played — and,
+/// just as importantly, what was not.
+SoundRepository recordingSound([RecordingSoundPlayer? player]) => SoundRepository(
+  player: player ?? RecordingSoundPlayer(),
+  settings: SettingsRepository(MemoryPreferencesStore()),
+);
 
 void main() {
   group('五子棋 places on one tap', () {

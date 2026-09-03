@@ -31,9 +31,12 @@ class SettingsViewModel extends ViewModel {
   String get themeName => _settings.current.value.themeName;
   bool get isDark => _settings.current.value.isDark;
 
-  /// The two axes are independent: setting one MUST NOT reset the other.
+  bool get soundOn => _settings.current.value.soundOn;
+
+  /// The three axes are independent: setting one MUST NOT reset the others.
   Future<void> chooseTheme(String name) => _settings.setTheme(name);
   Future<void> setDark(bool value) => _settings.setDark(value);
+  Future<void> setSoundOn(bool value) => _settings.setSoundOn(value);
 
   Future<void> signOut() => _auth.logout();
 
