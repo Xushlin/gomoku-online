@@ -179,7 +179,18 @@ void main() {
     await _enterGomokuLobby(tester, signedIn.deps);
 
     // Join the host's room from the list. Two seats filled makes it Playing.
-    await tester.tap(find.text('host-room-$stamp'));
+    //
+    // **Scrolled to, not assumed on screen.** `GET /api/rooms` has no `Take` and no
+    // `OrderBy`, so every unfinished room for this game comes back in insertion order
+    // and a freshly created one is at the bottom. A `ListView` only builds what is
+    // visible, so `find.text` sees nothing — which reads as "the room was not listed".
+    // Measured: it went red here once the scratch database had accumulated 20 rooms,
+    // and the claim under test ("a guest can enter the host's room from the lobby") was
+    // never about the room happening to fit on one screen.
+    final tile = find.text('host-room-$stamp');
+    await tester.scrollUntilVisible(tile, 200, scrollable: find.byType(Scrollable).last);
+    await tester.pumpAndSettle();
+    await tester.tap(tile);
     await tester.pumpAndSettle(const Duration(seconds: 6));
     expect(find.byType(GameBoard), findsOneWidget, reason: 'we should be in the room');
     expect(

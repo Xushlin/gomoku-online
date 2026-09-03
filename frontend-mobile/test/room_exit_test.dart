@@ -23,6 +23,10 @@ import 'package:gewu_mobile/data/services/dio_client.dart';
 import 'package:gewu_mobile/data/services/match_hub_service.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
 import 'package:gewu_mobile/ui/game/board_registry.dart';
+import 'package:gewu_mobile/data/repositories/settings_repository.dart';
+import 'package:gewu_mobile/data/repositories/sound_repository.dart';
+import 'package:gewu_mobile/data/services/preferences_store.dart';
+import 'package:gewu_mobile/data/services/sound_player.dart';
 import 'package:gewu_mobile/ui/game/view_model/game_view_model.dart';
 
 /// A hub that records what it was asked to do and lets a test push state in.
@@ -132,11 +136,19 @@ Future<GameViewModel> viewModelFor(
     rooms: parts.rooms,
     catalog: catalog,
     auth: auth,
+    sound: recordingSound(),
     roomId: roomId,
   );
   await vm.open();
   return vm;
 }
+
+/// A sound repository over a fake device, so a test can assert what was played — and,
+/// just as importantly, what was not.
+SoundRepository recordingSound([RecordingSoundPlayer? player]) => SoundRepository(
+  player: player ?? RecordingSoundPlayer(),
+  settings: SettingsRepository(MemoryPreferencesStore()),
+);
 
 void main() {
   group('the listener is registered once, not once per room', () {

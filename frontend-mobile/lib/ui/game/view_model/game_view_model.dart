@@ -2,6 +2,7 @@ import '../../../data/models/models.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/game_catalog_repository.dart';
 import '../../../data/repositories/room_repository.dart';
+import '../../../data/repositories/sound_repository.dart';
 import '../../view_model.dart';
 import '../board_registry.dart';
 import '../seat_labels.dart';
@@ -16,12 +17,14 @@ class GameViewModel extends ViewModel {
     required this._rooms,
     required this._catalog,
     required this._auth,
+    required this._sound,
     required this.roomId,
   });
 
   final RoomRepository _rooms;
   final GameCatalogRepository _catalog;
   final AuthRepository _auth;
+  final SoundRepository _sound;
   final String roomId;
 
   Room? room;
@@ -228,6 +231,7 @@ class GameViewModel extends ViewModel {
 
   void _onUrged() {
     urgeCount = _rooms.urged.value;
+    _sound.play(SoundEvent.urge);
     // A fresh urge means the other side is waiting, so it cannot be our own cooldown.
     notifyIfAlive();
   }
@@ -301,6 +305,10 @@ class GameViewModel extends ViewModel {
       // cached after the first load so this is free on every later room.
       await _catalog.load();
       room = await _rooms.open(roomId);
+      // The opening snapshot is a starting point, not an event: a room re-entered
+      // mid-game must not replay every stone at once.
+      _movesHeard = moves.length;
+      _endHeard = room?.game.isOver ?? false;
     } on RoomFailure {
       errorKey = 'game.errors.generic';
     } catch (_) {
@@ -309,9 +317,55 @@ class GameViewModel extends ViewModel {
     notifyIfAlive();
   }
 
+  /// How many moves had been played the last time we looked. **A count, not a flag** —
+  /// what makes a noise is a move *arriving*, and re-rendering the same position must
+  /// not re-play it.
+  int _movesHeard = 0;
+
+  /// Set once the end-of-game sound has played, so later pushes stay quiet.
+  bool _endHeard = false;
+
   void _onPush() {
+    final before = moves;
     room = _rooms.live.value ?? room;
+    _soundForArrival(before);
     notifyIfAlive();
+  }
+
+  /// Turns a new snapshot into at most one sound.
+  ///
+  /// **The move sound fires for either side's move, deliberately.** Hearing the
+  /// opponent play is most of the value; a sound only for your own taps tells you
+  /// something you already knew.
+  void _soundForArrival(List<Move> before) {
+    final now = moves;
+    if (now.length > _movesHeard) {
+      final landed = now.last;
+      // **Whether that was a capture is the renderer's answer, not the game key's.**
+      // A capture is "the destination was occupied by somebody else before this move",
+      // which only a renderer that relocates pieces can even ask — 五子棋 places onto
+      // empty points, so it can never be true there without a per-game branch.
+      final renderer = _renderer;
+      final captured = renderer != null &&
+          renderer.relocates &&
+          before.isNotEmpty &&
+          renderer.seatAt(before, landed.row, landed.col) != null &&
+          renderer.seatAt(before, landed.row, landed.col) != landed.seat;
+      _sound.play(captured ? SoundEvent.capture : SoundEvent.movePlace);
+      _movesHeard = now.length;
+    }
+
+    if (!_endHeard) {
+      final result = room?.game;
+      if (result != null && result.isOver) {
+        _endHeard = true;
+        _sound.play(switch (outcome?.titleKey) {
+          'game.ended.title-win' => SoundEvent.gameWin,
+          'game.ended.title-draw' => SoundEvent.gameDraw,
+          _ => SoundEvent.gameLose,
+        });
+      }
+    }
   }
 
   /// Set once the result has been shown and dismissed, so it is not re-announced on

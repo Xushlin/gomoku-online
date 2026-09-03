@@ -11,22 +11,35 @@ import '../services/preferences_store.dart';
 /// times two modes is not an eight-item list, and flattening it is how "switch to dark"
 /// starts silently resetting the theme.
 class AppSettings {
-  const AppSettings({required this.themeName, required this.isDark});
+  const AppSettings({
+    required this.themeName,
+    required this.isDark,
+    required this.soundOn,
+  });
 
   final String themeName;
   final bool isDark;
 
-  AppSettings copyWith({String? themeName, bool? isDark}) => AppSettings(
+  /// Whether sound may play at all. **A third independent axis**, for the same reason
+  /// the first two are independent: choosing a theme must not silence the app, and
+  /// silencing the app must not change the theme.
+  final bool soundOn;
+
+  AppSettings copyWith({String? themeName, bool? isDark, bool? soundOn}) => AppSettings(
     themeName: themeName ?? this.themeName,
     isDark: isDark ?? this.isDark,
+    soundOn: soundOn ?? this.soundOn,
   );
 
   @override
   bool operator ==(Object other) =>
-      other is AppSettings && other.themeName == themeName && other.isDark == isDark;
+      other is AppSettings &&
+      other.themeName == themeName &&
+      other.isDark == isDark &&
+      other.soundOn == soundOn;
 
   @override
-  int get hashCode => Object.hash(themeName, isDark);
+  int get hashCode => Object.hash(themeName, isDark, soundOn);
 }
 
 class SettingsRepository {
@@ -39,10 +52,12 @@ class SettingsRepository {
 
   static const _themeKey = 'gewu.theme';
   static const _darkKey = 'gewu.dark';
+  static const _soundKey = 'gewu.sound';
 
   /// **The defaults are exactly what was hard-coded before this existed** (`ink`, dark),
   /// so somebody upgrading sees no change until they choose one.
-  static const defaults = AppSettings(themeName: defaultThemeName, isDark: true);
+  static const defaults =
+      AppSettings(themeName: defaultThemeName, isDark: true, soundOn: true);
 
   ValueListenable<AppSettings> get current => _current;
 
@@ -59,6 +74,11 @@ class SettingsRepository {
         'false' => false,
         _ => defaults.isDark,
       },
+      soundOn: switch (_store.read(_soundKey)) {
+        'true' => true,
+        'false' => false,
+        _ => defaults.soundOn,
+      },
     );
   }
 
@@ -71,6 +91,11 @@ class SettingsRepository {
   Future<void> setDark(bool isDark) async {
     _current.value = _current.value.copyWith(isDark: isDark);
     await _store.write(_darkKey, '$isDark');
+  }
+
+  Future<void> setSoundOn(bool soundOn) async {
+    _current.value = _current.value.copyWith(soundOn: soundOn);
+    await _store.write(_soundKey, '$soundOn');
   }
 
   void dispose() => _current.dispose();

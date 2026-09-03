@@ -137,7 +137,10 @@ void main() {
 
     // --- dark is the other axis, and it moves on its own ----------------------
     expect(before.brightness, Brightness.dark, reason: 'precondition: the default is dark');
-    await tester.tap(find.byType(SwitchListTile));
+    // **By label, not by type.** There are two switches on this screen now (dark and
+    // sound), so `find.byType(SwitchListTile)` stopped being unambiguous — the same
+    // shape as the lobby's second FAB, and it went red here for exactly that reason.
+    await tester.tap(find.widgetWithText(SwitchListTile, t.t('header.theme.dark-toggle')));
     await tester.pumpAndSettle(const Duration(seconds: 2));
     expect(_painted(tester).brightness, Brightness.light);
     expect(
@@ -146,9 +149,22 @@ void main() {
       reason: 'and switching brightness must not have reset the theme',
     );
 
-    // --- both choices are written down ---------------------------------------
+    // --- and sound is a third axis, under the real shell ----------------------
+    expect(deps.settings.current.value.soundOn, isTrue, reason: 'precondition — on');
+    await tester.tap(find.widgetWithText(SwitchListTile, t.t('header.sound.label')));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(deps.settings.current.value.soundOn, isFalse);
+    expect(
+      deps.settings.current.value.themeName,
+      other,
+      reason: 'muting must not have reset the theme',
+    );
+    expect(_painted(tester).brightness, Brightness.light, reason: 'nor the brightness');
+
+    // --- every choice is written down ----------------------------------------
     expect(prefs.values['gewu.theme'], other);
     expect(prefs.values['gewu.dark'], 'false');
+    expect(prefs.values['gewu.sound'], 'false');
 
     // --- back lands on the catalogue, not on the login page -------------------
     await systemBack(tester);
