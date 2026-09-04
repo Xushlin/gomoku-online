@@ -20,6 +20,8 @@ import 'package:gewu_mobile/data/repositories/room_repository.dart';
 import 'package:gewu_mobile/data/services/dio_client.dart';
 import 'package:gewu_mobile/data/services/match_hub_service.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
+import 'package:gewu_mobile/theme/app_theme.dart';
+import 'package:gewu_mobile/theme/board_skin.dart';
 import 'package:gewu_mobile/ui/game/board_registry.dart';
 import 'package:gewu_mobile/ui/game/view/board_geometry.dart';
 import 'package:gewu_mobile/ui/game/view/board_renderer.dart';
@@ -95,6 +97,14 @@ Future<({LobbyViewModel vm, RecordingAdapter adapter})> lobbyFor(
   return (vm: vm, adapter: adapter);
 }
 
+/// The default skin, resolved once. These tests are about geometry, not colour — but
+/// the painter needs a skin, and a fake one would be a second source of truth.
+BoardSkin testSkin() => BoardSkin.resolve(
+  skinName: BoardSkin.defaultSkinName,
+  themeName: defaultThemeName,
+  brightness: Brightness.dark,
+);
+
 void main() {
   group('one renderer, two game keys', () {
     test('一字棋 and 五子棋 resolve to one renderer', () {
@@ -140,7 +150,7 @@ void main() {
       // coordinates beside the code that derives them checks nothing.
       final recorder = PictureRecorder();
       final canvas = Canvas(recorder);
-      renderer.paintDecoration(canvas, g, const Color(0xFF000000));
+      renderer.paintDecoration(canvas, g, testSkin());
       final image = await recorder.endRecording().toImage(300, 300);
       final bytes = (await image.toByteData())!;
 

@@ -10,6 +10,7 @@ library;
 import 'dart:ui';
 
 import '../../../data/models/models.dart';
+import '../../../theme/board_skin.dart';
 import 'board_geometry.dart';
 
 abstract class BoardRenderer {
@@ -32,7 +33,12 @@ abstract class BoardRenderer {
   int? seatAt(List<Move> moves, int row, int col);
 
   /// Lines and ornament. Called before the pieces.
-  void paintDecoration(Canvas canvas, BoardGeometry g, Color lineColor);
+  ///
+  /// **Takes the skin, not a colour.** Every colour a board paints comes from there:
+  /// the stones used to be two literals in this file, and a literal is exactly what
+  /// makes "I changed the skin" turn into "the background changed and the stones did
+  /// not". `test/board_skin_test.dart` walks these files for `Color(0x…)`.
+  void paintDecoration(Canvas canvas, BoardGeometry g, BoardSkin skin);
 
   /// The occupants, in play order. The last element is the most recent ply.
   ///
@@ -43,6 +49,7 @@ abstract class BoardRenderer {
     BoardGeometry g,
     List<Move> moves,
     (int, int)? selected,
+    BoardSkin skin,
   );
 }
 
@@ -77,9 +84,9 @@ class GomokuRenderer extends BoardRenderer {
   }
 
   @override
-  void paintDecoration(Canvas canvas, BoardGeometry g, Color lineColor) {
+  void paintDecoration(Canvas canvas, BoardGeometry g, BoardSkin skin) {
     final line = Paint()
-      ..color = lineColor
+      ..color = skin.line
       ..strokeWidth = 1;
 
     for (var row = 0; row < g.rows; row++) {
@@ -97,7 +104,7 @@ class GomokuRenderer extends BoardRenderer {
       );
     }
 
-    final star = Paint()..color = lineColor;
+    final star = Paint()..color = skin.star;
     final lines = starLines(g.rows, g.cols);
     for (final r in lines) {
       for (final c in lines) {
@@ -112,6 +119,7 @@ class GomokuRenderer extends BoardRenderer {
     BoardGeometry g,
     List<Move> moves,
     (int, int)? selected,
+    BoardSkin skin,
   ) {
     for (var i = 0; i < moves.length; i++) {
       final move = moves[i];
@@ -119,16 +127,19 @@ class GomokuRenderer extends BoardRenderer {
       final centre = g.centreOf(move.row, move.col);
       final isBlack = move.seat == 0;
 
+      final radius = g.step * 0.42;
+      final box = Rect.fromCircle(center: centre, radius: radius);
+      // The stone is a gradient in every shipped skin — `radial-gradient(circle at
+      // 32% 26%, …)` — so it is painted with that skin's shader over its own box
+      // rather than with a flat fill.
+      canvas.drawCircle(centre, radius, skin.stonePaint(box, black: isBlack));
       canvas.drawCircle(
         centre,
-        g.step * 0.42,
-        Paint()..color = isBlack ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
-      );
-      canvas.drawCircle(
-        centre,
-        g.step * 0.42,
+        radius,
         Paint()
-          ..color = const Color(0x55000000)
+          // The CSS gives stones depth with `box-shadow`, which is not ported; the
+          // board's own line colour is the nearest thing the skin does declare.
+          ..color = skin.line
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1,
       );
@@ -139,7 +150,9 @@ class GomokuRenderer extends BoardRenderer {
         canvas.drawCircle(
           centre,
           g.step * 0.14,
-          Paint()..color = isBlack ? const Color(0xFFE0E0E0) : const Color(0xFF303030),
+          // Marked in the *other* stone's colour, so the dot contrasts by
+          // construction instead of by two more literals.
+          Paint()..color = isBlack ? skin.whiteStoneColor : skin.blackStoneColor,
         );
       }
     }

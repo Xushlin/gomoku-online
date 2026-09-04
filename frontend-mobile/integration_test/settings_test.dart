@@ -83,6 +83,27 @@ Future<void> systemBack(WidgetTester tester) async {
   await tester.pumpAndSettle(const Duration(seconds: 2));
 }
 
+
+/// Scrolls a control into view before touching it.
+///
+/// **The settings page grew past one screen** when board skins added a second radio
+/// group — four themes, three skins, two switches and the way out. A `ListView` only
+/// builds what is visible, so a finder for anything below the fold reports "found 0
+/// widgets", which reads as *the control is missing*. A person scrolls; so does this.
+Future<Finder> reach(WidgetTester tester, Finder finder) async {
+  // **Never pass a `.first`-narrowed finder in here.** `scrollUntilVisible` evaluates
+  // the finder on every drag, and `.first` throws `Bad state: No element` while the
+  // target is still unbuilt — which surfaces as a `StateError` rather than as
+  // "not found yet", and reads like the test framework broke.
+  await tester.scrollUntilVisible(
+    finder,
+    120,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+  return finder;
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -140,7 +161,7 @@ void main() {
     // **By label, not by type.** There are two switches on this screen now (dark and
     // sound), so `find.byType(SwitchListTile)` stopped being unambiguous — the same
     // shape as the lobby's second FAB, and it went red here for exactly that reason.
-    await tester.tap(find.widgetWithText(SwitchListTile, t.t('header.theme.dark-toggle')));
+    await tester.tap(await reach(tester, find.widgetWithText(SwitchListTile, t.t('header.theme.dark-toggle'))));
     await tester.pumpAndSettle(const Duration(seconds: 2));
     expect(_painted(tester).brightness, Brightness.light);
     expect(
@@ -151,7 +172,7 @@ void main() {
 
     // --- and sound is a third axis, under the real shell ----------------------
     expect(deps.settings.current.value.soundOn, isTrue, reason: 'precondition — on');
-    await tester.tap(find.widgetWithText(SwitchListTile, t.t('header.sound.label')));
+    await tester.tap(await reach(tester, find.widgetWithText(SwitchListTile, t.t('header.sound.label'))));
     await tester.pumpAndSettle(const Duration(seconds: 2));
     expect(deps.settings.current.value.soundOn, isFalse);
     expect(
@@ -182,7 +203,8 @@ void main() {
     expect(deps.auth.signedIn.value, isTrue, reason: 'precondition — signed in');
 
     // --- cancel ---------------------------------------------------------------
-    await tester.tap(find.text(t.t('header.auth.logout')));
+    await reach(tester, find.text(t.t('header.auth.logout')));
+    await tester.tap(find.text(t.t('header.auth.logout')).first);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget, reason: 'it must ask first');
     await tester.tap(find.widgetWithText(TextButton, t.t('lobby.ai-game.cancel')));
@@ -192,7 +214,8 @@ void main() {
     expect(find.byType(SettingsView), findsOneWidget, reason: 'and must not navigate');
 
     // --- confirm --------------------------------------------------------------
-    await tester.tap(find.text(t.t('header.auth.logout')));
+    await reach(tester, find.text(t.t('header.auth.logout')));
+    await tester.tap(find.text(t.t('header.auth.logout')).first);
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, t.t('header.auth.logout')));
     await tester.pumpAndSettle(const Duration(seconds: 4));

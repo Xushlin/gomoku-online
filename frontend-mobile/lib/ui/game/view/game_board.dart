@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../data/models/models.dart';
+import '../../../theme/board_skin.dart';
 import 'board_geometry.dart';
 import 'board_renderer.dart';
 
@@ -22,7 +23,7 @@ class GameBoard extends StatelessWidget {
     required this.cols,
     required this.renderer,
     required this.moves,
-    required this.background,
+    required this.skin,
     required this.onTap,
     this.selected,
   });
@@ -34,7 +35,11 @@ class GameBoard extends StatelessWidget {
   /// In play order. The renderer decides what an occupant looks like.
   final List<Move> moves;
 
-  final Color background;
+  /// Everything this board is painted with. **Replaces the old `background` colour and
+  /// the theme's `dividerColor`**: a board's ground, lines, stars and stones all come
+  /// from one skin, or "I changed the skin" turns into "the background changed and the
+  /// stones did not".
+  final BoardSkin skin;
 
   /// The chosen origin, for a game whose renderer [BoardRenderer.relocates].
   final (int, int)? selected;
@@ -68,8 +73,7 @@ class GameBoard extends StatelessWidget {
                 renderer: renderer,
                 moves: moves,
                 selected: selected,
-                background: background,
-                lineColor: Theme.of(context).dividerColor,
+                skin: skin,
               ),
             ),
           ),
@@ -85,40 +89,41 @@ class _BoardPainter extends CustomPainter {
     required this.renderer,
     required this.moves,
     required this.selected,
-    required this.background,
-    required this.lineColor,
+    required this.skin,
   });
 
   final BoardGeometry geometry;
   final BoardRenderer renderer;
   final List<Move> moves;
   final (int, int)? selected;
-  final Color background;
-  final Color lineColor;
+  final BoardSkin skin;
 
   @override
   void paint(Canvas canvas, Size canvasSize) {
     // The board's own box, not the whole canvas: a 10×9 board must not paint its
     // background across the margin it leaves.
-    canvas.drawRect(
+    skin.paintGround(
+      canvas,
       Rect.fromLTWH(
         geometry.originDx,
         geometry.originDy,
         geometry.width,
         geometry.height,
       ),
-      Paint()..color = background,
     );
-    renderer.paintDecoration(canvas, geometry, lineColor);
-    renderer.paintOccupants(canvas, geometry, moves, selected);
+    renderer.paintDecoration(canvas, geometry, skin);
+    renderer.paintOccupants(canvas, geometry, moves, selected, skin);
   }
 
   @override
   bool shouldRepaint(_BoardPainter old) =>
       old.moves.length != moves.length ||
       old.selected != selected ||
-      old.background != background ||
-      old.lineColor != lineColor ||
+      // **By name, not by identity.** `BoardSkin` is rebuilt on every resolve, so
+      // comparing instances would repaint every frame; the name is what changes when
+      // the player picks a different skin.
+      old.skin.name != skin.name ||
+      old.skin.background != skin.background ||
       old.renderer != renderer ||
       old.geometry.rows != geometry.rows ||
       old.geometry.cols != geometry.cols ||

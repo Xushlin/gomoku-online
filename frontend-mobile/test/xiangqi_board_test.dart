@@ -11,6 +11,8 @@ import 'dart:ui';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gewu_mobile/data/models/models.dart';
+import 'package:gewu_mobile/theme/app_theme.dart';
+import 'package:gewu_mobile/theme/board_skin.dart';
 import 'package:gewu_mobile/ui/game/board_registry.dart';
 import 'package:gewu_mobile/ui/game/view/board_geometry.dart';
 import 'package:gewu_mobile/ui/game/view/xiangqi_renderer.dart';
@@ -33,6 +35,14 @@ BoardGeometry geometryAt(double width) => BoardGeometry.fit(
   rows: xiangqiRows,
   cols: xiangqiCols,
   canvas: Size(width, width),
+);
+
+/// The default skin, resolved once. These tests are about geometry, not colour — but
+/// the painter needs a skin, and a fake one would be a second source of truth.
+BoardSkin testSkin() => BoardSkin.resolve(
+  skinName: BoardSkin.defaultSkinName,
+  themeName: defaultThemeName,
+  brightness: Brightness.dark,
 );
 
 void main() {
@@ -118,13 +128,13 @@ void main() {
       final g = geometryAt(side);
       final recorder = PictureRecorder();
       final canvas = Canvas(recorder);
-      renderer.paintDecoration(canvas, g, const Color(0xFF000000));
+      renderer.paintDecoration(canvas, g, testSkin());
       if (withPieces) {
         // **An empty move list is the OPENING board, not an empty one** — 32 pieces.
         // Worth saying out loud: "empty list" reading as "empty board" is exactly how a
         // layout test ends up proving nothing, and an empty board passes every layout
         // assertion there is.
-        renderer.paintOccupants(canvas, g, const <Move>[], null);
+        renderer.paintOccupants(canvas, g, const <Move>[], null, testSkin());
       }
       final pixels = side.round();
       final image = await recorder.endRecording().toImage(pixels, pixels);

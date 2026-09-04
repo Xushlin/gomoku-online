@@ -4,6 +4,7 @@ library;
 import 'package:flutter/foundation.dart';
 
 import '../../theme/app_theme.dart';
+import '../../theme/board_skin.dart';
 import '../services/preferences_store.dart';
 
 /// A theme name and a brightness. Two **orthogonal** axes, the same model the web
@@ -15,6 +16,7 @@ class AppSettings {
     required this.themeName,
     required this.isDark,
     required this.soundOn,
+    required this.skinName,
   });
 
   final String themeName;
@@ -25,10 +27,22 @@ class AppSettings {
   /// silencing the app must not change the theme.
   final bool soundOn;
 
-  AppSettings copyWith({String? themeName, bool? isDark, bool? soundOn}) => AppSettings(
+  /// Which board skin. **The fourth axis, and the one that overturned a written rule:**
+  /// `add-mobile-settings` recorded that the board's colour follows the theme and that
+  /// this client MUST NOT grow a skin axis — with its own dismantling condition. This
+  /// is that condition being met.
+  final String skinName;
+
+  AppSettings copyWith({
+    String? themeName,
+    bool? isDark,
+    bool? soundOn,
+    String? skinName,
+  }) => AppSettings(
     themeName: themeName ?? this.themeName,
     isDark: isDark ?? this.isDark,
     soundOn: soundOn ?? this.soundOn,
+    skinName: skinName ?? this.skinName,
   );
 
   @override
@@ -36,10 +50,11 @@ class AppSettings {
       other is AppSettings &&
       other.themeName == themeName &&
       other.isDark == isDark &&
-      other.soundOn == soundOn;
+      other.soundOn == soundOn &&
+      other.skinName == skinName;
 
   @override
-  int get hashCode => Object.hash(themeName, isDark, soundOn);
+  int get hashCode => Object.hash(themeName, isDark, soundOn, skinName);
 }
 
 class SettingsRepository {
@@ -53,11 +68,16 @@ class SettingsRepository {
   static const _themeKey = 'gewu.theme';
   static const _darkKey = 'gewu.dark';
   static const _soundKey = 'gewu.sound';
+  static const _skinKey = 'gewu.skin';
 
   /// **The defaults are exactly what was hard-coded before this existed** (`ink`, dark),
   /// so somebody upgrading sees no change until they choose one.
-  static const defaults =
-      AppSettings(themeName: defaultThemeName, isDark: true, soundOn: true);
+  static const defaults = AppSettings(
+    themeName: defaultThemeName,
+    isDark: true,
+    soundOn: true,
+    skinName: BoardSkin.defaultSkinName,
+  );
 
   ValueListenable<AppSettings> get current => _current;
 
@@ -79,6 +99,11 @@ class SettingsRepository {
         'false' => false,
         _ => defaults.soundOn,
       },
+      // A skin that is no longer in the artefact falls back rather than painting
+      // nothing — skins come from web and one can be removed there.
+      skinName: BoardSkin.available.contains(_store.read(_skinKey))
+          ? _store.read(_skinKey)!
+          : defaults.skinName,
     );
   }
 
@@ -91,6 +116,12 @@ class SettingsRepository {
   Future<void> setDark(bool isDark) async {
     _current.value = _current.value.copyWith(isDark: isDark);
     await _store.write(_darkKey, '$isDark');
+  }
+
+  Future<void> setSkin(String skinName) async {
+    if (!BoardSkin.available.contains(skinName)) return;
+    _current.value = _current.value.copyWith(skinName: skinName);
+    await _store.write(_skinKey, skinName);
   }
 
   Future<void> setSoundOn(bool soundOn) async {
