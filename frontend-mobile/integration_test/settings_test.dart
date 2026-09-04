@@ -185,24 +185,37 @@ void main() {
     // --- and the language, under the real shell -------------------------------
     // **The criterion is the words**, not the stored locale: this client has twice
     // shipped a setting that stored perfectly and painted nothing.
-    final chineseTitle = t.t('catalog.title');
+    //
+    // **The starting language is NOT assumed, and the first version of this assumed
+    // it.** With nothing stored the app now follows the *device*, and this test host
+    // reports `en-US` — so it started in English, the assertion "it is no longer the
+    // Chinese title" compared 'Games' with 'Games', and the failure read as "switching
+    // did nothing" when switching had nothing to do.
+    final startingLocale = deps.settings.current.value.locale;
+    final otherLocale = Translations.supported.keys
+        .firstWhere((l) => l != startingLocale);
+    final titleBefore = deps.strings.t('catalog.title');
+
     await tester.tap(await reach(
       tester,
-      find.byWidgetPredicate((w) => w is RadioListTile<String> && w.value == 'en'),
+      find.byWidgetPredicate(
+        (w) => w is RadioListTile<String> && w.value == otherLocale,
+      ),
     ));
     await tester.pumpAndSettle(const Duration(seconds: 3));
-    expect(deps.settings.current.value.locale, 'en');
+
+    expect(deps.settings.current.value.locale, otherLocale);
     expect(
       deps.strings.t('catalog.title'),
-      isNot(chineseTitle),
-      reason: 'the loaded translations must be the English ones',
+      isNot(titleBefore),
+      reason: 'the loaded translations must be the other language',
     );
 
     // --- every choice is written down ----------------------------------------
     expect(prefs.values['gewu.theme'], other);
     expect(prefs.values['gewu.dark'], 'false');
     expect(prefs.values['gewu.sound'], 'false');
-    expect(prefs.values['gewu.locale'], 'en');
+    expect(prefs.values['gewu.locale'], otherLocale);
 
     // --- back lands on the catalogue, not on the login page -------------------
     await systemBack(tester);
