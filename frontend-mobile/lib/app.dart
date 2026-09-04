@@ -1,6 +1,8 @@
 /// App shell: the Provider graph, the theme, and which screen is showing.
 library;
 
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +12,7 @@ import 'data/repositories/auth_repository.dart';
 import 'data/repositories/game_catalog_repository.dart';
 import 'data/repositories/settings_repository.dart';
 import 'data/repositories/sound_repository.dart';
+import 'data/repositories/strings_repository.dart';
 import 'data/repositories/room_repository.dart';
 import 'data/services/dio_client.dart';
 import 'data/services/match_hub_service.dart';
@@ -31,7 +34,7 @@ class AppDependencies {
     required this.catalog,
     required this.settings,
     required this.sound,
-    required this.strings,
+    required this.stringsRepo,
     required this.tokens,
   });
 
@@ -40,12 +43,18 @@ class AppDependencies {
   final GameCatalogRepository catalog;
   final SettingsRepository settings;
   final SoundRepository sound;
-  final Translations strings;
+  final StringsRepository stringsRepo;
+
+  /// The translations in force right now.
+  ///
+  /// A getter rather than a stored value: the instance changes when the language does,
+  /// and a captured one would go stale — which is the whole defect this replaced.
+  Translations get strings => stringsRepo.value;
   final TokenStore tokens;
 
   static Future<AppDependencies> build(
     AssetBundle bundle, {
-    String locale = 'zh-CN',
+    String? locale,
     String? baseUrl,
     TokenStore? tokenStore,
     PreferencesStore? preferences,
@@ -56,7 +65,12 @@ class AppDependencies {
 
     // The refresh call goes through this same client, so it is injected as a
     // callback rather than a constructor argument — otherwise the wiring is circular.
-    final settings = SettingsRepository(preferences ?? await SharedPreferencesStore.open());
+    // The device's language reaches the resolver here and nowhere else — everything
+    // below takes it as a plain string, so a unit test can say what the phone says.
+    final settings = SettingsRepository(
+      preferences ?? await SharedPreferencesStore.open(),
+      deviceLocale: locale ?? PlatformDispatcher.instance.locale.toLanguageTag(),
+    );
 
     late final AuthRepository auth;
     final dio = buildDio(
@@ -80,7 +94,14 @@ class AppDependencies {
         player: soundPlayer ?? AudioPlayersSoundPlayer(),
         settings: settings,
       ),
-      strings: await Translations.load(bundle, locale),
+      stringsRepo: StringsRepository(
+        bundle: bundle,
+        settings: settings,
+        // Loaded once here so the first frame is already translated — a shell that
+        // starts blank and fills in is worse than one that starts in the right
+        // language.
+        initial: await Translations.load(bundle, settings.current.value.locale),
+      ),
       tokens: tokens,
     );
   }
@@ -108,7 +129,6 @@ class GewuApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<Translations>.value(value: deps.strings),
         Provider<AuthRepository>.value(value: deps.auth),
         Provider<RoomRepository>.value(value: deps.rooms),
         Provider<GameCatalogRepository>.value(value: deps.catalog),
@@ -119,9 +139,17 @@ class GewuApp extends StatelessWidget {
       // `StatelessWidget` — `test/shell_state_test.dart` pins that with a tear-off the
       // compiler checks — so the rebuild on a theme change hangs off the settings value
       // rather than moving "which theme" back into the widget.
+      // **Two listenables, because the language is loaded asynchronously.** Settings
+      // change synchronously; the `Translations` instance arrives a frame or two later,
+      // and `Provider.value` handed a new instance rebuilds nothing by itself — so the
+      // provider below has to sit *inside* this builder.
       child: ValueListenableBuilder<AppSettings>(
         valueListenable: deps.settings.current,
-        builder: (context, settings, _) => MaterialApp.router(
+        builder: (context, settings, _) => ValueListenableBuilder<Translations>(
+          valueListenable: deps.stringsRepo.current,
+          builder: (context, strings, _) => Provider<Translations>.value(
+            value: strings,
+            child: MaterialApp.router(
           title: 'Gewu',
           debugShowCheckedModeBanner: false,
           // Two orthogonal axes: the theme names the palette, `themeMode` picks the
@@ -137,8 +165,10 @@ class GewuApp extends StatelessWidget {
             Brightness.dark,
             skinName: settings.skinName,
           ),
-          themeMode: settings.isDark ? ThemeMode.dark : ThemeMode.light,
-          routerConfig: router,
+            themeMode: settings.isDark ? ThemeMode.dark : ThemeMode.light,
+            routerConfig: router,
+            ),
+          ),
         ),
       ),
     );

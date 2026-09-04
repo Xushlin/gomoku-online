@@ -182,10 +182,27 @@ void main() {
     );
     expect(_painted(tester).brightness, Brightness.light, reason: 'nor the brightness');
 
+    // --- and the language, under the real shell -------------------------------
+    // **The criterion is the words**, not the stored locale: this client has twice
+    // shipped a setting that stored perfectly and painted nothing.
+    final chineseTitle = t.t('catalog.title');
+    await tester.tap(await reach(
+      tester,
+      find.byWidgetPredicate((w) => w is RadioListTile<String> && w.value == 'en'),
+    ));
+    await tester.pumpAndSettle(const Duration(seconds: 3));
+    expect(deps.settings.current.value.locale, 'en');
+    expect(
+      deps.strings.t('catalog.title'),
+      isNot(chineseTitle),
+      reason: 'the loaded translations must be the English ones',
+    );
+
     // --- every choice is written down ----------------------------------------
     expect(prefs.values['gewu.theme'], other);
     expect(prefs.values['gewu.dark'], 'false');
     expect(prefs.values['gewu.sound'], 'false');
+    expect(prefs.values['gewu.locale'], 'en');
 
     // --- back lands on the catalogue, not on the login page -------------------
     await systemBack(tester);

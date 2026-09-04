@@ -410,41 +410,59 @@ void main() {
         strings: zh,
       );
 
-      // **Themes AND skins are radio rows now**, so counting the type alone stopped
-      // being unambiguous — the same shape as the second FAB and the second switch.
+      // **Collected in one pass down the page, not searched for one by one.**
       //
-      // And their labels collide: theme `system` and skin `classic` are **both**
-      // 「简约」 in Chinese, so `find.text` matches two rows. A person tells them apart
-      // by the section heading above them; a finder cannot. So this asserts each row's
-      // `value`, which is what the code actually dispatches on.
-      final values = tester
-          .widgetList<RadioListTile<String>>(find.byType(RadioListTile<String>))
-          .map((r) => r.value)
-          .toList();
+      // Two earlier versions of this were wrong in instructive ways. Counting all the
+      // `RadioListTile`s at once measured *how many happened to fit*: once languages
+      // made the page a third screen longer, the skins were never built and the set
+      // came back missing them. Searching for each value with `scrollUntilVisible`
+      // then failed differently — it drags in **one direction**, and the sections are
+      // themes, languages, skins, so looking for a language after a skin scrolls past
+      // the end and throws `Bad state: No element`.
+      //
+      // Walking down once and recording what appears is order-independent and is what
+      // a person does.
+      final seen = <String>{};
+      for (var i = 0; i < 30; i++) {
+        seen.addAll(
+          tester
+              .widgetList<RadioListTile<String>>(find.byType(RadioListTile<String>))
+              .map((r) => r.value),
+        );
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
+        await tester.pumpAndSettle();
+      }
+
+      // Back to the top: `reach()` below drags **downward only**, so leaving the list
+      // at the bottom makes every later search fail with `Bad state: No element`.
+      for (var i = 0; i < 30; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, 120));
+        await tester.pumpAndSettle();
+      }
+
       expect(
-        values.toSet(),
-        {...AppTheme.availableThemes, ...BoardSkin.available},
-        reason: 'every theme and every skin has a row',
+        seen,
+        {
+          ...AppTheme.availableThemes,
+          ...BoardSkin.available,
+          ...Translations.supported.keys,
+        },
+        reason: 'every theme, skin and language must have a row',
       );
-      expect(
-        values,
-        hasLength(AppTheme.availableThemes.length + BoardSkin.available.length),
-        reason: 'and no row appears twice',
-      );
+
+      // And the labels are real copy, not raw keys.
       for (final name in AppTheme.availableThemes) {
         expect(zh.t('header.theme.$name'), isNot('header.theme.$name'), reason: name);
       }
       for (final name in BoardSkin.available) {
-        expect(
-          zh.t('header.board-skin.$name'),
-          isNot('header.board-skin.$name'),
-          reason: name,
-        );
+        expect(zh.t('header.board-skin.$name'), isNot('header.board-skin.$name'),
+            reason: name);
       }
-      // **Found by its label, not its type.** There are two switches on this screen now
-      // (dark and sound), so `find.byType(SwitchListTile)` stopped being unambiguous —
-      // the same shape as the lobby's second FAB. A finder that names the control
-      // cannot quietly start flipping the other one.
+      for (final name in Translations.supported.keys) {
+        expect(zh.t('header.language.$name'), isNot('header.language.$name'),
+            reason: name);
+      }
+
       expect(await reach(tester, darkToggle(zh)), findsOneWidget, reason: 'dark');
       expect(await reach(tester, soundToggle(zh)), findsOneWidget, reason: 'sound');
       vm.dispose();
