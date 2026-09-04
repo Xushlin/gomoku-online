@@ -1,5 +1,6 @@
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/settings_repository.dart';
+import '../../../i18n/translations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/board_skin.dart';
 import '../../view_model.dart';
@@ -38,15 +39,24 @@ class SettingsViewModel extends ViewModel {
   /// of three names is exactly the shape this repo has fixed nine times.
   List<String> get skins => BoardSkin.available;
 
+  /// **Derived from the shipped locale files**, via `Translations.supported`, which
+  /// `test/language_test.dart` pins to the contents of `assets/i18n/`.
+  List<String> get locales => Translations.supported.keys.toList()..sort();
+
+  String localeLabelKey(String locale) => 'header.language.$locale';
+
+  String get locale => _settings.current.value.locale;
+
   String skinLabelKey(String name) => 'header.board-skin.$name';
 
   String get skinName => _settings.current.value.skinName;
 
-  /// The four axes are independent: setting one MUST NOT reset the others.
+  /// The five axes are independent: setting one MUST NOT reset the others.
   Future<void> chooseTheme(String name) => _settings.setTheme(name);
   Future<void> setDark(bool value) => _settings.setDark(value);
   Future<void> setSoundOn(bool value) => _settings.setSoundOn(value);
   Future<void> chooseSkin(String name) => _settings.setSkin(name);
+  Future<void> chooseLocale(String locale) => _settings.setLocale(locale);
 
   Future<void> signOut() => _auth.logout();
 

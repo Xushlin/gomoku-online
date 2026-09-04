@@ -43,6 +43,22 @@ class SettingsView extends StatelessWidget {
             ),
           ),
           const Divider(height: 24),
+          _SectionLabel(text: t.t('header.language.label')),
+          // **One row per locale file that ships.** Nothing here names them.
+          RadioGroup<String>(
+            groupValue: vm.locale,
+            onChanged: (chosen) => chosen == null ? null : vm.chooseLocale(chosen),
+            child: Column(
+              children: [
+                for (final locale in vm.locales)
+                  RadioListTile<String>(
+                    value: locale,
+                    title: Text(t.t(vm.localeLabelKey(locale))),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 24),
           _SectionLabel(text: t.t('header.board-skin.label')),
           // **One row per skin in the synced artefact.** Nothing here names them —
           // the same rule as the themes above, and for the same reason.
