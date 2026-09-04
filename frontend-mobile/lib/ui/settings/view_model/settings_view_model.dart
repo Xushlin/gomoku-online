@@ -1,6 +1,7 @@
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../../theme/board_skin.dart';
 import '../../view_model.dart';
 
 /// The settings screen's state and intent.
@@ -33,10 +34,19 @@ class SettingsViewModel extends ViewModel {
 
   bool get soundOn => _settings.current.value.soundOn;
 
-  /// The three axes are independent: setting one MUST NOT reset the others.
+  /// **Derived from the synced skin artefact**, same as [themes] — a hand-written list
+  /// of three names is exactly the shape this repo has fixed nine times.
+  List<String> get skins => BoardSkin.available;
+
+  String skinLabelKey(String name) => 'header.board-skin.$name';
+
+  String get skinName => _settings.current.value.skinName;
+
+  /// The four axes are independent: setting one MUST NOT reset the others.
   Future<void> chooseTheme(String name) => _settings.setTheme(name);
   Future<void> setDark(bool value) => _settings.setDark(value);
   Future<void> setSoundOn(bool value) => _settings.setSoundOn(value);
+  Future<void> chooseSkin(String name) => _settings.setSkin(name);
 
   Future<void> signOut() => _auth.logout();
 

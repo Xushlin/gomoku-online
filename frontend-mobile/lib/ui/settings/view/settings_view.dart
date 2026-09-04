@@ -43,6 +43,23 @@ class SettingsView extends StatelessWidget {
             ),
           ),
           const Divider(height: 24),
+          _SectionLabel(text: t.t('header.board-skin.label')),
+          // **One row per skin in the synced artefact.** Nothing here names them —
+          // the same rule as the themes above, and for the same reason.
+          RadioGroup<String>(
+            groupValue: vm.skinName,
+            onChanged: (chosen) => chosen == null ? null : vm.chooseSkin(chosen),
+            child: Column(
+              children: [
+                for (final name in vm.skins)
+                  RadioListTile<String>(
+                    value: name,
+                    title: Text(t.t(vm.skinLabelKey(name))),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 24),
           SwitchListTile(
             value: vm.soundOn,
             onChanged: vm.setSoundOn,

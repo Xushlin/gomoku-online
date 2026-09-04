@@ -127,8 +127,16 @@ class GewuApp extends StatelessWidget {
           // Two orthogonal axes: the theme names the palette, `themeMode` picks the
           // half of it to use. Flattening them into one list is how switching to dark
           // starts resetting the theme.
-          theme: AppTheme.build(settings.themeName, Brightness.light),
-          darkTheme: AppTheme.build(settings.themeName, Brightness.dark),
+          theme: AppTheme.build(
+            settings.themeName,
+            Brightness.light,
+            skinName: settings.skinName,
+          ),
+          darkTheme: AppTheme.build(
+            settings.themeName,
+            Brightness.dark,
+            skinName: settings.skinName,
+          ),
           themeMode: settings.isDark ? ThemeMode.dark : ThemeMode.light,
           routerConfig: router,
         ),

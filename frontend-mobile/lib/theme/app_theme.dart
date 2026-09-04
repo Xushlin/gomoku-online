@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'board_skin.dart';
 import 'tokens.g.dart';
 
 /// The theme the app opens with. The others are generated and ready; a picker is
@@ -51,7 +52,11 @@ class AppTheme {
   ///
   /// Falls back to Material's own colour only where a token genuinely has no
   /// equivalent — never by inventing a value.
-  static ThemeData build(String name, Brightness brightness) {
+  static ThemeData build(
+    String name,
+    Brightness brightness, {
+    String skinName = BoardSkin.defaultSkinName,
+  }) {
     final mode = brightness == Brightness.dark ? 'dark' : 'light';
     final tokens = themeTokens[name]?[mode] ?? const {};
 
@@ -110,8 +115,17 @@ class AppTheme {
       // As an extension it cannot drift: the board reads whatever theme is painting it,
       // and a `view/` may not reach a repository to ask (`layering_test`), so there is
       // no second way to get this wrong.
+      // **The whole skin rides on the `ThemeData`, not just a colour.** It used to be
+      // one background read at the call site, which is how the board's stones stayed
+      // hard-coded while everything around them was themeable.
       extensions: <ThemeExtension<dynamic>>[
-        BoardColors(background: boardBackground(name, brightness)),
+        BoardColors(
+          skin: BoardSkin.resolve(
+            skinName: skinName,
+            themeName: name,
+            brightness: brightness,
+          ),
+        ),
       ],
     );
   }
@@ -129,17 +143,16 @@ class AppTheme {
 /// The board's own colours, carried on the `ThemeData` so the board follows the theme
 /// without anybody passing a theme name around.
 class BoardColors extends ThemeExtension<BoardColors> {
-  const BoardColors({required this.background});
+  const BoardColors({required this.skin});
 
-  final Color background;
-
-  @override
-  BoardColors copyWith({Color? background}) =>
-      BoardColors(background: background ?? this.background);
+  final BoardSkin skin;
 
   @override
+  BoardColors copyWith({BoardSkin? skin}) => BoardColors(skin: skin ?? this.skin);
+
+  @override
+  /// **No interpolation.** A half-blended skin is not a skin, and a board that
+  /// cross-fades its wood grain into a slate is worse than one that simply changes.
   BoardColors lerp(ThemeExtension<BoardColors>? other, double t) =>
-      other is BoardColors
-          ? BoardColors(background: Color.lerp(background, other.background, t)!)
-          : this;
+      other is BoardColors && t >= 0.5 ? other : this;
 }

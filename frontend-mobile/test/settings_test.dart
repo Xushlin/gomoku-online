@@ -29,6 +29,7 @@ import 'package:gewu_mobile/data/services/preferences_store.dart';
 import 'package:gewu_mobile/data/services/token_store.dart';
 import 'package:gewu_mobile/i18n/translations.dart';
 import 'package:gewu_mobile/theme/app_theme.dart';
+import 'package:gewu_mobile/theme/board_skin.dart';
 import 'package:gewu_mobile/ui/settings/view/settings_view.dart';
 import 'package:gewu_mobile/ui/settings/view_model/settings_view_model.dart';
 import 'package:gewu_mobile/ui/view_model.dart';
@@ -140,6 +141,23 @@ Finder darkToggle(Translations t) =>
 
 Finder soundToggle(Translations t) =>
     find.widgetWithText(SwitchListTile, t.t('header.sound.label'));
+
+
+/// Scrolls a control into view before touching it.
+///
+/// **The settings page is taller than one screen now** — four themes, three skins, two
+/// switches and the way out. A `ListView` only builds what is visible, so a finder for
+/// anything below the fold reports "found 0 widgets", which reads as *the control is
+/// missing* rather than *it is further down*. A person scrolls; so does this.
+Future<Finder> reach(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    120,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+  return finder;
+}
 
 void main() {
   late Translations zh;
@@ -309,8 +327,15 @@ void main() {
       for (final name in AppTheme.availableThemes) {
         for (final b in Brightness.values) {
           expect(
-            AppTheme.build(name, b).extension<BoardColors>()?.background,
-            AppTheme.boardBackground(name, b),
+            AppTheme.build(name, b).extension<BoardColors>()?.skin.background,
+            // The default skin is `wood`, whose background is a literal — so under
+            // every theme this is the same colour, which is the point: **the board no
+            // longer follows the theme, it follows the skin.**
+            BoardSkin.resolve(
+              skinName: BoardSkin.defaultSkinName,
+              themeName: name,
+              brightness: b,
+            ).background,
             reason: '$name/$b',
           );
         }
@@ -385,21 +410,43 @@ void main() {
         strings: zh,
       );
 
+      // **Themes AND skins are radio rows now**, so counting the type alone stopped
+      // being unambiguous — the same shape as the second FAB and the second switch.
+      //
+      // And their labels collide: theme `system` and skin `classic` are **both**
+      // 「简约」 in Chinese, so `find.text` matches two rows. A person tells them apart
+      // by the section heading above them; a finder cannot. So this asserts each row's
+      // `value`, which is what the code actually dispatches on.
+      final values = tester
+          .widgetList<RadioListTile<String>>(find.byType(RadioListTile<String>))
+          .map((r) => r.value)
+          .toList();
       expect(
-        find.byType(RadioListTile<String>),
-        findsNWidgets(AppTheme.availableThemes.length),
+        values.toSet(),
+        {...AppTheme.availableThemes, ...BoardSkin.available},
+        reason: 'every theme and every skin has a row',
+      );
+      expect(
+        values,
+        hasLength(AppTheme.availableThemes.length + BoardSkin.available.length),
+        reason: 'and no row appears twice',
       );
       for (final name in AppTheme.availableThemes) {
-        final label = zh.t('header.theme.$name');
-        expect(label, isNot('header.theme.$name'), reason: 'raw key on screen');
-        expect(find.text(label), findsOneWidget, reason: name);
+        expect(zh.t('header.theme.$name'), isNot('header.theme.$name'), reason: name);
+      }
+      for (final name in BoardSkin.available) {
+        expect(
+          zh.t('header.board-skin.$name'),
+          isNot('header.board-skin.$name'),
+          reason: name,
+        );
       }
       // **Found by its label, not its type.** There are two switches on this screen now
       // (dark and sound), so `find.byType(SwitchListTile)` stopped being unambiguous —
       // the same shape as the lobby's second FAB. A finder that names the control
       // cannot quietly start flipping the other one.
-      expect(darkToggle(zh), findsOneWidget, reason: 'the dark toggle');
-      expect(soundToggle(zh), findsOneWidget, reason: 'and the sound toggle');
+      expect(await reach(tester, darkToggle(zh)), findsOneWidget, reason: 'dark');
+      expect(await reach(tester, soundToggle(zh)), findsOneWidget, reason: 'sound');
       vm.dispose();
     });
 
@@ -437,12 +484,12 @@ void main() {
       );
       expect(vm.isDark, isTrue, reason: 'precondition — the default is dark');
 
-      await tester.tap(darkToggle(zh));
+      await tester.tap(await reach(tester, darkToggle(zh)));
       await tester.pumpAndSettle();
       expect(settings.current.value.isDark, isFalse);
       expect(settings.current.value.soundOn, isTrue, reason: 'and it left sound alone');
 
-      await tester.tap(darkToggle(zh));
+      await tester.tap(await reach(tester, darkToggle(zh)));
       await tester.pumpAndSettle();
       expect(settings.current.value.isDark, isTrue, reason: 'and back');
       vm.dispose();
@@ -460,7 +507,7 @@ void main() {
       );
       expect(vm.soundOn, isTrue, reason: 'precondition — the default is on');
 
-      await tester.tap(soundToggle(zh));
+      await tester.tap(await reach(tester, soundToggle(zh)));
       await tester.pumpAndSettle();
       expect(settings.current.value.soundOn, isFalse);
       expect(
@@ -474,7 +521,7 @@ void main() {
         reason: 'nor the theme',
       );
 
-      await tester.tap(soundToggle(zh));
+      await tester.tap(await reach(tester, soundToggle(zh)));
       await tester.pumpAndSettle();
       expect(settings.current.value.soundOn, isTrue, reason: 'and back');
       vm.dispose();
@@ -496,7 +543,8 @@ void main() {
       );
       expect(auth.signedIn.value, isTrue, reason: 'precondition — signed in');
 
-      await tester.tap(find.text(zh.t('header.auth.logout')));
+      await reach(tester, find.text(zh.t('header.auth.logout')));
+      await tester.tap(find.text(zh.t('header.auth.logout')).first);
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog), findsOneWidget, reason: 'it must ask');
 
@@ -519,7 +567,8 @@ void main() {
       );
       expect(auth.signedIn.value, isTrue, reason: 'precondition — signed in');
 
-      await tester.tap(find.text(zh.t('header.auth.logout')));
+      await reach(tester, find.text(zh.t('header.auth.logout')));
+      await tester.tap(find.text(zh.t('header.auth.logout')).first);
       await tester.pumpAndSettle();
 
       // **Three widgets now carry 「退出登录」**: the row that opened the dialog, the

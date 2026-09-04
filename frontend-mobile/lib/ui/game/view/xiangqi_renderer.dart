@@ -11,6 +11,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import '../../../data/models/models.dart';
+import '../../../theme/board_skin.dart';
 import '../xiangqi/position.dart';
 import 'board_geometry.dart';
 import 'board_renderer.dart';
@@ -46,9 +47,6 @@ const _glyphs = <int, Map<XiangqiPieceType, String>>{
 /// the defect this repo has fixed eight times.
 String glyphFor(XiangqiPiece piece) => _glyphs[piece.seat]![piece.type]!;
 
-const _red = Color(0xFFC62828);
-const _black = Color(0xFF212121);
-const _disc = Color(0xFFF3E2C0);
 
 class XiangqiRenderer extends BoardRenderer {
   const XiangqiRenderer();
@@ -76,9 +74,9 @@ class XiangqiRenderer extends BoardRenderer {
       pieceAt(positionAfter(moves), row, col)?.seat;
 
   @override
-  void paintDecoration(Canvas canvas, BoardGeometry g, Color lineColor) {
+  void paintDecoration(Canvas canvas, BoardGeometry g, BoardSkin skin) {
     final line = Paint()
-      ..color = lineColor
+      ..color = skin.line
       ..strokeWidth = 1;
 
     // Ranks run the full width.
@@ -127,6 +125,7 @@ class XiangqiRenderer extends BoardRenderer {
     BoardGeometry g,
     List<Move> moves,
     (int, int)? selected,
+    BoardSkin skin,
   ) {
     final position = positionAfter(moves);
     final radius = g.step * discFraction;
@@ -136,7 +135,9 @@ class XiangqiRenderer extends BoardRenderer {
     final last = moves.isEmpty ? null : moves.last;
     if (last != null && last.isRelocation) {
       final ring = Paint()
-        ..color = const Color(0x66000000)
+        // The board's own line colour: the CSS gives this depth with a shadow, which
+        // is not ported, and a literal here is what makes a skin change stop halfway.
+        ..color = skin.line
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
       canvas.drawCircle(g.centreOf(last.fromRow!, last.fromCol!), radius * 0.35, ring);
@@ -148,7 +149,9 @@ class XiangqiRenderer extends BoardRenderer {
         g.centreOf(selected.$1, selected.$2),
         radius + 3,
         Paint()
-          ..color = const Color(0xFF2E7D32)
+          // Selection is a UI affordance, not board material — the skin declares no
+          // token for it, so it comes from the theme's accent via `BoardSkin`.
+          ..color = skin.selection
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5,
       );
@@ -158,7 +161,7 @@ class XiangqiRenderer extends BoardRenderer {
       for (var col = 0; col < g.cols; col++) {
         final piece = position[cellIndex(row, col)];
         if (piece == null) continue;
-        _drawPiece(canvas, g.centreOf(row, col), radius, fontSize, piece);
+        _drawPiece(canvas, g.centreOf(row, col), radius, fontSize, piece, skin);
       }
     }
   }
@@ -169,10 +172,11 @@ class XiangqiRenderer extends BoardRenderer {
     double radius,
     double fontSize,
     XiangqiPiece piece,
+    BoardSkin skin,
   ) {
-    final ink = piece.isRed ? _red : _black;
+    final ink = piece.isRed ? skin.xiangqiRed : skin.xiangqiBlack;
 
-    canvas.drawCircle(centre, radius, Paint()..color = _disc);
+    canvas.drawCircle(centre, radius, Paint()..color = skin.xiangqiPiece);
     canvas.drawCircle(
       centre,
       radius,
